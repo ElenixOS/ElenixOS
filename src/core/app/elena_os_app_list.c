@@ -94,7 +94,6 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
     lv_obj_set_style_shadow_width(app_icon, 0, 0);
     lv_obj_set_style_margin_all(app_icon, 0, 0);
     lv_obj_set_style_pad_all(app_icon, 0, 0);
-    // lv_obj_remove_flag(app_icon, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     eos_img_set_src(app_icon, icon_path);
@@ -135,12 +134,12 @@ void eos_app_list_create(void)
     // 创建新的页面用于绘制应用列表
     lv_obj_t *scr = eos_nav_scr_create();
     lv_screen_load(scr);
-    
+
     // 加载应用顺序
     char *json_str = eos_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
     eos_free_large(json_str);
-    
+
     lv_obj_t *container = lv_list_create(scr);
     lv_obj_set_style_pad_all(container, 20, 0);
     lv_obj_set_style_pad_column(container, 20, 0); // 列间距
@@ -156,34 +155,39 @@ void eos_app_list_create(void)
                           LV_FLEX_ALIGN_START);
     lv_obj_add_event_cb(container, _container_delete_cb, LV_EVENT_DELETE, NULL);
     eos_event_add_cb(container, _app_installed_cb, eos_event_get_code(EOS_EVENT_APP_INSTALLED), NULL);
-    
+
     // 按JSON顺序添加其他应用
-    if (app_order) {
+    if (app_order)
+    {
         cJSON *item = NULL;
-        cJSON_ArrayForEach(item, app_order) {
-            if (cJSON_IsString(item)) {
-                const char *app_id = item->valuestring;
-                
-                // 跳过系统设置应用（已经添加过了）
-                if (strcmp(app_id, "sys.settings") == 0) {
+        cJSON_ArrayForEach(item, app_order)
+        {
+            if (cJSON_IsString(item))
+            {
+                if (strcmp(item->valuestring, "sys.settings") == 0)
+                {
                     char icon_path[PATH_MAX];
                     memcpy(icon_path, EOS_IMG_SETTINGS, sizeof(EOS_IMG_SETTINGS));
                     lv_obj_t *settings_icon = _app_icon_create(container, icon_path);
                     lv_obj_add_event_cb(settings_icon, _app_list_settings_cb, LV_EVENT_CLICKED, NULL);
                     // 设置系统应用的ID
-                    lv_obj_set_user_data(settings_icon, (void*)"sys.settings");
+                    lv_obj_set_user_data(settings_icon, (void *)"sys.settings");
                     continue;
                 }
-                
+
+                const char *app_id = eos_app_list_get_existing_id(item->valuestring);;
+
                 // 检查应用是否存在
-                if (!eos_app_list_contains(app_id)) {
+                if (!eos_app_list_contains(app_id))
+                {
                     continue;
                 }
-                
+
                 char icon_path[PATH_MAX];
                 snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                          app_id);
-                if (!eos_is_file(icon_path)) {
+                if (!eos_is_file(icon_path))
+                {
                     memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
                 }
                 lv_obj_t *app_icon = _app_icon_create(container, icon_path);
@@ -192,15 +196,19 @@ void eos_app_list_create(void)
             }
         }
         cJSON_Delete(app_order);
-    } else {
+    }
+    else
+    {
         // 如果没有JSON顺序文件，按默认顺序添加
         size_t app_list_size = eos_app_list_size();
-        for (size_t i = 0; i < app_list_size; i++) {
+        for (size_t i = 0; i < app_list_size; i++)
+        {
             const char *app_id = eos_app_list_get_id(i);
             char icon_path[PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                      app_id);
-            if (!eos_is_file(icon_path)) {
+            if (!eos_is_file(icon_path))
+            {
                 memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
             }
             lv_obj_t *app_icon = _app_icon_create(container, icon_path);

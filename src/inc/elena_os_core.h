@@ -69,7 +69,8 @@ typedef struct {
  * @brief ElenaOS 入口函数
  * @return eos_result_t 返回运行结果
  */
-eos_result_t eos_run();
+eos_result_t
+eos_run();
 /**
  * @brief 设置侧面按钮的状态
  * @param state 状态值

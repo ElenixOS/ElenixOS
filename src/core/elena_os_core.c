@@ -9,6 +9,7 @@
  * TODO:
  * 编码器索引
  * Group问题
+ * 编码器滚动时，列表跟随滚动-
  */
 
 #include "elena_os_core.h"

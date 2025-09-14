@@ -99,7 +99,6 @@ void eos_watchface_list_create(void)
         lv_obj_set_style_margin_all(watchface_snapshot, 0, 0);
         lv_obj_center(watchface_snapshot);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
-        // lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_add_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         eos_img_set_src(watchface_snapshot, icon_path);

@@ -9,7 +9,6 @@
  * TODO:
  * 应用列表详情页
  * 主题设置
- * 打开设置页面时会分配16KB内存，原因未知
  * 退出页面时再存储配置信息
  */
 
@@ -40,10 +39,11 @@
 #include "elena_os_misc.h"
 #include "elena_os_theme.h"
 #include "elena_os_pkg_mgr.h"
+#include "elena_os_sensor.h"
 // Macros and Definitions
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
-#define EOS_SYS_DISPLAY_BRIGHTNESS_MIN 1 /**< 亮度为0即关闭屏幕 */
+#define EOS_SYS_DISPLAY_BRIGHTNESS_MIN 5 /**< 亮度为0即关闭屏幕 */
 #define EOS_SYS_DISPLAY_BRIGHTNESS_MAX 100
 // Variables
 
@@ -1055,6 +1055,11 @@ static void _sys_screen_apps(lv_event_t *e)
         _app_btn_create(app_list, eos_app_list_get_id(i));
     }
 }
+static void _sys_screen_sensor(lv_event_t *e)
+{
+    eos_sensor_tester_create();
+}
+
 /************************** 系统设置 **************************/
 void eos_sys_settings_create(void)
 {
@@ -1082,8 +1087,8 @@ void eos_sys_settings_create(void)
     btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0xff3939), LV_SYMBOL_BELL, current_lang[STR_ID_SETTINGS_NOTIFICATION]);
     lv_obj_add_event_cb(btn, _sys_screen_notification, LV_EVENT_CLICKED, NULL);
     // 应用列表
-    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, current_lang[STR_ID_SETTINGS_APPS]);
-    lv_obj_add_event_cb(btn, _sys_screen_apps, LV_EVENT_CLICKED, NULL);
+    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, "SensorTester");
+    lv_obj_add_event_cb(btn, _sys_screen_sensor, LV_EVENT_CLICKED, NULL);
 
     eos_list_add_placeholder(settings_list, 50);
 }

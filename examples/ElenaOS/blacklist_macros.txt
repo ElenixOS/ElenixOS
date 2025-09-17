@@ -1,0 +1,3 @@
+lv_obj_get_child_by_id
+LV_ANIM_TIMELINE_PROGRESS_MAX
+LV_LABEL_DEFAULT_TEXT

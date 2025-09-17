@@ -1,0 +1,4 @@
+LV_SYMBOL_*
+LV_ALIGN_*
+LV_LABEL_*
+LV_ANIM_*

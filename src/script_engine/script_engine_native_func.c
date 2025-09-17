@@ -26,7 +26,6 @@
 // Macros and Definitions
 
 // Variables
-extern script_pkg_t script_pkg;
 
 // Function Implementations
 /********************************** 错误处理 **********************************/
@@ -44,15 +43,15 @@ static bool config_write_to_file(cJSON *root)
     if (!json_str)
         return false;
     char config_file_path[PATH_MAX];
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s/config.json",
-                 script_pkg.id);
+                 script_engine_get_current_script_id());
     }
-    else if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         snprintf(config_file_path, sizeof(config_file_path), EOS_WATCHFACE_DATA_DIR "%s/config.json",
-                 script_pkg.id);
+                 script_engine_get_current_script_id());
     }
     else
     {
@@ -77,15 +76,15 @@ static bool config_write_to_file(cJSON *root)
 static cJSON *config_load_from_file(void)
 {
     char config_file_path[PATH_MAX];
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s/config.json",
-                 script_pkg.id);
+                 script_engine_get_current_script_id());
     }
-    else if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         snprintf(config_file_path, sizeof(config_file_path), EOS_WATCHFACE_DATA_DIR "%s/config.json",
-                 script_pkg.id);
+                 script_engine_get_current_script_id());
     }
     else
     {
@@ -197,7 +196,7 @@ static jerry_value_t js_nav_scr_create(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args[],
                                        const jerry_length_t argc)
 {
-    if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         return throw_error("Watchface can't create screen");
     }
@@ -226,7 +225,7 @@ static jerry_value_t js_nav_back(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args[],
                                  const jerry_length_t argc)
 {
-    if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         return throw_error("Using navigation in the watchface is prohibited");
     }
@@ -299,19 +298,19 @@ static jerry_value_t js_lv_img_set_src(const jerry_call_info_t *call_info_p,
         arg_src = arg_src_str;
     }
     char img_path[PATH_MAX];
-    if (script_pkg.id == NULL)
+    if (script_engine_get_current_script_id() == NULL)
     {
         return throw_error("Script package info is NULL");
     }
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(img_path, sizeof(img_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
-                 script_pkg.id, arg_src);
+                 script_engine_get_current_script_id(), arg_src);
     }
-    else if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         snprintf(img_path, sizeof(img_path), EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
-                 script_pkg.id, arg_src);
+                 script_engine_get_current_script_id(), arg_src);
     }
     else
     {
@@ -626,21 +625,21 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     uint32_t font_size = (uint32_t)jerry_value_as_number(args[1]);
 
     char font_path[PATH_MAX];
-    if (script_pkg.id == NULL)
+    if (script_engine_get_current_script_id() == NULL)
     {
         if (arg_src_str) free(arg_src_str);
         return throw_error("Script package info is NULL");
     }
     
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(font_path, sizeof(font_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
-                 script_pkg.id, arg_src);
+                 script_engine_get_current_script_id(), arg_src);
     }
-    else if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         snprintf(font_path, sizeof(font_path), EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
-                 script_pkg.id, arg_src);
+                 script_engine_get_current_script_id(), arg_src);
     }
     else
     {

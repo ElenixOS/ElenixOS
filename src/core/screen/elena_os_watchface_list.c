@@ -31,7 +31,6 @@
 // Macros and Definitions
 
 // Variables
-extern script_pkg_t script_pkg; // 脚本包
 extern lv_group_t *encoder_group;
 // Function Implementations
 
@@ -47,7 +46,8 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, watchface_id);
     eos_nav_back_clean();
 }
-void eos_watchface_list_create(void)
+
+EOS_ASYNC_SCREEN_CREATE(eos_watchface_list_create)
 {
     // 创建新的页面用于绘制应用列表
     lv_obj_t *scr = eos_nav_scr_create();

@@ -17,6 +17,13 @@ extern "C" {
 #include <stdbool.h>
 
 /* Public macros ----------------------------------------------*/
+#define EOS_ASYNC_SCREEN_CREATE(func_name)           \
+    static void _async_##func_name(void *user_data); \
+    void func_name(void)                             \
+    {                                                \
+        lv_async_call(_async_##func_name, NULL);     \
+    }                                                \
+    static void _async_##func_name(void *user_data)  \
 
 /* Public typedefs --------------------------------------------*/
 
@@ -69,8 +76,7 @@ typedef struct {
  * @brief ElenaOS 入口函数
  * @return eos_result_t 返回运行结果
  */
-eos_result_t
-eos_run();
+eos_result_t eos_run(void);
 /**
  * @brief 设置侧面按钮的状态
  * @param state 状态值

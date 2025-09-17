@@ -21,19 +21,27 @@
 #include "elena_os_log.h"
 #include "elena_os_misc.h"
 #include "cJSON.h"
+#include <stdlib.h>
 // Macros and Definitions
 
 // Variables
 static atomic_bool should_terminate = ATOMIC_VAR_INIT(false); // 请求终止脚本标志位
 static script_state_t script_state = SCRIPT_STATE_STOPPED;
 static bool is_terminated_by_req = false;
+static script_pkg_t *current_script_pkg = NULL;     // 保存指针以便清理内存
+
 // Function Implementations
 
-inline void script_engine_set_prop_number(jerry_value_t obj, 
-                                    const char* prop_name, 
-                                    double value) 
+void script_engine_set_script_state(script_state_t state)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t*)prop_name);
+    script_state = state;
+}
+
+inline void script_engine_set_prop_number(jerry_value_t obj,
+                                          const char *prop_name,
+                                          double value)
+{
+    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
     jerry_value_t jerry_value = jerry_number(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -42,11 +50,11 @@ inline void script_engine_set_prop_number(jerry_value_t obj,
     jerry_value_free(prop);
 }
 
-inline void script_engine_set_prop_bool(jerry_value_t obj, 
-                                    const char* prop_name, 
-                                    bool value) 
+inline void script_engine_set_prop_bool(jerry_value_t obj,
+                                        const char *prop_name,
+                                        bool value)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t*)prop_name);
+    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
     jerry_value_t jerry_value = jerry_boolean(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -55,11 +63,11 @@ inline void script_engine_set_prop_bool(jerry_value_t obj,
     jerry_value_free(prop);
 }
 
-inline void script_engine_set_prop_string(jerry_value_t obj, 
-                                    const char* prop_name, 
-                                    const char* value) 
+inline void script_engine_set_prop_string(jerry_value_t obj,
+                                          const char *prop_name,
+                                          const char *value)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t*)prop_name);
+    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
     jerry_value_t jerry_value = jerry_string_sz(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -78,6 +86,7 @@ static jerry_value_t _vm_exec_stop_callback(void *user_p)
     {
         atomic_store(&should_terminate, false);
         is_terminated_by_req = true;
+        script_state = SCRIPT_STATE_STOPPED;
         EOS_LOG_D("Script execution stopped by request.\n");
         return jerry_string_sz("Script terminated by request");
     }
@@ -97,21 +106,61 @@ script_state_t script_engine_get_state(void)
     return script_state;
 }
 
-bool script_engine_request_ready(void)
+char *script_engine_get_current_script_id(void)
 {
-    if (script_state != SCRIPT_STATE_STOPPED)
-    {
-        return false;
-    }
-    script_state = SCRIPT_STATE_READY;
-    return true;
+    return current_script_pkg==NULL?NULL:current_script_pkg->id;
+}
+
+char *script_engine_get_current_script_name(void)
+{
+    return current_script_pkg==NULL?NULL:current_script_pkg->name;
+}
+
+script_pkg_type_t script_engine_get_current_script_type(void)
+{
+    return current_script_pkg==NULL?SCRIPT_TYPE_UNKNOWN:current_script_pkg->type;
 }
 
 script_engine_result_t script_engine_request_stop(void)
 {
     if (script_state == SCRIPT_STATE_RUNNING)
     {
+        // 终止脚本运行
         _request_script_termination();
+        while (script_state != SCRIPT_STATE_STOPPED)
+        {
+            eos_delay(10);
+        }
+        // 删除根页面
+        script_engine_result_t ret;
+        ret = script_engine_nav_clean_up();
+        if (ret != SE_OK)
+        {
+            EOS_LOG_E("Navigation clean up failed!");
+            return ret;
+        }
+        // 清理资源
+        jerry_cleanup();
+        script_state = SCRIPT_STATE_STOPPED;
+        eos_pkg_free(current_script_pkg);
+        current_script_pkg = NULL;
+        return SE_OK;
+    }
+    else if (script_state == SCRIPT_STATE_SUSPEND)
+    {
+        // 删除根页面
+        script_engine_result_t ret;
+        ret = script_engine_nav_clean_up();
+        if (ret != SE_OK)
+        {
+            EOS_LOG_E("Navigation clean up failed!");
+            return ret;
+        }
+        // 清理资源
+        jerry_cleanup();
+        script_state = SCRIPT_STATE_STOPPED;
+        eos_pkg_free(current_script_pkg);
+        current_script_pkg = NULL;
         return SE_OK;
     }
     return -SE_ERR_SCRIPT_NOT_RUNNING;
@@ -119,7 +168,7 @@ script_engine_result_t script_engine_request_stop(void)
 /**
  * @brief 解析js错误变量并打印错误原因
  */
-static void _script_engine_exception_handler(char *tag, jerry_value_t result)
+static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
     printf("[%s] Error: ", tag);
     jerry_value_t value = jerry_exception_value(result, false);
@@ -155,11 +204,11 @@ jerry_value_t _script_engine_create_info(const script_pkg_t *script_package)
 {
     jerry_value_t obj = jerry_object();
 
-    script_engine_set_prop_string(obj,"id",script_package->id);
-    script_engine_set_prop_string(obj,"name",script_package->name);
-    script_engine_set_prop_string(obj,"version",script_package->version);
-    script_engine_set_prop_string(obj,"author",script_package->author);
-    script_engine_set_prop_string(obj,"description",script_package->description);
+    script_engine_set_prop_string(obj, "id", script_package->id);
+    script_engine_set_prop_string(obj, "name", script_package->name);
+    script_engine_set_prop_string(obj, "version", script_package->version);
+    script_engine_set_prop_string(obj, "author", script_package->author);
+    script_engine_set_prop_string(obj, "description", script_package->description);
 
     return obj;
 }
@@ -205,11 +254,17 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     }
 
     // 释放原有指针（如果有），防止内存泄漏
-    if (pkg->id) eos_free_large((void*)pkg->id);
-    if (pkg->name) eos_free_large((void*)pkg->name);
-    if (pkg->version) eos_free_large((void*)pkg->version);
-    if (pkg->author) eos_free_large((void*)pkg->author);
-    if (pkg->description) eos_free_large((void*)pkg->description);
+    EOS_LOG_D("ID PTR:%p",pkg->id);
+    if (pkg->id)
+        free((void *)pkg->id);
+    if (pkg->name)
+        free((void *)pkg->name);
+    if (pkg->version)
+        free((void *)pkg->version);
+    if (pkg->author)
+        free((void *)pkg->author);
+    if (pkg->description)
+        free((void *)pkg->description);
 
     // 分配并赋值
     pkg->id = eos_strdup(id->valuestring);
@@ -222,12 +277,21 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     return SE_OK;
 }
 
+script_engine_result_t script_engine_clean_up(void)
+{
+    jerry_cleanup();
+    script_state = SCRIPT_STATE_STOPPED;
+}
+
 script_engine_result_t script_engine_run(script_pkg_t *script_package)
 {
     if (script_package == NULL || script_package->script_str == NULL)
     {
         return -SE_ERR_NULL_PACKAGE;
     }
+
+    current_script_pkg = script_package;
+
     if (!jerry_feature_enabled(JERRY_FEATURE_VM_EXEC_STOP))
     {
         EOS_LOG_E("JerryScript VM does not support execution stop feature.\n");
@@ -240,7 +304,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
         return -SE_ERR_NOT_INITIALIZED;
     }
 
-    if (script_state == SCRIPT_STATE_RUNNING)
+    if (script_state == SCRIPT_STATE_RUNNING || script_state == SCRIPT_STATE_SUSPEND)
     {
         return -SE_ERR_ALREADY_RUNNING;
     }
@@ -297,8 +361,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
             // 执行成功
             jerry_value_free(parsed_code);
             jerry_value_free(result);
-            jerry_cleanup();
-            script_state = SCRIPT_STATE_STOPPED;
+            script_state = SCRIPT_STATE_SUSPEND;
             return SE_OK;
         }
     }

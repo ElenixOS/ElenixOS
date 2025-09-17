@@ -43,24 +43,16 @@
 #include "elena_os_theme.h"
 #include "elena_os_config.h"
 // Macros and Definitions
-typedef enum
-{
-    ENTRY_NULL = 0,
-    ENTRY_APP_LIST,
-    ENTRY_WATCHFACE_LIST,
-} screen_entry_t;
+
 // Variables
-script_pkg_t script_pkg = {0}; // 当前运行的脚本包
 lv_group_t *encoder_group;
 lv_obj_t *root_scr;
-screen_entry_t next_screen_type;
 static eos_side_btn_state_t side_btn_state = SIDE_BTN_RELEASED;
 // Function Implementations
 
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
-    script_engine_request_stop();
-    next_screen_type = ENTRY_WATCHFACE_LIST;
+    eos_watchface_list_create();
 }
 
 static lv_indev_t *_get_key_indev()
@@ -89,8 +81,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
         lv_obj_t *scr = lv_screen_active();
         if (scr == root_scr)
         {
-            script_engine_request_stop();
-            next_screen_type = ENTRY_APP_LIST;
+            eos_app_list_create();
             side_btn_state = SIDE_BTN_RELEASED;
         }
         else
@@ -103,7 +94,65 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
     side_btn_processing = false;
 }
 
-eos_result_t eos_run()
+static inline eos_result_t _draw_watch_face(void)
+{
+    // JSON中获取表盘id
+    EOS_LOG_D("Loading wf_id");
+    char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, "cn.sab1e.clock");
+    if (!wf_id)
+    {
+        EOS_LOG_E("NULL wf_id");
+        return -EOS_FAILED;
+    }
+    // 直接通过表盘id 获取相关信息并存储到script_package
+    EOS_LOG_D("Loading manifest");
+    char manifest_path[PATH_MAX];
+    snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
+             wf_id);
+    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    memset((void *)pkg, 0, sizeof(script_pkg_t));
+    pkg->type = SCRIPT_TYPE_WATCHFACE;
+    EOS_LOG_D("script_engine_get_manifest");
+    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
+    {
+        EOS_LOG_E("Read manifest failed: %s", manifest_path);
+    }
+    EOS_LOG_D("App Info:\n"
+              "id=%s | name=%s | version=%s |\n"
+              "author:%s | description:%s",
+              pkg->id, pkg->name, pkg->version,
+              pkg->version, pkg->description);
+    char script_path[PATH_MAX];
+    snprintf(script_path, sizeof(script_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
+             wf_id);
+    free((void *)wf_id);
+    if (!eos_is_file(script_path))
+    {
+        EOS_LOG_E("Can't find script: %s", script_path);
+        return -EOS_FAILED;
+    }
+    pkg->script_str = eos_read_file(script_path);
+
+    // 设置下拉面板
+    msg_list_t *msg_list = eos_msg_list_create(root_scr);
+    if (!msg_list)
+    {
+        EOS_LOG_E("Create msg_list failed");
+        return -SE_FAILED;
+    }
+    // 设置上拉面板
+
+    // 设置长按回调 进入 watchface list 使用普通 nav 导航
+    lv_obj_add_event_cb(root_scr, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
+    // 正式运行表盘脚本（脚本禁止阻塞线程）
+    script_engine_result_t ret = script_engine_run(pkg);
+    if (ret != SE_OK)
+    {
+        EOS_LOG_E("Script encounter a fatal error");
+    }
+}
+
+eos_result_t eos_run(void)
 {
     /************************** 变量初始化 **************************/
     root_scr = lv_screen_active();
@@ -164,115 +213,31 @@ eos_result_t eos_run()
     eos_app_header_init();
 
     /************************** 系统启动 **************************/
-    // 加载表盘
+    _draw_watch_face();
+    // 开始绘制
     while (1)
     {
-        // JSON中获取表盘id
-        char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, "cn.sab1e.clock");
-        if (!wf_id)
-        {
-            EOS_LOG_E("NULL wf_id");
-            return -EOS_FAILED;
-        }
-        // 直接通过表盘id 获取相关信息并存储到script_package
-        char manifest_path[PATH_MAX];
-        snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
-                 wf_id);
-        script_pkg_t pkg = {0};
-        pkg.type = SCRIPT_TYPE_WATCHFACE;
-
-        if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
-        {
-            EOS_LOG_E("Read manifest failed: %s", manifest_path);
-        }
-        EOS_LOG_D("App Info:\n"
-                  "id=%s | name=%s | version=%s |\n"
-                  "author:%s | description:%s",
-                  pkg.id, pkg.name, pkg.version,
-                  pkg.version, pkg.description);
-        char script_path[PATH_MAX];
-        snprintf(script_path, sizeof(script_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
-                 wf_id);
-        free((void *)wf_id);
-        if (!eos_is_file(script_path))
-        {
-            EOS_LOG_E("Can't find script: %s", script_path);
-            return -EOS_FAILED;
-        }
-        pkg.script_str = eos_read_file(script_path);
-
-        memcpy(&script_pkg, &pkg, sizeof(script_pkg_t));
-
-        // 设置下拉面板
-        msg_list_t *msg_list = eos_msg_list_create(root_scr);
-        if (!msg_list)
-        {
-            EOS_LOG_E("Create msg_list failed");
-            return -SE_FAILED;
-        }
-        // 设置上拉面板
-
-        // 设置长按回调 进入 watchface list 使用普通 nav 导航
-        lv_obj_add_event_cb(root_scr, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
-        // 正式运行表盘脚本
-        script_engine_result_t ret = script_engine_run(&script_pkg);
-        eos_pkg_free(&script_pkg);
-        lv_obj_clean(root_scr);
-        if (ret != SE_OK)
-        {
-            EOS_LOG_E("Script encounter a fatal error");
-            while (1)
-                ;
-        }
-
-        switch (next_screen_type)
-        {
-        case ENTRY_APP_LIST:
-            eos_app_list_create();
-            break;
-        case ENTRY_WATCHFACE_LIST:
-            eos_watchface_list_create();
-            break;
-        default:
-            EOS_LOG_W("Entry not found");
-            break;
-        }
-        while (1)
-        {
-            uint32_t d = lv_timer_handler();
-            eos_delay(d);
-            if (script_engine_get_state() == SCRIPT_STATE_READY)
-            {
-                script_engine_nav_init(lv_screen_active());
-                script_engine_result_t ret = script_engine_run(&script_pkg);
-                eos_pkg_free(&script_pkg);
-                if (ret != SE_OK)
-                {
-                    EOS_LOG_E("Script encounter a fatal error");
-                    lv_obj_t *mbox = lv_msgbox_create(NULL);
-                    lv_obj_set_width(mbox, lv_pct(80));
-                    lv_msgbox_add_title(mbox, "Scrip Runtime");
-
-                    lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
-                    lv_msgbox_add_close_button(mbox);
-                }
-                script_engine_nav_clean_up();
-                EOS_LOG_D("Script OK");
-            }
-            if (lv_screen_active() == root_scr)
-            {
-                // 判断有没有回到表盘页面，如果回到了，就退出刷新
-                break;
-            }
-            if (side_btn_state == SIDE_BTN_CLICKED)
-            {
-                side_btn_state = SIDE_BTN_RELEASED;
-                if (lv_screen_active() != root_scr)
-                {
-                    eos_nav_back_clean();
-                }
-            }
-        }
-        next_screen_type = ENTRY_NULL; // 立即清理状态
+        uint32_t delay = lv_timer_handler();
+        eos_delay(delay);
     }
+
+    // lv_obj_clean(root_scr); // 当且仅当表盘切换时或表盘更新时才清理
+
+    // while (1)
+    // {
+
+    //     if (lv_screen_active() == root_scr)
+    //     {
+    //         // 判断有没有回到表盘页面，如果回到了，就退出刷新
+    //         break;
+    //     }
+    //     if (side_btn_state == SIDE_BTN_CLICKED)
+    //     {
+    //         side_btn_state = SIDE_BTN_RELEASED;
+    //         if (lv_screen_active() != root_scr)
+    //         {
+    //             eos_nav_back_clean();
+    //         }
+    //     }
+    // }
 }

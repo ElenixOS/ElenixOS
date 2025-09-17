@@ -251,6 +251,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
 
 eos_result_t eos_watchface_init(void)
 {
+    EOS_LOG_D("Init eos_watchface");
     // 初始化 从文件系统中读取应用列表
     _eos_watchface_list_refresh();
     return EOS_OK;

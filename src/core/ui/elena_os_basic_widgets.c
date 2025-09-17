@@ -31,7 +31,6 @@
 #define APP_HEADER_TIME_STR_ARRAY_MAX 32
 
 // Variables
-extern script_pkg_t script_pkg;
 static eos_app_header_t *app_header = NULL;
 // Function Implementations
 
@@ -41,7 +40,7 @@ static eos_app_header_t *app_header = NULL;
 static void _back_btn_cb(lv_event_t *e)
 {
     EOS_LOG_D("NAV back");
-    if (script_pkg.id != NULL)
+    if (script_engine_get_state != SCRIPT_STATE_STOPPED)
     {
         if (script_engine_nav_back_clean() != EOS_OK)
         {
@@ -191,6 +190,7 @@ void eos_screen_bind_header(lv_obj_t *scr, const char *title)
 
 void eos_app_header_init(void)
 {
+    EOS_LOG_D("Init eos_app_header");
     app_header = lv_malloc(sizeof(eos_app_header_t));
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
     memset(app_header, 0, sizeof(eos_app_header_t));
@@ -220,9 +220,9 @@ void eos_app_header_init(void)
 
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);
-    if (script_pkg.name != NULL)
+    if (script_engine_get_current_script_id() != NULL)
     {
-        lv_label_set_text(app_header->title_label, script_pkg.name);
+        lv_label_set_text(app_header->title_label, script_engine_get_current_script_name());
     }
     else
     {

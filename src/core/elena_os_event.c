@@ -55,6 +55,7 @@ static void _obj_delete_cb(lv_event_t *e)
 
 void eos_event_init(void)
 {
+    EOS_LOG_D("Init eos_event");
     for (uint32_t i = 0; i < EOS_EVENT_MAX_NUMBER; i++)
     {
         event_list[i] = lv_event_register_id();

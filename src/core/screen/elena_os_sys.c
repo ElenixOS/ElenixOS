@@ -600,6 +600,7 @@ eos_result_t _create_default_cfg_json(const char *path)
 
 void eos_sys_init()
 {
+    EOS_LOG_D("Init eos_sys");
     // 判断系统文件是否存在
     eos_mkdir_if_not_exist(EOS_SYS_DIR, 0755);
     eos_mkdir_if_not_exist(EOS_SYS_CONFIG_DIR, 0755);
@@ -1061,7 +1062,7 @@ static void _sys_screen_sensor(lv_event_t *e)
 }
 
 /************************** 系统设置 **************************/
-void eos_sys_settings_create(void)
+EOS_ASYNC_SCREEN_CREATE(eos_sys_settings_create)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS]);

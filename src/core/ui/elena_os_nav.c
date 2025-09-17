@@ -98,6 +98,7 @@ static lv_obj_t *_nav_peek_prev(void)
 
 eos_result_t eos_nav_init(lv_obj_t *root_scr)
 {
+    EOS_LOG_D("Init eos_nav");
     if (!root_scr)
     {
         EOS_LOG_E("Root screen is NULL");

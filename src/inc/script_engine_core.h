@@ -24,9 +24,9 @@ extern "C" {
  * @brief 脚本运行状态
  */
 typedef enum{
-    SCRIPT_STATE_STOPPED,
-    SCRIPT_STATE_READY,
-    SCRIPT_STATE_RUNNING
+    SCRIPT_STATE_STOPPED,   /**< 停止：脚本已停止并释放资源 */
+    SCRIPT_STATE_RUNNING,   /**< 运行：脚本正在运行 */
+    SCRIPT_STATE_SUSPEND,   /**< 挂起：当脚本运行完成时挂起，可执行回调 */
 } script_state_t;
 /**
  * @brief 脚本包类型
@@ -131,21 +131,32 @@ script_engine_result_t script_engine_run(script_pkg_t* script_package);
  * @return script_state_t 状态
  */
 script_state_t script_engine_get_state(void);
-
-/**
- * @brief 请求脚本就绪
- * @return true 请求成功：脚本已就绪
- * @return false 请求失败：脚本运行中或在此之前已经就绪
- */
-bool script_engine_request_ready(void);
-
 /**
  * @brief 注册C函数到JS
  * @param entry 函数入口数组
  * @param funcs_count 数组长度
  */
 void script_engine_register_functions(const script_engine_func_entry_t* entry, const size_t funcs_count);
-
+/**
+ * @brief 设置脚本运行状态
+ * @param state script_state_t
+ */
+void script_engine_set_script_state(script_state_t state);
+/**
+ * @brief 获取当前运行脚本的 ID
+ * @return char* ID 字符串
+ */
+char *script_engine_get_current_script_id(void);
+/**
+ * @brief 获取当前运行脚本的名称
+ * @return char* 名称字符串
+ */
+char *script_engine_get_current_script_name(void);
+/**
+ * @brief 获取当前运行脚本的脚本类型
+ * @return script_pkg_type_t 
+ */
+script_pkg_type_t script_engine_get_current_script_type(void);
 #ifdef __cplusplus
 }
 #endif

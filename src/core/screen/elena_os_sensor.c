@@ -57,8 +57,7 @@ static void _heart_rate(lv_event_t *e)
     eos_sensor_read(t);
 }
 
-void eos_sensor_tester_create(void)
-{
+EOS_ASYNC_SCREEN_CREATE(eos_sensor_tester_create){
     lv_obj_t *scr = lv_screen_active();
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));

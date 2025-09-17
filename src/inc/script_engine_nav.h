@@ -44,8 +44,9 @@ script_engine_result_t script_engine_nav_back_clean(void);
 script_engine_result_t script_engine_nav_back(void);
 /**
  * @brief 清理导航栈
+ * @return script_engine_result_t 
  */
-void script_engine_nav_clean_up();
+script_engine_result_t script_engine_nav_clean_up(void);
 /**
  * @brief 判断脚本导航栈是否已经初始化
  * @return true 是

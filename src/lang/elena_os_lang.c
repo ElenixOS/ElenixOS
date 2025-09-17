@@ -87,6 +87,7 @@ static void lang_event_cb(lv_event_t *e);
 // Function Implementations
 void eos_lang_init(void)
 {
+    EOS_LOG_D("Init eos_lang");
     if (!lang_initialized)
     {
         current_lang = lang_en; // 默认英语
@@ -109,7 +110,7 @@ void eos_lang_set(language_id_t lang)
     // 使用事件广播系统刷新所有标签
     eos_event_broadcast(LV_EVENT_REFRESH, NULL);
 
-    EOS_LOG_D("LANG CHANGED");
+    EOS_LOG_D("Language changed");
 }
 
 language_id_t eos_lang_get(void)

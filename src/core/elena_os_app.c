@@ -520,6 +520,7 @@ void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id)
 
 eos_result_t eos_app_init(void)
 {
+    EOS_LOG_D("Init eos_app");
     // 初始化 从文件系统中读取应用列表
     _eos_app_list_refresh();
 

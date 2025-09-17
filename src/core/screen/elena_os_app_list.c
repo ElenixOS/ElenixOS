@@ -23,10 +23,12 @@
 #include "script_engine_core.h"
 #include "elena_os_sys.h"
 #include "elena_os_event.h"
+#include "elena_os_lang.h"
+#include "script_engine_core.h"
+#include "script_engine_nav.h"
 // Macros and Definitions
 
 // Variables
-extern script_pkg_t script_pkg; // 脚本包
 extern lv_group_t *encoder_group;
 // Function Implementations
 
@@ -47,9 +49,10 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
-    script_pkg_t pkg = {0};
-    pkg.type = SCRIPT_TYPE_APPLICATION;
-    if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
+    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    memset((void *)pkg, 0, sizeof(script_pkg_t));
+    pkg->type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
     {
         EOS_LOG_E("Read manifest failed: %s", manifest_path);
         return;
@@ -57,8 +60,8 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     EOS_LOG_D("App Info:\n"
               "id=%s | name=%s | version=%s |\n"
               "author:%s | description:%s",
-              pkg.id, pkg.name, pkg.version,
-              pkg.version, pkg.description);
+              pkg->id, pkg->name, pkg->version,
+              pkg->version, pkg->description);
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
@@ -68,15 +71,21 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         return;
     }
 
-    pkg.script_str = eos_read_file(script_path);
-
-    memcpy(&script_pkg, &pkg, sizeof(script_pkg_t));
-
-    if (!script_engine_request_ready())
+    pkg->script_str = eos_read_file(script_path);
+    // 无需清理字符串，脚本运行结束后自动清理
+    script_engine_nav_init(lv_screen_active());
+    script_engine_result_t ret = script_engine_run(pkg);
+    if (ret != SE_OK)
     {
-        EOS_LOG_E("Request ready failed");
-        return;
+        EOS_LOG_E("Script encounter a fatal error");
+        lv_obj_t *mbox = lv_msgbox_create(NULL);
+        lv_obj_set_width(mbox, lv_pct(80));
+        lv_msgbox_add_title(mbox, "Scrip Runtime");
+
+        lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
+        lv_msgbox_add_close_button(mbox);
     }
+    EOS_LOG_D("Script OK");
 }
 
 /**
@@ -128,8 +137,7 @@ static void _container_delete_cb(lv_event_t *e)
     eos_event_remove_cb(container, eos_event_get_code(EOS_EVENT_APP_INSTALLED), _app_installed_cb);
 }
 
-// 修改应用列表创建函数，按JSON顺序显示应用
-void eos_app_list_create(void)
+EOS_ASYNC_SCREEN_CREATE(eos_app_list_create)
 {
     // 创建新的页面用于绘制应用列表
     lv_obj_t *scr = eos_nav_scr_create();
@@ -175,7 +183,8 @@ void eos_app_list_create(void)
                     continue;
                 }
 
-                const char *app_id = eos_app_list_get_existing_id(item->valuestring);;
+                const char *app_id = eos_app_list_get_existing_id(item->valuestring);
+                ;
 
                 // 检查应用是否存在
                 if (!eos_app_list_contains(app_id))

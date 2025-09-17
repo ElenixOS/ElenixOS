@@ -16,7 +16,8 @@
 #include "elena_os_basic_widgets.h"
 // Macros and Definitions
 #define NAV_STACK_SIZE 32
-
+#define NAV_BASE_SCREEN_INDEX 0
+#define NAV_ROOT_SCREEN_INDEX 1
 /**
  * @brief 导航栈结构体
  */
@@ -59,7 +60,6 @@ typedef struct
 // Variables
 static script_nav_stack_t script_nav = {.top = -1, .initialized = false};
 static atomic_bool script_nav_busy = false; // 正在清除
-extern script_pkg_t script_pkg;
 // Function Implementations
 static lv_obj_t *_script_nav_peek_prev(void);
 bool is_script_nav_stack_initialized(void);
@@ -101,10 +101,14 @@ static lv_obj_t *_script_nav_peek_prev(void)
     return (script_nav.top > 0) ? script_nav.stack[script_nav.top - 1] : NULL;
 }
 
+lv_obj_t *script_engine_nav_get_root_screen(){
+    return script_nav.stack[NAV_ROOT_SCREEN_INDEX];
+}
+
 /**
  * @brief 清除整个导航栈
  */
-static script_engine_result_t _script_engine_nav_clear_stack(void)
+script_engine_result_t script_engine_nav_clean_up(void)
 {
     if (script_nav_busy)
     {
@@ -132,7 +136,7 @@ static script_engine_result_t _script_engine_nav_clear_stack(void)
         }
     }
 
-    lv_obj_t *base_scr = script_nav.stack[0];
+    lv_obj_t *base_scr = script_nav.stack[NAV_BASE_SCREEN_INDEX];
 
     // 重置栈状态（只保留base_scr）
     for (int i = 0; i < NAV_STACK_SIZE; i++)
@@ -150,11 +154,6 @@ static script_engine_result_t _script_engine_nav_clear_stack(void)
     return SE_OK;
 }
 
-void script_engine_nav_clean_up()
-{
-    _script_engine_nav_clear_stack();
-}
-
 /**
  * @brief 初始化导航栈
  * @param base_scr 基础页面（不会被删除）
@@ -166,7 +165,7 @@ script_engine_result_t script_engine_nav_init(lv_obj_t *base_scr)
         EOS_LOG_E("Base screen is NULL");
         return -SE_ERR_VAR_NULL;
     }
-    if (script_pkg.type == SCRIPT_TYPE_WATCHFACE)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         EOS_LOG_E("Watchface can't use nav");
         return -SE_FAILED;
@@ -185,16 +184,16 @@ script_engine_result_t script_engine_nav_init(lv_obj_t *base_scr)
     }
 
     // 初始化栈：stack[0] = base_scr, stack[1] = root_scr
-    script_nav.stack[0] = base_scr;
-    script_nav.stack[1] = root_scr;
+    script_nav.stack[NAV_BASE_SCREEN_INDEX] = base_scr;
+    script_nav.stack[NAV_ROOT_SCREEN_INDEX] = root_scr;
     script_nav.top = 1; // 栈顶索引为1
     script_nav.initialized = true;
 
     // 加载root_scr（脚本的根页面）
     // lv_scr_load(root_scr);
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
-        eos_screen_bind_header(root_scr, script_pkg.name);
+        eos_screen_bind_header(root_scr, script_engine_get_current_script_name());
     }
     lv_screen_load_anim(root_scr, LV_SCR_LOAD_ANIM_OVER_LEFT, 200, 0, false);
     lv_obj_add_style(root_scr, &style_screen, 0);
@@ -238,9 +237,9 @@ lv_obj_t *script_engine_nav_scr_create(void)
         return NULL;
     }
     lv_obj_add_style(scr, &style_screen, 0);
-    if (script_pkg.type == SCRIPT_TYPE_APPLICATION)
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
-        eos_screen_bind_header(scr, script_pkg.name);
+        eos_screen_bind_header(scr, script_engine_get_current_script_name());
     }
     // 确保新屏幕与栈中已有屏幕地址不同
     for (int i = 0; i <= script_nav.top; i++)
@@ -282,7 +281,7 @@ script_engine_result_t script_engine_nav_back_clean(void)
     }
 
     // 如果当前在root_scr（top==1），则清理整个栈
-    if (script_nav.top == 1)
+    if (script_nav.top == NAV_ROOT_SCREEN_INDEX)
     {
         // 停止脚本引擎
         if (script_engine_get_state() == SCRIPT_STATE_RUNNING)
@@ -299,7 +298,7 @@ script_engine_result_t script_engine_nav_back_clean(void)
     lv_obj_t *prev_scr = _script_nav_peek_prev();
     if (!prev_scr)
     {
-        prev_scr = script_nav.stack[0]; // 回退到 base screen
+        prev_scr = script_nav.stack[NAV_BASE_SCREEN_INDEX]; // 回退到 base screen
     }
 
     // 保存要删除的页面
@@ -345,7 +344,7 @@ script_engine_result_t script_engine_nav_back(void)
     lv_obj_t *prev_scr = _script_nav_peek_prev();
     if (!prev_scr)
     {
-        prev_scr = script_nav.stack[0]; // 回退到 base screen
+        prev_scr = script_nav.stack[NAV_BASE_SCREEN_INDEX]; // 回退到 base screen
     }
 
     script_nav.top--; // 更新栈指针

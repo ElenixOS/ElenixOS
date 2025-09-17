@@ -1,0 +1,1 @@
+lv_obj_get_child_by_id

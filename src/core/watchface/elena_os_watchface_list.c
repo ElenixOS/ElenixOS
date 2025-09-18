@@ -47,10 +47,11 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     eos_nav_back_clean();
 }
 
-EOS_ASYNC_SCREEN_CREATE(eos_watchface_list_create)
+EOS_DECLARE_SCREEN_ASYNC(eos_watchface_list_create)
 {
     // 创建新的页面用于绘制应用列表
-    lv_obj_t *scr = eos_nav_scr_create();
+    lv_obj_t *scr = eos_nav_scr_create("");
+    eos_app_header_hide();
     lv_screen_load(scr);
     size_t watchface_list_size = eos_watchface_list_size();
 

@@ -45,7 +45,7 @@ static void _heart_rate_rm_cb(lv_event_t *e)
 static void _heart_rate(lv_event_t *e)
 {
     eos_sensor_type_t t = EOS_SENSOR_HR;
-    lv_obj_t *scr = eos_nav_scr_create();
+    lv_obj_t *scr = eos_nav_scr_create("Heart Rate");
     lv_screen_load(scr);
 
     lv_obj_t *label = lv_label_create(scr);
@@ -57,8 +57,9 @@ static void _heart_rate(lv_event_t *e)
     eos_sensor_read(t);
 }
 
-EOS_ASYNC_SCREEN_CREATE(eos_sensor_tester_create){
-    lv_obj_t *scr = lv_screen_active();
+EOS_DECLARE_SCREEN_ASYNC(eos_sensor_tester_create_async){
+    lv_obj_t *scr = eos_nav_scr_create("Heart Rate");
+    lv_screen_load(scr);
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
 

@@ -19,7 +19,6 @@ static jerry_value_t throw_error(const char *message)
 }
 
 /********************************** 回调系统 **********************************/
-/********************************** 回调系统 **********************************/
 typedef struct {
     jerry_value_t js_cb;       // JS回调函数
     jerry_value_t js_user_data; // JS用户数据

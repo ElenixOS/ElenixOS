@@ -99,6 +99,9 @@ double eos_sys_cfg_get_number(const char *key, double default_value);
  * @return 返回结果
  */
 eos_result_t eos_sys_add_config_item(const char *key, const char *value);
+/**
+ * @brief 创建设置页面
+ */
 void eos_sys_settings_create(void);
 #ifdef __cplusplus
 }

@@ -15,6 +15,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include "elena_os_core.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -71,7 +72,7 @@ typedef struct
 typedef void (*eos_sensor_cb_t)(eos_sensor_t, void *);
 
 /* Public function prototypes --------------------------------*/
-void eos_sensor_tester_create(void);
+EOS_DEFINE_SCREEN_ASYNC(eos_sensor_tester_create_async);
 #ifdef __cplusplus
 }
 #endif

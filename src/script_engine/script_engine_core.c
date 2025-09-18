@@ -12,23 +12,28 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdatomic.h>
+#include <stdlib.h>
+
 #include "lvgl.h"
+
+#include "cJSON.h"
+
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
-#include "elena_os_port.h"
-#include "script_engine_nav.h"
+
 #include "script_engine_native_func.h"
+#include "elena_os_port.h"
 #include "elena_os_log.h"
 #include "elena_os_misc.h"
-#include "cJSON.h"
-#include <stdlib.h>
+#include "elena_os_nav.h"
+
 // Macros and Definitions
 
 // Variables
 static atomic_bool should_terminate = ATOMIC_VAR_INIT(false); // 请求终止脚本标志位
 static script_state_t script_state = SCRIPT_STATE_STOPPED;
 static bool is_terminated_by_req = false;
-static script_pkg_t *current_script_pkg = NULL;     // 保存指针以便清理内存
+static script_pkg_t *current_script_pkg = NULL; // 保存指针以便清理内存
 
 // Function Implementations
 
@@ -108,17 +113,17 @@ script_state_t script_engine_get_state(void)
 
 char *script_engine_get_current_script_id(void)
 {
-    return current_script_pkg==NULL?NULL:current_script_pkg->id;
+    return current_script_pkg == NULL ? NULL : current_script_pkg->id;
 }
 
 char *script_engine_get_current_script_name(void)
 {
-    return current_script_pkg==NULL?NULL:current_script_pkg->name;
+    return current_script_pkg == NULL ? NULL : current_script_pkg->name;
 }
 
 script_pkg_type_t script_engine_get_current_script_type(void)
 {
-    return current_script_pkg==NULL?SCRIPT_TYPE_UNKNOWN:current_script_pkg->type;
+    return current_script_pkg == NULL ? SCRIPT_TYPE_UNKNOWN : current_script_pkg->type;
 }
 
 script_engine_result_t script_engine_request_stop(void)
@@ -132,35 +137,46 @@ script_engine_result_t script_engine_request_stop(void)
             eos_delay(10);
         }
         // 删除根页面
-        script_engine_result_t ret;
-        ret = script_engine_nav_clean_up();
-        if (ret != SE_OK)
+        if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
         {
-            EOS_LOG_E("Navigation clean up failed!");
-            return ret;
+            script_engine_result_t ret;
+            ret = eos_nav_clean_up();
+            if (ret != SE_OK)
+            {
+                EOS_LOG_E("Navigation clean up failed!");
+                return ret;
+            }
         }
         // 清理资源
         jerry_cleanup();
         script_state = SCRIPT_STATE_STOPPED;
         eos_pkg_free(current_script_pkg);
         current_script_pkg = NULL;
+
+        EOS_LOG_I("Script terminated");
         return SE_OK;
     }
     else if (script_state == SCRIPT_STATE_SUSPEND)
     {
         // 删除根页面
-        script_engine_result_t ret;
-        ret = script_engine_nav_clean_up();
-        if (ret != SE_OK)
+        EOS_LOG_D("SUSPEND REQUEST STOP");
+        if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
         {
-            EOS_LOG_E("Navigation clean up failed!");
-            return ret;
+            EOS_LOG_D("APP REQUEST STOP");
+            script_engine_result_t ret;
+            ret = eos_nav_clean_up();
+            if (ret != SE_OK)
+            {
+                EOS_LOG_E("Navigation clean up failed!");
+                return ret;
+            }
         }
         // 清理资源
         jerry_cleanup();
         script_state = SCRIPT_STATE_STOPPED;
         eos_pkg_free(current_script_pkg);
         current_script_pkg = NULL;
+        EOS_LOG_I("Script terminated");
         return SE_OK;
     }
     return -SE_ERR_SCRIPT_NOT_RUNNING;
@@ -254,7 +270,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     }
 
     // 释放原有指针（如果有），防止内存泄漏
-    EOS_LOG_D("ID PTR:%p",pkg->id);
+    EOS_LOG_D("ID PTR:%p", pkg->id);
     if (pkg->id)
         free((void *)pkg->id);
     if (pkg->name)

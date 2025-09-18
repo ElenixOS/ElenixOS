@@ -20,7 +20,6 @@
 #include "elena_os_event.h"
 #include "script_engine_core.h"
 #include "elena_os_theme.h"
-#include "script_engine_nav.h"
 #include "elena_os_port.h"
 // Macros and Definitions
 #define APP_HEADER_HEIGHT 120
@@ -40,19 +39,9 @@ static eos_app_header_t *app_header = NULL;
 static void _back_btn_cb(lv_event_t *e)
 {
     EOS_LOG_D("NAV back");
-    if (script_engine_get_state != SCRIPT_STATE_STOPPED)
+    if (eos_nav_back_clean() != EOS_OK)
     {
-        if (script_engine_nav_back_clean() != EOS_OK)
-        {
-            EOS_LOG_E("BACK ERR");
-        }
-    }
-    else
-    {
-        if (eos_nav_back_clean() != EOS_OK)
-        {
-            EOS_LOG_E("BACK ERR");
-        }
+        EOS_LOG_E("BACK ERR");
     }
 }
 
@@ -183,7 +172,7 @@ void eos_screen_bind_header(lv_obj_t *scr, const char *title)
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    _app_header_update_clock_label(app_header->clock_label);    // 提前触发一次同步时钟
+    _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_load_cb, LV_EVENT_SCREEN_LOADED, (void *)title);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
@@ -347,7 +336,7 @@ lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title)
 {
     // 创建外层透明容器
     lv_obj_t *outer_container = lv_obj_create(list);
-    lv_obj_remove_style_all(outer_container); // 移除默认样式
+    lv_obj_remove_style_all(outer_container);                       // 移除默认样式
     lv_obj_set_size(outer_container, lv_pct(100), LV_SIZE_CONTENT); // 高度自适应
     lv_obj_set_style_bg_opa(outer_container, LV_OPA_TRANSP, 0);     // 设置透明背景
     lv_obj_set_flex_flow(outer_container, LV_FLEX_FLOW_COLUMN);     // 垂直布局
@@ -374,7 +363,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
 
     // 创建外层透明容器
     lv_obj_t *inner_container = eos_list_add_title_container(list, txt);
-        lv_obj_set_size(inner_container, lv_pct(100), 60);
+    lv_obj_set_size(inner_container, lv_pct(100), 60);
     lv_obj_add_event_cb(inner_container, _list_slider_delete_cb, LV_EVENT_DELETE, (void *)list_slider);
 
     // 滑块

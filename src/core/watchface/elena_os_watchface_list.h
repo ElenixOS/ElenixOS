@@ -1,12 +1,12 @@
 /**
- * @file elena_os_app_list.h
- * @brief 应用列表页面
+ * @file elena_os_watchface_list.h
+ * @brief 表盘列表
  * @author Sab1e
- * @date 2025-08-21
+ * @date 2025-08-25
  */
 
-#ifndef ELENA_OS_APP_LIST_H
-#define ELENA_OS_APP_LIST_H
+#ifndef ELENA_OS_WATCHFACE_LIST_H
+#define ELENA_OS_WATCHFACE_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,18 +15,18 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
-#include "lvgl.h"
+
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 创建应用列表页面
+ * @brief 创建表盘列表页面
  */
-void eos_app_list_create(void);
+void eos_watchface_list_create_async(void);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ELENA_OS_APP_LIST_H */
+#endif /* ELENA_OS_WATCHFACE_LIST_H */

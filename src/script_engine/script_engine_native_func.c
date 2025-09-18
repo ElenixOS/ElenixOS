@@ -16,13 +16,14 @@
 #include "lvgl.h"
 #include "script_engine_core.h"
 #include "elena_os_port.h"
-#include "script_engine_nav.h"
+#include "elena_os_nav.h"
 #include "elena_os_img.h"
 #include "elena_os_app.h"
 #include "elena_os_watchface.h"
 #include "elena_os_misc.h"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
+
 // Macros and Definitions
 
 // Variables
@@ -196,12 +197,22 @@ static jerry_value_t js_nav_scr_create(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args[],
                                        const jerry_length_t argc)
 {
+    if (argc < 1 || !jerry_value_is_string(args[0]))
+    {
+        return throw_error("Usage: nav_back(\"MyScreen\")");
+    }
+
+    jerry_size_t header_title_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
+    char *header_title = malloc(header_title_len + 1);
+    jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)header_title, header_title_len);
+    header_title[header_title_len] = '\0';
+    
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         return throw_error("Watchface can't create screen");
     }
     // 调用底层函数
-    lv_obj_t *ret_value = script_engine_nav_scr_create();
+    lv_obj_t *ret_value = eos_nav_scr_create(header_title);
 
     // 处理返回值
     jerry_value_t js_result;
@@ -230,7 +241,7 @@ static jerry_value_t js_nav_back(const jerry_call_info_t *call_info_p,
         return throw_error("Using navigation in the watchface is prohibited");
     }
     // 调用底层函数
-    script_engine_result_t ret = script_engine_nav_back_clean();
+    script_engine_result_t ret = eos_nav_back_clean();
 
     jerry_value_t js_result;
 
@@ -619,7 +630,8 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     // 解析参数: font_size (uint32_t)
     if (!jerry_value_is_number(args[1]))
     {
-        if (arg_src_str) free(arg_src_str);
+        if (arg_src_str)
+            free(arg_src_str);
         return throw_error("Argument 1 must be a number");
     }
     uint32_t font_size = (uint32_t)jerry_value_as_number(args[1]);
@@ -627,10 +639,11 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     char font_path[PATH_MAX];
     if (script_engine_get_current_script_id() == NULL)
     {
-        if (arg_src_str) free(arg_src_str);
+        if (arg_src_str)
+            free(arg_src_str);
         return throw_error("Script package info is NULL");
     }
-    
+
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(font_path, sizeof(font_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
@@ -643,21 +656,23 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     }
     else
     {
-        if (arg_src_str) free(arg_src_str);
+        if (arg_src_str)
+            free(arg_src_str);
         return throw_error("Unknown script type");
     }
-    
+
     if (!eos_is_file(font_path))
     {
-        if (arg_src_str) free(arg_src_str);
+        if (arg_src_str)
+            free(arg_src_str);
         return throw_error("Font file not found");
     }
-    
+
     EOS_LOG_D("Font Path: %s", font_path);
 
     // 调用底层函数创建字体
     lv_font_t *font = lv_tiny_ttf_create_file(font_path, font_size);
-    
+
     // 释放临时字符串内存
     if (arg_src_str)
         free(arg_src_str);

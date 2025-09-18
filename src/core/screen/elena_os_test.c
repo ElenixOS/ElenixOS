@@ -252,11 +252,11 @@
 
 // static void _test_app_list()
 // {
-//     eos_app_list_create();
+//     eos_app_list_create_async();
 // }
 
 // static void _test_watchface_list(){
-//     eos_watchface_list_create();
+//     eos_watchface_list_create_async();
 // }
 
 // void eos_test_start(void)

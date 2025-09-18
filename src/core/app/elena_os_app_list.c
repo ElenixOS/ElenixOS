@@ -25,11 +25,11 @@
 #include "elena_os_event.h"
 #include "elena_os_lang.h"
 #include "script_engine_core.h"
-#include "script_engine_nav.h"
 // Macros and Definitions
 
 // Variables
 extern lv_group_t *encoder_group;
+static lv_obj_t *app_list_screen = NULL;
 // Function Implementations
 
 /**
@@ -61,7 +61,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
               "id=%s | name=%s | version=%s |\n"
               "author:%s | description:%s",
               pkg->id, pkg->name, pkg->version,
-              pkg->version, pkg->description);
+              pkg->author, pkg->description);
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
@@ -73,7 +73,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
 
     pkg->script_str = eos_read_file(script_path);
     // 无需清理字符串，脚本运行结束后自动清理
-    script_engine_nav_init(lv_screen_active());
+    eos_nav_init(pkg->name);
     script_engine_result_t ret = script_engine_run(pkg);
     if (ret != SE_OK)
     {
@@ -137,18 +137,26 @@ static void _container_delete_cb(lv_event_t *e)
     eos_event_remove_cb(container, eos_event_get_code(EOS_EVENT_APP_INSTALLED), _app_installed_cb);
 }
 
-EOS_ASYNC_SCREEN_CREATE(eos_app_list_create)
+lv_obj_t *eos_app_list_get_screen(void)
 {
+    return app_list_screen;
+}
+
+EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create_async)
+{
+    if(app_list_screen){
+        lv_obj_del(app_list_screen);
+    }
+    app_list_screen = lv_obj_create(NULL);
     // 创建新的页面用于绘制应用列表
-    lv_obj_t *scr = eos_nav_scr_create();
-    lv_screen_load(scr);
+    lv_screen_load(app_list_screen);
 
     // 加载应用顺序
     char *json_str = eos_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
     eos_free_large(json_str);
 
-    lv_obj_t *container = lv_list_create(scr);
+    lv_obj_t *container = lv_list_create(app_list_screen);
     lv_obj_set_style_pad_all(container, 20, 0);
     lv_obj_set_style_pad_column(container, 20, 0); // 列间距
     lv_obj_set_style_pad_row(container, 20, 0);

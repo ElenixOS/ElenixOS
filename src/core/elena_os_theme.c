@@ -25,7 +25,7 @@
 #define SLIDER_BG_COLOR     lv_color_hex(0x262737)
 
 // Variables
-lv_style_t style_screen;
+static lv_style_t style_screen;
 static lv_style_t style_label;
 static lv_style_t style_list;
 static lv_style_t style_switch;
@@ -121,6 +121,10 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &style_slider_knob, LV_PART_KNOB);
         lv_obj_add_style(obj, &style_slider_pressed_color, LV_PART_KNOB | LV_STATE_PRESSED);
     }
+}
+
+lv_style_t *eos_theme_get_screen_style(void){
+    return &style_screen;
 }
 
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, const lv_font_t *font)

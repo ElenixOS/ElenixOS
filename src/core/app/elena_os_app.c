@@ -49,7 +49,9 @@ static eos_result_t _eos_app_order_remove(const char *app_id);
 // 在变量定义部分添加应用顺序列表
 static cJSON *app_order_json = NULL;
 
-// 添加应用顺序保存函数
+/**
+ * @brief 添加应用顺序保存函数
+ */
 static eos_result_t _eos_app_order_save(void)
 {
     if (!app_order_json)
@@ -77,7 +79,9 @@ static eos_result_t _eos_app_order_save(void)
     return EOS_OK;
 }
 
-// 添加应用顺序加载函数
+/**
+ * @brief 添加应用顺序加载函数
+ */
 static eos_result_t _eos_app_order_load(void)
 {
     if (app_order_json)

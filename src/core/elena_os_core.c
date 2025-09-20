@@ -84,12 +84,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
         lv_obj_t *scr = lv_screen_active();
         if (scr == eos_watchface_get_screen())
         {
-            if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
-            {
-                EOS_LOG_D("Request Stop");
-                script_engine_request_stop();
-                lv_obj_clean(lv_screen_active());
-            }
+            eos_watchface_delete();
             eos_app_list_create_async();
         }
         else if (scr == eos_app_list_get_screen())

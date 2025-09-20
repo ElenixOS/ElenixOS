@@ -23,7 +23,7 @@
 #include "elena_os_misc.h"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
-
+#include "elena_os_basic_widgets.h"
 // Macros and Definitions
 
 // Variables
@@ -193,26 +193,16 @@ jerry_value_t js_delay_handler(const jerry_call_info_t *call_info_p,
  * @param void 无参数
  * @return lv_obj_t* 返回 LVGL 对象指针
  */
-static jerry_value_t js_nav_scr_create(const jerry_call_info_t *call_info_p,
-                                       const jerry_value_t args[],
-                                       const jerry_length_t argc)
+static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args[],
+                                           const jerry_length_t argc)
 {
-    if (argc < 1 || !jerry_value_is_string(args[0]))
-    {
-        return throw_error("Usage: nav_back(\"MyScreen\")");
-    }
-
-    jerry_size_t header_title_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *header_title = malloc(header_title_len + 1);
-    jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)header_title, header_title_len);
-    header_title[header_title_len] = '\0';
-    
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         return throw_error("Watchface can't create screen");
     }
     // 调用底层函数
-    lv_obj_t *ret_value = eos_nav_scr_create(header_title);
+    lv_obj_t *ret_value = eos_nav_scr_create();
 
     // 处理返回值
     jerry_value_t js_result;
@@ -221,7 +211,7 @@ static jerry_value_t js_nav_scr_create(const jerry_call_info_t *call_info_p,
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
     jerry_value_t cls = jerry_string_sz("lv_obj");
     jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_result, jerry_string_sz("__class"), cls);
+    jerry_object_set(js_result, jerry_string_sz("__type"), cls);
     jerry_value_free(ptr);
     jerry_value_free(cls);
 
@@ -232,9 +222,9 @@ static jerry_value_t js_nav_scr_create(const jerry_call_info_t *call_info_p,
  * @param void 无参数
  * @return boolean 是否返回成功
  */
-static jerry_value_t js_nav_back(const jerry_call_info_t *call_info_p,
-                                 const jerry_value_t args[],
-                                 const jerry_length_t argc)
+static jerry_value_t js_eos_nav_back(const jerry_call_info_t *call_info_p,
+                                     const jerry_value_t args[],
+                                     const jerry_length_t argc)
 {
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
@@ -694,6 +684,79 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     return js_result;
 }
 
+// 设置字符串配置项
+static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args[],
+                                                 const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2) {
+        return throw_error("eos_app_header_set_title: Insufficient arguments");
+    }
+
+    // 解析参数: scr (lv_obj_t*)
+    // 对象类型参数，支持null
+    void* arg_obj = NULL;
+    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0])) {
+        jerry_value_t js_arg_obj = args[0];
+        if (!jerry_value_is_object(js_arg_obj)) {
+            return throw_error("Argument 0 must be an object or null");
+        }
+        
+        jerry_value_t arg_obj_ptr_prop = jerry_string_sz("__ptr");
+        jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
+        jerry_value_free(arg_obj_ptr_prop);
+        
+        if (!jerry_value_is_number(arg_obj_ptr_val)) {
+            jerry_value_free(arg_obj_ptr_val);
+            return throw_error("Invalid __ptr property");
+        }
+        
+        uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
+        jerry_value_free(arg_obj_ptr_val);
+        arg_obj = (void*)arg_obj_ptr;
+    }
+    
+    // 解析参数: text (const char*)
+
+    char* arg_text_str = NULL;
+    const char* arg_text = NULL;
+    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
+        if (!jerry_value_is_string(args[1])) {
+            return throw_error("Argument 1 must be a string");
+        }
+        jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
+        arg_text_str = (char*)malloc(arg_text_len + 1);
+        jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
+        arg_text_str[arg_text_len] = '\0';
+        arg_text = arg_text_str;
+    }
+
+    // 调用底层函数
+    eos_app_header_set_title(arg_obj, arg_text);
+
+    // 释放临时字符串内存
+    if (arg_text_str) free(arg_text_str);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_eos_app_header_hide(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t argc)
+{
+    eos_app_header_hide();
+    return jerry_undefined();
+}
+
+static jerry_value_t js_eos_app_header_show(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t argc)
+{
+    eos_app_header_show();
+    return jerry_undefined();
+}
+
 /********************************** 注册原生函数 **********************************/
 
 /**
@@ -704,10 +767,16 @@ const script_engine_func_entry_t script_engine_native_funcs[] = {
      .handler = js_print_handler},
     {.name = "delay",
      .handler = js_delay_handler},
-    {.name = "nav_scr_create",
-     .handler = js_nav_scr_create},
-    {.name = "nav_back",
-     .handler = js_nav_back},
+    {.name = "eos_nav_scr_create",
+     .handler = js_eos_nav_scr_create},
+    {.name = "eos_nav_back",
+     .handler = js_eos_nav_back},
+    {.name = "eos_app_header_set_title",
+     .handler = js_eos_app_header_set_title},
+    {.name = "eos_app_header_hide",
+     .handler = js_eos_app_header_hide},
+    {.name = "eos_app_header_show",
+     .handler = js_eos_app_header_show},
     {.name = "lv_img_set_src",
      .handler = js_lv_img_set_src},
     {.name = "config_set_str",
@@ -726,6 +795,7 @@ const script_engine_func_entry_t script_engine_native_funcs[] = {
      .handler = js_eos_time_get},
     {.name = "lv_tiny_ttf_create_file",
      .handler = js_lv_tiny_ttf_create_file},
+
 };
 
 /**

@@ -21,6 +21,7 @@
 #include "script_engine_core.h"
 #include "elena_os_theme.h"
 #include "elena_os_port.h"
+#include "elena_os_misc.h"
 // Macros and Definitions
 #define APP_HEADER_HEIGHT 120
 #define APP_HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
@@ -120,15 +121,15 @@ static void clock_update_cb(lv_timer_t *timer)
 /**
  * @brief Header 的 screen 加载事件回调
  */
-static void _screen_load_cb(lv_event_t *e)
+static void _screen_loaded_cb(lv_event_t *e)
 {
     EOS_LOG_D("screen loaded");
     lv_obj_t *scr = lv_event_get_target(e);
-    const char *title = (const char *)lv_event_get_user_data(e);
+    const char *title = (const char *)lv_obj_get_user_data(scr);
     if (title && *title)
     {
         EOS_LOG_D("set title: %s", title);
-        eos_app_header_set_title(title);
+        eos_app_header_set_title(scr, title);
         eos_app_header_show();
     }
     else
@@ -143,15 +144,30 @@ static void _screen_load_cb(lv_event_t *e)
  */
 static void _screen_delete_cb(lv_event_t *e)
 {
+    lv_obj_t *scr = lv_event_get_target(e);
+    EOS_CHECK_PTR_RETURN(scr);
     EOS_LOG_D("screen deleted");
-    eos_app_header_set_title("");
+    const char *title = (const char *)lv_obj_get_user_data(scr);
+    if (title)
+        free(title);
+    lv_obj_set_user_data(scr, NULL);
+    eos_app_header_set_title(scr, "");
     eos_app_header_hide();
 }
 
-void eos_app_header_set_title(const char *title)
+void eos_app_header_set_title(lv_obj_t *scr, const char *title)
 {
     EOS_CHECK_PTR_RETURN(app_header);
-    lv_label_set_text(app_header->title_label, title);
+    // 复制一份避免被删除
+    const char *title_copy = eos_strdup(title);
+    // 更新用户数据中的字符串指针
+    const char *old_title = (const char *)lv_obj_get_user_data(scr);
+    if (old_title)
+        free(old_title);
+    lv_obj_set_user_data(scr, (void *)title_copy);
+    lv_label_get_text(app_header->title_label);
+    // 更新字符串
+    lv_label_set_text(app_header->title_label, title_copy);
 }
 
 void eos_app_header_hide(void)
@@ -169,12 +185,13 @@ void eos_app_header_show(void)
 void eos_screen_bind_header(lv_obj_t *scr, const char *title)
 {
     EOS_CHECK_PTR_RETURN(scr);
-
+    const char *title_copy = eos_strdup(title);
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
-    lv_obj_add_event_cb(scr, _screen_load_cb, LV_EVENT_SCREEN_LOADED, (void *)title);
+    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
+    lv_obj_set_user_data(scr,title_copy);
 }
 
 void eos_app_header_init(void)
@@ -209,6 +226,7 @@ void eos_app_header_init(void)
 
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);
+    lv_obj_set_width(app_header->title_label, 200);
     if (script_engine_get_current_script_id() != NULL)
     {
         lv_label_set_text(app_header->title_label, script_engine_get_current_script_name());

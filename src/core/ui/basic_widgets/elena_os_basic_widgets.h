@@ -60,9 +60,10 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text);
 lv_obj_t * eos_list_add_button(lv_obj_t * list, const void * icon, const char * txt);
 /**
  * @brief 应用头设置标题名称
+ * @param scr Screen 对象
  * @param title 标题字符串
  */
-void eos_app_header_set_title(const char *title);
+void eos_app_header_set_title(lv_obj_t *scr, const char *title);
 /**
  * @brief 隐藏应用头
  */

@@ -80,7 +80,11 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id);
 /**
  * @brief 创建表盘页面
  */
-EOS_DEFINE_SCREEN_ASYNC(eos_watchface_create);
+void eos_watchface_create(void);
+/**
+ * @brief 异步创建表盘页面
+ */
+void eos_watchface_create_async(void);
 /**
  * @brief 初始化表盘系统
  * @return eos_result_t 初始化结果
@@ -91,6 +95,10 @@ eos_result_t eos_watchface_init(void);
  * @return lv_obj_t* Screen 对象
  */
 lv_obj_t *eos_watchface_get_screen(void);
+/**
+ * @brief 删除表盘页面
+ */
+void eos_watchface_delete(void);
 #ifdef __cplusplus
 }
 #endif

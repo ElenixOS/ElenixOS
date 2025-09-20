@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
  * @author Sab1e
- * @date 2025-09-08
+ * @date 2025-09-20
  */
 // Application System header files
 #include "lv_bindings.h"
@@ -33,7 +33,6 @@ static void lvgl_binding_set_enum(jerry_value_t global, const char* key, int32_t
 
 // 函数声明
 static jerry_value_t js_lv_delay_ms(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
-static jerry_value_t js_lv_timer_handler(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_color_hex(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_style_set_text_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_event_get_target(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
@@ -125,7 +124,7 @@ static jerry_value_t js_lv_delay_ms(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_delay_ms: Insufficient arguments");
     }
 
     // 解析参数: ms (uint32_t)
@@ -145,24 +144,6 @@ static jerry_value_t js_lv_delay_ms(const jerry_call_info_t* call_info_p,
 
 
 /**
- * @brief lv_timer_handler function
- */
-static jerry_value_t js_lv_timer_handler(const jerry_call_info_t* call_info_p,
-    const jerry_value_t args[],
-    const jerry_length_t argc) {
-    // 调用底层函数
-    uint32_t ret_value = lv_timer_handler();
-
-    // 处理返回值
-    jerry_value_t js_result;
-    js_result = jerry_number(ret_value);
-
-    return js_result;
-}
-
-
-
-/**
  * @brief Create a color from 0x000000..0xffffff input the color
  */
 static jerry_value_t js_lv_color_hex(const jerry_call_info_t* call_info_p,
@@ -170,7 +151,7 @@ static jerry_value_t js_lv_color_hex(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_color_hex: Insufficient arguments");
     }
 
     // 解析参数: c (uint32_t)
@@ -202,7 +183,7 @@ static jerry_value_t js_lv_style_set_text_color(const jerry_call_info_t* call_in
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_style_set_text_color: Insufficient arguments");
     }
 
     // 解析参数: style (lv_style_t*)
@@ -247,7 +228,7 @@ static jerry_value_t js_lv_event_get_target(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_event_get_target: Insufficient arguments");
     }
 
     // 解析参数: e (lv_event_t*)
@@ -298,7 +279,7 @@ static jerry_value_t js_lv_event_get_code(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_event_get_code: Insufficient arguments");
     }
 
     // 解析参数: e (lv_event_t*)
@@ -344,7 +325,7 @@ static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t* call_inf
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_event_get_user_data: Insufficient arguments");
     }
 
     // 解析参数: e (lv_event_t*)
@@ -411,7 +392,7 @@ static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_clean: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -453,7 +434,7 @@ static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_pos: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -511,7 +492,7 @@ static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_size: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -569,7 +550,7 @@ static jerry_value_t js_lv_obj_set_width(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_width: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -619,7 +600,7 @@ static jerry_value_t js_lv_obj_align(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 4) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_align: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -685,7 +666,7 @@ static jerry_value_t js_lv_obj_center(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_center: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -727,7 +708,7 @@ static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_add_style: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -800,7 +781,7 @@ static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* call_i
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_pad_row: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -858,7 +839,7 @@ static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t* cal
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_pad_column: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -916,7 +897,7 @@ static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t* call_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_bg_color: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -969,7 +950,7 @@ static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t* c
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_border_color: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1022,7 +1003,7 @@ static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t* c
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_border_width: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1080,7 +1061,7 @@ static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t* cal
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_text_color: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1133,7 +1114,7 @@ static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t* call
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_text_font: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1222,7 +1203,7 @@ static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t* call_in
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_radius: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1280,7 +1261,7 @@ static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t* call_i
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_style_pad_all: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1338,7 +1319,7 @@ static jerry_value_t js_lv_obj_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -1391,7 +1372,7 @@ static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_add_flag: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1441,7 +1422,7 @@ static jerry_value_t js_lv_obj_add_state(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_add_state: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1491,7 +1472,7 @@ static jerry_value_t js_lv_obj_remove_state(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_remove_state: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1541,7 +1522,7 @@ static jerry_value_t js_lv_obj_set_state(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_set_state: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1606,7 +1587,7 @@ static jerry_value_t js_lv_obj_has_state(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_has_state: Insufficient arguments");
     }
 
     // 解析参数: obj (const lv_obj_t*)
@@ -1660,7 +1641,7 @@ static jerry_value_t js_lv_arc_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_arc_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -1713,7 +1694,7 @@ static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_arc_set_bg_angles: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1771,7 +1752,7 @@ static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_arc_set_value: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1821,7 +1802,7 @@ static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_arc_set_range: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1879,7 +1860,7 @@ static jerry_value_t js_lv_label_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_label_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -1932,7 +1913,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_label_set_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1992,7 +1973,7 @@ static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t* call_inf
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_label_set_long_mode: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2042,7 +2023,7 @@ static jerry_value_t js_lv_label_get_text(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_label_get_text: Insufficient arguments");
     }
 
     // 解析参数: obj (const lv_obj_t*)
@@ -2092,7 +2073,7 @@ static jerry_value_t js_lv_bar_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_bar_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -2145,7 +2126,7 @@ static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_bar_set_value: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2203,7 +2184,7 @@ static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_bar_set_range: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2261,7 +2242,7 @@ static jerry_value_t js_lv_chart_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_chart_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -2314,7 +2295,7 @@ static jerry_value_t js_lv_chart_set_type(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_chart_set_type: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2364,7 +2345,7 @@ static jerry_value_t js_lv_chart_set_point_count(const jerry_call_info_t* call_i
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_chart_set_point_count: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2414,7 +2395,7 @@ static jerry_value_t js_lv_chart_set_range(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 4) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_chart_set_range: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2480,7 +2461,7 @@ static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_checkbox_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -2533,7 +2514,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_checkbox_set_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2593,7 +2574,7 @@ static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_dropdown_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -2646,7 +2627,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_dropdown_set_options: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2706,7 +2687,7 @@ static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t* call_i
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_dropdown_set_selected: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2756,7 +2737,7 @@ static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* call_i
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_dropdown_get_selected: Insufficient arguments");
     }
 
     // 解析参数: obj (const lv_obj_t*)
@@ -2802,7 +2783,7 @@ static jerry_value_t js_lv_msgbox_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -2855,7 +2836,7 @@ static jerry_value_t js_lv_msgbox_add_title(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_add_title: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2926,7 +2907,7 @@ static jerry_value_t js_lv_msgbox_add_header_button(const jerry_call_info_t* cal
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_add_header_button: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3020,7 +3001,7 @@ static jerry_value_t js_lv_msgbox_add_text(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_add_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3091,7 +3072,7 @@ static jerry_value_t js_lv_msgbox_add_footer_button(const jerry_call_info_t* cal
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_add_footer_button: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3162,7 +3143,7 @@ static jerry_value_t js_lv_msgbox_add_close_button(const jerry_call_info_t* call
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_add_close_button: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3215,7 +3196,7 @@ static jerry_value_t js_lv_msgbox_close(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_msgbox_close: Insufficient arguments");
     }
 
     // 解析参数: mbox (lv_obj_t*)
@@ -3257,7 +3238,7 @@ static jerry_value_t js_lv_roller_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_roller_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -3310,7 +3291,7 @@ static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* call_info
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_roller_set_options: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3378,7 +3359,7 @@ static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t* call_inf
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_roller_set_selected: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3436,7 +3417,7 @@ static jerry_value_t js_lv_slider_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_slider_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -3489,7 +3470,7 @@ static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_slider_set_value: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3547,7 +3528,7 @@ static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 3) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_slider_set_range: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3605,7 +3586,7 @@ static jerry_value_t js_lv_slider_get_value(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_slider_get_value: Insufficient arguments");
     }
 
     // 解析参数: obj (const lv_obj_t*)
@@ -3651,7 +3632,7 @@ static jerry_value_t js_lv_textarea_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_textarea_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -3704,7 +3685,7 @@ static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_textarea_add_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3764,7 +3745,7 @@ static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_textarea_set_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3824,7 +3805,7 @@ static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_textarea_set_placeholder_text: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3884,7 +3865,7 @@ static jerry_value_t js_lv_switch_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_switch_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -3937,7 +3918,7 @@ static jerry_value_t js_lv_table_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_table_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -3990,7 +3971,7 @@ static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* call_in
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 4) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_table_set_cell_value: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4066,7 +4047,7 @@ static jerry_value_t js_lv_obj_del(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_del: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4108,7 +4089,7 @@ static jerry_value_t js_lv_obj_clear_flag(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_obj_clear_flag: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4183,7 +4164,7 @@ static jerry_value_t js_lv_disp_get_scr_act(const jerry_call_info_t* call_info_p
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_disp_get_scr_act: Insufficient arguments");
     }
 
     // 解析参数: disp (lv_display_t*)
@@ -4236,7 +4217,7 @@ static jerry_value_t js_lv_scr_load(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_scr_load: Insufficient arguments");
     }
 
     // 解析参数: scr (lv_obj_t*)
@@ -4278,7 +4259,7 @@ static jerry_value_t js_lv_img_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_img_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -4331,7 +4312,7 @@ static jerry_value_t js_lv_img_set_angle(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_img_set_angle: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4381,7 +4362,7 @@ static jerry_value_t js_lv_img_set_zoom(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_img_set_zoom: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4431,7 +4412,7 @@ static jerry_value_t js_lv_btn_create(const jerry_call_info_t* call_info_p,
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_btn_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -4484,7 +4465,7 @@ static jerry_value_t js_lv_table_set_col_cnt(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_table_set_col_cnt: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4534,7 +4515,7 @@ static jerry_value_t js_lv_table_set_row_cnt(const jerry_call_info_t* call_info_
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("Insufficient arguments");
+        return throw_error("lv_table_set_row_cnt: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4578,7 +4559,6 @@ static jerry_value_t js_lv_table_set_row_cnt(const jerry_call_info_t* call_info_
 
 const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {
     { "lv_delay_ms", js_lv_delay_ms },
-    { "lv_timer_handler", js_lv_timer_handler },
     { "lv_color_hex", js_lv_color_hex },
     { "lv_style_set_text_color", js_lv_style_set_text_color },
     { "lv_event_get_target", js_lv_event_get_target },
@@ -4661,7 +4641,7 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {
     { "lv_table_set_row_cnt", js_lv_table_set_row_cnt }
 };
 
-const unsigned int lvgl_binding_funcs_count = 84;
+const unsigned int lvgl_binding_funcs_count = 83;
 
 static void register_lvgl_enums(void) {
     jerry_value_t global = jerry_current_realm();

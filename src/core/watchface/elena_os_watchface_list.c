@@ -32,8 +32,12 @@
 
 // Variables
 extern lv_group_t *encoder_group;
+static lv_obj_t *watchface_list_screen = NULL;
 // Function Implementations
 
+/**
+ * @brief 表盘列表中 表盘按下的回调
+ */
 static void _watchface_list_btn_cb(lv_event_t *e)
 {
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
@@ -44,18 +48,20 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
     eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, watchface_id);
-    eos_nav_back_clean();
+    eos_watchface_create(); // 回到表盘页面
 }
 
 EOS_DECLARE_SCREEN_ASYNC(eos_watchface_list_create)
 {
+    if(watchface_list_screen){
+        lv_obj_del(watchface_list_screen);
+    }
     // 创建新的页面用于绘制应用列表
-    lv_obj_t *scr = eos_nav_scr_create("");
-    eos_app_header_hide();
-    lv_screen_load(scr);
+    watchface_list_screen = lv_obj_create(NULL);
+    lv_screen_load(watchface_list_screen);
     size_t watchface_list_size = eos_watchface_list_size();
 
-    lv_obj_t *cont = lv_list_create(scr);
+    lv_obj_t *cont = lv_list_create(watchface_list_screen);
     lv_obj_set_style_pad_all(cont, 24, 0);
     lv_obj_set_size(cont, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(cont, 0, 0);

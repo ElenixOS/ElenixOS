@@ -31,147 +31,24 @@
 extern lv_group_t *encoder_group;
 static lv_obj_t *app_list_screen = NULL;
 // Function Implementations
+EOS_DEFINE_SCREEN_ASYNC(eos_app_list_create);
+static void _app_list_icon_clicked_cb(lv_event_t *e);
+static void _app_list_settings_cb(lv_event_t *e);
+static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
+static void _app_installed_cb(lv_event_t *e);
+static void _container_delete_cb(lv_event_t *e);
 
 /**
- * @brief 应用图标按下后的回调
+ * @brief 刷新应用列表
+ * @param container 应用列表的容器对象
  */
-static void _app_list_icon_clicked_cb(lv_event_t *e)
+static void _app_list_refresh(lv_obj_t *container)
 {
-    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
-    {
-        EOS_LOG_E("Another script running");
-        return;
-    }
-    const char *app_id = (const char *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(app_id);
-
-    // 获取清单文件
-    char manifest_path[PATH_MAX];
-    snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
-             app_id);
-    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
-    memset((void *)pkg, 0, sizeof(script_pkg_t));
-    pkg->type = SCRIPT_TYPE_APPLICATION;
-    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
-    {
-        EOS_LOG_E("Read manifest failed: %s", manifest_path);
-        return;
-    }
-    EOS_LOG_D("App Info:\n"
-              "id=%s | name=%s | version=%s |\n"
-              "author:%s | description:%s",
-              pkg->id, pkg->name, pkg->version,
-              pkg->author, pkg->description);
-    char script_path[PATH_MAX];
-    snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
-             app_id);
-    if (!eos_is_file(script_path))
-    {
-        EOS_LOG_E("Can't find script: %s", script_path);
-        return;
-    }
-
-    pkg->script_str = eos_read_file(script_path);
-    // 无需清理字符串，脚本运行结束后自动清理
-    eos_nav_init(pkg->name);
-    script_engine_result_t ret = script_engine_run(pkg);
-    if (ret != SE_OK)
-    {
-        EOS_LOG_E("Script encounter a fatal error");
-        lv_obj_t *mbox = lv_msgbox_create(NULL);
-        lv_obj_set_width(mbox, lv_pct(80));
-        lv_msgbox_add_title(mbox, "Scrip Runtime");
-
-        lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
-        lv_msgbox_add_close_button(mbox);
-    }
-    EOS_LOG_D("Script OK");
-}
-
-/**
- * @brief 设置图标按下时的回调
- */
-static void _app_list_settings_cb(lv_event_t *e)
-{
-    eos_sys_settings_create();
-}
-
-static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
-{
-    lv_obj_t *app_icon = lv_image_create(parent);
-    lv_obj_set_size(app_icon, 100, 100);
-    lv_obj_set_style_shadow_width(app_icon, 0, 0);
-    lv_obj_set_style_margin_all(app_icon, 0, 0);
-    lv_obj_set_style_pad_all(app_icon, 0, 0);
-    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    eos_img_set_src(app_icon, icon_path);
-    eos_img_set_size(app_icon, 100, 100);
-    lv_obj_center(app_icon);
-
-    return app_icon;
-}
-
-static void _app_installed_cb(lv_event_t *e)
-{
-    lv_obj_t *parent = lv_event_get_target(e);
-    const char *installed_app_id = (const char *)lv_event_get_param(e);
-    EOS_CHECK_PTR_RETURN(parent && installed_app_id);
-    char icon_path[PATH_MAX];
-    snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
-             installed_app_id);
-    if (!eos_is_file(icon_path))
-    {
-        memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
-    }
-    lv_obj_t *app_icon = _app_icon_create(parent, icon_path);
-    EOS_LOG_D("app_icon ptr = %p", app_icon);
-    lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)installed_app_id);
-    eos_app_obj_auto_delete(app_icon, installed_app_id);
-}
-
-static void _container_delete_cb(lv_event_t *e)
-{
-    lv_obj_t *container = lv_event_get_target(e);
-    EOS_CHECK_PTR_RETURN(container);
-    eos_event_remove_cb(container, eos_event_get_code(EOS_EVENT_APP_INSTALLED), _app_installed_cb);
-}
-
-lv_obj_t *eos_app_list_get_screen(void)
-{
-    return app_list_screen;
-}
-
-EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create_async)
-{
-    if(app_list_screen){
-        lv_obj_del(app_list_screen);
-    }
-    app_list_screen = lv_obj_create(NULL);
-    // 创建新的页面用于绘制应用列表
-    lv_screen_load(app_list_screen);
-
+    lv_obj_clean(container);
     // 加载应用顺序
     char *json_str = eos_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
     eos_free_large(json_str);
-
-    lv_obj_t *container = lv_list_create(app_list_screen);
-    lv_obj_set_style_pad_all(container, 20, 0);
-    lv_obj_set_style_pad_column(container, 20, 0); // 列间距
-    lv_obj_set_style_pad_row(container, 20, 0);
-    lv_obj_set_size(container, lv_pct(100), lv_pct(100));
-    lv_obj_set_scroll_dir(container, LV_DIR_VER);
-    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_center(container);
-    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
-    lv_obj_set_flex_align(container,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_START);
-    lv_obj_add_event_cb(container, _container_delete_cb, LV_EVENT_DELETE, NULL);
-    eos_event_add_cb(container, _app_installed_cb, eos_event_get_code(EOS_EVENT_APP_INSTALLED), NULL);
-
     // 按JSON顺序添加其他应用
     if (app_order)
     {
@@ -233,4 +110,141 @@ EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create_async)
             eos_app_obj_auto_delete(app_icon, app_id);
         }
     }
+}
+
+/**
+ * @brief 应用图标按下后的回调
+ */
+static void _app_list_icon_clicked_cb(lv_event_t *e)
+{
+    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
+    {
+        EOS_LOG_E("Another script running");
+        return;
+    }
+    const char *app_id = (const char *)lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(app_id);
+
+    // 获取清单文件
+    char manifest_path[PATH_MAX];
+    snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
+             app_id);
+    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    memset((void *)pkg, 0, sizeof(script_pkg_t));
+    pkg->type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
+    {
+        EOS_LOG_E("Read manifest failed: %s", manifest_path);
+        return;
+    }
+    EOS_LOG_D("App Info:\n"
+              "id=%s | name=%s | version=%s |\n"
+              "author:%s | description:%s",
+              pkg->id, pkg->name, pkg->version,
+              pkg->author, pkg->description);
+    char script_path[PATH_MAX];
+    snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
+             app_id);
+    if (!eos_is_file(script_path))
+    {
+        EOS_LOG_E("Can't find script: %s", script_path);
+        return;
+    }
+
+    pkg->script_str = eos_read_file(script_path);
+    // 无需清理字符串，脚本运行结束后自动清理
+    lv_obj_t *scr = eos_nav_init();
+    eos_screen_bind_header(scr, pkg->name);
+    lv_screen_load(scr);
+    script_engine_result_t ret = script_engine_run(pkg);
+    if (ret != SE_OK)
+    {
+        eos_nav_clean_up();
+        eos_app_list_create();
+        EOS_LOG_E("Script encounter a fatal error");
+        // lv_obj_t *mbox = lv_msgbox_create(NULL);
+        // lv_obj_set_size(mbox, lv_pct(90),lv_pct(90));
+        // lv_msgbox_add_title(mbox, "Scrip Runtime");
+
+        // lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
+        // lv_msgbox_add_close_button(mbox);
+    }
+    EOS_LOG_D("Script OK");
+}
+
+/**
+ * @brief 设置图标按下时的回调
+ */
+static void _app_list_settings_cb(lv_event_t *e)
+{
+    eos_sys_settings_create();
+}
+
+/**
+ * @brief 创建应用图标
+ */
+static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
+{
+    lv_obj_t *app_icon = lv_image_create(parent);
+    lv_obj_set_size(app_icon, 100, 100);
+    lv_obj_set_style_shadow_width(app_icon, 0, 0);
+    lv_obj_set_style_margin_all(app_icon, 0, 0);
+    lv_obj_set_style_pad_all(app_icon, 0, 0);
+    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    eos_img_set_src(app_icon, icon_path);
+    eos_img_set_size(app_icon, 100, 100);
+    lv_obj_center(app_icon);
+
+    return app_icon;
+}
+
+/**
+ * @brief 当应用安装时自动调用此回调以便显示新的应用
+ */
+static void _app_installed_cb(lv_event_t *e)
+{
+    lv_obj_t *container = lv_event_get_user_data(e);
+    _app_list_refresh(container);
+}
+
+static void _container_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *container = lv_event_get_target(e);
+    EOS_CHECK_PTR_RETURN(container);
+    eos_event_remove_cb(container, eos_event_get_code(EOS_EVENT_APP_INSTALLED), _app_installed_cb);
+}
+
+lv_obj_t *eos_app_list_get_screen(void)
+{
+    return app_list_screen;
+}
+
+EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create)
+{
+    if (app_list_screen)
+    {
+        lv_obj_del(app_list_screen);
+    }
+    app_list_screen = lv_obj_create(NULL);
+    // 创建新的页面用于绘制应用列表
+    lv_screen_load(app_list_screen);
+
+    lv_obj_t *container = lv_list_create(app_list_screen);
+    lv_obj_set_style_pad_all(container, 20, 0);
+    lv_obj_set_style_pad_column(container, 20, 0); // 列间距
+    lv_obj_set_style_pad_row(container, 20, 0);
+    lv_obj_set_size(container, lv_pct(100), lv_pct(100));
+    lv_obj_set_scroll_dir(container, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_center(container);
+    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_flex_align(container,
+                          LV_FLEX_ALIGN_START,
+                          LV_FLEX_ALIGN_START,
+                          LV_FLEX_ALIGN_START);
+    lv_obj_add_event_cb(container, _container_delete_cb, LV_EVENT_DELETE, NULL);
+    eos_event_add_cb(container, _app_installed_cb, eos_event_get_code(EOS_EVENT_APP_INSTALLED), (void *)container);
+
+    _app_list_refresh(container);
 }

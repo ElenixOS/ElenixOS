@@ -15,7 +15,7 @@
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_theme.h"
-
+#include "elena_os_app_list.h"
 // Macros and Definitions
 #define NAV_STACK_SIZE 32
 #define NAV_ROOT_SCREEN_INDEX 0
@@ -159,12 +159,12 @@ eos_result_t eos_nav_clean_up(void)
  * @brief 初始化导航栈
  * @param root_screen 基础页面（不会被删除）
  */
-eos_result_t eos_nav_init(const char *header_title)
+lv_obj_t *eos_nav_init(void)
 {
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         EOS_LOG_E("Watchface can't use nav");
-        return -EOS_FAILED;
+        return NULL;
     }
     if (is_eos_nav_stack_initialized())
     {
@@ -176,7 +176,7 @@ eos_result_t eos_nav_init(const char *header_title)
     if (!root_screen)
     {
         EOS_LOG_E("Create root screen failed.");
-        return -EOS_ERR_MEM;
+        return NULL;
     }
 
     // 初始化栈：stack[0] = root_screen
@@ -184,29 +184,15 @@ eos_result_t eos_nav_init(const char *header_title)
     eos_nav.top = 0;
     eos_nav.initialized = true;
 
-    // 设置 app_header
-    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
-    {
-        eos_screen_bind_header(root_screen, header_title);
-    }
-    // 加载root_scr（脚本的根页面）
-    lv_screen_load_anim(root_screen, LV_SCR_LOAD_ANIM_OVER_LEFT, 200, 0, false);
-    // lv_screen_load(root_screen);
     lv_obj_add_style(root_screen, eos_theme_get_screen_style(), 0);
-    uint32_t start = lv_tick_get();
-    while (lv_tick_elaps(start) < 200)
-    {
-        lv_timer_handler();
-        lv_tick_inc(1);
-    }
     EOS_LOG_D("Nav stack initialized: root_screen=%p, ", root_screen);
-    return EOS_OK;
+    return root_screen;
 }
 
 /**
  * @brief 创建新的导航页面
  */
-lv_obj_t *eos_nav_scr_create(const char *header_title)
+lv_obj_t *eos_nav_scr_create(void)
 {
     if (eos_nav_busy)
     {
@@ -234,10 +220,6 @@ lv_obj_t *eos_nav_scr_create(const char *header_title)
         return NULL;
     }
     lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
-    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
-    {
-        eos_screen_bind_header(scr, header_title);
-    }
     // 确保新屏幕与栈中已有屏幕地址不同
     for (int i = 0; i <= eos_nav.top; i++)
     {
@@ -287,9 +269,12 @@ eos_result_t eos_nav_back_clean(void)
         {
             script_engine_request_stop();
         }
-        // TODO: 加载 app_list
-        
-        EOS_LOG_D("Back to root_screen");
+        else
+        {
+            eos_nav_clean_up();
+        }
+        eos_app_list_create();
+        EOS_LOG_D("Exit");
         EOS_MEM("Mem check: eos_nav_back_clean");
         return EOS_OK;
     }

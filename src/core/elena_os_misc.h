@@ -83,6 +83,7 @@ char *eos_read_file(const char *filename);
  * @return const char* 创建成功则返回新分配的字符串指针
  * 
  * 内存分配失败则返回 NULL
+ * @note 使用`free(str)`释放复制的字符串
  */
 const char *eos_strdup(const char *s);
 /**

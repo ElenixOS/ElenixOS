@@ -765,7 +765,8 @@ static void _bluetooth_enable_switch_cb(lv_event_t *e)
 
 static void _sys_screen_bluetooth(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create(current_lang[STR_ID_SETTINGS_BLUETOOTH]);
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_BLUETOOTH]);
     lv_screen_load(scr);
 
     lv_obj_t *list = lv_list_create(scr);
@@ -826,7 +827,8 @@ static void _list_slider_plus_cb(lv_event_t *e)
 
 static void _sys_screen_display(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create(current_lang[STR_ID_SETTINGS_DISPLAY]);
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_DISPLAY]);
     lv_screen_load(scr);
 
     lv_obj_t *list = lv_list_create(scr);
@@ -849,7 +851,8 @@ static void _sys_screen_display(lv_event_t *e)
 /************************** 通知 **************************/
 static void _sys_screen_notification(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create(current_lang[STR_ID_SETTINGS_DISPLAY]);
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_DISPLAY]);
     lv_screen_load(scr);
 }
 /************************** 应用列表 **************************/
@@ -908,7 +911,8 @@ static void _sys_app_list_btn_cb(lv_event_t *e)
     }
 
     // 创建新的页面用于绘制应用详情页
-    lv_obj_t *scr = eos_nav_scr_create(pkg.name);
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header(scr, pkg.name);
     lv_screen_load(scr);
 
     lv_obj_t *list = lv_list_create(scr);
@@ -1033,7 +1037,8 @@ static void _app_installed_cb(lv_event_t *e)
 static void _sys_screen_apps(lv_event_t *e)
 {
     // 创建新的页面用于绘制应用列表
-    lv_obj_t *scr = eos_nav_scr_create(current_lang[STR_ID_SETTINGS_APPS]);
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_APPS]);
     lv_screen_load(scr);
 
     lv_obj_t *app_list = lv_list_create(scr);
@@ -1059,7 +1064,8 @@ static void _sys_screen_sensor(lv_event_t *e)
 /************************** 系统设置 **************************/
 void eos_sys_settings_create(void)
 {
-    lv_obj_t *scr = eos_nav_scr_create(current_lang[STR_ID_SETTINGS]);
+    lv_obj_t *scr = eos_nav_init();
+    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS]);
     lv_screen_load(scr);
 
     lv_obj_t *settings_list = lv_list_create(scr);

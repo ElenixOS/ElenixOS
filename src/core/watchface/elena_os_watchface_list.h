@@ -15,7 +15,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "elena_os_core.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -24,7 +24,7 @@ extern "C" {
 /**
  * @brief 创建表盘列表页面
  */
-void eos_watchface_list_create_async(void);
+EOS_DEFINE_SCREEN_ASYNC(eos_watchface_list_create);
 #ifdef __cplusplus
 }
 #endif

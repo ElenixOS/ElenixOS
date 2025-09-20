@@ -593,7 +593,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
     if args:
         code += f"    // 参数数量检查\n"
         code += f"    if (argc < {len(args)}) {{\n"
-        code += f"        return throw_error(\"Insufficient arguments\");\n"
+        code += f"        return throw_error(\"{func_name}: Insufficient arguments\");\n"
         code += f"    }}\n\n"
 
     # 参数解析
@@ -1072,7 +1072,7 @@ if __name__ == "__main__":
                 exit()
         elif arg.startswith('--output-c-path='):
             output_c_file = arg.split('=', 1)[1]
-            output_c_file = output_c_file+"./lv_bindings.c"
+            output_c_file = output_c_file+"/lv_bindings.c"
         elif arg.startswith('--extract-funcs-from='):
             extract_funcs_from = arg.split('=', 1)[1]
         elif arg.startswith('--cfg-path='):

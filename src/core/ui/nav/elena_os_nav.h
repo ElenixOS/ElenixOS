@@ -25,19 +25,18 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化导航栈
- * @param scr 要初始化的目标 screen
+ * @brief 初始化导航栈，并创建一个根页面
+ * @return lv_obj_t* 返回创建的根页面
  * @note 此 scr 将会放在栈底，作为根页面（root screen），设置后无法修改。
  */
-eos_result_t eos_nav_init(const char *header_title);
+lv_obj_t *eos_nav_init(void);
 /**
  * @brief 创建新页面并压入导航栈
- * @param header_title app_header 的标题
  * @return lv_obj_t* 创建成功则返回 scr 指针，失败则返回 NULL
  */
-lv_obj_t *eos_nav_scr_create(const char *header_title);
+lv_obj_t *eos_nav_scr_create(void);
 /**
- * @brief 清理栈内除 root screen 的所有页面
+ * @brief 清理栈内的所有页面
  */
 eos_result_t eos_nav_clean_up(void);
 /**

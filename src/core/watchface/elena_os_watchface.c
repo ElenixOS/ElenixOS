@@ -253,8 +253,19 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     return EOS_OK;
 }
 
+void eos_watchface_delete(void)
+{
+    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
+    {
+        EOS_LOG_D("Request Stop");
+        script_engine_request_stop();
+        lv_obj_clean(watchface_screen);
+    }
+}
+
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
+    eos_watchface_delete();
     eos_watchface_list_create_async();
 }
 
@@ -265,7 +276,8 @@ lv_obj_t *eos_watchface_get_screen(void)
 
 EOS_DECLARE_SCREEN_ASYNC(eos_watchface_create)
 {
-    if(watchface_screen){
+    if (watchface_screen)
+    {
         // 如果不为空则清空
         lv_obj_del(watchface_screen);
     }

@@ -270,7 +270,6 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     }
 
     // 释放原有指针（如果有），防止内存泄漏
-    EOS_LOG_D("ID PTR:%p", pkg->id);
     if (pkg->id)
         free((void *)pkg->id);
     if (pkg->name)

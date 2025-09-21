@@ -3,6 +3,26 @@
  * @brief 基本控件
  * @author Sab1e
  * @date 2025-08-17
+ * @details
+ * 
+ * # Basic Widgets
+ * ## 应用头（AppHeader）
+ * ### 简介
+ * 应用头上方显示应用信息、当前时间以及返回按钮的控件。
+ * ### 使用方法
+ * 
+ * 系统启动时使用`eos_app_header_init()`来初始化应用头，只能初始化一次。
+ * 
+ * 可以直接使用`eos_screen_bind_header()`或`eos_screen_bind_header_str_id()`将当前的 Screen 绑定以显示应用头。
+ * 
+ * NOTE: 以`_str_id`结尾的函数即输入 ID 以便适配多语言系统。
+ * 
+ * 后续如果想修改应用头的标题，则需要使用`eos_app_header_set_title()`或`eos_app_header_set_title_str_id()`来设置新的标题。
+ * 
+ * 当被绑定的 Screen 删除时，会自动清理资源（字符串）。
+ * 
+ * NOTE: 应用头标题字符串会自动复制传入的字符串，以防止源字符串被清除。
+ * 
  */
 
 #ifndef ELENA_OS_BASIC_WIDGETS_H
@@ -16,6 +36,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
+#include "elena_os_lang.h"
+
 /* Public macros ----------------------------------------------*/
 #define EOS_LIST_CONTAINER_HEIGHT 100
 #define EOS_LIST_OBJ_RADIUS 25
@@ -42,6 +64,12 @@ typedef struct{
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 创建列表，设置标准样式并添加占位符
+ * @param parent 父对象
+ * @return lv_obj_t* 列表对象
+ */
+lv_obj_t *eos_list_create(lv_obj_t *parent);
+/**
  * @brief 创建一个返回按钮
  * @param parent 父对象
  * @param show_text 是否显示返回文字
@@ -59,11 +87,43 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text);
  */
 lv_obj_t * eos_list_add_button(lv_obj_t * list, const void * icon, const char * txt);
 /**
+ * @brief 向列表中传入一个入口按钮
+ * 
+ * 例如：
+ * (Bluetooth   >)
+ * 
+ * @param list 目标列表
+ * @param txt  左侧字符串
+ * @return lv_obj_t* 创建成功则返回按钮对象指针
+ * 
+ * 创建失败则返回 NULL
+ */
+lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt);
+/**
+ * @brief 向列表中传入一个入口按钮
+ * 
+ * 例如：
+ * (Bluetooth   >)
+ * 
+ * @param list 目标列表
+ * @param id  左侧字符串 ID
+ * @return lv_obj_t* 创建成功则返回按钮对象指针
+ * 
+ * 创建失败则返回 NULL
+ */
+lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id);
+/**
  * @brief 应用头设置标题名称
  * @param scr Screen 对象
  * @param title 标题字符串
  */
 void eos_app_header_set_title(lv_obj_t *scr, const char *title);
+/**
+ * @brief 应用头设置标题名称
+ * @param scr Screen 对象
+ * @param id 多语言的字符串 ID
+ */
+void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id);
 /**
  * @brief 隐藏应用头
  */
@@ -87,9 +147,15 @@ void eos_app_header_init(void);
 /**
  * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
  * @param scr 目标应用头
- * @param title 主题（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
+ * @param title 标题 字符串（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
  */
 void eos_screen_bind_header(lv_obj_t *scr, const char *title);
+/**
+ * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
+ * @param scr 目标应用头
+ * @param id 标题 ID（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
+ */
+void eos_screen_bind_header_str_id(lv_obj_t *scr, language_id_t id);
 /**
  * @brief 向列表中添加指定像素高度的占位符
  * @param list 目标列表
@@ -122,6 +188,20 @@ lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt);
  * 创建失败则返回 NULL
  */
 lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_color, const void *icon, const char *txt);
+/**
+ * @brief 向列表中添加圆形图标的按钮
+ * 
+ * btn{  [icon]  [txt]  }
+ * 
+ * @param list 目标列表
+ * @param circle_color 圆形图标的背景色
+ * @param icon 图标
+ * @param id 字符串 ID，用于适配多语言
+ * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
+ * 
+ * 创建失败则返回 NULL
+ */
+lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, lang_string_id_t id);
 /**
  * @brief 向列表内创建滑块
  * @param list 目标列表

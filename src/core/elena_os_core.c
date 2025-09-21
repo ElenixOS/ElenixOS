@@ -52,6 +52,9 @@
 #include "elena_os_theme.h"
 #include "elena_os_config.h"
 // Macros and Definitions
+#if defined(EOS_FONT_USE_C)
+LV_FONT_DECLARE(EOS_FONT_C_NAME);
+#endif
 
 // Variables
 lv_group_t *encoder_group;
@@ -106,7 +109,7 @@ eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
     eos_event_init();
-#ifdef EOS_USE_FONT_TTF
+#ifdef defined(EOS_USE_FONT_TTF)
     static lv_font_t *font_ttf;
     font_ttf = lv_tiny_ttf_create_file(argv[1], 24); // 24px 大小
     if (font_ttf == NULL)
@@ -117,9 +120,9 @@ eos_result_t eos_run(void)
     {
         eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                       lv_palette_main(LV_PALETTE_RED),
-                      &EOS_FONT_C_NAME);
-    }
-#elif EOS_USE_FONT_C
+                      font_ttf);
+    } 
+#elif defined(EOS_FONT_USE_C)
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),
                   &EOS_FONT_C_NAME);
@@ -132,7 +135,6 @@ eos_result_t eos_run(void)
     eos_watchface_init();
     eos_sys_init();
     eos_lang_init();
-    eos_lang_set(LANG_EN);
 
     lv_indev_t *indev = _get_key_indev();
     if (indev)
@@ -155,7 +157,6 @@ eos_result_t eos_run(void)
             eos_delay(5000);
         }
     }
-    /************************** 基础部件初始化 **************************/
     eos_app_header_init();
 
     /************************** 系统启动 **************************/
@@ -166,24 +167,4 @@ eos_result_t eos_run(void)
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);
     }
-
-    // lv_obj_clean(eos_watchface_get_screen()); // 当且仅当表盘切换时或表盘更新时才清理
-
-    // while (1)
-    // {
-
-    //     if (lv_screen_active() == eos_watchface_get_screen())
-    //     {
-    //         // 判断有没有回到表盘页面，如果回到了，就退出刷新
-    //         break;
-    //     }
-    //     if (side_btn_state == SIDE_BTN_CLICKED)
-    //     {
-    //         side_btn_state = SIDE_BTN_RELEASED;
-    //         if (lv_screen_active() != eos_watchface_get_screen())
-    //         {
-    //             eos_nav_back_clean();
-    //         }
-    //     }
-    // }
 }

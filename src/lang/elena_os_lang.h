@@ -24,10 +24,11 @@ extern "C" {
  * @brief 语言类型
  */
 typedef enum{
-    LANG_UNKNOWN=0,
-    LANG_EN,
-    LANG_ZH
+    LANG_EN=0,
+    LANG_ZH,
+    LANG_MAX_NUMBER
 } language_id_t;
+
 /**
  * @brief 字符串索引
  * @note 此处可添加新的字符串ID
@@ -49,13 +50,15 @@ typedef enum {
     STR_ID_SETTINGS_DISPLAY_BRIGHTNESS,
     STR_ID_SETTINGS_NOTIFICATION,
     STR_ID_SETTINGS_APPS,
-    STR_OD_SETTINGS_APPS_DETAILS,
+    STR_ID_SETTINGS_APPS_DETAILS,
     STR_ID_SETTINGS_APPS_APPID,
     STR_ID_SETTINGS_APPS_AUTHOR,
     STR_ID_SETTINGS_APPS_VERSION,
     STR_ID_SETTINGS_APPS_DESCRIPTON,
     STR_ID_SETTINGS_APPS_UINSTALL,
     STR_ID_SETTINGS_APPS_CLEAR_DATA,
+    STR_ID_SETTINGS_ADDITIONAL_SETTINGS,
+    STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE,
     /* 此处可添加新的字符串ID */
     STR_ID_MAX_NUMBER   /**< 字符串ID最大值 */
 } lang_string_id_t;
@@ -68,6 +71,7 @@ typedef enum {
  * 例如当前语言是英语，那么 `current_lang[STR_ID_LANGUAGE]` 等于 `"English"`
  */
 extern const char** current_lang;
+extern const char *language_list[LANG_MAX_NUMBER];
 /**
  * @brief 初始化语言系统
  */
@@ -83,6 +87,14 @@ void eos_lang_set(language_id_t lang);
  * @return language_id_t 语言类型
  */
 language_id_t eos_lang_get(void);
+/**
+ * @brief 通过语言字符串获得语言类型
+ * 
+ * 例如`English`返回`LANG_EN`
+ * @param language_str 字符串
+ * @return language_id_t 语言类型
+ */
+language_id_t eos_lang_get_with_str(const char *language_str);
 /**
  * @brief 获取当前语言字符串
  * @return char* 语言字符串（例如：简体中文）

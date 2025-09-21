@@ -10,9 +10,11 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "elena_os_event.h"
 #include "elena_os_log.h"
 #include "lvgl.h"
+#include "elena_os_sys.h"
 
 // Macros and Definitions
 /**
@@ -36,13 +38,15 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_DISPLAY_BRIGHTNESS] = "Brightness",
     [STR_ID_SETTINGS_NOTIFICATION] = "Notification",
     [STR_ID_SETTINGS_APPS] = "Apps",
-    [STR_OD_SETTINGS_APPS_DETAILS] = "App Details",
+    [STR_ID_SETTINGS_APPS_DETAILS] = "App Details",
     [STR_ID_SETTINGS_APPS_APPID] = "ID",
     [STR_ID_SETTINGS_APPS_AUTHOR] = "Author",
     [STR_ID_SETTINGS_APPS_VERSION] = "Version",
     [STR_ID_SETTINGS_APPS_DESCRIPTON] = "Description",
     [STR_ID_SETTINGS_APPS_UINSTALL] = "Uinstall",
-    [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "Clear data"
+    [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "Clear data",
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "Additional settings",
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "Language"
     // 在此添加新的字符串ID和英文翻译
 };
 
@@ -67,16 +71,21 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_DISPLAY_BRIGHTNESS] = "亮度",
     [STR_ID_SETTINGS_NOTIFICATION] = "通知",
     [STR_ID_SETTINGS_APPS] = "应用",
-    [STR_OD_SETTINGS_APPS_DETAILS] = "应用详情",
+    [STR_ID_SETTINGS_APPS_DETAILS] = "应用详情",
     [STR_ID_SETTINGS_APPS_APPID] = "ID",
     [STR_ID_SETTINGS_APPS_AUTHOR] = "作者",
     [STR_ID_SETTINGS_APPS_VERSION] = "版本",
     [STR_ID_SETTINGS_APPS_DESCRIPTON] = "描述",
     [STR_ID_SETTINGS_APPS_UINSTALL] = "卸载",
-    [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "删除应用数据"
-
+    [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "删除应用数据",
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "更多设置",
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "语言"
     // 在此添加新的字符串ID和中文翻译
 };
+
+const char *language_list[LANG_MAX_NUMBER] = {
+    [LANG_EN] = "English",
+    [LANG_ZH] = "简体中文"};
 
 const char **current_lang = NULL;     // 当前语言指针
 static bool lang_initialized = false; // 语言系统初始化标志
@@ -85,12 +94,17 @@ static bool lang_initialized = false; // 语言系统初始化标志
 static void lang_event_cb(lv_event_t *e);
 
 // Function Implementations
+void eos_lang_set(language_id_t lang);
+language_id_t eos_lang_get_with_str(const char *language_str);
+
 void eos_lang_init(void)
 {
     EOS_LOG_D("Init eos_lang");
     if (!lang_initialized)
     {
-        current_lang = lang_en; // 默认英语
+        const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE, "English");
+        eos_lang_set(eos_lang_get_with_str(lang_str));
+        free(lang_str);
         lang_initialized = true;
     }
 }
@@ -125,7 +139,24 @@ language_id_t eos_lang_get(void)
     }
     else
     {
-        return LANG_UNKNOWN;
+        return LANG_EN;
+    }
+}
+
+language_id_t eos_lang_get_with_str(const char *language_str)
+{
+    if (strcmp(language_list[LANG_EN], language_str) == 0)
+    {
+        return LANG_EN;
+    }
+    else if (strcmp(language_list[LANG_ZH], language_str) == 0)
+    {
+        return LANG_ZH;
+    }
+    else
+    {
+        EOS_LOG_E("Language not found: %s", language_str);
+        return LANG_EN;
     }
 }
 
@@ -152,6 +183,12 @@ static void lang_event_cb(lv_event_t *e)
     }
 }
 
+static void _lang_label_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *label = lv_event_get_target(e);
+    eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
+}
+
 lv_obj_t *eos_lang_label_create(lv_obj_t *parent, uint32_t str_id)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
@@ -174,6 +211,7 @@ lv_obj_t *eos_lang_label_create(lv_obj_t *parent, uint32_t str_id)
     }
 
     // 使用事件系统注册回调
+    lv_obj_add_event_cb(label, _lang_label_delete_cb, LV_EVENT_DELETE, NULL);
     eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)str_id);
 
     return label;

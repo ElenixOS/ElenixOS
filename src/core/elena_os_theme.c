@@ -15,14 +15,14 @@
 // Macros and Definitions
 #define TEXT_COLOR lv_color_hex(0xffffff)
 /************************** Screen **************************/
-#define SCREEN_BG_COLOR     lv_color_hex(0x000000)
+#define SCREEN_BG_COLOR lv_color_hex(0x000000)
 /************************** List **************************/
-#define LIST_BG_COLOR       lv_color_hex(0x000000)
+#define LIST_BG_COLOR lv_color_hex(0x000000)
 /************************** Switch **************************/
-#define SWITCH_BG_COLOR     lv_color_hex(0x34C759)
+#define SWITCH_BG_COLOR lv_color_hex(0x34C759)
 /************************** Slider **************************/
-#define SLIDER_MAIN_COLOR   lv_color_hex(0x34C759)
-#define SLIDER_BG_COLOR     lv_color_hex(0x262737)
+#define SLIDER_MAIN_COLOR lv_color_hex(0x34C759)
+#define SLIDER_BG_COLOR lv_color_hex(0x262737)
 
 // Variables
 static lv_style_t style_screen;
@@ -34,6 +34,8 @@ static lv_style_t style_slider_main;
 static lv_style_t style_slider_indicator;
 static lv_style_t style_slider_knob;
 static lv_style_t style_slider_pressed_color;
+
+static lv_font_t *global_font = NULL;
 // Function Implementations
 
 void _init_style_screen_bg(void)
@@ -46,6 +48,7 @@ void _init_style_label_color(void)
 {
     lv_style_init(&style_label);
     lv_style_set_text_color(&style_label, TEXT_COLOR);
+    lv_style_set_text_font(&style_label, global_font);
 }
 
 void _init_style_switch_color(void)
@@ -123,13 +126,20 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     }
 }
 
-lv_style_t *eos_theme_get_screen_style(void){
+lv_style_t *eos_theme_get_screen_style(void)
+{
     return &style_screen;
+}
+
+lv_style_t *eos_theme_get_label_style(void)
+{
+    return &style_label;
 }
 
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, const lv_font_t *font)
 {
-
+    global_font = font;
+    
     _init_style_screen_bg();
     _init_style_label_color();
     _init_style_list_color();

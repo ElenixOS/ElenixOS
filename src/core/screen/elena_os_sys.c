@@ -766,18 +766,11 @@ static void _bluetooth_enable_switch_cb(lv_event_t *e)
 static void _sys_screen_bluetooth(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_BLUETOOTH]);
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_BLUETOOTH);
     lv_screen_load(scr);
 
-    lv_obj_t *list = lv_list_create(scr);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_hor(list, 20, 0);
-    lv_obj_set_style_pad_ver(list, 0, 0);
-    lv_obj_center(list);
-    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_t *list = eos_list_create(scr);
 
-    // 占位符
-    eos_list_add_placeholder(list, 110);
     lv_obj_t *bt_sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_BLUETOOTH_ENABLE]);
     lv_obj_set_state(bt_sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false));
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -828,17 +821,10 @@ static void _list_slider_plus_cb(lv_event_t *e)
 static void _sys_screen_display(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_DISPLAY]);
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_DISPLAY);
     lv_screen_load(scr);
 
-    lv_obj_t *list = lv_list_create(scr);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_all(list, 0, 0);
-    lv_obj_center(list);
-    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
-
-    // 占位符
-    eos_list_add_placeholder(list, 110);
+    lv_obj_t *list = eos_list_create(scr);
 
     eos_list_slider_t *brightness_slider = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_DISPLAY_BRIGHTNESS]);
     lv_slider_set_value(brightness_slider->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50), LV_ANIM_ON);
@@ -852,7 +838,7 @@ static void _sys_screen_display(lv_event_t *e)
 static void _sys_screen_notification(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_DISPLAY]);
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_DISPLAY);
     lv_screen_load(scr);
 }
 /************************** 应用列表 **************************/
@@ -1003,22 +989,6 @@ static void _app_btn_create(lv_obj_t *parent, const char *app_id)
     EOS_LOG_I("name = %s\n", pkg.name);
 
     lv_obj_t *btn = eos_list_add_button(parent, icon_path, pkg.name);
-    lv_obj_set_size(btn, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
-    lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scroll_dir(btn, LV_DIR_NONE); // 禁止滚动
-    lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_set_style_border_width(btn, 0, 0);
-    lv_obj_set_style_pad_all(btn, 18, 0);
-    lv_obj_set_style_margin_bottom(btn, 20, 0);
-    lv_obj_set_style_align(btn, LV_ALIGN_CENTER, 0);
-    lv_obj_set_style_radius(btn, EOS_LIST_OBJ_RADIUS, 0);
-    lv_obj_set_style_shadow_width(btn, 0, 0);
-    lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
-    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // 水平排布
-    lv_obj_set_flex_align(btn,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_CENTER,
-                          LV_FLEX_ALIGN_CENTER);
     lv_obj_add_event_cb(btn, _sys_app_list_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
     eos_app_obj_auto_delete(btn, app_id);
 }
@@ -1038,7 +1008,7 @@ static void _sys_screen_apps(lv_event_t *e)
 {
     // 创建新的页面用于绘制应用列表
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS_APPS]);
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_APPS);
     lv_screen_load(scr);
 
     lv_obj_t *app_list = lv_list_create(scr);
@@ -1056,40 +1026,102 @@ static void _sys_screen_apps(lv_event_t *e)
         _app_btn_create(app_list, eos_app_list_get_id(i));
     }
 }
+
+/************************** 传感器测试 **************************/
+
 static void _sys_screen_sensor(lv_event_t *e)
 {
     eos_sensor_tester_create_async();
+}
+
+/************************** 更多设置 **************************/
+
+static void _language_roller_event_handler(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+    if (code == LV_EVENT_VALUE_CHANGED)
+    {
+        char buf[64];
+        lv_roller_get_selected_str(obj, buf, sizeof(buf));
+        language_id_t lang_id = eos_lang_get_with_str(buf);
+        switch (lang_id)
+        {
+        case LANG_EN:
+            EOS_LOG_D("Select English");
+            eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE, buf);
+            eos_lang_set(LANG_EN);
+            break;
+        case LANG_ZH:
+            EOS_LOG_D("Select Simplify Chinese");
+            eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE, buf);
+            eos_lang_set(LANG_ZH);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+static void _sys_screen_language(lv_event_t *e)
+{
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE);
+    lv_screen_load(scr);
+
+    lv_obj_t *roller1 = lv_roller_create(scr);
+    lv_obj_set_size(roller1, lv_pct(90), 300);
+    lv_roller_set_options(roller1,
+                          "English\n"
+                          "简体中文",
+                          LV_ROLLER_MODE_NORMAL);
+    lv_obj_align(roller1, LV_ALIGN_CENTER, 0, 0);
+    lv_roller_set_visible_row_count(roller1, 2);
+    lv_obj_add_event_cb(roller1, _language_roller_event_handler, LV_EVENT_ALL, NULL);
+}
+
+static void _sys_screen_additional_settings(lv_event_t *e)
+{
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_ADDITIONAL_SETTINGS);
+    lv_screen_load(scr);
+
+    lv_obj_t *list = eos_list_create(scr);
+
+    lv_obj_t *btn;
+    // 语言设置
+    btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE);
+    lv_obj_add_event_cb(btn, _sys_screen_language, LV_EVENT_CLICKED, NULL);
 }
 
 /************************** 系统设置 **************************/
 void eos_sys_settings_create(void)
 {
     lv_obj_t *scr = eos_nav_init();
-    eos_screen_bind_header(scr, current_lang[STR_ID_SETTINGS]);
+    eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS);
     lv_screen_load(scr);
 
-    lv_obj_t *settings_list = lv_list_create(scr);
-    lv_obj_set_size(settings_list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_all(settings_list, 0, 0);
-    lv_obj_center(settings_list);
-    lv_obj_set_scrollbar_mode(settings_list, LV_SCROLLBAR_MODE_OFF);
-
-    // 占位符
-    eos_list_add_placeholder(settings_list, 110);
+    lv_obj_t *settings_list = eos_list_create(scr);
 
     lv_obj_t *btn;
     // 蓝牙设置
-    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x3988ff), LV_SYMBOL_BLUETOOTH, current_lang[STR_ID_SETTINGS_BLUETOOTH]);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x3988ff), LV_SYMBOL_BLUETOOTH, STR_ID_SETTINGS_BLUETOOTH);
     lv_obj_add_event_cb(btn, _sys_screen_bluetooth, LV_EVENT_CLICKED, NULL);
     // 显示设置
-    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0xffbb39), LV_SYMBOL_IMAGE, current_lang[STR_ID_SETTINGS_DISPLAY]);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xffbb39), LV_SYMBOL_IMAGE, STR_ID_SETTINGS_DISPLAY);
     lv_obj_add_event_cb(btn, _sys_screen_display, LV_EVENT_CLICKED, NULL);
     // 通知设置
-    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0xff3939), LV_SYMBOL_BELL, current_lang[STR_ID_SETTINGS_NOTIFICATION]);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xff3939), LV_SYMBOL_BELL, STR_ID_SETTINGS_NOTIFICATION);
     lv_obj_add_event_cb(btn, _sys_screen_notification, LV_EVENT_CLICKED, NULL);
     // 应用列表
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, STR_ID_SETTINGS_APPS);
+    lv_obj_add_event_cb(btn, _sys_screen_apps, LV_EVENT_CLICKED, NULL);
+    // 传感器测试
     btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, "SensorTester");
     lv_obj_add_event_cb(btn, _sys_screen_sensor, LV_EVENT_CLICKED, NULL);
+    // 其他设置
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_SETTINGS, STR_ID_SETTINGS_ADDITIONAL_SETTINGS);
+    lv_obj_add_event_cb(btn, _sys_screen_additional_settings, LV_EVENT_CLICKED, NULL);
 
     eos_list_add_placeholder(settings_list, 50);
 }

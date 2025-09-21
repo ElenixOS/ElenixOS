@@ -30,6 +30,26 @@
 
 #define APP_HEADER_TIME_STR_ARRAY_MAX 32
 
+#define APP_HEADER_TITLE_WIDTH 240
+
+typedef enum
+{
+    APP_HEADER_TITLE_TYPE_STRING,
+    APP_HEADER_TITLE_TYPE_ID
+} eos_app_header_title_string_type_t;
+
+typedef union
+{
+    const char *string;
+    language_id_t id;
+} eos_app_header_title_data_t;
+
+typedef struct
+{
+    eos_app_header_title_string_type_t type;
+    eos_app_header_title_data_t data;
+} eos_app_header_title_t;
+
 // Variables
 static eos_app_header_t *app_header = NULL;
 // Function Implementations
@@ -44,6 +64,20 @@ static void _back_btn_cb(lv_event_t *e)
     {
         EOS_LOG_E("BACK ERR");
     }
+}
+
+lv_obj_t *eos_list_create(lv_obj_t *parent)
+{
+    EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
+    lv_obj_t *list = lv_list_create(parent);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_pad_all(list, 0, 0);
+    lv_obj_center(list);
+    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
+
+    // 占位符
+    eos_list_add_placeholder(list, 110);
+    return list;
 }
 
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
@@ -69,33 +103,6 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     return btn;
 }
 
-lv_obj_t *eos_list_add_button(lv_obj_t *list, const void *icon, const char *txt)
-{
-    lv_obj_t *obj = lv_obj_class_create_obj(&lv_list_button_class, list);
-    lv_obj_class_init_obj(obj);
-    lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(obj,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_CENTER,
-                          LV_FLEX_ALIGN_CENTER);
-    if (icon)
-    {
-        lv_obj_t *img = lv_image_create(obj);
-        eos_img_set_src(img, icon);
-        eos_img_set_size(img, 64, 64);
-    }
-
-    if (txt)
-    {
-        lv_obj_t *label = lv_label_create(obj);
-        lv_label_set_text(label, txt);
-        lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
-        lv_obj_set_flex_grow(label, 1);
-    }
-
-    return obj;
-}
-
 /**
  * @brief 更新LVGL字符串，显示当前时间
  */
@@ -110,12 +117,24 @@ static inline void _app_header_update_clock_label(lv_obj_t *label)
 /**
  * @brief 时间刷新的回调，由 LVGL 的定时器触发
  */
-static void clock_update_cb(lv_timer_t *timer)
+static void _clock_update_cb(lv_timer_t *timer)
 {
     lv_obj_t *label = lv_timer_get_user_data(timer);
     EOS_CHECK_PTR_RETURN(label);
     // 更新显示文字
     _app_header_update_clock_label(label);
+}
+
+static void _app_header_lang_changed_cb(lv_event_t *e)
+{
+    lv_obj_t *label = lv_event_get_target(e);
+
+    // 从用户数据中获取str_id
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(lv_screen_active());
+    if (t->type == APP_HEADER_TITLE_TYPE_ID)
+    {
+        lv_label_set_text(label, current_lang[t->data.id]);
+    }
 }
 
 /**
@@ -125,11 +144,19 @@ static void _screen_loaded_cb(lv_event_t *e)
 {
     EOS_LOG_D("screen loaded");
     lv_obj_t *scr = lv_event_get_target(e);
-    const char *title = (const char *)lv_obj_get_user_data(scr);
-    if (title && *title)
+
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
+
+    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
     {
-        EOS_LOG_D("set title: %s", title);
-        eos_app_header_set_title(scr, title);
+        EOS_LOG_D("set title: %s", t->data.string);
+        eos_app_header_set_title(scr, t->data.string);
+        eos_app_header_show();
+    }
+    else if (t->type == APP_HEADER_TITLE_TYPE_ID)
+    {
+        EOS_LOG_D("set title: %s", current_lang[t->data.id]);
+        eos_app_header_set_title(scr, current_lang[t->data.id]);
         eos_app_header_show();
     }
     else
@@ -147,27 +174,43 @@ static void _screen_delete_cb(lv_event_t *e)
     lv_obj_t *scr = lv_event_get_target(e);
     EOS_CHECK_PTR_RETURN(scr);
     EOS_LOG_D("screen deleted");
-    const char *title = (const char *)lv_obj_get_user_data(scr);
-    if (title)
-        free(title);
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
+    EOS_CHECK_PTR_RETURN(t);
+    if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
+        free(t->data.string);
     lv_obj_set_user_data(scr, NULL);
-    eos_app_header_set_title(scr, "");
     eos_app_header_hide();
+    eos_event_remove_cb(scr, LV_EVENT_REFRESH, _app_header_lang_changed_cb);
+    free(t);
 }
 
 void eos_app_header_set_title(lv_obj_t *scr, const char *title)
 {
-    EOS_CHECK_PTR_RETURN(app_header);
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
+    EOS_CHECK_PTR_RETURN(t);
+    EOS_CHECK_PTR_RETURN(app_header && t);
     // 复制一份避免被删除
-    const char *title_copy = eos_strdup(title);
-    // 更新用户数据中的字符串指针
-    const char *old_title = (const char *)lv_obj_get_user_data(scr);
-    if (old_title)
-        free(old_title);
-    lv_obj_set_user_data(scr, (void *)title_copy);
+    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
+        free(t->data.string);
+    t->data.string = eos_strdup(title);
     lv_label_get_text(app_header->title_label);
     // 更新字符串
-    lv_label_set_text(app_header->title_label, title_copy);
+    lv_label_set_text(app_header->title_label, t->data.string);
+}
+
+void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
+{
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
+    EOS_CHECK_PTR_RETURN(t);
+    EOS_CHECK_PTR_RETURN(app_header && t);
+    // 复制一份避免被删除
+    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
+        free(t->data.string);
+    t->data.id = id;
+
+    lv_label_get_text(app_header->title_label);
+    // 更新字符串
+    lv_label_set_text(app_header->title_label, current_lang[id]);
 }
 
 void eos_app_header_hide(void)
@@ -185,13 +228,34 @@ void eos_app_header_show(void)
 void eos_screen_bind_header(lv_obj_t *scr, const char *title)
 {
     EOS_CHECK_PTR_RETURN(scr);
-    const char *title_copy = eos_strdup(title);
+    eos_app_header_title_t *t = malloc(sizeof(eos_app_header_title_t));
+    EOS_CHECK_PTR_RETURN(t);
+    t->type = APP_HEADER_TITLE_TYPE_STRING;
+    t->data.string = eos_strdup(title);
+    lv_obj_set_user_data(scr, (void *)t);
+
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
-    lv_obj_set_user_data(scr,title_copy);
+}
+
+void eos_screen_bind_header_str_id(lv_obj_t *scr, language_id_t id)
+{
+    EOS_CHECK_PTR_RETURN(scr);
+
+    eos_app_header_title_t *t = malloc(sizeof(eos_app_header_title_t));
+    EOS_CHECK_PTR_RETURN(t);
+    t->type = APP_HEADER_TITLE_TYPE_ID;
+    t->data.id = id;
+    lv_obj_set_user_data(scr, (void *)t);
+
+    // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
+    // 并在 screen 被删除时触发 LV_EVENT_DELETE
+    _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
+    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
 void eos_app_header_init(void)
@@ -220,41 +284,30 @@ void eos_app_header_init(void)
 
     // 时间文字
     app_header->clock_label = lv_label_create(app_header->container);
+    lv_obj_add_style(app_header->clock_label, eos_theme_get_label_style(), 0);
     _app_header_update_clock_label(app_header->clock_label);
     lv_obj_align(app_header->clock_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, -15);
-    app_header->clock_timer = lv_timer_create(clock_update_cb, APP_HEADER_CLOCK_UPDATE_PERIOD_MS, app_header->clock_label);
+    app_header->clock_timer = lv_timer_create(_clock_update_cb, APP_HEADER_CLOCK_UPDATE_PERIOD_MS, app_header->clock_label);
 
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);
-    lv_obj_set_width(app_header->title_label, 200);
-    if (script_engine_get_current_script_id() != NULL)
-    {
-        lv_label_set_text(app_header->title_label, script_engine_get_current_script_name());
-    }
-    else
-    {
-        lv_label_set_text(app_header->title_label, "");
-    }
+    lv_obj_add_style(app_header->title_label, eos_theme_get_label_style(), 0);
+    lv_obj_set_width(app_header->title_label, APP_HEADER_TITLE_WIDTH);
+    lv_label_set_text(app_header->title_label, "");
+
     lv_label_set_long_mode(app_header->title_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_style_text_align(app_header->title_label, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
     lv_obj_align(app_header->title_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, 15);
 
+    eos_event_add_cb(app_header->title_label, _app_header_lang_changed_cb, LV_EVENT_REFRESH, NULL);
+
     // 默认隐藏 app_header
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
-lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height)
+lv_obj_t *_list_btn_container_create(lv_obj_t *list)
 {
-    lv_obj_t *ph = lv_obj_create(list);
-    lv_obj_remove_style_all(ph);
-    lv_obj_set_size(ph, lv_pct(100), height);
-    return ph;
-}
-
-lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, const char *txt)
-{
-    // 创建按钮
     lv_obj_t *btn = lv_button_create(list);
     lv_obj_set_size(btn, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
@@ -272,6 +325,43 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
+    return btn;
+}
+
+lv_obj_t *eos_list_add_button(lv_obj_t *list, const void *icon, const char *txt)
+{
+    lv_obj_t *obj = _list_btn_container_create(list);
+
+    if (icon)
+    {
+        lv_obj_t *img = lv_image_create(obj);
+        eos_img_set_src(img, icon);
+        eos_img_set_size(img, 64, 64);
+    }
+
+    if (txt)
+    {
+        lv_obj_t *label = lv_label_create(obj);
+        lv_label_set_text(label, txt);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+        lv_obj_set_flex_grow(label, 1);
+    }
+
+    return obj;
+}
+
+lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height)
+{
+    lv_obj_t *ph = lv_obj_create(list);
+    lv_obj_remove_style_all(ph);
+    lv_obj_set_size(ph, lv_pct(100), height);
+    return ph;
+}
+
+lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, const char *txt)
+{
+    // 创建按钮
+    lv_obj_t *btn = _list_btn_container_create(list);
     // 绘制圆形背景
     lv_obj_t *circle = lv_obj_create(btn);
     lv_obj_set_style_border_width(circle, 0, 0);
@@ -290,7 +380,65 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
     lv_label_set_text(label, txt);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
-    lv_obj_set_style_margin_right(label, 18, 0);
+    lv_obj_set_style_margin_right(label, 36, 0);
+    return btn;
+}
+
+lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, lang_string_id_t id)
+{
+    // 创建按钮
+    lv_obj_t *btn = _list_btn_container_create(list);
+    // 绘制圆形背景
+    lv_obj_t *circle = lv_obj_create(btn);
+    lv_obj_set_style_border_width(circle, 0, 0);
+    lv_obj_remove_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(circle, 50, 50);
+    lv_obj_set_style_pad_all(circle, 0, 0);
+    lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(circle, circle_color, 0);
+    // 绘制图像
+    lv_obj_t *icon = lv_img_create(circle);
+    lv_image_set_src(icon, icon_src);
+    lv_obj_center(icon);
+    // 文字
+    lv_obj_t *label = eos_lang_label_create(btn, id);
+    lv_obj_set_style_margin_left(label, 14, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_flex_grow(label, 1);
+    lv_obj_set_style_margin_right(label, 36, 0);
+    return btn;
+}
+
+lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
+{
+    // 创建按钮
+    lv_obj_t *btn = _list_btn_container_create(list);
+    // 文字
+    lv_obj_t *label = lv_label_create(btn);
+    lv_obj_set_style_margin_left(label, 14, 0);
+    lv_label_set_text(label, txt);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_flex_grow(label, 1);
+    // 文字
+    label = lv_label_create(btn);
+    lv_obj_set_style_margin_right(label, 14, 0);
+    lv_label_set_text(label, LV_SYMBOL_RIGHT);
+    return btn;
+}
+
+lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
+{
+    // 创建按钮
+    lv_obj_t *btn = _list_btn_container_create(list);
+    // 文字
+    lv_obj_t *label = eos_lang_label_create(btn, id);
+    lv_obj_set_style_margin_left(label, 14, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_flex_grow(label, 1);
+    // 文字
+    label = lv_label_create(btn);
+    lv_obj_set_style_margin_right(label, 14, 0);
+    lv_label_set_text(label, LV_SYMBOL_RIGHT);
     return btn;
 }
 

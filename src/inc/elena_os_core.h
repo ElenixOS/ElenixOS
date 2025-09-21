@@ -24,6 +24,8 @@ extern "C" {
  * 
  * 用于快速创建新的同步函数和异步函数
  * 
+ * 示例：
+ * 
  * ```c
  * // app_list.c
  * EOS_DECLARE_SCREEN_ASYNC(app_list){

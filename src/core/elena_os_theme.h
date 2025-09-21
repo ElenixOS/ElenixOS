@@ -33,9 +33,14 @@ extern "C" {
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, const lv_font_t *font);
 /**
  * @brief 获取当前的 Screen 样式对象
- * @return lv_obj_t* 
+ * @return lv_style_t* 
  */
 lv_style_t *eos_theme_get_screen_style(void);
+/**
+ * @brief 获取当前的 Label 样式对象
+ * @return lv_style_t* 
+ */
+lv_style_t *eos_theme_get_label_style(void);
 #ifdef __cplusplus
 }
 #endif

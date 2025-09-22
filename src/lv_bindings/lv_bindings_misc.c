@@ -10,6 +10,8 @@
 #include "lv_bindings.h"
 #include <stdlib.h>
 #include <string.h>
+#include "elena_os_nav.h"
+#include "elena_os_watchface.h"
 
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char *message)
@@ -19,8 +21,9 @@ static jerry_value_t throw_error(const char *message)
 }
 
 /********************************** 回调系统 **********************************/
-typedef struct {
-    jerry_value_t js_cb;       // JS回调函数
+typedef struct
+{
+    jerry_value_t js_cb;        // JS回调函数
     jerry_value_t js_user_data; // JS用户数据
 } lv_event_js_data_t;
 
@@ -34,7 +37,8 @@ static void lv_event_handler(lv_event_t *e)
     lv_event_js_data_t *data = (lv_event_js_data_t *)lv_event_get_user_data(e);
 
     // 处理对象删除事件
-    if (event == LV_EVENT_DELETE) {
+    if (event == LV_EVENT_DELETE)
+    {
         jerry_value_free(data->js_cb);
         jerry_value_free(data->js_user_data);
         free(data);
@@ -78,7 +82,8 @@ static void lv_event_handler(lv_event_t *e)
 
     // 调用JS回调
     jerry_value_t ret = jerry_call(data->js_cb, global, args, 1);
-    if (jerry_value_is_error(ret)) {
+    if (jerry_value_is_error(ret))
+    {
         // 处理错误
     }
 
@@ -107,7 +112,8 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
 
     // 解析LVGL对象指针
     jerry_value_t ptr_val = jerry_object_get(args[0], jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(ptr_val)) {
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid __ptr");
     }
@@ -119,9 +125,9 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
     // 创建JS回调数据
     lv_event_js_data_t *data = malloc(sizeof(lv_event_js_data_t));
     data->js_cb = jerry_value_copy(args[2]); // 增加引用计数
-    data->js_user_data = (arg_cnt >= 4 && !jerry_value_is_undefined(args[3])) 
-                         ? jerry_value_copy(args[3]) 
-                         : jerry_undefined();
+    data->js_user_data = (arg_cnt >= 4 && !jerry_value_is_undefined(args[3]))
+                             ? jerry_value_copy(args[3])
+                             : jerry_undefined();
 
     // 注册LVGL事件
     lv_event_dsc_t *dsc = lv_obj_add_event_cb(obj, lv_event_handler, event, data);
@@ -153,15 +159,17 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
                                                  const jerry_value_t args[],
                                                  const jerry_length_t arg_cnt)
 {
-    if (arg_cnt < 2 || 
-        !jerry_value_is_object(args[0]) || 
-        !jerry_value_is_object(args[1])) {
+    if (arg_cnt < 2 ||
+        !jerry_value_is_object(args[0]) ||
+        !jerry_value_is_object(args[1]))
+    {
         return throw_error("Invalid arguments");
     }
 
     // 解析对象参数
     jerry_value_t obj_ptr_val = jerry_object_get(args[0], jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(obj_ptr_val)) {
+    if (!jerry_value_is_number(obj_ptr_val))
+    {
         jerry_value_free(obj_ptr_val);
         return throw_error("Invalid object __ptr");
     }
@@ -170,7 +178,7 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
 
     // 解析事件描述符对象
     jerry_value_t event_dsc_obj = args[1];
-    
+
     // 验证事件描述符类型
     jerry_value_t type_val = jerry_object_get(event_dsc_obj, jerry_string_sz("__type"));
     jerry_value_t str_val = jerry_value_to_string(type_val);
@@ -178,8 +186,9 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
     char type_str[str_size + 1];
     jerry_string_to_buffer(str_val, JERRY_ENCODING_UTF8, (jerry_char_t *)type_str, str_size);
     type_str[str_size] = '\0';
-    
-    if (strcmp(type_str, "lv_event_dsc") != 0) {
+
+    if (strcmp(type_str, "lv_event_dsc") != 0)
+    {
         jerry_value_free(type_val);
         jerry_value_free(str_val);
         return throw_error("Invalid event descriptor");
@@ -189,7 +198,8 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
 
     // 获取事件描述符指针
     jerry_value_t ptr_val = jerry_object_get(event_dsc_obj, jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(ptr_val)) {
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid event descriptor __ptr");
     }
@@ -199,7 +209,7 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
     // 移除事件并释放资源
     lv_event_js_data_t *data = (lv_event_js_data_t *)lv_event_dsc_get_user_data(dsc);
     lv_obj_remove_event_dsc(obj, dsc);
-    
+
     jerry_value_free(data->js_cb);
     jerry_value_free(data->js_user_data);
     free(data);
@@ -210,8 +220,9 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
 /********************************** 定时器系统 **********************************/
 
 // 定时器数据结构
-typedef struct {
-    lv_timer_t* timer;
+typedef struct
+{
+    lv_timer_t *timer;
     jerry_value_t js_cb;
     jerry_value_t user_data;
 } timer_js_data_t;
@@ -219,21 +230,33 @@ typedef struct {
 /**
  * @brief LVGL 定时器回调包装函数
  * @param timer LVGL 定时器对象
- */     
-static void lv_timer_js_cb(lv_timer_t* timer) {
-    timer_js_data_t* data = (timer_js_data_t*)lv_timer_get_user_data(timer);
-    
-    if (data && !jerry_value_is_undefined(data->js_cb)) {
+ */
+static void lv_timer_js_cb(lv_timer_t *timer)
+{
+    timer_js_data_t *data = (timer_js_data_t *)lv_timer_get_user_data(timer);
+
+    if (data && !jerry_value_is_undefined(data->js_cb))
+    {
         jerry_value_t global = jerry_current_realm();
-        jerry_value_t args[1] = { data->user_data };
-        
+        jerry_value_t args[1] = {data->user_data};
+
         jerry_value_t ret = jerry_call(data->js_cb, global, args, 1);
-        if (jerry_value_is_error(ret)) {
-            
+        if (jerry_value_is_error(ret))
+        {
         }
         jerry_value_free(ret);
         jerry_value_free(global);
     }
+}
+
+static void _lv_timer_auto_delete_cb(lv_event_t *e)
+{
+    lv_timer_t *timer = lv_event_get_user_data(e);
+    if (!timer)
+    {
+        return;
+    }
+    lv_timer_delete(timer);
 }
 
 /**
@@ -243,62 +266,85 @@ static void lv_timer_js_cb(lv_timer_t* timer) {
  * @param args[2] （可选）用户数据
  * @return 定时器对象或抛出异常
  */
-static jerry_value_t js_lv_timer_create(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args[],
-                                        const jerry_length_t arg_cnt) {
-    if (arg_cnt < 2 || !jerry_value_is_function(args[0]) || !jerry_value_is_number(args[1])) {
+                                        const jerry_length_t arg_cnt)
+{
+    if (arg_cnt < 2 || !jerry_value_is_function(args[0]) || !jerry_value_is_number(args[1]))
+    {
         return throw_error("Invalid arguments");
     }
 
     // 获取定时器周期
     uint32_t period = (uint32_t)jerry_value_as_number(args[1]);
-    
+
     // 准备用户数据
     jerry_value_t user_data = jerry_undefined();
-    if (arg_cnt >= 3) {
+    if (arg_cnt >= 3)
+    {
         user_data = jerry_value_copy(args[2]);
     }
-    
+
     // 创建 JavaScript 回调的副本
     jerry_value_t js_cb = jerry_value_copy(args[0]);
-    
+
     // 创建定时器数据结构
-    timer_js_data_t* timer_data = (timer_js_data_t*)malloc(sizeof(timer_js_data_t));
-    if (!timer_data) {
+    timer_js_data_t *timer_data = (timer_js_data_t *)malloc(sizeof(timer_js_data_t));
+    if (!timer_data)
+    {
         jerry_value_free(js_cb);
         jerry_value_free(user_data);
         return throw_error("Failed to allocate memory for timer data");
     }
-    
+
     timer_data->js_cb = js_cb;
     timer_data->user_data = user_data;
-    
+
     // 创建 LVGL 定时器
-    lv_timer_t* timer = lv_timer_create(lv_timer_js_cb, period, timer_data);
-    if (!timer) {
+    lv_timer_t *timer = lv_timer_create(lv_timer_js_cb, period, timer_data);
+    if (!timer)
+    {
         free(timer_data);
         return throw_error("Failed to create timer");
     }
-    
+
+    // 绑定到根页面以便实现自动删除
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
+    {
+        lv_obj_t *root_screen = eos_nav_get_root_screen();
+        if (!root_screen)
+        {
+            return throw_error("Root screen is NULL");
+        }
+        lv_obj_add_event_cb(root_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+    }else if(script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE){
+        lv_obj_t *root_screen = eos_watchface_get_screen();
+        if (!root_screen)
+        {
+            return throw_error("Root screen is NULL");
+        }
+        lv_obj_add_event_cb(root_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+    }
+
     timer_data->timer = timer;
-    
+
     // 创建 JavaScript 定时器对象
     jerry_value_t js_timer = jerry_object();
-    
+
     // 添加指针属性
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_number((uintptr_t)timer);
     jerry_object_set(js_timer, ptr_prop, ptr_val);
     jerry_value_free(ptr_prop);
     jerry_value_free(ptr_val);
-    
+
     // 添加类型标记
     jerry_value_t type_prop = jerry_string_sz("__type");
     jerry_value_t type_val = jerry_string_sz("lv_timer");
     jerry_object_set(js_timer, type_prop, type_val);
     jerry_value_free(type_prop);
     jerry_value_free(type_val);
-    
+
     return js_timer;
 }
 
@@ -307,39 +353,43 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t* call_info_p,
  * @param args[0] 定时器对象
  * @return 无返回或抛出异常
  */
-static jerry_value_t js_lv_timer_delete(const jerry_call_info_t* call_info_p,
-                                       const jerry_value_t args[],
-                                       const jerry_length_t arg_cnt) {
-    if (arg_cnt < 1 || !jerry_value_is_object(args[0])) {
+static jerry_value_t js_lv_timer_delete(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args[],
+                                        const jerry_length_t arg_cnt)
+{
+    if (arg_cnt < 1 || !jerry_value_is_object(args[0]))
+    {
         return throw_error("Invalid arguments");
     }
-    
+
     // 获取定时器指针
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
     jerry_value_free(ptr_prop);
-    
-    if (!jerry_value_is_number(ptr_val)) {
+
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid timer object");
     }
-    
-    lv_timer_t* timer = (lv_timer_t*)(uintptr_t)jerry_value_as_number(ptr_val);
+
+    lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
     jerry_value_free(ptr_val);
-    
+
     // 获取定时器数据
-    timer_js_data_t* timer_data = (timer_js_data_t*)lv_timer_get_user_data(timer);
-    
+    timer_js_data_t *timer_data = (timer_js_data_t *)lv_timer_get_user_data(timer);
+
     // 释放 JavaScript 资源
-    if (timer_data) {
+    if (timer_data)
+    {
         jerry_value_free(timer_data->js_cb);
         jerry_value_free(timer_data->user_data);
         free(timer_data);
     }
-    
+
     // 删除定时器
     lv_timer_del(timer);
-    
+
     return jerry_undefined();
 }
 
@@ -349,30 +399,33 @@ static jerry_value_t js_lv_timer_delete(const jerry_call_info_t* call_info_p,
  * @param args[1] 新的周期（毫秒）
  * @return 无返回或抛出异常
  */
-static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t* call_info_p,
-                                           const jerry_value_t args[],
-                                           const jerry_length_t arg_cnt) {
-    if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1])) {
+static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t arg_cnt)
+{
+    if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1]))
+    {
         return throw_error("Invalid arguments");
     }
-    
+
     // 获取定时器指针
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
     jerry_value_free(ptr_prop);
-    
-    if (!jerry_value_is_number(ptr_val)) {
+
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid timer object");
     }
-    
-    lv_timer_t* timer = (lv_timer_t*)(uintptr_t)jerry_value_as_number(ptr_val);
+
+    lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
     jerry_value_free(ptr_val);
-    
+
     // 设置定时器周期
     uint32_t period = (uint32_t)jerry_value_as_number(args[1]);
     lv_timer_set_period(timer, period);
-    
+
     return jerry_undefined();
 }
 
@@ -382,30 +435,33 @@ static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t* call_info_p
  * @param args[1] 重复次数（-1表示无限重复）
  * @return 无返回或抛出异常
  */
-static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t* call_info_p,
-                                                 const jerry_value_t args[],
-                                                 const jerry_length_t arg_cnt) {
-    if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1])) {
+static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args[],
+                                                  const jerry_length_t arg_cnt)
+{
+    if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1]))
+    {
         return throw_error("Invalid arguments");
     }
-    
+
     // 获取定时器指针
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
     jerry_value_free(ptr_prop);
-    
-    if (!jerry_value_is_number(ptr_val)) {
+
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid timer object");
     }
-    
-    lv_timer_t* timer = (lv_timer_t*)(uintptr_t)jerry_value_as_number(ptr_val);
+
+    lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
     jerry_value_free(ptr_val);
-    
+
     // 设置定时器重复次数
     int32_t repeat_count = (int32_t)jerry_value_as_number(args[1]);
     lv_timer_set_repeat_count(timer, repeat_count);
-    
+
     return jerry_undefined();
 }
 
@@ -414,29 +470,32 @@ static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t* call_
  * @param args[0] 定时器对象
  * @return 无返回或抛出异常
  */
-static jerry_value_t js_lv_timer_reset(const jerry_call_info_t* call_info_p,
-                                      const jerry_value_t args[],
-                                      const jerry_length_t arg_cnt) {
-    if (arg_cnt < 1 || !jerry_value_is_object(args[0])) {
+static jerry_value_t js_lv_timer_reset(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args[],
+                                       const jerry_length_t arg_cnt)
+{
+    if (arg_cnt < 1 || !jerry_value_is_object(args[0]))
+    {
         return throw_error("Invalid arguments");
     }
-    
+
     // 获取定时器指针
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
     jerry_value_free(ptr_prop);
-    
-    if (!jerry_value_is_number(ptr_val)) {
+
+    if (!jerry_value_is_number(ptr_val))
+    {
         jerry_value_free(ptr_val);
         return throw_error("Invalid timer object");
     }
-    
-    lv_timer_t* timer = (lv_timer_t*)(uintptr_t)jerry_value_as_number(ptr_val);
+
+    lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
     jerry_value_free(ptr_val);
-    
+
     // 重置定时器
     lv_timer_reset(timer);
-    
+
     return jerry_undefined();
 }
 

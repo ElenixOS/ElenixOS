@@ -101,7 +101,7 @@ static lv_obj_t *_eos_nav_peek_prev(void)
     return (eos_nav.top > 0) ? eos_nav.stack[eos_nav.top - 1] : NULL;
 }
 
-lv_obj_t *eos_nav_get_root_screen()
+lv_obj_t *eos_nav_get_root_screen(void)
 {
     return eos_nav.stack[NAV_ROOT_SCREEN_INDEX];
 }

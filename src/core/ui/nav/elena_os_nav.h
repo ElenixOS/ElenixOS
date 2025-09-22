@@ -48,6 +48,11 @@ eos_result_t eos_nav_back_clean(void);
  * @warning 在不需要 screen 时，需要手动调用`lv_obj_del`清除 screen，否则可能导致内存泄漏。
  */
 eos_result_t eos_nav_back(void);
+/**
+ * @brief 获取当前根页面
+ * @return lv_obj_t* 根页面对象
+ */
+lv_obj_t *eos_nav_get_root_screen(void);
 
 #ifdef __cplusplus
 }

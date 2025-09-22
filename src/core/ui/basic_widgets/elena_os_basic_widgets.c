@@ -285,7 +285,7 @@ void eos_app_header_init(void)
     app_header->clock_label = lv_label_create(app_header->container);
     lv_obj_add_style(app_header->clock_label, eos_theme_get_label_style(), 0);
     _app_header_update_clock_label(app_header->clock_label);
-    lv_obj_align(app_header->clock_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, -15);
+    lv_obj_align(app_header->clock_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, -20);
     app_header->clock_timer = lv_timer_create(_clock_update_cb, APP_HEADER_CLOCK_UPDATE_PERIOD_MS, app_header->clock_label);
 
     // 标题文字
@@ -297,7 +297,7 @@ void eos_app_header_init(void)
     lv_label_set_long_mode(app_header->title_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_style_text_align(app_header->title_label, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
-    lv_obj_align(app_header->title_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, 15);
+    lv_obj_align(app_header->title_label, LV_ALIGN_RIGHT_MID, -APP_HEADER_MARGIN_RIGHT, 20);
 
     eos_event_add_cb(app_header->title_label, _app_header_lang_changed_cb, LV_EVENT_REFRESH, NULL);
 

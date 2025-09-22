@@ -1076,8 +1076,13 @@ static void _sys_screen_language(lv_event_t *e)
                           "简体中文",
                           LV_ROLLER_MODE_NORMAL);
     lv_obj_align(roller1, LV_ALIGN_CENTER, 0, 0);
-    lv_roller_set_visible_row_count(roller1, 2);
+    lv_roller_set_visible_row_count(roller1, 5);
+
+    const char *sel_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE, "English");
+    uint32_t sel_opt = (uint32_t)eos_lang_get_with_str(sel_str);
+    lv_roller_set_selected(roller1, sel_opt, LV_ANIM_OFF);
     lv_obj_add_event_cb(roller1, _language_roller_event_handler, LV_EVENT_ALL, NULL);
+    free(sel_str);
 }
 
 static void _sys_screen_additional_settings(lv_event_t *e)

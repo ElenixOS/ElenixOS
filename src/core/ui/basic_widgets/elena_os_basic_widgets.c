@@ -147,16 +147,16 @@ static void _screen_loaded_cb(lv_event_t *e)
 
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
 
-    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
+    if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
     {
-        EOS_LOG_D("set title: %s", t->data.string);
-        eos_app_header_set_title(scr, t->data.string);
+        EOS_LOG_D("Set String title: %s", t->data.string);
+        lv_label_set_text(app_header->title_label, t->data.string);
         eos_app_header_show();
     }
     else if (t->type == APP_HEADER_TITLE_TYPE_ID)
     {
-        EOS_LOG_D("set title: %s", current_lang[t->data.id]);
-        eos_app_header_set_title(scr, current_lang[t->data.id]);
+        EOS_LOG_D("Set ID title: %s", current_lang[t->data.id]);
+        lv_label_set_text(app_header->title_label, current_lang[t->data.id]);
         eos_app_header_show();
     }
     else
@@ -190,10 +190,10 @@ void eos_app_header_set_title(lv_obj_t *scr, const char *title)
     EOS_CHECK_PTR_RETURN(t);
     EOS_CHECK_PTR_RETURN(app_header && t);
     // 复制一份避免被删除
-    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
+    t->type = APP_HEADER_TITLE_TYPE_STRING;
+    if (t->data.string)
         free(t->data.string);
     t->data.string = eos_strdup(title);
-    lv_label_get_text(app_header->title_label);
     // 更新字符串
     lv_label_set_text(app_header->title_label, t->data.string);
 }
@@ -204,11 +204,10 @@ void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
     EOS_CHECK_PTR_RETURN(t);
     EOS_CHECK_PTR_RETURN(app_header && t);
     // 复制一份避免被删除
-    if (t->type == APP_HEADER_TITLE_TYPE_STRING)
+    t->type = APP_HEADER_TITLE_TYPE_ID;
+    if (t->data.string)
         free(t->data.string);
     t->data.id = id;
-
-    lv_label_get_text(app_header->title_label);
     // 更新字符串
     lv_label_set_text(app_header->title_label, current_lang[id]);
 }

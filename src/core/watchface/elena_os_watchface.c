@@ -22,6 +22,7 @@
 #include "elena_os_msg_list.h"
 #include "elena_os_watchface_list.h"
 #include "elena_os_theme.h"
+#include "elena_os_control_center.h"
 // Macros and Definitions
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -326,7 +327,7 @@ EOS_DECLARE_SCREEN_ASYNC(eos_watchface_create)
         return;
     }
     // 设置上拉面板
-
+    eos_control_center_create(watchface_screen);
     // 设置长按回调 进入 watchface list 使用普通 nav 导航
     lv_obj_add_event_cb(watchface_screen, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // 正式运行表盘脚本（脚本禁止阻塞线程）

@@ -29,8 +29,8 @@ extern "C" {
  * @brief 使用 LVGL Font Converter 生成的 C 文字字库
  * @param EOS_FONT_C_NAME 字库名称
  */
-#define EOS_FONT_USE_C
-#define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
+// #define EOS_FONT_USE_C
+// #define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
 
 /************************** 配置结束 **************************/
 

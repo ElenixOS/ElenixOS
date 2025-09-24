@@ -69,6 +69,8 @@ void eos_delay(uint32_t ms);
 void eos_cpu_reset();
 /**
  * @brief 启用蓝牙
+ * @warning 为避免阻塞 UI 线程，禁止在此处初始化蓝牙协议栈等操作，此处只向其他线程发送蓝牙启动消息。
+ * @note 创建线程也属于易阻塞线程的操作
  */
 void eos_bluetooth_enable(void);
 /**

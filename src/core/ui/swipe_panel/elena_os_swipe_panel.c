@@ -441,7 +441,7 @@ swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)
     // 默认是下拉栏
     lv_obj_set_y(swipe_panel->swipe_obj, -lv_display_get_vertical_resolution(NULL));
     lv_obj_move_foreground(swipe_panel->swipe_obj);
-
+    // 小白条
     swipe_panel->handle_bar = lv_obj_create(swipe_panel->swipe_obj);
     lv_obj_set_size(swipe_panel->handle_bar, 80, 10);
     lv_obj_set_style_radius(swipe_panel->handle_bar, 5, 0);

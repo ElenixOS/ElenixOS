@@ -25,6 +25,7 @@
 #include "elena_os_event.h"
 #include "elena_os_lang.h"
 #include "script_engine_core.h"
+#include "elena_os_settings.h"
 // Macros and Definitions
 
 // Variables
@@ -177,7 +178,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
  */
 static void _app_list_settings_cb(lv_event_t *e)
 {
-    eos_sys_settings_create();
+    eos_settings_create();
 }
 
 /**

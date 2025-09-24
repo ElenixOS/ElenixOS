@@ -3,6 +3,14 @@
  * @brief 拖拽控件头文件
  * @author Sab1e
  * @date 2025-08-10
+ * @details
+ * 
+ * # Swipe Panel
+ * 
+ * ## 使用方法
+ * 
+ * 使用`eos_swipe_panel_create()`即可创建一个新的拖拽控件。
+ * 
  */
 
 #ifndef ELENA_OS_SWIPE_PANEL_H

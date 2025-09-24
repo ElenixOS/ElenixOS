@@ -109,7 +109,7 @@ eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
     eos_event_init();
-#ifdef defined(EOS_USE_FONT_TTF)
+#if defined(EOS_USE_FONT_TTF)
     static lv_font_t *font_ttf;
     font_ttf = lv_tiny_ttf_create_file(argv[1], 24); // 24px 大小
     if (font_ttf == NULL)

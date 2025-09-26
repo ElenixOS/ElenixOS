@@ -15,12 +15,110 @@
 #include "elena_os_theme.h"
 #include "elena_os_sys.h"
 #include "elena_os_port.h"
+#include "elena_os_watchface.h"
+#include "elena_os_port.h"
+#include "elena_os_config.h"
 
 // Macros and Definitions
-#define CONTROL_CENTER_BTN_DEFAULT_COLOR lv_color_hex(0x232323)
+#define _BTN_DEFAULT_COLOR lv_color_hex(0x232323)
+#define _SLIDER_DEFAULT_WIDTH 150
+#define _SLIDER_DEFAULT_HEIGHT 360
+#define _SLIDER_DEFAULT_RADIUS 50
+
 // Variables
 
 // Function Implementations
+
+/************************** 基础组件 **************************/
+static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char *symbol)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
+    lv_obj_set_size(btn, 150, 100);
+    lv_obj_set_style_radius(btn, 50, 0);
+    lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(btn, EOS_THEME_PRIMARY_COLOR, LV_PART_MAIN | LV_STATE_CHECKED);
+
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, symbol);
+    lv_obj_center(label);
+    return btn;
+}
+
+static void _control_center_slider_page_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *page = lv_event_get_target(e);
+    lv_obj_del(page);
+}
+
+static lv_obj_t *_control_center_slider_create(const char *symbol)
+{
+    lv_obj_t *slider_page = lv_obj_create(eos_watchface_get_screen());
+    lv_obj_remove_style_all(slider_page);
+    lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
+    lv_obj_move_foreground(slider_page);
+    lv_obj_set_style_bg_opa(slider_page, LV_OPA_50, 0);
+    lv_obj_set_style_bg_color(slider_page, lv_color_black(), 0);
+    lv_obj_add_event_cb(slider_page, _control_center_slider_page_clicked_cb, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *slider_mask = lv_obj_create(slider_page);
+    lv_obj_remove_style_all(slider_mask);
+    lv_obj_set_size(slider_mask, _SLIDER_DEFAULT_WIDTH, _SLIDER_DEFAULT_HEIGHT);
+    lv_obj_center(slider_mask);
+    lv_obj_set_style_clip_corner(slider_mask, true, 0);
+    lv_obj_set_style_radius(slider_mask, 50, 0);
+
+    lv_obj_t *slider = lv_slider_create(slider_mask);
+    lv_bar_set_orientation(slider, LV_BAR_ORIENTATION_VERTICAL);
+    lv_obj_set_size(slider, _SLIDER_DEFAULT_WIDTH, _SLIDER_DEFAULT_HEIGHT);
+    lv_obj_center(slider);
+
+    lv_obj_set_style_clip_corner(slider, true, LV_PART_MAIN);
+
+    lv_obj_set_style_bg_opa(slider, LV_OPA_TRANSP, LV_PART_KNOB);
+    lv_obj_set_style_border_opa(slider, LV_OPA_TRANSP, LV_PART_KNOB);
+    lv_obj_set_style_shadow_opa(slider, LV_OPA_TRANSP, LV_PART_KNOB);
+
+    lv_obj_set_style_width(slider, _SLIDER_DEFAULT_WIDTH, LV_PART_MAIN);
+    lv_obj_set_style_height(slider, _SLIDER_DEFAULT_HEIGHT, LV_PART_MAIN);
+
+    lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR);
+    lv_obj_set_style_radius(slider, 50, LV_PART_INDICATOR);
+
+    lv_obj_set_style_bg_color(slider, lv_color_hex(0x303030), LV_PART_MAIN);
+    lv_obj_set_style_radius(slider, 50, LV_PART_MAIN);
+
+    lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
+
+    lv_obj_t *label = lv_label_create(slider);
+    lv_label_set_text(label, symbol);
+    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -50);
+    lv_obj_set_user_data(slider, (void *)label);
+    lv_obj_move_foreground(label);
+    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+
+    // 设置旋转原点为对象中心
+    // lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
+    // lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
+
+    return slider;
+}
+
+static lv_obj_t *_control_center_create_btn(lv_obj_t *parent, const char *symbol)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_set_size(btn, 150, 100);
+    lv_obj_set_style_radius(btn, 50, 0);
+    lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, 0);
+
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, symbol);
+    lv_obj_center(label);
+    return btn;
+}
+
+/************************** 功能组件 **************************/
 
 static void _control_center_bluetooth_switch_btn_cb(lv_event_t *e)
 {
@@ -42,57 +140,44 @@ static void _control_center_bluetooth_switch_btn_cb(lv_event_t *e)
     }
 }
 
-lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char *symbol)
+static void _control_center_brightness_value_changed_cb(lv_event_t *e)
 {
-    lv_obj_t *btn = lv_button_create(parent);
-    lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
-    lv_obj_set_size(btn, 150, 100);
-    lv_obj_set_style_radius(btn, 50, 0);
-    lv_obj_set_style_bg_color(btn, CONTROL_CENTER_BTN_DEFAULT_COLOR, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(btn, EOS_THEME_PRIMARY_COLOR, LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_t *slider = lv_event_get_target(e);
+    lv_obj_t *label = (lv_obj_t *)lv_obj_get_user_data(slider);
+    EOS_CHECK_PTR_RETURN(label);
 
-    lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text(label, symbol);
-    lv_obj_center(label);
-    return btn;
+    // 获取 Slider 当前值
+    int16_t value = lv_slider_get_value(slider);
+    eos_display_set_brightness(value);
+
+    // // 将 Slider 值映射为角度（这里假设 Slider 范围 0~100，对应 0~360°）
+    // int32_t angle = (int32_t)value * 36;
+
+    // // 设置 Label 旋转
+    // lv_image_set_rotation(label, angle);
 }
 
-static void _control_crenter_slider_btn_event_cb(lv_event_t *e)
+static void _control_center_brightness_slider_delete_cb(lv_event_t *e)
 {
+    lv_obj_t *slider = lv_event_get_target(e);
+    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, lv_slider_get_value(slider));
 }
 
-lv_obj_t *_control_center_create_slider_btn(lv_obj_t *parent)
+static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
 {
-    // 隐藏 control_center 然后将 Slider 放在顶层
-    lv_obj_t *btn = lv_button_create(parent);
-
-    lv_obj_set_size(btn, 150, 100);
-    lv_obj_set_style_radius(btn, 50, 0);
-    lv_obj_set_style_bg_color(btn, CONTROL_CENTER_BTN_DEFAULT_COLOR, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(btn, EOS_THEME_PRIMARY_COLOR, LV_PART_MAIN | LV_STATE_CHECKED);
-    // lv_obj_add_event_cb(btn, _control_center_switch_btn_event_cb, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text(label, LV_SYMBOL_BLUETOOTH);
-    lv_obj_center(label);
-    return btn;
+    lv_obj_t *slider = _control_center_slider_create(LV_SYMBOL_CHARGE);
+    lv_slider_set_range(slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
+    lv_slider_set_value(slider,
+                        eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50),
+                        LV_ANIM_ON);
+    lv_obj_add_event_cb(slider,
+                        _control_center_brightness_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(slider, _control_center_brightness_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
-lv_obj_t *_control_center_create_btn(lv_obj_t *parent)
-{
-    lv_obj_t *btn = lv_button_create(parent);
-    lv_obj_set_size(btn, 150, 100);
-    lv_obj_set_style_radius(btn, 50, 0);
-    lv_obj_set_style_bg_color(btn, CONTROL_CENTER_BTN_DEFAULT_COLOR, 0);
-    lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text(label, LV_SYMBOL_GPS);
-    lv_obj_center(label);
-    return btn;
-}
-
+/************************** 创建控制中心 **************************/
 void eos_control_center_create(lv_obj_t *parent)
 {
-    EOS_LOG_D("Create Control Center");
     swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
     eos_swipe_panel_set_dir(swipe_panel, SWIPE_DIR_UP);
     eos_swipe_panel_show_handle_bar(swipe_panel);
@@ -114,6 +199,7 @@ void eos_control_center_create(lv_obj_t *parent)
                           LV_FLEX_ALIGN_SPACE_EVENLY); // 行与行之间均匀分布
 
     lv_obj_t *btn;
+    /************************** 蓝牙开关 **************************/
     btn = _control_center_create_switch_btn(container, LV_SYMBOL_BLUETOOTH);
     lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_ALL, NULL);
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false))
@@ -124,10 +210,7 @@ void eos_control_center_create(lv_obj_t *parent)
     {
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
-
-    _control_center_create_btn(container);
-    _control_center_create_btn(container);
-    _control_center_create_btn(container);
-    _control_center_create_btn(container);
-    _control_center_create_btn(container);
+    /************************** 亮度调整滚动条 **************************/
+    lv_obj_t *brightness_btn = _control_center_create_btn(container, LV_SYMBOL_CHARGE);
+    lv_obj_add_event_cb(brightness_btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
 }

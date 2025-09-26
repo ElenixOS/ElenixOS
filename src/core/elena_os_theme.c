@@ -122,7 +122,6 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &style_slider_indicator, LV_PART_INDICATOR);
         lv_obj_add_style(obj, &style_slider_pressed_color, LV_PART_INDICATOR | LV_STATE_PRESSED);
         lv_obj_add_style(obj, &style_slider_knob, LV_PART_KNOB);
-        lv_obj_add_style(obj, &style_slider_pressed_color, LV_PART_KNOB | LV_STATE_PRESSED);
     }
 }
 

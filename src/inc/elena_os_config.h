@@ -32,6 +32,11 @@ extern "C" {
 // #define EOS_FONT_USE_C
 // #define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
 
+/************************** 显示配置 **************************/
+
+#define EOS_DISPLAY_BRIGHTNESS_MIN 5    /**< 亮度为0即关闭屏幕 */
+#define EOS_DISPLAY_BRIGHTNESS_MAX 100
+
 /************************** 配置结束 **************************/
 
 #ifdef __cplusplus

@@ -33,10 +33,10 @@
 #include "elena_os_theme.h"
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_sensor.h"
+#include "elena_os_config.h"
 
 // Macros and Definitions
-#define EOS_SYS_DISPLAY_BRIGHTNESS_MIN 5 /**< 亮度为0即关闭屏幕 */
-#define EOS_SYS_DISPLAY_BRIGHTNESS_MAX 100
+
 // Variables
 
 // Function Implementations
@@ -123,7 +123,7 @@ static void _settings_screen_display(lv_event_t *e)
 
     eos_list_slider_t *brightness_slider = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_DISPLAY_BRIGHTNESS]);
     lv_slider_set_value(brightness_slider->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50), LV_ANIM_ON);
-    lv_slider_set_range(brightness_slider->slider, EOS_SYS_DISPLAY_BRIGHTNESS_MIN, EOS_SYS_DISPLAY_BRIGHTNESS_MAX);
+    lv_slider_set_range(brightness_slider->slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_add_event_cb(brightness_slider->slider, _brightness_slider_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(brightness_slider->slider, _brightness_slider_released_cb, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(brightness_slider->minus_btn, _list_slider_minus_cb, LV_EVENT_CLICKED, brightness_slider->slider);

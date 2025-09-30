@@ -16,18 +16,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "elena_os_core.h"
-
+#include "elena_os_config.h"
 /* Public macros ----------------------------------------------*/
 
-/**
- *
- * 系统设置配置文件：/.sys/config/cfg.json
- * 应用位置：/.sys/app/package
- * 应用数据：/.sys/app/app_data
- * 表盘位置：/.sys/wf/faces
- * 表盘数据：/.sys/wf/wf_data
- */
-#define EOS_SYS_DIR "/.sys/"
+/************************** 系统目录配置 **************************/
+#define EOS_SYS_DIR EOS_SYS_ROOT_DIR ".sys/"
 #define EOS_SYS_CONFIG_DIR EOS_SYS_DIR "config/"
 #define EOS_SYS_CONFIG_FILE_PATH EOS_SYS_CONFIG_DIR "cfg.json"
 

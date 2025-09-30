@@ -136,6 +136,7 @@ eos_result_t eos_run(void)
     eos_watchface_init();
     eos_lang_init();
 
+    /*
     lv_indev_t *indev = _get_key_indev();
     if (indev)
     {
@@ -146,7 +147,7 @@ eos_result_t eos_run(void)
     {
         EOS_LOG_W("Input device not found");
     }
-
+    */
     if (eos_watchface_list_size() == 0)
     {
         EOS_LOG_E("Watchface not found");

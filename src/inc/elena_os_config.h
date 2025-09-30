@@ -37,6 +37,10 @@ extern "C" {
 #define EOS_DISPLAY_BRIGHTNESS_MIN 5    /**< 亮度为0即关闭屏幕 */
 #define EOS_DISPLAY_BRIGHTNESS_MAX 100
 
+/************************** 系统文件目录配置 **************************/
+
+#define EOS_SYS_ROOT_DIR "/Users/sab1e/WorkSpace/GitRepository/lv_port_pc_vscode/fs/"     /**< 系统根目录 例如：`/user/elenaos/` */
+
 /************************** 配置结束 **************************/
 
 #ifdef __cplusplus

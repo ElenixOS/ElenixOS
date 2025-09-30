@@ -39,7 +39,9 @@ extern "C" {
 
 /************************** 系统文件目录配置 **************************/
 
-#define EOS_SYS_ROOT_DIR "/Users/sab1e/WorkSpace/GitRepository/lv_port_pc_vscode/fs/"     /**< 系统根目录 例如：`/user/elenaos/` */
+#ifndef EOS_SYS_ROOT_DIR
+#define EOS_SYS_ROOT_DIR "/"     /**< 系统根目录 例如：`/user/elenaos/` */
+#endif
 
 /************************** 配置结束 **************************/
 

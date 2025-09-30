@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 project(ElenaOS C)
 
+add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
+
 # -----------------------------
 # 遍历源文件
 # -----------------------------

@@ -41,7 +41,12 @@ target_include_directories(elenaos_lib
 # 添加第三方库
 # -----------------------------
 # cJSON
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/cjson)
+add_library(cjson STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON/cJSON.c
+)
+target_include_directories(cjson PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
+)
 target_link_libraries(elenaos_lib PRIVATE cjson)
 
 # JerryScript

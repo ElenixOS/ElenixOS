@@ -1,0 +1,56 @@
+cmake_minimum_required(VERSION 3.12)
+
+project(ElenaOS C)
+
+# -----------------------------
+# 遍历源文件
+# -----------------------------
+file(GLOB_RECURSE ELENAOS_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
+)
+
+# -----------------------------
+# 遍历头文件目录
+# -----------------------------
+file(GLOB_RECURSE HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+)
+
+set(ELENAOS_INC_DIRS "")
+foreach(h ${HEADER_FILES})
+    get_filename_component(dir ${h} DIRECTORY)
+    list(APPEND ELENAOS_INC_DIRS ${dir})
+endforeach()
+list(REMOVE_DUPLICATES ELENAOS_INC_DIRS)
+
+# -----------------------------
+# 定义库
+# -----------------------------
+add_library(elenaos_lib STATIC ${ELENAOS_SRC})
+
+target_include_directories(elenaos_lib
+    PUBLIC
+        ${ELENAOS_INC_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
+)
+
+# -----------------------------
+# 添加第三方库
+# -----------------------------
+# cJSON
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/cjson)
+target_link_libraries(elenaos_lib PRIVATE cjson)
+
+# JerryScript
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript)
+target_link_libraries(elenaos_lib PRIVATE jerry-core jerry-ext jerry-port)
+
+# LVGL
+target_link_libraries(elenaos_lib PRIVATE lvgl)
+
+# -----------------------------
+# 如果需要可执行文件（可选）
+# -----------------------------
+# add_executable(elenaos_exec main.c)
+# target_link_libraries(elenaos_exec PRIVATE elenaos_lib)

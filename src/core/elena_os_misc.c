@@ -10,6 +10,7 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 // Macros and Definitions
@@ -49,7 +50,7 @@ eos_result_t eos_mkdir_if_not_exist(const char *path, mode_t mode)
         {
             if (errno != EEXIST)
             {
-                EOS_LOG_E("mkdir");
+                EOS_LOG_E("Create new directory failed!");
                 return -EOS_ERR_FILE_ERROR;
             }
         }

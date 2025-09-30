@@ -15,7 +15,9 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#if defined(EOS_USE_MSH)
 #include "msh.h"
+#endif
 #include "lvgl.h"
 /* Public macros ----------------------------------------------*/
 
@@ -64,14 +66,20 @@ extern "C" {
 
 /************************** 内存检查 **************************/
 
-#define EOS_MEM(tag) \
-    do { \
-        printf("[MEM] %s\n", tag); \
-        msh_exec("list_mem", 8); \
-        msh_exec("list_memheap", 12); \
-    } while(0)
 
-/************************** 指针检查 **************************/    
+#if defined(EOS_USE_MSH)
+#define EOS_MEM(tag)              \
+do                                \
+{                                 \
+    printf("[MEM] %s\n", tag);    \
+    msh_exec("list_mem", 8);      \
+    msh_exec("list_memheap", 12); \
+} while (0)
+#else
+    #define EOS_MEM(tag)
+#endif
+
+/************************** 指针检查 **************************/
 #define EOS_CHECK_PTR_RETURN(ptr) \
     do { \
         if (!(ptr)) { \

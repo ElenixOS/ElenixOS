@@ -108,6 +108,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
 eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
+    eos_sys_init();
     eos_event_init();
 #if defined(EOS_USE_FONT_TTF)
     static lv_font_t *font_ttf;
@@ -121,7 +122,7 @@ eos_result_t eos_run(void)
         eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                       lv_palette_main(LV_PALETTE_RED),
                       font_ttf);
-    } 
+    }
 #elif defined(EOS_FONT_USE_C)
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),
@@ -133,7 +134,6 @@ eos_result_t eos_run(void)
 #endif /* EOS_USE_FONT_TTF */
     eos_app_init();
     eos_watchface_init();
-    eos_sys_init();
     eos_lang_init();
 
     lv_indev_t *indev = _get_key_indev();

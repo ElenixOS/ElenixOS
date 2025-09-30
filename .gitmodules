@@ -1,0 +1,6 @@
+[submodule "third_party/cJSON"]
+	path = third_party/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
+[submodule "third_party/jerryscript"]
+	path = third_party/jerryscript
+	url = https://github.com/jerryscript-project/jerryscript.git

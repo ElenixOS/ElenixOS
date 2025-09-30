@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
 #include "elena_os_log.h"
@@ -138,7 +139,7 @@ eos_result_t _eos_watchface_list_get_installed()
 
 eos_result_t _eos_watchface_list_refresh()
 {
-    memcpy(&watchface_list, 0, sizeof(watchface_list));
+    memset(&watchface_list, 0, sizeof(watchface_list));
     _eos_watchface_list_init(&watchface_list, EOS_WATCHFACE_LIST_DEFAULT_CAPACITY);
     if (_eos_watchface_list_get_installed() != EOS_OK)
     {

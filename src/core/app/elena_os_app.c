@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
 #include "elena_os_log.h"
@@ -168,12 +169,12 @@ static eos_result_t _eos_app_order_remove(const char *app_id)
     if (!app_order_json || !app_id) {
         return EOS_FAILED;
     }
-    
+
     // 系统设置应用不能被移除
     if (strcmp(app_id, "sys.settings") == 0) {
         return EOS_OK;
     }
-    
+
     // 查找应用在数组中的位置
     int index = 0;
     cJSON *item = NULL;
@@ -185,7 +186,7 @@ static eos_result_t _eos_app_order_remove(const char *app_id)
         }
         index++;
     }
-    
+
     return EOS_OK; // 未找到也算成功
 }
 
@@ -371,7 +372,7 @@ eos_result_t _eos_app_list_get_installed(void)
  */
 eos_result_t _eos_app_list_refresh()
 {
-    memcpy(&app_list, 0, sizeof(app_list));
+    memset(&app_list, 0, sizeof(app_list));
     _eos_app_list_init(&app_list, EOS_APP_LIST_DEFAULT_CAPACITY);
     if (_eos_app_list_get_installed() != EOS_OK)
     {

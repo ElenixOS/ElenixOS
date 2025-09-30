@@ -595,6 +595,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
                                                 const jerry_value_t args[],
                                                 const jerry_length_t argc)
 {
+#if LV_TINY_TTF_FILE_SUPPORT
     // 参数数量检查
     if (argc < 2)
     {
@@ -682,6 +683,9 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     jerry_value_free(type);
 
     return js_result;
+#else
+    return throw_error("LV_TINY_TTF_FILE_SUPPORT is not enabled");
+#endif
 }
 
 // 设置字符串配置项
@@ -702,21 +706,21 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
         if (!jerry_value_is_object(js_arg_obj)) {
             return throw_error("Argument 0 must be an object or null");
         }
-        
+
         jerry_value_t arg_obj_ptr_prop = jerry_string_sz("__ptr");
         jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
         jerry_value_free(arg_obj_ptr_prop);
-        
+
         if (!jerry_value_is_number(arg_obj_ptr_val)) {
             jerry_value_free(arg_obj_ptr_val);
             return throw_error("Invalid __ptr property");
         }
-        
+
         uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
         jerry_value_free(arg_obj_ptr_val);
         arg_obj = (void*)arg_obj_ptr;
     }
-    
+
     // 解析参数: text (const char*)
 
     char* arg_text_str = NULL;

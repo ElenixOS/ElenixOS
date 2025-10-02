@@ -210,8 +210,8 @@ static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
     js_result = jerry_object();
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_result, jerry_string_sz("__type"), cls);
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), cls));
     jerry_value_free(ptr);
     jerry_value_free(cls);
 
@@ -677,8 +677,8 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     jerry_value_t js_result = jerry_object();
     jerry_value_t ptr = jerry_number((double)(uintptr_t)font);
     jerry_value_t type = jerry_string_sz("lv_font");
-    jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_result, jerry_string_sz("__type"), type);
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), type));
     jerry_value_free(ptr);
     jerry_value_free(type);
 

@@ -343,7 +343,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
     jerry_value_t script_info = _script_engine_create_info(script_package);
 
     jerry_value_t key = jerry_string_sz((const jerry_char_t *)"script_info");
-    jerry_object_set(global, key, script_info);
+    jerry_value_free(jerry_object_set(global, key, script_info));
 
     jerry_value_free(key);
     jerry_value_free(script_info);
@@ -398,7 +398,7 @@ void script_engine_register_functions(const script_engine_func_entry_t *entry, c
     {
         jerry_value_t fn = jerry_function_external(entry[i].handler);
         jerry_value_t name = jerry_string_sz(entry[i].name);
-        jerry_object_set(global, name, fn);
+        jerry_value_free(jerry_object_set(global, name, fn));
         jerry_value_free(name);
         jerry_value_free(fn);
     }

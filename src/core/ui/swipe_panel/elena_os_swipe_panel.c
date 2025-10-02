@@ -13,7 +13,7 @@
 #include "elena_os_log.h"
 #include "elena_os_event.h"
 // Macros and Definitions
-// #define DEBUG_SWIPE_PANEL
+#define DEBUG_SWIPE_PANEL 0 /**< 突出显示滑动触摸区域 */
 #define GESTURE_AREA_HEIGHT 50
 #define SWIPE_PANEL_DEFAULT_BG_COLOR 0x111111
 #define TOUCH_BAR_MARGIN 20
@@ -99,7 +99,7 @@ static void _swipe_panel_event_cb_pressing(lv_event_t *e)
     }
 }
 
-static void _swipe_panel_timer_cb(lv_timer_t * timer)
+static void _swipe_panel_timer_cb(lv_timer_t *timer)
 {
     EOS_LOG_D("Timer Callback");
     eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_TOUCH_UNLOCK), NULL);
@@ -174,9 +174,8 @@ static void _swipe_panel_anim_completed_cb(lv_anim_t *a)
         active_swipe_panel = NULL; // 释放活动实例
     }
     // 避免操作过快
-    lv_timer_t * t = lv_timer_create(_swipe_panel_timer_cb, 50, NULL);
-    lv_timer_set_repeat_count(t, 1);  // 只触发一次
-    
+    lv_timer_t *t = lv_timer_create(_swipe_panel_timer_cb, 50, NULL);
+    lv_timer_set_repeat_count(t, 1); // 只触发一次
 }
 
 static void _swipe_panel_event_cb_released(lv_event_t *e)
@@ -276,7 +275,6 @@ static void _swipe_panel_touch_unlock(lv_event_t *e)
 
     lv_obj_remove_flag(swipe_panel->touch_area, LV_OBJ_FLAG_HIDDEN);
 }
-
 
 void eos_swipe_panel_pull_back(swipe_panel_t *swipe_panel)
 {
@@ -454,7 +452,7 @@ swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)
     // 初始化 touch_area
     swipe_panel->touch_area = lv_obj_create(parent);
     lv_obj_set_size(swipe_panel->touch_area, lv_display_get_horizontal_resolution(NULL), GESTURE_AREA_HEIGHT);
-#ifdef DEBUG_SWIPE_PANEL
+#if DEBUG_SWIPE_PANEL
     lv_obj_set_style_bg_color(swipe_panel->touch_area, lv_color_hex(0xFF0000), 0);
     lv_obj_set_style_bg_opa(swipe_panel->touch_area, LV_OPA_80, 0);
 #else

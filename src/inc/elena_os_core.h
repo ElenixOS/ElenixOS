@@ -4,17 +4,17 @@
  * @author Sab1e
  * @date 2025-08-10
  * @details
- * 
+ *
  * # Elena OS
- * 
+ *
  * ## 系统启动
- * 
+ *
  * 启动 Elena OS 只需要调用`eos_run()`即可。
- * 
+ *
  * ## 侧键
- * 
+ *
  * 侧键需要在按键的回调函数中调用`eos_side_btn_handler()`并设置按键状态。
- * 
+ *
  */
 
 #ifndef ELENA_OS_CORE_H
@@ -33,11 +33,11 @@ extern "C" {
 
 /**
  * @brief 源文件中声明新的 Screen
- * 
+ *
  * 用于快速创建新的同步函数和异步函数
- * 
+ *
  * 示例：
- * 
+ *
  * ```c
  * // app_list.c
  * EOS_DECLARE_SCREEN_ASYNC(app_list){
@@ -45,10 +45,10 @@ extern "C" {
  *      lv_obj_t *label = lv_label_create(scr);
  *      lv_label_set_text(label,"HelloWorld!");
  * }
- * 
+ *
  * // app_list.h
  * EOS_DEFINE_SCREEN_ASYNC(app_list);
- * 
+ *
  * // core.c
  * app_list_async();    // 异步调用
  * app_list();          // 同步调用
@@ -67,7 +67,7 @@ extern "C" {
     void func_name##_async_cb(void *user_data)
 /**
  * @brief 快速定义头文件的函数声明
- * 
+ *
  * 参见`EOS_DECLARE_SCREEN_ASYNC`
  */
 #define EOS_DEFINE_SCREEN_ASYNC(func_name) \
@@ -101,11 +101,11 @@ typedef enum
  */
 typedef enum
 {
-    SIDE_BTN_CLICKED,
-    SIDE_BTN_PRESSED,
-    SIDE_BTN_LONG_PRESSED,
-    SIDE_BTN_RELEASED,
-    SIDE_BTN_DOUBLE_CLICKED
+    EOS_SIDE_BTN_CLICKED,
+    EOS_SIDE_BTN_PRESSED,
+    EOS_SIDE_BTN_LONG_PRESSED,
+    EOS_SIDE_BTN_RELEASED,
+    EOS_SIDE_BTN_DOUBLE_CLICKED
 } eos_side_btn_state_t;
 
 /**

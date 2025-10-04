@@ -210,8 +210,8 @@ static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
     js_result = jerry_object();
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_result, jerry_string_sz("__type"), cls);
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), cls));
     jerry_value_free(ptr);
     jerry_value_free(cls);
 
@@ -595,6 +595,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
                                                 const jerry_value_t args[],
                                                 const jerry_length_t argc)
 {
+#if LV_TINY_TTF_FILE_SUPPORT
     // 参数数量检查
     if (argc < 2)
     {
@@ -676,12 +677,15 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     jerry_value_t js_result = jerry_object();
     jerry_value_t ptr = jerry_number((double)(uintptr_t)font);
     jerry_value_t type = jerry_string_sz("lv_font");
-    jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr);
-    jerry_object_set(js_result, jerry_string_sz("__type"), type);
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
+    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), type));
     jerry_value_free(ptr);
     jerry_value_free(type);
 
     return js_result;
+#else
+    return throw_error("LV_TINY_TTF_FILE_SUPPORT is not enabled");
+#endif
 }
 
 // 设置字符串配置项
@@ -702,21 +706,21 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
         if (!jerry_value_is_object(js_arg_obj)) {
             return throw_error("Argument 0 must be an object or null");
         }
-        
+
         jerry_value_t arg_obj_ptr_prop = jerry_string_sz("__ptr");
         jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
         jerry_value_free(arg_obj_ptr_prop);
-        
+
         if (!jerry_value_is_number(arg_obj_ptr_val)) {
             jerry_value_free(arg_obj_ptr_val);
             return throw_error("Invalid __ptr property");
         }
-        
+
         uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
         jerry_value_free(arg_obj_ptr_val);
         arg_obj = (void*)arg_obj_ptr;
     }
-    
+
     // 解析参数: text (const char*)
 
     char* arg_text_str = NULL;

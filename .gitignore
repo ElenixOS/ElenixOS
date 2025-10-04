@@ -5,3 +5,5 @@ SConscript
 temp
 # VSCode
 .vscode
+# MacOS
+.DS_Store

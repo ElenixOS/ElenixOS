@@ -59,25 +59,25 @@ static void lv_event_handler(lv_event_t *e)
 
     prop_name = jerry_string_sz("__type");
     prop_value = jerry_string_sz("lv_event");
-    jerry_object_set(event_obj, prop_name, prop_value);
+    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
     jerry_value_free(prop_name);
     jerry_value_free(prop_value);
 
     prop_name = jerry_string_sz("__event_ptr");
     prop_value = jerry_number((uintptr_t)e);
-    jerry_object_set(event_obj, prop_name, prop_value);
+    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
     jerry_value_free(prop_name);
     jerry_value_free(prop_value);
 
     prop_name = jerry_string_sz("type");
     prop_value = jerry_number(event);
-    jerry_object_set(event_obj, prop_name, prop_value);
+    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
     jerry_value_free(prop_name);
     jerry_value_free(prop_value);
 
     // 添加JS用户数据
     prop_name = jerry_string_sz("user_data");
-    jerry_object_set(event_obj, prop_name, jerry_value_copy(data->js_user_data));
+    jerry_value_free(jerry_object_set(event_obj, prop_name, jerry_value_copy(data->js_user_data)));
     jerry_value_free(prop_name);
 
     // 调用JS回调
@@ -136,13 +136,13 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
     jerry_value_t event_dsc_obj = jerry_object();
     jerry_value_t prop_name = jerry_string_sz("__ptr");
     jerry_value_t prop_value = jerry_number((uintptr_t)dsc);
-    jerry_object_set(event_dsc_obj, prop_name, prop_value);
+    jerry_value_free(jerry_object_set(event_dsc_obj, prop_name, prop_value));
     jerry_value_free(prop_name);
     jerry_value_free(prop_value);
 
     prop_name = jerry_string_sz("__type");
     prop_value = jerry_string_sz("lv_event_dsc");
-    jerry_object_set(event_dsc_obj, prop_name, prop_value);
+    jerry_value_free(jerry_object_set(event_dsc_obj, prop_name, prop_value));
     jerry_value_free(prop_name);
     jerry_value_free(prop_value);
 
@@ -317,7 +317,9 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
             return throw_error("Root screen is NULL");
         }
         lv_obj_add_event_cb(root_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
-    }else if(script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE){
+    }
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
+    {
         lv_obj_t *root_screen = eos_watchface_get_screen();
         if (!root_screen)
         {
@@ -334,14 +336,14 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     // 添加指针属性
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
     jerry_value_t ptr_val = jerry_number((uintptr_t)timer);
-    jerry_object_set(js_timer, ptr_prop, ptr_val);
+    jerry_value_free(jerry_object_set(js_timer, ptr_prop, ptr_val));
     jerry_value_free(ptr_prop);
     jerry_value_free(ptr_val);
 
     // 添加类型标记
     jerry_value_t type_prop = jerry_string_sz("__type");
     jerry_value_t type_val = jerry_string_sz("lv_timer");
-    jerry_object_set(js_timer, type_prop, type_val);
+    jerry_value_free(jerry_object_set(js_timer, type_prop, type_val));
     jerry_value_free(type_prop);
     jerry_value_free(type_val);
 
@@ -574,16 +576,16 @@ jerry_value_t lv_color_to_js(lv_color_t color)
     jerry_value_t js_color = jerry_object();
 
     // 添加RGB分量（注意顺序与结构体相反）
-    jerry_object_set(js_color, jerry_string_sz("r"), jerry_number(color.red));
-    jerry_object_set(js_color, jerry_string_sz("g"), jerry_number(color.green));
-    jerry_object_set(js_color, jerry_string_sz("b"), jerry_number(color.blue));
+    jerry_value_free(jerry_object_set(js_color, jerry_string_sz("r"), jerry_number(color.red)));
+    jerry_value_free(jerry_object_set(js_color, jerry_string_sz("g"), jerry_number(color.green)));
+    jerry_value_free(jerry_object_set(js_color, jerry_string_sz("b"), jerry_number(color.blue)));
 
     // 添加十六进制颜色值
     uint32_t hex = (color.red << 16) | (color.green << 8) | color.blue;
-    jerry_object_set(js_color, jerry_string_sz("hex"), jerry_number(hex));
+    jerry_value_free(jerry_object_set(js_color, jerry_string_sz("hex"), jerry_number(hex)));
 
     // 标记为LVGL颜色对象
-    jerry_object_set(js_color, jerry_string_sz("__type"), jerry_string_sz("lv_color"));
+    jerry_value_free(jerry_object_set(js_color, jerry_string_sz("__type"), jerry_string_sz("lv_color")));
 
     return js_color;
 }
@@ -633,14 +635,14 @@ static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
         // 将指针保存回JS对象
         ptr_val = jerry_number((uintptr_t)style);
         ptr_prop = jerry_string_sz("__ptr");
-        jerry_object_set(args[0], ptr_prop, ptr_val);
+        jerry_value_free(jerry_object_set(args[0], ptr_prop, ptr_val));
         jerry_value_free(ptr_prop);
         jerry_value_free(ptr_val);
 
         // 添加类型标记
         jerry_value_t type_prop = jerry_string_sz("__type");
         jerry_value_t type_val = jerry_string_sz("lv_style");
-        jerry_object_set(args[0], type_prop, type_val);
+        jerry_value_free(jerry_object_set(args[0], type_prop, type_val));
         jerry_value_free(type_prop);
         jerry_value_free(type_val);
     }
@@ -674,7 +676,7 @@ static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
 
         // 清除指针引用
         ptr_prop = jerry_string_sz("__ptr");
-        jerry_object_set(args[0], ptr_prop, jerry_number(0));
+        jerry_value_free(jerry_object_set(args[0], ptr_prop, jerry_number(0)));
         jerry_value_free(ptr_prop);
     }
 
@@ -691,15 +693,29 @@ static void register_lvgl_fonts(void)
     jerry_value_t fonts = jerry_object();
 
     // 注册Montserrat字体集
-#define REGISTER_FONT(name)                                                                   \
-    do                                                                                        \
-    {                                                                                         \
-        jerry_value_t font_obj = jerry_object();                                              \
-        jerry_object_set(font_obj, jerry_string_sz("__ptr"), jerry_number((uintptr_t)&name)); \
-        jerry_object_set(font_obj, jerry_string_sz("__type"), jerry_string_sz("lv_font"));    \
-        jerry_object_set(fonts, jerry_string_sz(#name), font_obj);                            \
-        jerry_value_free(font_obj);                                                           \
-    } while (0);
+#define REGISTER_FONT(name)                                               \
+    do                                                                    \
+    {                                                                     \
+        jerry_value_t font_obj = jerry_object();                          \
+                                                                          \
+        jerry_value_t key_ptr = jerry_string_sz("__ptr");                 \
+        jerry_value_t key_type = jerry_string_sz("__type");               \
+        jerry_value_t key_name = jerry_string_sz(#name);                  \
+                                                                          \
+        jerry_value_t val_ptr = jerry_number((uintptr_t)&name);           \
+        jerry_value_t val_type = jerry_string_sz("lv_font");              \
+                                                                          \
+        jerry_value_free(jerry_object_set(font_obj, key_ptr, val_ptr));   \
+        jerry_value_free(jerry_object_set(font_obj, key_type, val_type)); \
+        jerry_value_free(jerry_object_set(fonts, key_name, font_obj));    \
+                                                                          \
+        jerry_value_free(key_ptr);                                        \
+        jerry_value_free(key_type);                                       \
+        jerry_value_free(key_name);                                       \
+        jerry_value_free(val_ptr);                                        \
+        jerry_value_free(val_type);                                       \
+        jerry_value_free(font_obj);                                       \
+    } while (0)
 #if LV_FONT_MONTSERRAT_8
     REGISTER_FONT(lv_font_montserrat_8);
 #endif
@@ -767,7 +783,9 @@ static void register_lvgl_fonts(void)
 #undef REGISTER_FONT
 
     // 将字体容器挂载到全局对象
-    jerry_object_set(global, jerry_string_sz("lv_font"), fonts);
+    jerry_value_t font_key = jerry_string_sz("lv_font");
+    jerry_value_free(jerry_object_set(global, font_key, fonts));
+    jerry_value_free(font_key);
     jerry_value_free(fonts);
     jerry_value_free(global);
 }
@@ -791,7 +809,7 @@ void lv_binding_jerryscript_register_functions(const LVBindingJerryscriptFuncEnt
     {
         jerry_value_t fn = jerry_function_external(entry[i].handler);
         jerry_value_t name = jerry_string_sz(entry[i].name);
-        jerry_object_set(global, name, fn);
+        jerry_value_free(jerry_object_set(global, name, fn));
         jerry_value_free(name);
         jerry_value_free(fn);
     }

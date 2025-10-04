@@ -83,15 +83,17 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
     side_btn_processing = true;
     switch (state)
     {
-    case SIDE_BTN_CLICKED:
+    case EOS_SIDE_BTN_CLICKED:
         lv_obj_t *scr = lv_screen_active();
         if (scr == eos_watchface_get_screen())
         {
+            EOS_LOG_D("Current screen: watchface");
             eos_watchface_delete();
             eos_app_list_create_async();
         }
         else if (scr == eos_app_list_get_screen())
         {
+            EOS_LOG_D("Current screen: app_list");
             eos_watchface_create_async();
         }
         else
@@ -108,6 +110,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
 eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
+    eos_sys_init();
     eos_event_init();
 #if defined(EOS_USE_FONT_TTF)
     static lv_font_t *font_ttf;
@@ -121,7 +124,7 @@ eos_result_t eos_run(void)
         eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                       lv_palette_main(LV_PALETTE_RED),
                       font_ttf);
-    } 
+    }
 #elif defined(EOS_FONT_USE_C)
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),
@@ -133,9 +136,9 @@ eos_result_t eos_run(void)
 #endif /* EOS_USE_FONT_TTF */
     eos_app_init();
     eos_watchface_init();
-    eos_sys_init();
     eos_lang_init();
 
+    /*
     lv_indev_t *indev = _get_key_indev();
     if (indev)
     {
@@ -146,7 +149,7 @@ eos_result_t eos_run(void)
     {
         EOS_LOG_W("Input device not found");
     }
-
+    */
     if (eos_watchface_list_size() == 0)
     {
         EOS_LOG_E("Watchface not found");
@@ -161,6 +164,23 @@ eos_result_t eos_run(void)
 
     /************************** 系统启动 **************************/
     eos_watchface_create(); // 加载表盘
+    // script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    // const char *script_str = malloc(4*1024);
+    // const char *code = "let label = lv_label_create(lv_scr_act());"
+    //                   "lv_label_set_text(label,\"HelloWorld\");"
+    //                   "lv_obj_center(label);";
+    // // const char *code = "var str = 'hello world';";
+    // strcpy(script_str,code);
+
+    // pkg->author = eos_strdup("Sab1e");
+    // pkg->description = eos_strdup("123");
+    // pkg->id = eos_strdup("cn.sab1e.clock");
+    // pkg->name = eos_strdup("Clock");
+    // pkg->type = SCRIPT_TYPE_WATCHFACE;
+    // pkg->version = eos_strdup("0.0.1");
+    // pkg->script_str = script_str;
+    // script_engine_run(pkg);
+    script_engine_request_stop();
     // 开始绘制
     while (1)
     {

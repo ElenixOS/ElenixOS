@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "lvgl.h"
 #include "cJSON.h"
 #include "elena_os_img.h"

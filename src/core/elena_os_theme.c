@@ -10,8 +10,8 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
-#include "lv_theme_private.h"
 #include "elena_os_log.h"
+#include "lvgl_private.h"
 // Macros and Definitions
 #define TEXT_COLOR lv_color_hex(0xffffff)
 /************************** Screen **************************/
@@ -38,33 +38,33 @@ static lv_style_t style_slider_pressed_color;
 static lv_font_t *global_font = NULL;
 // Function Implementations
 
-void _init_style_screen_bg(void)
+void _init_style_screen(void)
 {
     lv_style_init(&style_screen);
     lv_style_set_bg_color(&style_screen, SCREEN_BG_COLOR);
 }
 
-void _init_style_label_color(void)
+void _init_style_label(void)
 {
     lv_style_init(&style_label);
     lv_style_set_text_color(&style_label, TEXT_COLOR);
     lv_style_set_text_font(&style_label, global_font);
 }
 
-void _init_style_switch_color(void)
+void _init_style_switch(void)
 {
     lv_style_init(&style_switch);
     lv_style_set_bg_color(&style_switch, SWITCH_BG_COLOR);
 }
 
-void _init_style_list_color(void)
+void _init_style_list(void)
 {
     lv_style_init(&style_list);
     lv_style_set_bg_color(&style_list, LIST_BG_COLOR);
     lv_style_set_border_width(&style_list, 0);
 }
 
-void _init_style_slider_color(void)
+void _init_style_slider(void)
 {
     static const lv_style_prop_t props[] = {LV_STYLE_BG_COLOR, 0};
     static lv_style_transition_dsc_t transition_dsc;
@@ -138,12 +138,12 @@ lv_style_t *eos_theme_get_label_style(void)
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, const lv_font_t *font)
 {
     global_font = font;
-    
-    _init_style_screen_bg();
-    _init_style_label_color();
-    _init_style_list_color();
-    _init_style_switch_color();
-    _init_style_slider_color();
+
+    _init_style_screen();
+    _init_style_label();
+    _init_style_list();
+    _init_style_switch();
+    _init_style_slider();
 
     lv_theme_t *th_act = lv_theme_default_init(lv_display_get_default(),
                                                primary_color,

@@ -163,6 +163,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         eos_nav_clean_up();
         eos_app_list_create();
         EOS_LOG_E("Script encounter a fatal error");
+        // TODO: 错误处理
         // lv_obj_t *mbox = lv_msgbox_create(NULL);
         // lv_obj_set_size(mbox, lv_pct(90),lv_pct(90));
         // lv_msgbox_add_title(mbox, "Scrip Runtime");

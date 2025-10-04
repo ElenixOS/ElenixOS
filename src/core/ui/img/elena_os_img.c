@@ -63,7 +63,7 @@ void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h)
     }
 
     // 检查 src 类型
-    lv_image_src_t src_type = lv_img_src_get_type(src);
+    lv_image_src_t src_type = lv_image_src_get_type(src);
     if (src_type != LV_IMAGE_SRC_VARIABLE)
     {
         EOS_LOG_E("Image src not a variable");

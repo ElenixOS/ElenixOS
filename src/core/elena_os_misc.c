@@ -10,6 +10,7 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 // Macros and Definitions
@@ -49,7 +50,7 @@ eos_result_t eos_mkdir_if_not_exist(const char *path, mode_t mode)
         {
             if (errno != EEXIST)
             {
-                EOS_LOG_E("mkdir");
+                EOS_LOG_E("Create new directory failed!\nError code: %d\n", errno);
                 return -EOS_ERR_FILE_ERROR;
             }
         }
@@ -116,7 +117,8 @@ eos_result_t eos_rm_recursive(const char *path)
     if (stat(path, &st) != 0)
     {
         // 文件不存在则忽略
-        if (errno == -ENOENT) {
+        if (errno == -ENOENT)
+        {
             EOS_LOG_W("Path dose not exist: %s, ignored.\n", path, errno);
             return EOS_OK;
         }
@@ -222,25 +224,35 @@ char *eos_read_file(const char *filename)
     return data;
 }
 
-const char *eos_strdup(const char *s) {
-    if (!s) return NULL;
+const char *eos_strdup(const char *s)
+{
+    if (!s)
+        return NULL;
     size_t len = strlen(s) + 1;
     char *copy = malloc(len);
-    if (copy) {
+    if (copy)
+    {
         memcpy(copy, s, len);
     }
     return copy;
 }
 
-void eos_pkg_free(script_pkg_t *pkg) {
+void eos_pkg_free(script_pkg_t *pkg)
+{
     EOS_CHECK_PTR_RETURN(pkg);
 
-    if (pkg->id)           free((void *)pkg->id);
-    if (pkg->name)         free((void *)pkg->name);
-    if (pkg->version)      free((void *)pkg->version);
-    if (pkg->author)       free((void *)pkg->author);
-    if (pkg->description)  free((void *)pkg->description);
-    if (pkg->script_str)   free((void *)pkg->script_str);
+    if (pkg->id)
+        free((void *)pkg->id);
+    if (pkg->name)
+        free((void *)pkg->name);
+    if (pkg->version)
+        free((void *)pkg->version);
+    if (pkg->author)
+        free((void *)pkg->author);
+    if (pkg->description)
+        free((void *)pkg->description);
+    if (pkg->script_str)
+        free((void *)pkg->script_str);
     pkg->id = NULL;
     pkg->name = NULL;
     pkg->type = SCRIPT_TYPE_UNKNOWN;

@@ -169,7 +169,7 @@ eos_result_t eos_run(void)
     // const char *code = "let label = lv_label_create(lv_scr_act());"
     //                   "lv_label_set_text(label,\"HelloWorld\");"
     //                   "lv_obj_center(label);";
-    // const char *code = "var str = 'hello world';";
+    // // const char *code = "var str = 'hello world';";
     // strcpy(script_str,code);
 
     // pkg->author = eos_strdup("Sab1e");
@@ -180,7 +180,7 @@ eos_result_t eos_run(void)
     // pkg->version = eos_strdup("0.0.1");
     // pkg->script_str = script_str;
     // script_engine_run(pkg);
-    // script_engine_request_stop();
+    script_engine_request_stop();
     // 开始绘制
     while (1)
     {

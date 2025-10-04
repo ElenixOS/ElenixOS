@@ -693,15 +693,29 @@ static void register_lvgl_fonts(void)
     jerry_value_t fonts = jerry_object();
 
     // 注册Montserrat字体集
-#define REGISTER_FONT(name)                                                                                     \
-    do                                                                                                          \
-    {                                                                                                           \
-        jerry_value_t font_obj = jerry_object();                                                                \
-        jerry_value_free(jerry_object_set(font_obj, jerry_string_sz("__ptr"), jerry_number((uintptr_t)&name))); \
-        jerry_value_free(jerry_object_set(font_obj, jerry_string_sz("__type"), jerry_string_sz("lv_font")));    \
-        jerry_value_free(jerry_object_set(fonts, jerry_string_sz(#name), font_obj));                            \
-        jerry_value_free(font_obj);                                                                             \
-    } while (0);
+#define REGISTER_FONT(name)                                               \
+    do                                                                    \
+    {                                                                     \
+        jerry_value_t font_obj = jerry_object();                          \
+                                                                          \
+        jerry_value_t key_ptr = jerry_string_sz("__ptr");                 \
+        jerry_value_t key_type = jerry_string_sz("__type");               \
+        jerry_value_t key_name = jerry_string_sz(#name);                  \
+                                                                          \
+        jerry_value_t val_ptr = jerry_number((uintptr_t)&name);           \
+        jerry_value_t val_type = jerry_string_sz("lv_font");              \
+                                                                          \
+        jerry_value_free(jerry_object_set(font_obj, key_ptr, val_ptr));   \
+        jerry_value_free(jerry_object_set(font_obj, key_type, val_type)); \
+        jerry_value_free(jerry_object_set(fonts, key_name, font_obj));    \
+                                                                          \
+        jerry_value_free(key_ptr);                                        \
+        jerry_value_free(key_type);                                       \
+        jerry_value_free(key_name);                                       \
+        jerry_value_free(val_ptr);                                        \
+        jerry_value_free(val_type);                                       \
+        jerry_value_free(font_obj);                                       \
+    } while (0)
 #if LV_FONT_MONTSERRAT_8
     REGISTER_FONT(lv_font_montserrat_8);
 #endif
@@ -769,7 +783,9 @@ static void register_lvgl_fonts(void)
 #undef REGISTER_FONT
 
     // 将字体容器挂载到全局对象
-    jerry_value_free(jerry_object_set(global, jerry_string_sz("lv_font"), fonts));
+    jerry_value_t font_key = jerry_string_sz("lv_font");
+    jerry_value_free(jerry_object_set(global, font_key, fonts));
+    jerry_value_free(font_key);
     jerry_value_free(fonts);
     jerry_value_free(global);
 }

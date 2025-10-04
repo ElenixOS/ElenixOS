@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
  * @author Sab1e
- * @date 2025-10-02
+ * @date 2025-10-04
  */
 // Application System header files
 #include "lv_bindings.h"
@@ -261,10 +261,16 @@ static jerry_value_t js_lv_event_get_target(const jerry_call_info_t* call_info_p
     jerry_value_t js_result;
     // 包装为通用指针对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), jerry_string_sz("void*")));
+    jerry_value_t type_key = jerry_string_sz("__type");
+    jerry_value_t type = jerry_string_sz("void*");
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, type_key, type));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(type_key);
+    jerry_value_free(type);
 
     return js_result;
 }
@@ -374,10 +380,16 @@ static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t* call_inf
     jerry_value_t js_result;
     // 包装为通用指针对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), jerry_string_sz("void*")));
+    jerry_value_t type_key = jerry_string_sz("__type");
+    jerry_value_t type = jerry_string_sz("void*");
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, type_key, type));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(type_key);
+    jerry_value_free(type);
 
     return js_result;
 }
@@ -1352,11 +1364,15 @@ static jerry_value_t js_lv_obj_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -1674,11 +1690,15 @@ static jerry_value_t js_lv_arc_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -1893,11 +1913,15 @@ static jerry_value_t js_lv_label_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2106,11 +2130,15 @@ static jerry_value_t js_lv_bar_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2275,11 +2303,15 @@ static jerry_value_t js_lv_chart_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2494,11 +2526,15 @@ static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2607,11 +2643,15 @@ static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2816,11 +2856,15 @@ static jerry_value_t js_lv_msgbox_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -2884,11 +2928,15 @@ static jerry_value_t js_lv_msgbox_add_title(const jerry_call_info_t* call_info_p
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     // 释放临时字符串内存
@@ -2981,11 +3029,15 @@ static jerry_value_t js_lv_msgbox_add_header_button(const jerry_call_info_t* cal
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3049,11 +3101,15 @@ static jerry_value_t js_lv_msgbox_add_text(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     // 释放临时字符串内存
@@ -3120,11 +3176,15 @@ static jerry_value_t js_lv_msgbox_add_footer_button(const jerry_call_info_t* cal
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     // 释放临时字符串内存
@@ -3176,11 +3236,15 @@ static jerry_value_t js_lv_msgbox_add_close_button(const jerry_call_info_t* call
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3271,11 +3335,15 @@ static jerry_value_t js_lv_roller_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3450,11 +3518,15 @@ static jerry_value_t js_lv_slider_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3665,11 +3737,15 @@ static jerry_value_t js_lv_textarea_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3898,11 +3974,15 @@ static jerry_value_t js_lv_switch_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -3951,11 +4031,15 @@ static jerry_value_t js_lv_table_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -4144,11 +4228,15 @@ static jerry_value_t js_lv_scr_act(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -4197,11 +4285,15 @@ static jerry_value_t js_lv_disp_get_scr_act(const jerry_call_info_t* call_info_p
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -4292,11 +4384,15 @@ static jerry_value_t js_lv_img_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;
@@ -4445,11 +4541,15 @@ static jerry_value_t js_lv_btn_create(const jerry_call_info_t* call_info_p,
     jerry_value_t js_result;
     // 包装为LVGL对象
     js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
     jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
     jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__class"), cls));
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
     jerry_value_free(ptr);
+    jerry_value_free(cls_key);
     jerry_value_free(cls);
 
     return js_result;

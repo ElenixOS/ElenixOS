@@ -26,6 +26,8 @@
 #define _SLIDER_DEFAULT_RADIUS 50
 
 // Variables
+static int32_t _slider_symbol_label_center_x = 0;
+static int32_t _slider_symbol_label_center_y = 0;
 
 // Function Implementations
 
@@ -90,17 +92,22 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
 
     lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
 
-    lv_obj_t *label = lv_label_create(slider);
-    lv_label_set_text(label, symbol);
-    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -50);
-    lv_obj_set_user_data(slider, (void *)label);
-    lv_obj_move_foreground(label);
-    lv_obj_set_style_text_color(label, lv_color_black(), 0);
-    lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_t *label_container = lv_obj_create(slider);
+    lv_obj_remove_style_all(label_container);
+    lv_obj_set_size(label_container, 100, 100);
+    lv_obj_move_foreground(label_container);
+    lv_obj_align(label_container, LV_ALIGN_BOTTOM_MID, 0, -50);
+    lv_obj_set_size(label_container, 50, 50);
 
-    // 设置旋转原点为对象中心
-    // lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
-    // lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
+    lv_obj_t *label = lv_label_create(label_container);
+    lv_label_set_text(label, "E");
+    lv_obj_set_user_data(slider, (void *)label);
+    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_center(label);
+
+        lv_refr_now(NULL);   // 立即刷新屏幕，计算对象真实大小
+    lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
+    lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
 
     return slider;
 }
@@ -123,20 +130,18 @@ static lv_obj_t *_control_center_create_btn(lv_obj_t *parent, const char *symbol
 static void _control_center_bluetooth_switch_btn_cb(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target(e);
-    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+
+    if (lv_obj_has_state(btn, LV_STATE_CHECKED))
     {
-        if (lv_obj_has_state(btn, LV_STATE_CHECKED))
-        {
-            EOS_LOG_D("CHECKED");
-            eos_bluetooth_enable();
-            eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH, true);
-        }
-        else
-        {
-            EOS_LOG_D("UNCHECKED");
-            eos_bluetooth_disable();
-            eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false);
-        }
+        EOS_LOG_D("CHECKED");
+        eos_bluetooth_enable();
+        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH, true);
+    }
+    else
+    {
+        EOS_LOG_D("UNCHECKED");
+        eos_bluetooth_disable();
+        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false);
     }
 }
 
@@ -150,11 +155,11 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
     int16_t value = lv_slider_get_value(slider);
     eos_display_set_brightness(value);
 
-    // // 将 Slider 值映射为角度（这里假设 Slider 范围 0~100，对应 0~360°）
-    // int32_t angle = (int32_t)value * 36;
+    // 将 Slider 值映射为角度
+    int32_t angle = (int32_t)value * 36;
 
-    // // 设置 Label 旋转
-    // lv_image_set_rotation(label, angle);
+    // 设置 Label 旋转
+    lv_obj_set_style_transform_rotation(label, angle, 0);
 }
 
 static void _control_center_brightness_slider_delete_cb(lv_event_t *e)
@@ -201,7 +206,7 @@ void eos_control_center_create(lv_obj_t *parent)
     lv_obj_t *btn;
     /************************** 蓝牙开关 **************************/
     btn = _control_center_create_switch_btn(container, LV_SYMBOL_BLUETOOTH);
-    lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_VALUE_CHANGED, NULL);
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false))
     {
         lv_obj_add_state(btn, LV_STATE_CHECKED);

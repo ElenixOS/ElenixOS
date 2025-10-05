@@ -85,3 +85,4 @@ lv_color_hex
 lv_obj_add_style
 lv_disp_get_scr_act
 lv_scr_load
+lv_button_create

@@ -515,12 +515,12 @@ static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* call_info_p,
 /**
  * @brief Create a button object pointer to the created button
  */
-static jerry_value_t js_lv_btn_create(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_button_create(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("lv_btn_create: Insufficient arguments");
+        return throw_error("lv_button_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -971,12 +971,12 @@ static jerry_value_t js_lv_delay_ms(const jerry_call_info_t* call_info_p,
 /**
  * @brief Return a pointer to the active screen on a display pointer to the active screen object (loaded by ' :ref:`lv_screen_load()` ')
  */
-static jerry_value_t js_lv_disp_get_scr_act(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_display_get_screen_active(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("lv_disp_get_scr_act: Insufficient arguments");
+        return throw_error("lv_display_get_screen_active: Insufficient arguments");
     }
 
     // 解析参数: disp (lv_display_t*)
@@ -1417,12 +1417,12 @@ static jerry_value_t js_lv_event_get_user_data(const jerry_call_info_t* call_inf
 /**
  * @brief Create an image object pointer to the created image
  */
-static jerry_value_t js_lv_img_create(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_image_create(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("lv_img_create: Insufficient arguments");
+        return throw_error("lv_image_create: Insufficient arguments");
     }
 
     // 解析参数: parent (lv_obj_t*)
@@ -1474,12 +1474,12 @@ static jerry_value_t js_lv_img_create(const jerry_call_info_t* call_info_p,
 /**
  * @brief Set the rotation angle of the image. The image will be rotated around the set pivot set by :ref:`lv_image_set_pivot()` Note that indexed and alpha only images can't be transformed. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation will be set to 0 automatically.
  */
-static jerry_value_t js_lv_img_set_angle(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_image_set_rotation(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("lv_img_set_angle: Insufficient arguments");
+        return throw_error("lv_image_set_rotation: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -1524,12 +1524,12 @@ static jerry_value_t js_lv_img_set_angle(const jerry_call_info_t* call_info_p,
 /**
  * @brief Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  */
-static jerry_value_t js_lv_img_set_zoom(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_image_set_scale(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("lv_img_set_zoom: Insufficient arguments");
+        return throw_error("lv_image_set_scale: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2650,12 +2650,12 @@ static jerry_value_t js_lv_obj_create(const jerry_call_info_t* call_info_p,
 /**
  * @brief Delete an object and all of its children. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETED to deleted objects.
  */
-static jerry_value_t js_lv_obj_del(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_obj_delete(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("lv_obj_del: Insufficient arguments");
+        return throw_error("lv_obj_delete: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -2746,12 +2746,12 @@ static jerry_value_t js_lv_obj_has_state(const jerry_call_info_t* call_info_p,
 /**
  * @brief Remove one or more flags
  */
-static jerry_value_t js_lv_obj_clear_flag(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_obj_remove_flag(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("lv_obj_clear_flag: Insufficient arguments");
+        return throw_error("lv_obj_remove_flag: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -3798,7 +3798,7 @@ static jerry_value_t js_lv_roller_set_selected(const jerry_call_info_t* call_inf
 /**
  * @brief Get the active screen of the default display pointer to the active screen
  */
-static jerry_value_t js_lv_scr_act(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_screen_active(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 调用底层函数
@@ -3827,12 +3827,12 @@ static jerry_value_t js_lv_scr_act(const jerry_call_info_t* call_info_p,
 /**
  * @brief Load a screen on the default display
  */
-static jerry_value_t js_lv_scr_load(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_screen_load(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 1) {
-        return throw_error("lv_scr_load: Insufficient arguments");
+        return throw_error("lv_screen_load: Insufficient arguments");
     }
 
     // 解析参数: scr (lv_obj_t*)
@@ -4323,12 +4323,12 @@ static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* call_in
 /**
  * @brief Set the number of columns
  */
-static jerry_value_t js_lv_table_set_col_cnt(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_table_set_column_count(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("lv_table_set_col_cnt: Insufficient arguments");
+        return throw_error("lv_table_set_column_count: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4373,12 +4373,12 @@ static jerry_value_t js_lv_table_set_col_cnt(const jerry_call_info_t* call_info_
 /**
  * @brief Set the number of rows
  */
-static jerry_value_t js_lv_table_set_row_cnt(const jerry_call_info_t* call_info_p,
+static jerry_value_t js_lv_table_set_row_count(const jerry_call_info_t* call_info_p,
     const jerry_value_t args[],
     const jerry_length_t argc) {
     // 参数数量检查
     if (argc < 2) {
-        return throw_error("lv_table_set_row_cnt: Insufficient arguments");
+        return throw_error("lv_table_set_row_count: Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
@@ -4697,6 +4697,7 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {
     { "lv_bar_create", js_lv_bar_create },
     { "lv_bar_set_value", js_lv_bar_set_value },
     { "lv_bar_set_range", js_lv_bar_set_range },
+    { "lv_button_create", js_lv_button_create },
     { "lv_chart_create", js_lv_chart_create },
     { "lv_chart_set_type", js_lv_chart_set_type },
     { "lv_chart_set_point_count", js_lv_chart_set_point_count },
@@ -4745,7 +4746,6 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {
     { "lv_img_set_zoom", js_lv_image_set_scale },
     { "lv_image_set_scale", js_lv_image_set_scale },
     { "lv_btn_create", js_lv_button_create },
-    { "lv_button_create", js_lv_button_create },
     { "lv_table_set_col_cnt", js_lv_table_set_column_count },
     { "lv_table_set_column_count", js_lv_table_set_column_count },
     { "lv_table_set_row_cnt", js_lv_table_set_row_count },

@@ -1076,13 +1076,27 @@ def main():
     # 生成函数实现（只用新API名）
     binding_code = ""
     for name in sorted(real_func_names):
-        # 找到新API的函数定义
+        # 优先用新API名查找真实定义
+        real_func = None
+        # 先查新API名
         for func in exported_funcs:
-            target_name = macro_alias_map.get(func['name'], func['name'])
-            if target_name == name:
-                binding_code += generate_binding_function(func, data, EXPORT_FUNCTION_PATTERNS)
-                binding_code += "\n\n"
+            # 如果是宏别名，func['name']是旧API，macro_alias_map[func['name']]是新API
+            if macro_alias_map.get(func['name'], None) == name:
+                real_func = func
                 break
+            # 如果本身就是新API
+            if func['name'] == name:
+                real_func = func
+                break
+        # 生成实现体，函数名始终用新API名
+        if real_func:
+            # 复制一份func并改名为新API名
+            func_for_impl = dict(real_func)
+            func_for_impl['name'] = name
+            binding_code += generate_binding_function(func_for_impl, data, EXPORT_FUNCTION_PATTERNS)
+            binding_code += "\n\n"
+        else:
+            print(f"{Fore.RED}[警告] 未找到 {name} 的函数定义，无法生成实现体{Style.RESET_ALL}")
 
     # 生成函数列表，传入宏别名映射
     func_list = generate_native_funcs_list(exported_funcs, macro_alias_map)

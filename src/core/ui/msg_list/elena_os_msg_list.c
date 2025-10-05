@@ -63,7 +63,7 @@ static void _set_translate_y_cb(void *var, int32_t value)
 static void _del_item_cb(msg_list_t *list)
 {
     EOS_CHECK_PTR_RETURN(list);
-    uint8_t child_count = lv_obj_get_child_cnt(list->list);
+    uint8_t child_count = lv_obj_get_child_count(list->list);
     if (child_count <= 1)
     {
         // 显示无消息标签
@@ -104,7 +104,7 @@ static void _animate_items_up(msg_list_t *msg_list, msg_list_item_t *deleted_ite
                                 lv_obj_get_style_margin_bottom(deleted_item->container, 0);
 
     // 获取所有子项
-    uint32_t child_count = lv_obj_get_child_cnt(msg_list->list);
+    uint32_t child_count = lv_obj_get_child_count(msg_list->list);
     bool found_deleted = false;
 
     for (uint32_t i = 0; i < child_count; i++)
@@ -415,7 +415,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
         lv_obj_t *icon = lv_image_create(detail_container);
         lv_obj_set_size(icon, 80, 80);
         lv_obj_set_style_border_width(icon, 0, 0);
-        lv_img_set_src(icon, lv_img_get_src(original_icon));
+        lv_image_set_src(icon, lv_image_get_src(original_icon));
         lv_obj_remove_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
     }
 
@@ -434,7 +434,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     lv_obj_set_style_margin_top(msg_label, 10, 0);
 
     // 添加"标记为已读"按钮
-    lv_obj_t *mark_as_read_btn = lv_btn_create(detail_container);
+    lv_obj_t *mark_as_read_btn = lv_button_create(detail_container);
     lv_obj_set_size(mark_as_read_btn, lv_pct(80), 80);
     lv_obj_remove_flag(mark_as_read_btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(mark_as_read_btn, lv_color_hex(0x212121), 0);
@@ -477,7 +477,7 @@ msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
     item->msg_list = list;
     item->is_deleted = false;
     // 创建容器
-    item->container = lv_btn_create(list->list);
+    item->container = lv_button_create(list->list);
     EOS_CHECK_PTR_RETURN_VAL_FREE(item->container, NULL, item);
     lv_obj_set_size(item->container, lv_pct(100), LV_SIZE_CONTENT);
     // 垂直排布
@@ -634,7 +634,7 @@ void eos_msg_list_clear_all(msg_list_t *msg_list)
     EOS_CHECK_PTR_RETURN(msg_list && msg_list->list);
 
     // 获取所有子对象
-    uint32_t child_count = lv_obj_get_child_cnt(msg_list->list);
+    uint32_t child_count = lv_obj_get_child_count(msg_list->list);
     lv_obj_t **children = lv_malloc(sizeof(lv_obj_t *) * child_count);
 
     // 保存子对象指针（避免动态删除影响遍历）
@@ -699,7 +699,7 @@ static void _trigger_msg_anims(msg_list_t *list)
     EOS_CHECK_PTR_RETURN(list);
     static uint8_t anim_index = 0; // 静态变量记录当前动画序号
     lv_obj_t *parent = list->list;
-    uint8_t child_count = lv_obj_get_child_cnt(parent);
+    uint8_t child_count = lv_obj_get_child_count(parent);
 
     // 每次只处理一个消息项的动画
     for (uint8_t i = anim_index; i < child_count && list->animating_count < 2; i++)
@@ -813,7 +813,7 @@ msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     lv_obj_set_scroll_dir(list->list, LV_DIR_VER);
     lv_obj_add_event_cb(list->list, _msg_list_deleted_cb, LV_EVENT_DELETE, list);
     // 创建清除所有按钮
-    list->clear_all_btn = lv_btn_create(list->list);
+    list->clear_all_btn = lv_button_create(list->list);
     lv_obj_set_size(list->clear_all_btn, lv_pct(100), 80);
     lv_obj_remove_flag(list->clear_all_btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(list->clear_all_btn, lv_color_hex(0x212121), 0);

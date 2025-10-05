@@ -274,7 +274,7 @@
 //                                            true, /* 深色模式 */
 //                                            &lv_font_montserrat_24);
 // #endif
-//     lv_disp_set_theme(NULL, th);
+//     lv_display_set_theme(NULL, th);
 
 //     lv_obj_t *scr = lv_screen_active();
 

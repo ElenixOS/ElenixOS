@@ -247,7 +247,7 @@ static jerry_value_t js_eos_nav_back(const jerry_call_info_t *call_info_p,
     return js_result;
 }
 
-static jerry_value_t js_lv_img_set_src(const jerry_call_info_t *call_info_p,
+static jerry_value_t js_lv_image_set_src(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args[],
                                        const jerry_length_t argc)
 {
@@ -781,8 +781,8 @@ const script_engine_func_entry_t script_engine_native_funcs[] = {
      .handler = js_eos_app_header_hide},
     {.name = "eos_app_header_show",
      .handler = js_eos_app_header_show},
-    {.name = "lv_img_set_src",
-     .handler = js_lv_img_set_src},
+    {.name = "lv_image_set_src",
+     .handler = js_lv_image_set_src},
     {.name = "config_set_str",
      .handler = js_config_set_str},
     {.name = "config_set_boolean",

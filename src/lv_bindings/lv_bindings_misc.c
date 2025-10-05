@@ -390,7 +390,7 @@ static jerry_value_t js_lv_timer_delete(const jerry_call_info_t *call_info_p,
     }
 
     // 删除定时器
-    lv_timer_del(timer);
+    lv_timer_delete(timer);
 
     return jerry_undefined();
 }

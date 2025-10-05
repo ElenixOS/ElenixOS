@@ -54,7 +54,7 @@ static void _img_delete_event_cb(lv_event_t *e)
 
 void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h)
 {
-    const void *src = lv_img_get_src(img_obj);
+    const void *src = lv_image_get_src(img_obj);
 
     if (src == NULL)
     {

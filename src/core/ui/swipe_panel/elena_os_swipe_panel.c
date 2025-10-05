@@ -231,7 +231,7 @@ static void _swipe_panel_event_cb_released(lv_event_t *e)
 
     lv_anim_set_time(&a, 120);
     lv_anim_set_user_data(&a, swipe_panel);
-    lv_anim_set_ready_cb(&a, _swipe_panel_anim_completed_cb);
+    lv_anim_set_completed_cb(&a, _swipe_panel_anim_completed_cb);
     lv_anim_start(&a);
 }
 
@@ -326,7 +326,7 @@ void eos_swipe_panel_pull_back(swipe_panel_t *swipe_panel)
 
     lv_anim_set_time(&a, 250);
     lv_anim_set_user_data(&a, swipe_panel);
-    lv_anim_set_ready_cb(&a, _swipe_panel_anim_completed_cb);
+    lv_anim_set_completed_cb(&a, _swipe_panel_anim_completed_cb);
     lv_anim_start(&a);
 
     // 同时移动touch_area

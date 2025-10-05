@@ -23,7 +23,7 @@ print_macro_info = False
 HEADER_CODE = r"""
 /**
  * @file lv_bindings.c
- * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本自动生成。
+ * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
  * @date """ + date.today().strftime("%Y-%m-%d") + r"""
  */
@@ -725,13 +725,28 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 
     return code
 
-def generate_native_funcs_list(functions):
-    """生成原生函数列表数组"""
+def generate_native_funcs_list(functions, macro_alias_map=None):
+    """生成原生函数列表数组，支持宏别名（旧API映射到新API）"""
     entries = []
+    added_names = set()
 
     for func in functions:
         func_name = func['name']
-        entries.append(f'    {{ "{func_name}", js_{func_name} }}')
+        # 支持宏别名
+        if macro_alias_map and func_name in macro_alias_map:
+            real_func_name = macro_alias_map[func_name]
+            # 旧API条目
+            if func_name not in added_names:
+                entries.append(f'    {{ "{func_name}", js_{real_func_name} }}')
+                added_names.add(func_name)
+            # 新API条目
+            if real_func_name not in added_names:
+                entries.append(f'    {{ "{real_func_name}", js_{real_func_name} }}')
+                added_names.add(real_func_name)
+        else:
+            if func_name not in added_names:
+                entries.append(f'    {{ "{func_name}", js_{func_name} }}')
+                added_names.add(func_name)
 
     entries_str = ',\n'.join(entries)
     return f"""
@@ -739,7 +754,7 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {{
 {entries_str}
 }};
 
-const unsigned int lvgl_binding_funcs_count = {len(functions)+2};
+const unsigned int lvgl_binding_funcs_count = {len(entries)};
 """
 
 def load_export_macros(file_path):
@@ -1034,19 +1049,43 @@ def main():
         print(f"{Fore.RED}[错误] 没有找到匹配的导出函数，请检查 export_functions.txt 文件。匹配模式: {EXPORT_FUNCTION_PATTERNS}{Style.RESET_ALL}")
         return
 
-    # 生成函数声明
+    # 处理宏别名映射
+    macro_alias_map = {}
+    for macro in data.get('macros', []):
+        macro_name = macro.get('name')
+        initializer = macro.get('initializer', '').strip() if macro.get('initializer') else None
+        # 只处理无参数宏，且initializer是另一个API名
+        if macro_name and initializer and initializer.startswith('lv_') and macro_name != initializer:
+            macro_alias_map[macro_name] = initializer
+
+    # 只生成新API的声明和实现
+    real_func_names = set()
+    for func in exported_funcs:
+        func_name = func['name']
+        if macro_alias_map.get(func_name):
+            real_func_names.add(macro_alias_map[func_name])
+        else:
+            real_func_names.add(func_name)
+
+    # 生成函数声明（只用新API名）
     func_decls = ''.join([
-        f"static jerry_value_t js_{func['name']}(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);\n"
-        for func in exported_funcs
+        f"static jerry_value_t js_{name}(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);\n"
+        for name in sorted(real_func_names)
     ])
 
-    # 生成函数实现
-    for func in exported_funcs:
-        binding_code += generate_binding_function(func, data, EXPORT_FUNCTION_PATTERNS)
-        binding_code += "\n\n"
+    # 生成函数实现（只用新API名）
+    binding_code = ""
+    for name in sorted(real_func_names):
+        # 找到新API的函数定义
+        for func in exported_funcs:
+            target_name = macro_alias_map.get(func['name'], func['name'])
+            if target_name == name:
+                binding_code += generate_binding_function(func, data, EXPORT_FUNCTION_PATTERNS)
+                binding_code += "\n\n"
+                break
 
-    # 生成函数列表
-    func_list = generate_native_funcs_list(exported_funcs)
+    # 生成函数列表，传入宏别名映射
+    func_list = generate_native_funcs_list(exported_funcs, macro_alias_map)
 
     # 从JSON数据中获取enums和macros
     enums = data.get('enums', [])

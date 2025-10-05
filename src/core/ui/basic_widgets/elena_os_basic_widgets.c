@@ -370,7 +370,7 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
     lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(circle, circle_color, 0);
     // 绘制图像
-    lv_obj_t *icon = lv_img_create(circle);
+    lv_obj_t *icon = lv_image_create(circle);
     lv_image_set_src(icon, icon_src);
     lv_obj_center(icon);
     // 文字
@@ -396,7 +396,7 @@ lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circ
     lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(circle, circle_color, 0);
     // 绘制图像
-    lv_obj_t *icon = lv_img_create(circle);
+    lv_obj_t *icon = lv_image_create(circle);
     lv_image_set_src(icon, icon_src);
     lv_obj_center(icon);
     // 文字

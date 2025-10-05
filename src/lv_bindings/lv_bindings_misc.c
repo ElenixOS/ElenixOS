@@ -311,21 +311,21 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     // 绑定到根页面以便实现自动删除
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
-        lv_obj_t *root_screen = eos_nav_get_root_screen();
-        if (!root_screen)
+        lv_obj_t *home_screen = eos_nav_get_home_screen();
+        if (!home_screen)
         {
             return throw_error("Root screen is NULL");
         }
-        lv_obj_add_event_cb(root_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+        lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
     }
     else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
-        lv_obj_t *root_screen = eos_watchface_get_screen();
-        if (!root_screen)
+        lv_obj_t *home_screen = eos_watchface_get_screen();
+        if (!home_screen)
         {
             return throw_error("Root screen is NULL");
         }
-        lv_obj_add_event_cb(root_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+        lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
     }
 
     timer_data->timer = timer;

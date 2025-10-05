@@ -18,13 +18,14 @@
 #include "elena_os_app_list.h"
 // Macros and Definitions
 #define NAV_STACK_SIZE 32
-#define NAV_ROOT_SCREEN_INDEX 0
+#define NAV_HOME_SCREEN_INDEX 0
 /**
  * @brief 导航栈结构体
  */
 typedef struct
 {
-    lv_obj_t *stack[NAV_STACK_SIZE]; /**< [0]: root_scr, [<1]: other screens*/
+    lv_obj_t *stack[NAV_STACK_SIZE];
+    lv_obj_t *launcher_screen;
     int8_t top;
     bool initialized;
 } eos_nav_stack_t;
@@ -101,9 +102,9 @@ static lv_obj_t *_eos_nav_peek_prev(void)
     return (eos_nav.top > 0) ? eos_nav.stack[eos_nav.top - 1] : NULL;
 }
 
-lv_obj_t *eos_nav_get_root_screen(void)
+lv_obj_t *eos_nav_get_home_screen(void)
 {
-    return eos_nav.stack[NAV_ROOT_SCREEN_INDEX];
+    return eos_nav.top >= NAV_HOME_SCREEN_INDEX ? eos_nav.stack[NAV_HOME_SCREEN_INDEX] : NULL;
 }
 
 /**
@@ -125,42 +126,31 @@ eos_result_t eos_nav_clean_up(void)
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
+    // 加载 launcher_screen
+    lv_screen_load(eos_nav.launcher_screen);
+
     // 从栈顶向下清理所有screen
-    for (int i = eos_nav.top; i >= 0; i--)
+    for (int i = NAV_STACK_SIZE - 1; i >= 0; i--)
     {
         if (eos_nav.stack[i] != NULL)
         {
-            lv_obj_t *scr = eos_nav.stack[i];
-            eos_nav.stack[i] = NULL; // 清除指针
-            lv_obj_del(scr);         // 彻底删除screen
-            EOS_LOG_D("Cleared screen at stack position %d", i);
+            lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
+            EOS_LOG_D("Cleared screen at stack position %d, ptr: %p", i, eos_nav.stack[i]);
         }
+        eos_nav.stack[i] = NULL; // 清除指针
     }
-
-    lv_obj_t *root_screen = eos_nav.stack[NAV_ROOT_SCREEN_INDEX];
-
-    // 重置栈状态（只保留root_screen）
-    for (int i = 0; i < NAV_STACK_SIZE; i++)
-    {
-        eos_nav.stack[i] = NULL;
-    }
-    EOS_LOG_D("LOAD BASE SCR");
-    // 加载root_screen
-    lv_scr_load(root_screen);
+    eos_nav.launcher_screen = NULL;
     eos_nav.top = -1;
     eos_nav.initialized = false;
     atomic_store(&eos_nav_busy, false);
 
-    EOS_LOG_D("Nav stack completely cleared. Only base screen remains");
+    EOS_LOG_D("Nav stack completely cleared.");
     return EOS_OK;
 }
 
-/**
- * @brief 初始化导航栈
- * @param root_screen 基础页面（不会被删除）
- */
-lv_obj_t *eos_nav_init(void)
+lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 {
+    EOS_CHECK_PTR_RETURN_VAL(launcher_screen, NULL);
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         EOS_LOG_E("Watchface can't use nav");
@@ -171,22 +161,27 @@ lv_obj_t *eos_nav_init(void)
         eos_nav_clean_up();
     }
 
-    // 创建root_screen（脚本的根页面）
-    lv_obj_t *root_screen = lv_obj_create(NULL);
-    if (!root_screen)
+    // 创建home_screen（脚本的根页面）
+    lv_obj_t *home_screen = lv_obj_create(NULL);
+    if (!home_screen)
     {
         EOS_LOG_E("Create root screen failed.");
         return NULL;
     }
 
-    // 初始化栈：stack[0] = root_screen
-    eos_nav.stack[NAV_ROOT_SCREEN_INDEX] = root_screen;
-    eos_nav.top = 0;
+    // 初始化栈
+    eos_nav.launcher_screen = launcher_screen;
+    eos_nav.stack[NAV_HOME_SCREEN_INDEX] = home_screen;
+    eos_nav.top = NAV_HOME_SCREEN_INDEX;
     eos_nav.initialized = true;
 
-    lv_obj_add_style(root_screen, eos_theme_get_screen_style(), 0);
-    EOS_LOG_D("Nav stack initialized: root_screen=%p, ", root_screen);
-    return root_screen;
+    lv_obj_add_style(home_screen, eos_theme_get_screen_style(), 0);
+
+    EOS_LOG_D("Launcher screen = %p", eos_nav.launcher_screen);
+    EOS_LOG_D("Home screen = %p", home_screen);
+
+    EOS_LOG_D("Nav stack initialized: home_screen=%p, ", home_screen);
+    return home_screen;
 }
 
 /**
@@ -226,7 +221,7 @@ lv_obj_t *eos_nav_scr_create(void)
         if (eos_nav.stack[i] == scr)
         {
             EOS_LOG_E("New screen address conflicts with existing screen!");
-            lv_obj_del(scr);
+            lv_obj_delete(scr);
             return NULL;
         }
     }
@@ -259,22 +254,22 @@ eos_result_t eos_nav_back_clean(void)
         return -EOS_ERR_STACK_EMPTY;
     }
 
-    // 如果当前在root_scr（top==0），则清理整个栈
-    if (eos_nav.top == NAV_ROOT_SCREEN_INDEX)
+    // 如果当前在home_screen（top==0），则清理整个栈
+    if (eos_nav.top == NAV_HOME_SCREEN_INDEX)
     {
         atomic_store(&eos_nav_busy, false);
         // 停止脚本引擎
         if (script_engine_get_state() == SCRIPT_STATE_RUNNING ||
             script_engine_get_state() == SCRIPT_STATE_SUSPEND)
         {
-            script_engine_request_stop();
+            script_engine_request_stop(); // 内部会自动调用栈清理函数
         }
         else
         {
             eos_nav_clean_up();
         }
         eos_app_list_create();
-        EOS_LOG_D("Exit");
+        EOS_LOG_D("Nav Exit");
         EOS_MEM("Mem check: eos_nav_back_clean");
         return EOS_OK;
     }
@@ -283,7 +278,7 @@ eos_result_t eos_nav_back_clean(void)
     lv_obj_t *prev_scr = _eos_nav_peek_prev();
     if (!prev_scr)
     {
-        prev_scr = eos_nav.stack[NAV_ROOT_SCREEN_INDEX]; // 回退到 root_screen
+        prev_scr = eos_nav.stack[NAV_HOME_SCREEN_INDEX]; // 回退到 home_screen
     }
 
     // 保存要删除的页面
@@ -293,12 +288,12 @@ eos_result_t eos_nav_back_clean(void)
     // 删除页面
     if (scr_to_del)
     {
-        lv_obj_del(scr_to_del);
+        lv_obj_delete(scr_to_del);
         EOS_LOG_D("Deleted screen at %p", scr_to_del);
     }
 
     // 加载前一个屏幕
-    lv_scr_load(prev_scr);
+    lv_screen_load(prev_scr);
 
     EOS_MEM("Clear scr");
     atomic_store(&eos_nav_busy, false);
@@ -329,11 +324,11 @@ eos_result_t eos_nav_back(void)
     lv_obj_t *prev_scr = _eos_nav_peek_prev();
     if (!prev_scr)
     {
-        prev_scr = eos_nav.stack[NAV_ROOT_SCREEN_INDEX]; // 回退到 base screen
+        prev_scr = eos_nav.stack[NAV_HOME_SCREEN_INDEX]; // 回退到 base screen
     }
 
     eos_nav.top--; // 更新栈指针
-    lv_scr_load(prev_scr);
+    lv_screen_load(prev_scr);
 
     atomic_store(&eos_nav_busy, false);
     return EOS_OK;

@@ -76,9 +76,9 @@
 // static void _test_msg_list()
 // {
 //     _create_new_scr();
-//     msg_list_t *msg_list = eos_msg_list_create(lv_scr_act());
+//     msg_list_t *msg_list = eos_msg_list_create(lv_screen_active());
 //     EOS_CHECK_PTR_RETURN(msg_list);
-//     lv_obj_t *btn = lv_button_create(lv_scr_act());
+//     lv_obj_t *btn = lv_button_create(lv_screen_active());
 //     lv_obj_center(btn);
 //     lv_obj_t *btn_label = lv_label_create(btn);
 //     lv_label_set_text(btn_label, LV_SYMBOL_PLUS " Add new message");
@@ -89,7 +89,7 @@
 // {
 //     _create_new_scr();
 
-//     lv_obj_t *back_btn = eos_back_btn_create(lv_scr_act(), true);
+//     lv_obj_t *back_btn = eos_back_btn_create(lv_screen_active(), true);
 //     lv_obj_center(back_btn);
 // }
 
@@ -131,13 +131,13 @@
 // {
 //     _create_new_scr();
 
-//     lv_obj_t *label = eos_lang_label_create(lv_scr_act(), STR_ID_TEST_LANG_STR);
+//     lv_obj_t *label = eos_lang_label_create(lv_screen_active(), STR_ID_TEST_LANG_STR);
 //     lv_obj_set_width(label, lv_pct(100));
 // #ifdef TEST_USE_ZH_FONT
 //     lv_obj_set_style_text_font(label, &eos_font_resource_han_rounded_30, LV_PART_MAIN);
 // #endif
 //     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-//     lv_obj_t *btn = lv_button_create(lv_scr_act());
+//     lv_obj_t *btn = lv_button_create(lv_screen_active());
 //     lv_obj_t *btn_label = lv_label_create(btn);
 //     lv_label_set_text(btn_label, LV_SYMBOL_LOOP " Switch Language");
 //     lv_obj_add_event_cb(btn, _test_lang_cb, LV_EVENT_CLICKED, NULL);
@@ -230,19 +230,19 @@
 // {
 //     _create_new_scr();
 //     // 创建图片对象但不设置源
-//     img = lv_image_create(lv_scr_act());
+//     img = lv_image_create(lv_screen_active());
 //     lv_obj_center(img);
 //     lv_obj_move_background(img);
 
 //     // 创建文本输入框
-//     ta = lv_textarea_create(lv_scr_act());
+//     ta = lv_textarea_create(lv_screen_active());
 //     lv_obj_set_size(ta, LV_HOR_RES - 40, 80);
 //     lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
 //     lv_textarea_set_placeholder_text(ta, "Input image path here.(e.g. /flower.bin)");
 //     lv_textarea_set_one_line(ta, true);
 
 //     // 添加键盘
-//     lv_obj_t *kb = lv_keyboard_create(lv_scr_act());
+//     lv_obj_t *kb = lv_keyboard_create(lv_screen_active());
 //     lv_keyboard_set_textarea(kb, ta);
 //     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); // 默认隐藏键盘
 
@@ -263,26 +263,26 @@
 // {
 // #ifdef DEBUG_USE_ZH_FONT
 
-//     lv_theme_t *th = lv_theme_default_init(lv_disp_get_default(), lv_palette_main(LV_PALETTE_BLUE),
+//     lv_theme_t *th = lv_theme_default_init(lv_display_get_default(), lv_palette_main(LV_PALETTE_BLUE),
 //                                            lv_palette_main(LV_PALETTE_RED),
 //                                            true, /* 深色模式 */
 //                                            &eos_font_resource_han_rounded_30);
-    
+
 // #else
-//     lv_theme_t *th = lv_theme_default_init(lv_disp_get_default(), lv_palette_main(LV_PALETTE_BLUE),
+//     lv_theme_t *th = lv_theme_default_init(lv_display_get_default(), lv_palette_main(LV_PALETTE_BLUE),
 //                                            lv_palette_main(LV_PALETTE_RED),
 //                                            true, /* 深色模式 */
 //                                            &lv_font_montserrat_24);
 // #endif
 //     lv_disp_set_theme(NULL, th);
 
-//     lv_obj_t *scr = lv_scr_act();
+//     lv_obj_t *scr = lv_screen_active();
 
-//     // lv_display_t *disp = lv_disp_get_default();
+//     // lv_display_t *disp = lv_display_get_default();
 
 //     // lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-//     // lv_obj_t *img = lv_image_create(lv_scr_act());
+//     // lv_obj_t *img = lv_image_create(lv_screen_active());
 //     // eos_img_set_src(img, "/bg.bin");
 //     // lv_obj_center(img);
 //     // lv_obj_move_background(img);

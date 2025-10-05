@@ -50,7 +50,7 @@ static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char 
 static void _control_center_slider_page_clicked_cb(lv_event_t *e)
 {
     lv_obj_t *page = lv_event_get_target(e);
-    lv_obj_del(page);
+    lv_obj_delete(page);
 }
 
 static lv_obj_t *_control_center_slider_create(const char *symbol)

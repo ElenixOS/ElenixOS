@@ -166,7 +166,7 @@ eos_result_t eos_run(void)
     eos_watchface_create(); // 加载表盘
     // script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
     // const char *script_str = malloc(4*1024);
-    // const char *code = "let label = lv_label_create(lv_scr_act());"
+    // const char *code = "let label = lv_label_create(lv_screen_active());"
     //                   "lv_label_set_text(label,\"HelloWorld\");"
     //                   "lv_obj_center(label);";
     // // const char *code = "var str = 'hello world';";

@@ -397,7 +397,7 @@ static void _settings_screen_additional_settings(lv_event_t *e)
 /************************** 系统设置 **************************/
 EOS_DECLARE_SCREEN_ASYNC(eos_settings_create)
 {
-    lv_obj_t *scr = eos_nav_init();
+    lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS);
     lv_screen_load(scr);
 

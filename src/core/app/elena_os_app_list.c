@@ -154,7 +154,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
 
     pkg->script_str = eos_read_file(script_path);
     // 无需清理字符串，脚本运行结束后自动清理
-    lv_obj_t *scr = eos_nav_init();
+    lv_obj_t *scr = eos_nav_init(app_list_screen);
     eos_screen_bind_header(scr, pkg->name);
     lv_screen_load(scr);
     script_engine_result_t ret = script_engine_run(pkg);
@@ -226,7 +226,7 @@ EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create)
 {
     if (app_list_screen)
     {
-        lv_obj_del(app_list_screen);
+        lv_obj_delete(app_list_screen);
     }
     app_list_screen = lv_obj_create(NULL);
     // 创建新的页面用于绘制应用列表

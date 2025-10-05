@@ -31,7 +31,7 @@ static void _swipe_panel_event_cb_pressed(lv_event_t *e)
     }
     active_swipe_panel = swipe_panel;
     lv_point_t p;
-    lv_indev_get_point(lv_indev_get_act(), &p);
+    lv_indev_get_point(lv_indev_active(), &p);
 
     swipe_panel->touch_start_x = p.x;
     swipe_panel->touch_start_y = p.y;
@@ -57,7 +57,7 @@ static void _swipe_panel_event_cb_pressing(lv_event_t *e)
     }
 
     lv_point_t p;
-    lv_indev_get_point(lv_indev_get_act(), &p);
+    lv_indev_get_point(lv_indev_active(), &p);
 
     // 预计算常用值
     lv_coord_t touch_diff = (swipe_panel->dir == SWIPE_DIR_UP || swipe_panel->dir == SWIPE_DIR_DOWN)
@@ -415,8 +415,8 @@ void eos_swipe_panel_delete(swipe_panel_t *swipe_panel)
 {
     if (!swipe_panel)
         return;
-    lv_obj_del(swipe_panel->swipe_obj);
-    lv_obj_del(swipe_panel->touch_area);
+    lv_obj_delete(swipe_panel->swipe_obj);
+    lv_obj_delete(swipe_panel->touch_area);
     lv_free(swipe_panel);
 }
 
@@ -445,6 +445,7 @@ swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)
     lv_obj_set_style_radius(swipe_panel->handle_bar, 5, 0);
     lv_obj_set_style_bg_color(swipe_panel->handle_bar, lv_color_hex(0xA6A6A6), 0);
     lv_obj_set_style_border_width(swipe_panel->handle_bar, 0, 0);
+    lv_obj_remove_flag(swipe_panel->handle_bar, LV_OBJ_FLAG_SCROLLABLE);
 
     // 默认设置为下拉模式（位于底部）
     _update_handle_bar_position(swipe_panel, SWIPE_DIR_DOWN);

@@ -29,7 +29,7 @@ void eos_anim_blocker_show(void){
 }
 
 void eos_anim_blocker_hide(void){
-    lv_obj_del(blocker);
+    lv_obj_delete(blocker);
 }
 
 /**
@@ -102,7 +102,7 @@ static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
 void eos_anim_del(eos_anim_t* anim)
 {
     if (!anim) return;
-    
+
     if (anim->anim_timeline) {
         lv_anim_timeline_delete(anim->anim_timeline);
     }

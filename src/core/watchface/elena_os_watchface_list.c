@@ -54,7 +54,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
 EOS_DECLARE_SCREEN_ASYNC(eos_watchface_list_create)
 {
     if(watchface_list_screen){
-        lv_obj_del(watchface_list_screen);
+        lv_obj_delete(watchface_list_screen);
     }
     // 创建新的页面用于绘制应用列表
     watchface_list_screen = lv_obj_create(NULL);
@@ -85,7 +85,7 @@ EOS_DECLARE_SCREEN_ASYNC(eos_watchface_list_create)
         lv_obj_set_style_border_width(item, 0, 0);
         lv_obj_set_style_shadow_width(item, 0, 0);
         lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
-        lv_obj_clear_flag(item, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(item, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_flex_align(item,
                               LV_FLEX_ALIGN_START,   // 主轴(水平方向)居中
                               LV_FLEX_ALIGN_CENTER,  // 交叉轴(垂直方向)居中

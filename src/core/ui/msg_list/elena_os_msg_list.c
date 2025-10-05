@@ -175,7 +175,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
 
     // 获取释放位置
     lv_point_t release_pos;
-    lv_indev_t *indev = lv_indev_get_act();
+    lv_indev_t *indev = lv_indev_active();
     lv_indev_get_point(indev, &release_pos);
 
     // 计算移动距离
@@ -260,7 +260,7 @@ static void _msg_list_item_pressing_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(item && item->container && !item->is_deleted);
 
     // 获取当前触摸点
-    lv_indev_t *indev = lv_indev_get_act();
+    lv_indev_t *indev = lv_indev_active();
     lv_point_t point;
     lv_indev_get_point(indev, &point);
 
@@ -293,7 +293,7 @@ static void _msg_list_item_pressing_cb(lv_event_t *e)
     {
         // 阻止事件冒泡，避免触发列表垂直滚动
         lv_event_stop_processing(e);
-        lv_obj_clear_flag(item->msg_list->list, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(item->msg_list->list, LV_OBJ_FLAG_SCROLLABLE);
         // 计算新的水平位置
         int32_t new_x = item->swipe_data.start_translate_x + delta_x;
         if (abs(new_x) > lv_display_get_horizontal_resolution(NULL) * 0.8)
@@ -321,7 +321,7 @@ static void _msg_list_item_pressed_cb(lv_event_t *e)
     item->swipe_data.swipe_type = SWIPE_UNKNOWN;
 
     // 记录按下状态和位置
-    lv_indev_t *indev = lv_indev_get_act();
+    lv_indev_t *indev = lv_indev_active();
     lv_indev_get_point(indev, &item->press_pos);
     item->swipe_data.start_x = item->press_pos.x;
     item->swipe_data.start_y = item->press_pos.y;
@@ -341,7 +341,7 @@ static void _mark_as_read_anim_end_cb(eos_anim_t *a)
     // 删除容器（自动删除所有子对象）
     if (data->detail_container)
     {
-        lv_obj_del(data->detail_container);
+        lv_obj_delete(data->detail_container);
     }
 
     // 释放数据内存
@@ -391,7 +391,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     detail_flag = true;
 
     // 获取当前屏幕
-    lv_obj_t *scr = lv_scr_act();
+    lv_obj_t *scr = lv_screen_active();
 
     // 创建详情页面容器
     lv_obj_t *detail_container = lv_obj_create(scr);
@@ -572,7 +572,7 @@ void eos_msg_list_item_delete(msg_list_item_t *item)
     if (item->container)
     {
         lv_obj_set_user_data(item->container, NULL);
-        lv_obj_del(item->container);
+        lv_obj_delete(item->container);
         item->container = NULL;
     }
 
@@ -658,7 +658,7 @@ void eos_msg_list_clear_all(msg_list_t *msg_list)
         }
         else
         {
-            lv_obj_del(child);
+            lv_obj_delete(child);
         }
     }
 
@@ -767,7 +767,7 @@ void eos_msg_list_delete(msg_list_t *list)
     // 删除无消息标签
     if (list->no_msg_label)
     {
-        lv_obj_del(list->no_msg_label);
+        lv_obj_delete(list->no_msg_label);
         list->no_msg_label = NULL;
     }
 

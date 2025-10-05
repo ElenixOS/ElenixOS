@@ -281,7 +281,7 @@ EOS_DECLARE_SCREEN_ASYNC(eos_watchface_create)
     if (watchface_screen)
     {
         // 如果不为空则清空
-        lv_obj_del(watchface_screen);
+        lv_obj_delete(watchface_screen);
     }
     watchface_screen = lv_obj_create(NULL);
     lv_obj_add_style(watchface_screen, eos_theme_get_screen_style(), 0);

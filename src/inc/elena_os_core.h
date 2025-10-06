@@ -31,48 +31,6 @@ extern "C" {
 
 /* Public macros ----------------------------------------------*/
 
-/**
- * @brief 源文件中声明新的 Screen
- *
- * 用于快速创建新的同步函数和异步函数
- *
- * 示例：
- *
- * ```c
- * // app_list.c
- * EOS_DECLARE_SCREEN_ASYNC(app_list){
- *      lv_obj_t *scr = lv_obj_create(NULL);
- *      lv_obj_t *label = lv_label_create(scr);
- *      lv_label_set_text(label,"HelloWorld!");
- * }
- *
- * // app_list.h
- * EOS_DEFINE_SCREEN_ASYNC(app_list);
- *
- * // core.c
- * app_list_async();    // 异步调用
- * app_list();          // 同步调用
- * ```
- */
-#define EOS_DECLARE_SCREEN_ASYNC(func_name)         \
-    static void func_name##_async_cb(void *user_data);  \
-    void func_name(void)                           \
-    {                                              \
-        func_name##_async_cb(NULL);                \
-    }                                              \
-    void func_name##_async(void)                   \
-    {                                              \
-        lv_async_call(func_name##_async_cb, NULL); \
-    }                                              \
-    void func_name##_async_cb(void *user_data)
-/**
- * @brief 快速定义头文件的函数声明
- *
- * 参见`EOS_DECLARE_SCREEN_ASYNC`
- */
-#define EOS_DEFINE_SCREEN_ASYNC(func_name) \
-    void func_name(void);                   \
-    void func_name##_async(void)
 /* Public typedefs --------------------------------------------*/
 
 /**

@@ -39,7 +39,7 @@ lv_obj_t *eos_app_list_get_screen(void);
 /**
  * @brief 创建应用列表
  */
-EOS_DEFINE_SCREEN_ASYNC(eos_app_list_create);
+void eos_app_list_create(void);
 #ifdef __cplusplus
 }
 #endif

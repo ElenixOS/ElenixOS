@@ -326,7 +326,7 @@ static void _settings_screen_apps(lv_event_t *e)
 
 static void _settings_screen_sensor(lv_event_t *e)
 {
-    eos_sensor_tester_create_async();
+    eos_sensor_tester_create();
 }
 
 /************************** 更多设置 **************************/
@@ -395,7 +395,7 @@ static void _settings_screen_additional_settings(lv_event_t *e)
 }
 
 /************************** 系统设置 **************************/
-EOS_DECLARE_SCREEN_ASYNC(eos_settings_create)
+void eos_settings_create(void)
 {
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS);

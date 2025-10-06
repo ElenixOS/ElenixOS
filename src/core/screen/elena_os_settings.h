@@ -25,7 +25,7 @@ extern "C" {
 /**
  * @brief 创建设置页面
  */
-EOS_DEFINE_SCREEN_ASYNC(eos_settings_create);
+void eos_settings_create(void);
 #ifdef __cplusplus
 }
 #endif

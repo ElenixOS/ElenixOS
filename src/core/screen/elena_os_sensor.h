@@ -72,7 +72,7 @@ typedef struct
 typedef void (*eos_sensor_cb_t)(eos_sensor_t, void *);
 
 /* Public function prototypes --------------------------------*/
-EOS_DEFINE_SCREEN_ASYNC(eos_sensor_tester_create);
+void eos_sensor_tester_create(void);
 #ifdef __cplusplus
 }
 #endif

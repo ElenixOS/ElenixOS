@@ -32,7 +32,7 @@
 extern lv_group_t *encoder_group;
 static lv_obj_t *app_list_screen = NULL;
 // Function Implementations
-EOS_DEFINE_SCREEN_ASYNC(eos_app_list_create);
+void eos_app_list_create(void);
 static void _app_list_icon_clicked_cb(lv_event_t *e);
 static void _app_list_settings_cb(lv_event_t *e);
 static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
@@ -222,7 +222,7 @@ lv_obj_t *eos_app_list_get_screen(void)
     return app_list_screen;
 }
 
-EOS_DECLARE_SCREEN_ASYNC(eos_app_list_create)
+void eos_app_list_create(void)
 {
     if (app_list_screen)
     {

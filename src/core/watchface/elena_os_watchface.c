@@ -268,7 +268,7 @@ void eos_watchface_delete(void)
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
     eos_watchface_delete();
-    eos_watchface_list_create_async();
+    eos_watchface_list_create();
 }
 
 lv_obj_t *eos_watchface_get_screen(void)
@@ -276,7 +276,7 @@ lv_obj_t *eos_watchface_get_screen(void)
     return watchface_screen;
 }
 
-EOS_DECLARE_SCREEN_ASYNC(eos_watchface_create)
+void eos_watchface_create(void)
 {
     if (watchface_screen)
     {

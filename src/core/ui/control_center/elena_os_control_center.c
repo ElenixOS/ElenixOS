@@ -92,23 +92,18 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
 
     lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
 
-    lv_obj_t *label_container = lv_obj_create(slider);
-    lv_obj_remove_style_all(label_container);
-    lv_obj_set_size(label_container, 100, 100);
-    lv_obj_move_foreground(label_container);
-    lv_obj_align(label_container, LV_ALIGN_BOTTOM_MID, 0, -50);
-    lv_obj_set_size(label_container, 50, 50);
 
-    lv_obj_t *label = lv_label_create(label_container);
-    lv_label_set_text(label, "E");
+    lv_obj_t *label = lv_label_create(lv_scr_act());
+    lv_label_set_text(label, LV_SYMBOL_CHARGE);
     lv_obj_set_user_data(slider, (void *)label);
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
-    lv_obj_center(label);
+    lv_obj_move_foreground(label);
+    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -100);
 
-        lv_refr_now(NULL);   // 立即刷新屏幕，计算对象真实大小
+    lv_refr_now(NULL); // 立即刷新屏幕，计算对象真实大小
     lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
     lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
-
+    
     return slider;
 }
 
@@ -156,7 +151,7 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
     eos_display_set_brightness(value);
 
     // 将 Slider 值映射为角度
-    int32_t angle = (int32_t)value * 36;
+    int32_t angle = (int32_t)value * 18;
 
     // 设置 Label 旋转
     lv_obj_set_style_transform_rotation(label, angle, 0);

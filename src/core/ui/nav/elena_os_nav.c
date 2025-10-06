@@ -134,10 +134,18 @@ eos_result_t eos_nav_clean_up(void)
     {
         if (eos_nav.stack[i] != NULL)
         {
-            lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
-            EOS_LOG_D("Cleared screen at stack position %d, ptr: %p", i, eos_nav.stack[i]);
+            if (lv_obj_is_valid(eos_nav.stack[i]))
+            {
+                EOS_LOG_D("Screen[%p]-[%d] Clearing", eos_nav.stack[i], i);
+                lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
+                EOS_LOG_D("Screen[%p] Cleared", eos_nav.stack[i]);
+            }
+            else
+            {
+                EOS_LOG_W("Screen[%p] Is not a valid obj, ignored.", eos_nav.stack[i]);
+            }
+            eos_nav.stack[i] = NULL; // 清除指针
         }
-        eos_nav.stack[i] = NULL; // 清除指针
     }
     eos_nav.launcher_screen = NULL;
     eos_nav.top = -1;
@@ -283,6 +291,7 @@ eos_result_t eos_nav_back_clean(void)
 
     // 保存要删除的页面
     lv_obj_t *scr_to_del = eos_nav.stack[eos_nav.top];
+    eos_nav.stack[eos_nav.top] = NULL;
     eos_nav.top--; // 更新栈指针
 
     // 删除页面

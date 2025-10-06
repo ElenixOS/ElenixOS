@@ -18,7 +18,7 @@ extern "C" {
 #include "lvgl.h"
 /* Public macros ----------------------------------------------*/
 #define EOS_THEME_PRIMARY_COLOR   lv_color_hex(0x0066ff)
-#define EOS_THEME_SECONDARY_COLOR lv_color_hex(0x111220)
+#define EOS_THEME_SECONDARY_COLOR lv_color_hex(0x232323)
 #define EOS_THEME_DANGEROS_COLOR     lv_color_hex(0xe84545)
 
 /* Public typedefs --------------------------------------------*/

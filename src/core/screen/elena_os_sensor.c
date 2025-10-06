@@ -31,11 +31,11 @@ static void _heart_rate_cb(eos_sensor_t s, void *user_data)
     lv_obj_t *label = (lv_obj_t *)user_data;
     EOS_CHECK_PTR_RETURN(label);
     char str[256];
-    snprintf(str,sizeof(str),
-    "Heart Rate: %d  valid:%d\nSpO2: %d  valid:%d\n",
-    s.data.hr.heart_rate,s.data.hr.heart_rate_valid,s.data.hr.spo2,s.data.hr.spo2_valid);
-    EOS_LOG_D("%s",str);
-    lv_label_set_text(label,str);
+    snprintf(str, sizeof(str),
+             "Heart Rate: %d  valid:%d\nSpO2: %d  valid:%d\n",
+             s.data.hr.heart_rate, s.data.hr.heart_rate_valid, s.data.hr.spo2, s.data.hr.spo2_valid);
+    EOS_LOG_D("%s", str);
+    lv_label_set_text(label, str);
 }
 
 static void _heart_rate_rm_cb(lv_event_t *e)
@@ -47,7 +47,7 @@ static void _heart_rate(lv_event_t *e)
 {
     eos_sensor_type_t t = EOS_SENSOR_HR;
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr,"Heart Rate");
+    eos_screen_bind_header(scr, "Heart Rate");
     lv_screen_load(scr);
 
     lv_obj_t *label = lv_label_create(scr);
@@ -59,9 +59,10 @@ static void _heart_rate(lv_event_t *e)
     eos_sensor_read(t);
 }
 
-EOS_DECLARE_SCREEN_ASYNC(eos_sensor_tester_create){
+void eos_sensor_tester_create(void)
+{
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_screen_bind_header(scr,"Heart Rate");
+    eos_screen_bind_header(scr, "Heart Rate");
     lv_screen_load(scr);
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));

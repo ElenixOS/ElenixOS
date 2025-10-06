@@ -75,13 +75,11 @@ static lv_indev_t *_get_key_indev()
     EOS_LOG_W("Not found input device: key");
 }
 
-void eos_side_btn_handler(eos_side_btn_state_t state)
+static void _side_btn_async_cb(void *user_data)
 {
-    static bool side_btn_processing = false;
-    if (side_btn_processing)
-        return;
-    side_btn_processing = true;
-    switch (state)
+    eos_side_btn_state_t *state = (eos_side_btn_state_t *)user_data;
+    EOS_CHECK_PTR_RETURN(state);
+    switch (*state)
     {
     case EOS_SIDE_BTN_CLICKED:
         lv_obj_t *scr = lv_screen_active();
@@ -89,22 +87,30 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
         {
             EOS_LOG_D("Current screen: watchface");
             eos_watchface_delete();
-            eos_app_list_create_async();
+            eos_app_list_create();
         }
         else if (scr == eos_app_list_get_screen())
         {
             EOS_LOG_D("Current screen: app_list");
-            eos_watchface_create_async();
+            eos_watchface_create();
         }
         else
         {
-            EOS_LOG_D("Nav Back");
+            EOS_LOG_D("Side button: Nav Back");
             eos_nav_back_clean();
         }
     default:
         break;
     }
-    side_btn_processing = false;
+    free(state);
+}
+
+void eos_side_btn_handler(eos_side_btn_state_t state)
+{
+    eos_side_btn_state_t *side_btn_state = malloc(sizeof(eos_side_btn_state_t));
+    EOS_CHECK_PTR_RETURN(side_btn_state);
+    *side_btn_state = state;
+    lv_async_call(_side_btn_async_cb,(void *)side_btn_state);
 }
 
 eos_result_t eos_run(void)

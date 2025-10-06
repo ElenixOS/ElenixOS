@@ -51,7 +51,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     eos_watchface_create(); // 回到表盘页面
 }
 
-EOS_DECLARE_SCREEN_ASYNC(eos_watchface_list_create)
+void eos_watchface_list_create(void)
 {
     if(watchface_list_screen){
         lv_obj_delete(watchface_list_screen);

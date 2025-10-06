@@ -24,7 +24,7 @@ extern "C" {
 /**
  * @brief 创建表盘列表页面
  */
-EOS_DEFINE_SCREEN_ASYNC(eos_watchface_list_create);
+void eos_watchface_list_create(void);
 #ifdef __cplusplus
 }
 #endif

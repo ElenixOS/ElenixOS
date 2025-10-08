@@ -4,3 +4,6 @@
 [submodule "third_party/jerryscript"]
 	path = third_party/jerryscript
 	url = https://github.com/jerryscript-project/jerryscript.git
+[submodule "third_party/RemixIcon"]
+	path = third_party/RemixIcon
+	url = https://github.com/Remix-Design/RemixIcon.git

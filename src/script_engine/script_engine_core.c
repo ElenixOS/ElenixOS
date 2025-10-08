@@ -26,6 +26,7 @@
 #include "elena_os_log.h"
 #include "elena_os_misc.h"
 #include "elena_os_nav.h"
+#include "elena_os_icon.h"
 
 // Macros and Definitions
 
@@ -46,7 +47,7 @@ inline void script_engine_set_prop_number(jerry_value_t obj,
                                           const char *prop_name,
                                           double value)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
+    jerry_value_t prop = jerry_string_sz(prop_name);
     jerry_value_t jerry_value = jerry_number(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -59,7 +60,7 @@ inline void script_engine_set_prop_bool(jerry_value_t obj,
                                         const char *prop_name,
                                         bool value)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
+    jerry_value_t prop = jerry_string_sz(prop_name);
     jerry_value_t jerry_value = jerry_boolean(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -72,7 +73,7 @@ inline void script_engine_set_prop_string(jerry_value_t obj,
                                           const char *prop_name,
                                           const char *value)
 {
-    jerry_value_t prop = jerry_string_sz((const jerry_char_t *)prop_name);
+    jerry_value_t prop = jerry_string_sz(prop_name);
     jerry_value_t jerry_value = jerry_string_sz(value);
     jerry_value_t ret = jerry_object_set(obj, prop, jerry_value);
 
@@ -337,6 +338,9 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
 
     // 初始化 LVGL 绑定
     lv_binding_init();
+
+    // 初始化图标
+    eos_icon_register();
 
     // 设置全局 script_info 变量
     jerry_value_t global = jerry_current_realm();

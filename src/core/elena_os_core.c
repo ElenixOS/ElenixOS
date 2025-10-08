@@ -51,10 +51,11 @@
 #include "elena_os_app_list.h"
 #include "elena_os_theme.h"
 #include "elena_os_config.h"
+#include "elena_os_config_internal.h"
 #include "elena_os_services.h"
 
 // Macros and Definitions
-#if defined(EOS_FONT_USE_C)
+#if EOS_FONT_TYPE == EOS_FONT_USE_C
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
 #endif
 
@@ -112,7 +113,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
     eos_side_btn_state_t *side_btn_state = malloc(sizeof(eos_side_btn_state_t));
     EOS_CHECK_PTR_RETURN(side_btn_state);
     *side_btn_state = state;
-    lv_async_call(_side_btn_async_cb,(void *)side_btn_state);
+    lv_async_call(_side_btn_async_cb, (void *)side_btn_state);
 }
 
 eos_result_t eos_run(void)
@@ -120,7 +121,15 @@ eos_result_t eos_run(void)
     /************************** 系统组件初始化 **************************/
     eos_sys_init();
     eos_event_init();
-#if defined(EOS_USE_FONT_TTF)
+#if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
+    eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
+                  lv_palette_main(LV_PALETTE_RED),
+                  &EOS_FONT_LVGL);
+#elif EOS_FONT_TYPE == EOS_FONT_USE_C
+    eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
+                  lv_palette_main(LV_PALETTE_RED),
+                  &EOS_FONT_C_NAME);
+#elif EOS_FONT_TYPE == EOS_FONT_USE_TTF
     static lv_font_t *font_ttf;
     font_ttf = lv_tiny_ttf_create_file(argv[1], 24); // 24px 大小
     if (font_ttf == NULL)
@@ -133,15 +142,7 @@ eos_result_t eos_run(void)
                       lv_palette_main(LV_PALETTE_RED),
                       font_ttf);
     }
-#elif defined(EOS_FONT_USE_C)
-    eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
-                  lv_palette_main(LV_PALETTE_RED),
-                  &EOS_FONT_C_NAME);
-#else
-    eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
-                  lv_palette_main(LV_PALETTE_RED),
-                  &lv_font_montserrat_30);
-#endif /* EOS_USE_FONT_TTF */
+#endif /* EOS_FONT_TYPE */
     eos_app_init();
     eos_watchface_init();
     eos_lang_init();

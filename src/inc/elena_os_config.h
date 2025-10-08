@@ -14,23 +14,32 @@ extern "C" {
 
 /* Includes ---------------------------------------------------*/
 #include "elena_os_sys.h"
+#include "elena_os_config_internal.h"
+
+/* Public typedefs --------------------------------------------*/
+
+/* Public macros ----------------------------------------------*/
 
 /************************** 配置开始 **************************/
 
 /************************** 字体配置 **************************/
-/**
- * @brief 使用标准的 TTF 格式
- * @param EOS_FONT_TTF_PATH TTF文件路径
- */
-// #define EOS_FONT_USE_TTF
-// #define EOS_FONT_TTF_PATH        EOS_SYS_RES_FONT_DIR "font.ttf"
 
 /**
- * @brief 使用 LVGL Font Converter 生成的 C 文字字库
- * @param EOS_FONT_C_NAME 字库名称
+ * 选择字体格式
+ * 可用格式:
+ *  - EOS_FONT_USE_LVGL:    LVGL内置的 Montserrat 字体
+ *  - EOS_FONT_USE_C:       使用 LVGL Font Converter 生成的 C 文字字库
+ *  - EOS_FONT_USE_TTF:     使用文件系统的TTF字体文件
  */
-// #define EOS_FONT_USE_C
-// #define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
+#define EOS_FONT_TYPE EOS_FONT_USE_C
+
+#if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
+#define EOS_FONT_LVGL   lv_font_montserrat_30
+#elif EOS_FONT_TYPE == EOS_FONT_USE_C
+#define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
+#elif EOS_FONT_TYPE == EOS_FONT_USE_TTF
+#define EOS_FONT_TTF_PATH        EOS_SYS_RES_FONT_DIR "font.ttf"
+#endif /* EOS_FONT_TYPE */
 
 /************************** 显示配置 **************************/
 

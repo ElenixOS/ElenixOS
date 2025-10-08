@@ -15,6 +15,7 @@
 #include "elena_os_log.h"
 #include "lvgl.h"
 #include "elena_os_sys.h"
+#include "elena_os_icon.h"
 
 // Macros and Definitions
 /**
@@ -28,7 +29,7 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_MSG_LIST_CLEAR_ALL] = "Clear all",
     [STR_ID_MSG_LIST_NO_MSG] = "No notifications",
     [STR_ID_MSG_LIST_ITEM_MARK_AS_READ] = "Mark as read",
-    [STR_ID_BASE_ITEM_BACK] = LV_SYMBOL_LEFT "Back",
+    [STR_ID_BASE_ITEM_BACK] = RI_ARROW_LEFT_S_LINE "Back",
     [STR_ID_TEST_LANG_STR] = "On a late-summer afternoon, the wind set the chimes on the balcony jingling, like some unintentional signal.",
     [STR_ID_SCRIPT_RUN_ERR] = "The script encountered a fatal error during runtime",
     [STR_ID_SETTINGS] = "Settings",
@@ -61,7 +62,7 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_MSG_LIST_CLEAR_ALL] = "全部清除",
     [STR_ID_MSG_LIST_NO_MSG] = "没有消息",
     [STR_ID_MSG_LIST_ITEM_MARK_AS_READ] = "标记为已读",
-    [STR_ID_BASE_ITEM_BACK] = LV_SYMBOL_LEFT "返回",
+    [STR_ID_BASE_ITEM_BACK] = RI_ARROW_LEFT_S_LINE "返回",
     [STR_ID_TEST_LANG_STR] = "在夏末的午后，风把阳台上的风铃吹得叮当作响，像是某种不经意的暗号。",
     [STR_ID_SCRIPT_RUN_ERR] = "脚本在运行时遇到了致命错误",
     [STR_ID_SETTINGS] = "设置",

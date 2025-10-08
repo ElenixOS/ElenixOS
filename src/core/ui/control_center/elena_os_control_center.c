@@ -20,6 +20,7 @@
 #include "elena_os_config.h"
 #include "elena_os_services.h"
 #include "elena_os_event.h"
+#include "elena_os_icon.h"
 
 // Macros and Definitions
 #define _BTN_DEFAULT_COLOR lv_color_hex(0x232323)
@@ -94,8 +95,8 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
 
     lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
 
-    lv_obj_t *label = lv_label_create(lv_scr_act());
-    lv_label_set_text(label, LV_SYMBOL_CHARGE);
+    lv_obj_t *label = lv_label_create(slider_page);
+    lv_label_set_text(label, RI_SUN_LINE);
     lv_obj_set_user_data(slider, (void *)label);
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_move_foreground(label);
@@ -166,7 +167,7 @@ static void _control_center_brightness_slider_delete_cb(lv_event_t *e)
 
 static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
 {
-    lv_obj_t *slider = _control_center_slider_create(LV_SYMBOL_CHARGE);
+    lv_obj_t *slider = _control_center_slider_create(RI_SUN_LINE);
     lv_slider_set_range(slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_slider_set_value(slider,
                         eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50),
@@ -185,7 +186,7 @@ static void _control_center_battery_level_update_cb(lv_event_t *e)
     if (sensor->data.bat.charging)
     {
         char str[16];
-        snprintf(str, sizeof(str), LV_SYMBOL_CHARGE " %d%%", sensor->data.bat.level);
+        snprintf(str, sizeof(str), RI_FLASHLIGHT_FILL " %d%%", sensor->data.bat.level);
         lv_label_set_text(label, str);
     }
     else
@@ -242,7 +243,7 @@ void eos_control_center_create(lv_obj_t *parent)
 
     lv_obj_t *btn;
     /************************** 蓝牙开关 **************************/
-    btn = _control_center_create_switch_btn(container, LV_SYMBOL_BLUETOOTH);
+    btn = _control_center_create_switch_btn(container, RI_BLUETOOTH_FILL);
     lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_VALUE_CHANGED, NULL);
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false))
     {
@@ -253,7 +254,7 @@ void eos_control_center_create(lv_obj_t *parent)
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
     /************************** 亮度调整滚动条 **************************/
-    btn = _control_center_create_btn(container, LV_SYMBOL_CHARGE);
+    btn = _control_center_create_btn(container, "\uF1BF");
     lv_obj_add_event_cb(btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
     /************************** 电量显示 **************************/
     btn = _control_center_create_battery(container);

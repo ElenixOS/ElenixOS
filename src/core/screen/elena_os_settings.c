@@ -34,6 +34,7 @@
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_sensor.h"
 #include "elena_os_config.h"
+#include "elena_os_icon.h"
 
 // Macros and Definitions
 
@@ -405,22 +406,22 @@ void eos_settings_create(void)
 
     lv_obj_t *btn;
     // 蓝牙设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x3988ff), LV_SYMBOL_BLUETOOTH, STR_ID_SETTINGS_BLUETOOTH);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x3988ff), RI_BLUETOOTH_FILL, STR_ID_SETTINGS_BLUETOOTH);
     lv_obj_add_event_cb(btn, _settings_screen_bluetooth, LV_EVENT_CLICKED, NULL);
     // 显示设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xffbb39), LV_SYMBOL_IMAGE, STR_ID_SETTINGS_DISPLAY);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xffbb39), RI_SUN_FILL, STR_ID_SETTINGS_DISPLAY);
     lv_obj_add_event_cb(btn, _settings_screen_display, LV_EVENT_CLICKED, NULL);
     // 通知设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xff3939), LV_SYMBOL_BELL, STR_ID_SETTINGS_NOTIFICATION);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0xff3939), RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
     lv_obj_add_event_cb(btn, _settings_screen_notification, LV_EVENT_CLICKED, NULL);
     // 应用列表
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, STR_ID_SETTINGS_APPS);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
     lv_obj_add_event_cb(btn, _settings_screen_apps, LV_EVENT_CLICKED, NULL);
     // 传感器测试
-    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_LIST, "SensorTester");
+    btn = eos_list_add_circle_icon_button(settings_list, lv_color_hex(0x00b8a9), RI_SENSOR_LINE, "SensorTester");
     lv_obj_add_event_cb(btn, _settings_screen_sensor, LV_EVENT_CLICKED, NULL);
     // 其他设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), LV_SYMBOL_SETTINGS, STR_ID_SETTINGS_ADDITIONAL_SETTINGS);
+    btn = eos_list_add_circle_icon_button_str_id(settings_list, lv_color_hex(0x00b8a9), RI_TOOLS_FILL, STR_ID_SETTINGS_ADDITIONAL_SETTINGS);
     lv_obj_add_event_cb(btn, _settings_screen_additional_settings, LV_EVENT_CLICKED, NULL);
 
     eos_list_add_placeholder(settings_list, 50);

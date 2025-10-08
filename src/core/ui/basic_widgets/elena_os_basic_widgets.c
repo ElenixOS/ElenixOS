@@ -22,6 +22,8 @@
 #include "elena_os_theme.h"
 #include "elena_os_port.h"
 #include "elena_os_misc.h"
+#include "elena_os_icon.h"
+
 // Macros and Definitions
 #define APP_HEADER_HEIGHT 120
 #define APP_HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
@@ -96,7 +98,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     {
         btn_label = lv_label_create(btn);
     }
-    lv_label_set_text(btn_label, LV_SYMBOL_LEFT);
+    lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE);
     lv_obj_set_style_text_color(btn_label, EOS_THEME_PRIMARY_COLOR, 0);
     lv_obj_center(btn_label);
 
@@ -421,7 +423,7 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
     // 文字
     label = lv_label_create(btn);
     lv_obj_set_style_margin_right(label, 14, 0);
-    lv_label_set_text(label, LV_SYMBOL_RIGHT);
+    lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
 }
 
@@ -437,7 +439,7 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     // 文字
     label = lv_label_create(btn);
     lv_obj_set_style_margin_right(label, 14, 0);
-    lv_label_set_text(label, LV_SYMBOL_RIGHT);
+    lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
 }
 
@@ -556,7 +558,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_align_to(list_slider->minus_btn, split_line, LV_ALIGN_OUT_LEFT_MID, 0, 0);
 
     lv_obj_t *label = lv_label_create(list_slider->minus_btn);
-    lv_label_set_text(label, LV_SYMBOL_MINUS);
+    lv_label_set_text(label, RI_SUBTRACT_FILL);
     lv_obj_center(label);
     /************************** 右侧 **************************/
     split_line = lv_obj_create(inner_container);
@@ -575,7 +577,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_align_to(list_slider->plus_btn, split_line, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
     label = lv_label_create(list_slider->plus_btn);
-    lv_label_set_text(label, LV_SYMBOL_PLUS);
+    lv_label_set_text(label, RI_ADD_FILL);
     lv_obj_center(label);
 
     return list_slider;

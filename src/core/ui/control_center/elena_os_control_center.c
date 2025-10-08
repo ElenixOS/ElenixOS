@@ -18,6 +18,8 @@
 #include "elena_os_watchface.h"
 #include "elena_os_port.h"
 #include "elena_os_config.h"
+#include "elena_os_services.h"
+#include "elena_os_event.h"
 
 // Macros and Definitions
 #define _BTN_DEFAULT_COLOR lv_color_hex(0x232323)
@@ -92,7 +94,6 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
 
     lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
 
-
     lv_obj_t *label = lv_label_create(lv_scr_act());
     lv_label_set_text(label, LV_SYMBOL_CHARGE);
     lv_obj_set_user_data(slider, (void *)label);
@@ -103,7 +104,7 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_refr_now(NULL); // 立即刷新屏幕，计算对象真实大小
     lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
     lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
-    
+
     return slider;
 }
 
@@ -175,6 +176,47 @@ static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
     lv_obj_add_event_cb(slider, _control_center_brightness_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
+static void _control_center_battery_level_update_cb(lv_event_t *e)
+{
+    eos_sensor_t *sensor = lv_event_get_param(e);
+    lv_obj_t *label = lv_event_get_target(e);
+    lv_obj_t *btn = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(sensor && label && btn);
+    if (sensor->data.bat.charging)
+    {
+        char str[16];
+        snprintf(str, sizeof(str), LV_SYMBOL_CHARGE " %d%%", sensor->data.bat.level);
+        lv_label_set_text(label, str);
+    }
+    else
+    {
+        char str[16];
+        snprintf(str, sizeof(str), "%d%%", sensor->data.bat.level);
+        lv_label_set_text(label, str);
+    }
+}
+
+static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_set_size(btn, 150, 100);
+    lv_obj_set_style_radius(btn, 50, 0);
+    lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, 0);
+
+    lv_obj_t *label = lv_label_create(btn);
+    char str[16];
+    snprintf(str, sizeof(str), "%d%%", eos_battery_service_get_level());
+    lv_label_set_text(label, str);
+    lv_obj_center(label);
+
+    eos_event_add_cb(
+        label,
+        _control_center_battery_level_update_cb,
+        eos_event_get_code(EOS_EVENT_SENSOR_REPORT_BAT),
+        (void *)btn);
+    return btn;
+}
+
 /************************** 创建控制中心 **************************/
 void eos_control_center_create(lv_obj_t *parent)
 {
@@ -211,6 +253,8 @@ void eos_control_center_create(lv_obj_t *parent)
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
     /************************** 亮度调整滚动条 **************************/
-    lv_obj_t *brightness_btn = _control_center_create_btn(container, LV_SYMBOL_CHARGE);
-    lv_obj_add_event_cb(brightness_btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    btn = _control_center_create_btn(container, LV_SYMBOL_CHARGE);
+    lv_obj_add_event_cb(btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    /************************** 电量显示 **************************/
+    btn = _control_center_create_battery(container);
 }

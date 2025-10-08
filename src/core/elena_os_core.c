@@ -9,8 +9,8 @@
  * 接着开始无限调用`lv_timer_handler()`。
  *
  * 当侧键按下后：
- *  - 如果位于表盘页面，会从回调中异步加载应用列表页面。
- *  - 如果位于应用列表页面，会从回调中异步加载表盘页面。
+ *  - 如果位于表盘页面，会从回调中加载应用列表页面。
+ *  - 如果位于应用列表页面，会从回调中加载表盘页面。
  *  - 如果非上述两种情况，则会返回导航栈的上一页。
  *
  */
@@ -51,6 +51,8 @@
 #include "elena_os_app_list.h"
 #include "elena_os_theme.h"
 #include "elena_os_config.h"
+#include "elena_os_services.h"
+
 // Macros and Definitions
 #if defined(EOS_FONT_USE_C)
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
@@ -168,24 +170,12 @@ eos_result_t eos_run(void)
     }
     eos_app_header_init();
 
+    /************************** 服务启动 **************************/
+
+    eos_battery_service_start();
+
     /************************** 系统启动 **************************/
     eos_watchface_create(); // 加载表盘
-    // script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
-    // const char *script_str = malloc(4*1024);
-    // const char *code = "let label = lv_label_create(lv_screen_active());"
-    //                   "lv_label_set_text(label,\"HelloWorld\");"
-    //                   "lv_obj_center(label);";
-    // // const char *code = "var str = 'hello world';";
-    // strcpy(script_str,code);
-
-    // pkg->author = eos_strdup("Sab1e");
-    // pkg->description = eos_strdup("123");
-    // pkg->id = eos_strdup("cn.sab1e.clock");
-    // pkg->name = eos_strdup("Clock");
-    // pkg->type = SCRIPT_TYPE_WATCHFACE;
-    // pkg->version = eos_strdup("0.0.1");
-    // pkg->script_str = script_str;
-    // script_engine_run(pkg);
     script_engine_request_stop();
     // 开始绘制
     while (1)

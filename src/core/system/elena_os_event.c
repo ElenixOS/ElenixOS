@@ -96,7 +96,7 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
     // 向LVGL注册事件回调
     lv_obj_add_event_cb(obj, cb, event, user_data);
 
-    // 确保有删除回调
+    // 当对象被删除时自动清理删除此回调
     lv_obj_add_event_cb(obj, _obj_delete_cb, LV_EVENT_DELETE, NULL);
 }
 

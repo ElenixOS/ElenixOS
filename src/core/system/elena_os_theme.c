@@ -13,6 +13,7 @@
 #include "elena_os_log.h"
 #include "lvgl_private.h"
 // Macros and Definitions
+/************************** Text **************************/
 #define TEXT_COLOR lv_color_hex(0xffffff)
 /************************** Screen **************************/
 #define SCREEN_BG_COLOR lv_color_hex(0x000000)

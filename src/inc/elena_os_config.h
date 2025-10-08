@@ -43,6 +43,10 @@ extern "C" {
 #define EOS_SYS_ROOT_DIR "/"     /**< 系统根目录 例如：`/user/elenaos/` */
 #endif
 
+/************************** 电量检测 **************************/
+
+#define EOS_BATTERY_DISPLAY_UPDATE_MS  1*1000      /**< 电池电量显示更新时间 */
+
 /************************** 配置结束 **************************/
 
 #ifdef __cplusplus

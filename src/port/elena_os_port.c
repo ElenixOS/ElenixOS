@@ -80,29 +80,3 @@ EOS_WEAK void eos_sensor_read(eos_sensor_type_t type)
         break;
     }
 }
-
-EOS_WEAK void eos_sensor_stop(eos_sensor_type_t type)
-{
-    switch (type)
-    {
-    case EOS_SENSOR_HR:
-        // 停止心率测量
-        break;
-
-    default:
-        break;
-    }
-}
-
-EOS_WEAK void eos_sensor_add_callback(eos_sensor_type_t type, eos_sensor_cb_t cb, void* user_data)
-{
-    switch (type)
-    {
-    case EOS_SENSOR_HR:
-        // 添加心率回调
-        break;
-
-    default:
-        break;
-    }
-}

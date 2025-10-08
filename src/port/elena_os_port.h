@@ -90,21 +90,11 @@ eos_datetime_t eos_time_get(void);
  */
 void eos_display_set_brightness(uint8_t brightness);
 /**
- * @brief 传感器开始读取数据
+ * @brief 读取一次传感器的值
  * @param type 传感器类型
  */
 EOS_WEAK void eos_sensor_read(eos_sensor_type_t type);
-/**
- * @brief 传感器停止读取数据
- * @param type 传感器类型
- */
-EOS_WEAK void eos_sensor_stop(eos_sensor_type_t type);
-/**
- * @brief 传感器添加读取数据的回调函数
- * @param type 传感器类型
- * @param cb 读取成功时返回数据的回调（用于更新UI）
- */
-EOS_WEAK void eos_sensor_add_callback(eos_sensor_type_t type, eos_sensor_cb_t cb, void* user_data);
+
 #ifdef __cplusplus
 }
 #endif

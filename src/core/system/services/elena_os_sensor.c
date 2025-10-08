@@ -7,11 +7,6 @@
 
 #include "elena_os_sensor.h"
 
-/**
- * TODO:
- * LVGL线程安全问题，非LVGL线程如何更新Label
- */
-
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,27 +15,29 @@
 #include "elena_os_port.h"
 #include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_event.h"
+
 // Macros and Definitions
 
 // Variables
 
 // Function Implementations
 
-static void _heart_rate_cb(eos_sensor_t s, void *user_data)
+static void _heart_rate_cb(lv_event_t *e)
 {
-    lv_obj_t *label = (lv_obj_t *)user_data;
-    EOS_CHECK_PTR_RETURN(label);
+    lv_obj_t *label = (lv_obj_t *)lv_event_get_target(e);
+    eos_sensor_t *s = (eos_sensor_t *)lv_event_get_param(e);
+    EOS_CHECK_PTR_RETURN(label && s);
     char str[256];
     snprintf(str, sizeof(str),
-             "Heart Rate: %d  valid:%d\nSpO2: %d  valid:%d\n",
-             s.data.hr.heart_rate, s.data.hr.heart_rate_valid, s.data.hr.spo2, s.data.hr.spo2_valid);
+             "Heart Rate: %d\nSpO2: %d\n",
+             s->data.hr.heart_rate, s->data.hr.spo2);
     EOS_LOG_D("%s", str);
     lv_label_set_text(label, str);
 }
 
 static void _heart_rate_rm_cb(lv_event_t *e)
 {
-    eos_sensor_stop(EOS_SENSOR_HR);
 }
 
 static void _heart_rate(lv_event_t *e)
@@ -54,7 +51,11 @@ static void _heart_rate(lv_event_t *e)
     lv_obj_center(label);
     lv_label_set_text(label, "Measuring in progress...");
 
-    eos_sensor_add_callback(t, _heart_rate_cb, (void *)label);
+    eos_event_add_cb(
+        label,
+        _heart_rate_cb,
+        eos_event_get_code(EOS_EVENT_SENSOR_REPORT_HR),
+        NULL);
 
     eos_sensor_read(t);
 }
@@ -72,4 +73,11 @@ void eos_sensor_tester_create(void)
 
     btn = lv_list_add_button(test_list, NULL, "Heart rate");
     lv_obj_add_event_cb(btn, _heart_rate, LV_EVENT_CLICKED, NULL);
+}
+
+void eos_sensor_report(eos_sensor_t *sensor)
+{
+    EOS_CHECK_PTR_RETURN(sensor);
+    uint32_t event_code = eos_event_get_code(sensor->type + EOS_EVENT_SENSOR_REPORT_BASE);
+    eos_event_broadcast(event_code, (void *)sensor);
 }

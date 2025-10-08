@@ -23,12 +23,28 @@ extern "C" {
  * @brief 全局广播事件类型定义
  * @note 此处可添加新的事件
  */
-typedef enum{
+typedef enum
+{
     EOS_EVENT_SWIPE_PANEL_TOUCH_LOCK=0,
     EOS_EVENT_SWIPE_PANEL_TOUCH_UNLOCK,
     EOS_EVENT_THEME_UPDATED,
     EOS_EVENT_APP_DELETED,
     EOS_EVENT_APP_INSTALLED,
+    EOS_EVENT_SENSOR_REPORT_BASE,      /**< 用于传感器事件序号对齐   */
+    EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
+    EOS_EVENT_SENSOR_REPORT_GYRO,      /**< 重力传感器             */
+    EOS_EVENT_SENSOR_REPORT_MAG,       /**< 磁传感器              */
+    EOS_EVENT_SENSOR_REPORT_TEMP,      /**< 温度传感器             */
+    EOS_EVENT_SENSOR_REPORT_HUMI,      /**< 相对湿度传感器          */
+    EOS_EVENT_SENSOR_REPORT_BARO,      /**< 气压传感器              */
+    EOS_EVENT_SENSOR_REPORT_LIGHT,     /**< 环境光传感器            */
+    EOS_EVENT_SENSOR_REPORT_PROXIMITY, /**< 距离传感器              */
+    EOS_EVENT_SENSOR_REPORT_HR,        /**< 心率传感器              */
+    EOS_EVENT_SENSOR_REPORT_TVOC,      /**< TOVC传感器             */
+    EOS_EVENT_SENSOR_REPORT_NOISE,     /**< 噪声传感器             */
+    EOS_EVENT_SENSOR_REPORT_STEP,      /**< 计步传感器             */
+    EOS_EVENT_SENSOR_REPORT_FORCE,     /**< 力传感器               */
+    EOS_EVENT_SENSOR_REPORT_BAT,       /**< 电池电量传感器          */
     /* 此处添加新的事件 */
     EOS_EVENT_MAX_NUMBER
 } eos_event_t;
@@ -48,20 +64,20 @@ uint32_t eos_event_get_code(eos_event_t e);
 
 /**
  * @brief 添加事件回调
- * @param obj 对象指针
+ * @param obj 对象指针（对象被删除时回自动删除此回调）
  * @param event 事件类型
  * @param cb 回调函数
  * @param user_data 用户数据
  * @note 如果事件类型是由 LVGL 分配的，则直接传入即可，
  * 例如`LV_EVENT_ALL`；如果事件类型是 ElenaOS 分配的，则需要使用
  * `eos_event_get_code`获取事件号才能传入。
- * 
+ *
  * 示例：
- * 
+ *
  * `eos_event_add_cb(obj,cb,LV_EVENT_ALL,NULL);`
- * 
+ *
  * `eos_event_add_cb(obj,cb,eos_event_get_code(EOS_EVENT_THEME_UPDATED),NULL)`
- * 
+ *
  */
 void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data);
 

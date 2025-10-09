@@ -1,58 +1,71 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@file gen_icon_register.py
+@brief 从 elena_os_icon.h 自动生成 eos_icon_register() 的实现文件
+"""
+
 import re
 import os
 from datetime import date
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-HEADER_FILE = os.path.join(BASE_DIR, "../src/lang/fonts/elena_os_icon.h")
-HEADER_FILE = os.path.normpath(HEADER_FILE)  # 规范化路径
-OUTPUT_FILE = os.path.join(BASE_DIR, "../src/lang/fonts/elena_os_icon.c")
+HEADER_FILE = os.path.normpath(os.path.join(BASE_DIR, "../src/lang/fonts/elena_os_icon.h"))
+OUTPUT_FILE = os.path.normpath(os.path.join(BASE_DIR, "../src/lang/fonts/elena_os_icon.c"))
 
+# 读取头文件
 with open(HEADER_FILE, "r", encoding="utf-8") as f:
     content = f.read()
 
-# 提取宏名称，例如 LV_SYMBOL_POWER、LV_SYMBOL_WIFI 等
+# 提取宏名称，例如 RI_BATTERY_CHARGE_FILL
 symbols = re.findall(r"#define\s+(RI_[A-Z0-9_]+)\s", content)
 
+# 写入C文件
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-    f.write("""/**
-* @file lv_bindings.c
-* @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
-* @author Sab1e
-* @date """ + date.today().strftime("%Y-%m-%d") + r"""
-*/
+    f.write(f"""/**
+ * @file elena_os_icon.c
+ * @brief 将图标宏注册到 JerryScript，全自动生成。
+ * @date {date.today().strftime("%Y-%m-%d")}
+ */
 
 #include "elena_os_icon.h"
-
-// Includes
-#include <stdio.h>
-#include <stdlib.h>
 #include "jerryscript.h"
-#include "lvgl.h"
+#include <stdio.h>
 
-// Macros and Definitions
+/**
+ * @brief 将所有图标宏名与Unicode值映射注册到 JerryScript 全局对象
+ */
+void eos_icon_register(void)
+{{
+    jerry_value_t global = jerry_current_realm();
 
-// Variables
-
-// Function Implementations
-
+    struct {{
+        const char *name;
+        const char *value;
+    }} icons[] = {{
 """)
-    f.write("void eos_icon_register(void) {\n")
-    f.write("    jerry_value_t global = jerry_current_realm();\n")
 
     for sym in symbols:
-        f.write(f"#ifdef {sym}\n")
-        f.write(f"do{{\n")
-        f.write(f"    jerry_value_t {sym}_str = jerry_string_sz(\"{sym}\");\n")
-        f.write(f"    jerry_value_t {sym}_val = jerry_string_sz({sym});\n")
-        f.write(f"    jerry_value_free(jerry_object_set(global, {sym}_str, {sym}_val));\n")
-        f.write(f"    jerry_value_free({sym}_str);\n")
-        f.write(f"    jerry_value_free({sym}_val);\n")
-        f.write(f"}}while(0);\n")
-        f.write("#else\n")
-        f.write(f"    #pragma message(\"WARNING: Macro {sym} is not defined\")\n")
-        f.write("#endif\n")
+        f.write(f'        #ifdef {sym}\n')
+        f.write(f'        {{"{sym}", {sym}}},\n')
+        f.write(f'        #endif\n')
 
-    f.write("    jerry_value_free(global);\n")
-    f.write("}\n")
+    f.write("""    };
 
-print(f"✅ Generated {OUTPUT_FILE} with {len(symbols)} symbols.")
+    size_t icon_count = sizeof(icons) / sizeof(icons[0]);
+    for (size_t i = 0; i < icon_count; i++) {
+        if (!icons[i].name || !icons[i].value)
+            continue;
+        jerry_value_t key = jerry_string_sz(icons[i].name);
+        jerry_value_t val = jerry_string_sz(icons[i].value);
+        jerry_value_free(jerry_object_set(global, key, val));
+        jerry_value_free(key);
+        jerry_value_free(val);
+    }
+
+    jerry_value_free(global);
+}
+""")
+
+print(f"✅ 成功生成: {OUTPUT_FILE}")
+print(f"🔢 共注册 {len(symbols)} 个图标符号。")

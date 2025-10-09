@@ -341,7 +341,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
     type_str = arg_type.replace(' ', '')
     var_name = f"arg_{name}"  # 添加arg_前缀避免冲突
 
-    # 1. 特殊处理lv_font_t指针
+    # 特殊处理lv_font_t指针
     if type_info.get('is_font_pointer'):
         return fr"""    // lv_font_t* 类型参数处理
     const lv_font_t* {var_name} = NULL;
@@ -423,31 +423,31 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
     }}
 
 """
-    # 2. 特殊处理lv_obj_t指针
+    # 特殊处理lv_obj_t指针
     if is_lv_obj_pointer(type_str):
         return generate_object_arg_parsing(index, var_name)
 
-    # 3. 处理基本类型
+    # 处理基本类型
     if is_void_type(type_str):
         return f"    // void 类型跳过解析\n"
 
-    # 4. 处理void指针
+    # 处理void指针
     if is_void_pointer(type_str):
         return generate_void_pointer_arg_parsing(index, var_name)
 
-    # 5. 处理对象指针
+    # 处理对象指针
     if is_object_pointer(type_str):
         return generate_object_arg_parsing(index, var_name)
 
-    # 6. 处理字符串指针
+    # 处理字符串指针
     if is_string_pointer(type_str):
         return generate_string_arg_parsing(index, var_name)
 
-    # 7. 处理lv_color_t
+    # 处理lv_color_t
     if is_lv_color_t(type_str):
         return f"    lv_color_t {var_name} = js_to_lv_color(args[{index}]);\n\n"
 
-    # 8. 处理布尔类型
+    # 处理布尔类型
     if type_str == 'bool' or (is_typedef_convertible_to_basic(type_info.get('type_name', ''), typedefs_data)
                              and get_typedef_base_type(type_info['type_name'], typedefs_data) == 'bool'):
         return fr"""    // 布尔类型参数: {name}
@@ -466,11 +466,11 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
 
 """
 
-    # 9. 处理数字类型
+    # 处理数字类型
     if is_number_type(type_str):
         return generate_number_arg_parsing(index, var_name, type_str)
 
-    # 10. 检查typedef类型
+    # 检查typedef类型
     type_name = type_info.get('type_name', '')
     if type_name:
         base_type = get_typedef_base_type(type_name, typedefs_data)
@@ -480,7 +480,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
             elif is_number_type(base_type):
                 return generate_number_arg_parsing(index, var_name, base_type)
 
-    # 11. 默认处理为通用指针
+    # 1默认处理为通用指针
     return generate_generic_pointer_arg_parsing(index, var_name, type_str)
 
 def find_real_function_definition(func_name, data):
@@ -864,12 +864,17 @@ def extract_lvgl_functions_from_file(file_path):
         return lvgl_functions
 
 def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macros=None):
-    """生成枚举绑定代码，处理enums和macros，直接注册到全局作用域"""
+    """生成枚举绑定代码，使用数组和for循环进行注册，减少冗长重复代码"""
     lines = []
     lines.append("static void register_lvgl_enums(void) {")
     lines.append("    jerry_value_t global = jerry_current_realm();")
+    lines.append("")
+    # 定义通用条目结构
+    lines.append("    typedef struct { const char* name; int value; } lvgl_enum_entry_t;")
+    lines.append("")
 
-    # 1. 首先处理所有枚举值（保持不变）
+    # 枚举成员 -> 枚举条目数组（使用哨兵NULL结尾）
+    lines.append("    static const lvgl_enum_entry_t enum_entries[] = {")
     for enum in enums or []:
         if enum is None:
             continue
@@ -881,65 +886,115 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
             if name and value is not None:
                 try:
                     if isinstance(value, str):
-                        value = value.strip()
-                        if value.startswith('0x'):
-                            val = int(value, 16)
-                        elif value.startswith('0'):
-                            val = int(value, 8)
+                        v = value.strip()
+                        if v.startswith('0x') or v.startswith('0X'):
+                            val = int(v, 16)
+                        elif v.startswith('0') and v != "0":
+                            val = int(v, 8)
                         else:
-                            val = int(value)
+                            val = int(v)
                     else:
                         val = int(value)
-                    lines.append(f'    lvgl_binding_set_enum(global, "{name}", {val});')
+                    lines.append(f'        {{ "{name}", {val} }},')
+                    any_enum_member = True
                 except (ValueError, TypeError) as e:
                     print(f"{Fore.YELLOW}[警告] 无法解析枚举值 {name}={value}: {e}{Style.RESET_ALL}")
                     continue
-
-    if macros:
-        # 特殊处理LV_SYMBOL_开头的宏（总是包含）
-        for macro in macros:
-            if not macro or not isinstance(macro, dict):
-                continue
-
-            macro_name = macro.get('name')
-            if not macro_name:
-                continue
-
-            # 跳过带参数的宏
-            if macro.get('params'):
-                if print_macro_info:
-                    print(f"{Fore.BLUE}[跳过] 带参数的宏 {macro_name}{Style.RESET_ALL}")
-                continue
-
-            # 检查是否在黑名单中
-            if is_function_matched(macro_name, blacklist_macros):
-                if print_macro_info:
-                    print(f"{Fore.RED}[黑名单] 跳过宏 {macro_name}{Style.RESET_ALL}")
-                continue
-
-            # 特殊处理LV_SYMBOL_开头的宏
-            if macro_name.startswith('LV_SYMBOL_'):
-                lines.append(f"#ifdef {macro_name}")
-                lines.append(f'    jerry_value_t {macro_name}_str = jerry_string_sz("{macro_name}");')
-                lines.append(f"    jerry_value_t {macro_name}_val = jerry_string_sz({macro_name});")
-                lines.append(f'    jerry_value_free(jerry_object_set(global, {macro_name}_str, {macro_name}_val));')
-                lines.append(f"    jerry_value_free({macro_name}_str);")
-                lines.append(f"    jerry_value_free({macro_name}_val);")
-                lines.append("#else")
-                lines.append(f'    #pragma message("WARNING: Macro {macro_name} is not defined")')
-                lines.append("#endif")
-                continue
-
-            # 检查是否在导出列表中
-            if is_function_matched(macro_name, export_macros):
-                lines.append(f"#ifdef {macro_name}")
-                lines.append(f'    lvgl_binding_set_enum(global, "{macro_name}", {macro_name});')
-                lines.append("#else")
-                lines.append(f'    #pragma message("WARNING: Macro {macro_name} is not defined")')
-                lines.append("#endif")
-            elif print_macro_info:
+    # 哨兵
+    lines.append('        { NULL, 0 }')
+    lines.append("    };")
+    lines.append("")
+    # 宏处理：分为字符串符号（LV_SYMBOL_）和数值宏
+    lines.append("    /* 宏（数值） */")
+    lines.append("    static const lvgl_enum_entry_t macro_entries[] = {")
+    any_macro_entry = False
+    for macro in macros or []:
+        if not macro or not isinstance(macro, dict):
+            continue
+        macro_name = macro.get('name')
+        if not macro_name:
+            continue
+        # 跳过带参数的宏
+        if macro.get('params'):
+            if print_macro_info:
+                print(f"{Fore.BLUE}[跳过] 带参数的宏 {macro_name}{Style.RESET_ALL}")
+            continue
+        # 黑名单跳过
+        if is_function_matched(macro_name, blacklist_macros):
+            if print_macro_info:
+                print(f"{Fore.RED}[黑名单] 跳过宏 {macro_name}{Style.RESET_ALL}")
+            continue
+        # LV_SYMBOL_ 将在下文作为字符串处理，跳过这里
+        if macro_name.startswith('LV_SYMBOL_'):
+            continue
+        # 仅导出列表中的宏
+        if not is_function_matched(macro_name, export_macros):
+            if print_macro_info:
                 print(f"{Fore.BLUE}[跳过] 宏 {macro_name} 不在导出列表中{Style.RESET_ALL}")
+            continue
+        # 使用#ifdef 包裹具体条目以保证宏存在时才编译入数组
+        lines.append(f"#ifdef {macro_name}")
+        lines.append(f'        {{ "{macro_name}", {macro_name} }},')
+        lines.append("#endif")
+        any_macro_entry = True
+    # 哨兵
+    lines.append('        { NULL, 0 }')
+    lines.append("    };")
+    lines.append("")
 
+    # LV_SYMBOL_ 字符串宏数组
+    lines.append("    typedef struct { const char* name; const char* val; } lvgl_symbol_entry_t;")
+    lines.append("    static const lvgl_symbol_entry_t symbol_entries[] = {")
+    any_symbol_entry = False
+    for macro in macros or []:
+        if not macro or not isinstance(macro, dict):
+            continue
+        macro_name = macro.get('name')
+        if not macro_name or not macro_name.startswith('LV_SYMBOL_'):
+            continue
+        # 跳过带参数或黑名单
+        if macro.get('params'):
+            if print_macro_info:
+                print(f"{Fore.BLUE}[跳过] 带参数的宏 {macro_name}{Style.RESET_ALL}")
+            continue
+        if is_function_matched(macro_name, blacklist_macros):
+            if print_macro_info:
+                print(f"{Fore.RED}[黑名单] 跳过宏 {macro_name}{Style.RESET_ALL}")
+            continue
+        # 仅导出列表中的宏
+        if not is_function_matched(macro_name, export_macros):
+            if print_macro_info:
+                print(f"{Fore.BLUE}[跳过] 宏 {macro_name} 不在导出列表中{Style.RESET_ALL}")
+            continue
+        lines.append(f"#ifdef {macro_name}")
+        lines.append(f'        {{ "{macro_name}", {macro_name} }},')
+        lines.append("#endif")
+        any_symbol_entry = True
+    # 哨兵
+    lines.append('        { NULL, NULL }')
+    lines.append("    };")
+    lines.append("")
+
+    # 使用for循环遍历数组注册枚举与宏
+    lines.append("    /* 注册枚举条目 */")
+    lines.append("    for (size_t i = 0; enum_entries[i].name != NULL; ++i) {")
+    lines.append("        lvgl_binding_set_enum(global, enum_entries[i].name, enum_entries[i].value);")
+    lines.append("    }")
+    lines.append("")
+    lines.append("    /* 注册数值宏条目 */")
+    lines.append("    for (size_t i = 0; macro_entries[i].name != NULL; ++i) {")
+    lines.append("        lvgl_binding_set_enum(global, macro_entries[i].name, macro_entries[i].value);")
+    lines.append("    }")
+    lines.append("")
+    lines.append("    /* 注册 LV_SYMBOL_ 字符串宏（作为全局字符串） */")
+    lines.append("    for (size_t i = 0; symbol_entries[i].name != NULL; ++i) {")
+    lines.append("        jerry_value_t key = jerry_string_sz(symbol_entries[i].name);")
+    lines.append("        jerry_value_t val = jerry_string_sz(symbol_entries[i].val);")
+    lines.append("        jerry_value_free(jerry_object_set(global, key, val));")
+    lines.append("        jerry_value_free(key);")
+    lines.append("        jerry_value_free(val);")
+    lines.append("    }")
+    lines.append("")
     lines.append("    jerry_value_free(global);")
     lines.append("}")
     return "\n".join(lines)
@@ -987,7 +1042,7 @@ def main():
     matched_funcs = set()
     missing_funcs = set(EXPORT_FUNCTION_PATTERNS)  # 初始化包含所有导出模式
 
-    # 1. 首先处理所有函数
+    # 首先处理所有函数
     for func in data.get('functions', []):
         func_name = func['name']
         if func_name in matched_funcs:
@@ -1007,7 +1062,7 @@ def main():
         matched_funcs.add(func_name)
         missing_funcs.discard(func_name)  # 从缺失列表中移除
 
-    # 2. 处理宏定义（作为函数导出）
+    # 处理宏定义（作为函数导出）
     for macro in data.get('macros', []):
         macro_name = macro.get('name')
         if not macro_name or macro_name in matched_funcs:

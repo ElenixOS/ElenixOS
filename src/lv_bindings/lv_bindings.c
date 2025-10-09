@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2025-10-05
+ * @date 2025-10-09
  */
 // Application System header files
 #include "lv_bindings.h"
@@ -4756,1361 +4756,1009 @@ const unsigned int lvgl_binding_funcs_count = 92;
 
 static void register_lvgl_enums(void) {
     jerry_value_t global = jerry_current_realm();
-    lvgl_binding_set_enum(global, "LV_RESULT_INVALID", 0);
-    lvgl_binding_set_enum(global, "LV_RESULT_OK", 1);
-    lvgl_binding_set_enum(global, "LV_ANIM_OFF", 0);
-    lvgl_binding_set_enum(global, "LV_ANIM_ON", 1);
-    lvgl_binding_set_enum(global, "LV_RB_COLOR_RED", 0);
-    lvgl_binding_set_enum(global, "LV_RB_COLOR_BLACK", 1);
-    lvgl_binding_set_enum(global, "LV_ALIGN_DEFAULT", 0);
-    lvgl_binding_set_enum(global, "LV_ALIGN_TOP_LEFT", 1);
-    lvgl_binding_set_enum(global, "LV_ALIGN_TOP_MID", 2);
-    lvgl_binding_set_enum(global, "LV_ALIGN_TOP_RIGHT", 3);
-    lvgl_binding_set_enum(global, "LV_ALIGN_BOTTOM_LEFT", 4);
-    lvgl_binding_set_enum(global, "LV_ALIGN_BOTTOM_MID", 5);
-    lvgl_binding_set_enum(global, "LV_ALIGN_BOTTOM_RIGHT", 6);
-    lvgl_binding_set_enum(global, "LV_ALIGN_LEFT_MID", 7);
-    lvgl_binding_set_enum(global, "LV_ALIGN_RIGHT_MID", 8);
-    lvgl_binding_set_enum(global, "LV_ALIGN_CENTER", 9);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_TOP_LEFT", 10);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_TOP_MID", 11);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_TOP_RIGHT", 12);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_BOTTOM_LEFT", 13);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_BOTTOM_MID", 14);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_BOTTOM_RIGHT", 15);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_LEFT_TOP", 16);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_LEFT_MID", 17);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_LEFT_BOTTOM", 18);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_RIGHT_TOP", 19);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_RIGHT_MID", 20);
-    lvgl_binding_set_enum(global, "LV_ALIGN_OUT_RIGHT_BOTTOM", 21);
-    lvgl_binding_set_enum(global, "LV_DIR_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_DIR_LEFT", 1);
-    lvgl_binding_set_enum(global, "LV_DIR_RIGHT", 2);
-    lvgl_binding_set_enum(global, "LV_DIR_TOP", 4);
-    lvgl_binding_set_enum(global, "LV_DIR_BOTTOM", 8);
-    lvgl_binding_set_enum(global, "LV_DIR_HOR", 3);
-    lvgl_binding_set_enum(global, "LV_DIR_VER", 12);
-    lvgl_binding_set_enum(global, "LV_DIR_ALL", 15);
-    lvgl_binding_set_enum(global, "LV_OPA_TRANSP", 0);
-    lvgl_binding_set_enum(global, "LV_OPA_0", 0);
-    lvgl_binding_set_enum(global, "LV_OPA_10", 25);
-    lvgl_binding_set_enum(global, "LV_OPA_20", 51);
-    lvgl_binding_set_enum(global, "LV_OPA_30", 76);
-    lvgl_binding_set_enum(global, "LV_OPA_40", 102);
-    lvgl_binding_set_enum(global, "LV_OPA_50", 127);
-    lvgl_binding_set_enum(global, "LV_OPA_60", 153);
-    lvgl_binding_set_enum(global, "LV_OPA_70", 178);
-    lvgl_binding_set_enum(global, "LV_OPA_80", 204);
-    lvgl_binding_set_enum(global, "LV_OPA_90", 229);
-    lvgl_binding_set_enum(global, "LV_OPA_100", 255);
-    lvgl_binding_set_enum(global, "LV_OPA_COVER", 255);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_UNKNOWN", 0);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_RAW", 1);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_RAW_ALPHA", 2);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_L8", 6);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I1", 7);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I2", 8);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I4", 9);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I8", 10);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_A8", 14);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_RGB565", 18);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_ARGB8565", 19);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_RGB565A8", 20);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_AL88", 21);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_RGB888", 15);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_ARGB8888", 16);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_XRGB8888", 17);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_A1", 11);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_A2", 12);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_A4", 13);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_YUV_START", 32);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I420", 32);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I422", 33);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I444", 34);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_I400", 35);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_NV21", 36);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_NV12", 37);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_YUY2", 38);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_UYVY", 39);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_YUV_END", 39);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_NATIVE", 18);
-    lvgl_binding_set_enum(global, "LV_COLOR_FORMAT_NATIVE_WITH_ALPHA", 20);
-    lvgl_binding_set_enum(global, "LV_PALETTE_RED", 0);
-    lvgl_binding_set_enum(global, "LV_PALETTE_PINK", 1);
-    lvgl_binding_set_enum(global, "LV_PALETTE_PURPLE", 2);
-    lvgl_binding_set_enum(global, "LV_PALETTE_DEEP_PURPLE", 3);
-    lvgl_binding_set_enum(global, "LV_PALETTE_INDIGO", 4);
-    lvgl_binding_set_enum(global, "LV_PALETTE_BLUE", 5);
-    lvgl_binding_set_enum(global, "LV_PALETTE_LIGHT_BLUE", 6);
-    lvgl_binding_set_enum(global, "LV_PALETTE_CYAN", 7);
-    lvgl_binding_set_enum(global, "LV_PALETTE_TEAL", 8);
-    lvgl_binding_set_enum(global, "LV_PALETTE_GREEN", 9);
-    lvgl_binding_set_enum(global, "LV_PALETTE_LIGHT_GREEN", 10);
-    lvgl_binding_set_enum(global, "LV_PALETTE_LIME", 11);
-    lvgl_binding_set_enum(global, "LV_PALETTE_YELLOW", 12);
-    lvgl_binding_set_enum(global, "LV_PALETTE_AMBER", 13);
-    lvgl_binding_set_enum(global, "LV_PALETTE_ORANGE", 14);
-    lvgl_binding_set_enum(global, "LV_PALETTE_DEEP_ORANGE", 15);
-    lvgl_binding_set_enum(global, "LV_PALETTE_BROWN", 16);
-    lvgl_binding_set_enum(global, "LV_PALETTE_BLUE_GREY", 17);
-    lvgl_binding_set_enum(global, "LV_PALETTE_GREY", 18);
-    lvgl_binding_set_enum(global, "LV_PALETTE_LAST", 19);
-    lvgl_binding_set_enum(global, "LV_PALETTE_NONE", 255);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_PREMULTIPLIED", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_COMPRESSED", 8);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_ALLOCATED", 16);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_MODIFIABLE", 32);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER1", 256);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER2", 512);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER3", 1024);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER4", 2048);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER5", 4096);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER6", 8192);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER7", 16384);
-    lvgl_binding_set_enum(global, "LV_IMAGE_FLAGS_USER8", 32768);
-    lvgl_binding_set_enum(global, "LV_IMAGE_COMPRESS_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_IMAGE_COMPRESS_RLE", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGE_COMPRESS_LZ4", 2);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BULLET", 0);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_AUDIO", 1);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_VIDEO", 2);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_LIST", 3);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_OK", 4);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_CLOSE", 5);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_POWER", 6);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_SETTINGS", 7);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_HOME", 8);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_DOWNLOAD", 9);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_DRIVE", 10);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_REFRESH", 11);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_MUTE", 12);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_VOLUME_MID", 13);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_VOLUME_MAX", 14);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_IMAGE", 15);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_TINT", 16);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_PREV", 17);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_PLAY", 18);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_PAUSE", 19);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_STOP", 20);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_NEXT", 21);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_EJECT", 22);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_LEFT", 23);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_RIGHT", 24);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_PLUS", 25);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_MINUS", 26);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_EYE_OPEN", 27);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_EYE_CLOSE", 28);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_WARNING", 29);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_SHUFFLE", 30);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_UP", 31);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_DOWN", 32);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_LOOP", 33);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_DIRECTORY", 34);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_UPLOAD", 35);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_CALL", 36);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_CUT", 37);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_COPY", 38);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_SAVE", 39);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BARS", 40);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_ENVELOPE", 41);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_CHARGE", 42);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_PASTE", 43);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BELL", 44);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_KEYBOARD", 45);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_GPS", 46);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_FILE", 47);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_WIFI", 48);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BATTERY_FULL", 49);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BATTERY_3", 50);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BATTERY_2", 51);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BATTERY_1", 52);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BATTERY_EMPTY", 53);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_USB", 54);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BLUETOOTH", 55);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_TRASH", 56);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_EDIT", 57);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_BACKSPACE", 58);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_SD_CARD", 59);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_NEW_LINE", 60);
-    lvgl_binding_set_enum(global, "LV_STR_SYMBOL_DUMMY", 61);
-    lvgl_binding_set_enum(global, "LV_THREAD_PRIO_LOWEST", 0);
-    lvgl_binding_set_enum(global, "LV_THREAD_PRIO_LOW", 1);
-    lvgl_binding_set_enum(global, "LV_THREAD_PRIO_MID", 2);
-    lvgl_binding_set_enum(global, "LV_THREAD_PRIO_HIGH", 3);
-    lvgl_binding_set_enum(global, "LV_THREAD_PRIO_HIGHEST", 4);
-    lvgl_binding_set_enum(global, "LV_CACHE_RESERVE_COND_OK", 0);
-    lvgl_binding_set_enum(global, "LV_CACHE_RESERVE_COND_TOO_LARGE", 1);
-    lvgl_binding_set_enum(global, "LV_CACHE_RESERVE_COND_NEED_VICTIM", 2);
-    lvgl_binding_set_enum(global, "LV_CACHE_RESERVE_COND_ERROR", 3);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_A1", 1);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_A2", 2);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_A4", 4);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_A8", 8);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_IMAGE", 9);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_VECTOR", 10);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_SVG", 11);
-    lvgl_binding_set_enum(global, "LV_FONT_GLYPH_FORMAT_CUSTOM", 255);
-    lvgl_binding_set_enum(global, "LV_FONT_SUBPX_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_FONT_SUBPX_HOR", 1);
-    lvgl_binding_set_enum(global, "LV_FONT_SUBPX_VER", 2);
-    lvgl_binding_set_enum(global, "LV_FONT_SUBPX_BOTH", 3);
-    lvgl_binding_set_enum(global, "LV_FONT_KERNING_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_FONT_KERNING_NONE", 1);
-    lvgl_binding_set_enum(global, "LV_TEXT_FLAG_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_TEXT_FLAG_EXPAND", 1);
-    lvgl_binding_set_enum(global, "LV_TEXT_FLAG_FIT", 2);
-    lvgl_binding_set_enum(global, "LV_TEXT_FLAG_BREAK_ALL", 4);
-    lvgl_binding_set_enum(global, "LV_TEXT_ALIGN_AUTO", 0);
-    lvgl_binding_set_enum(global, "LV_TEXT_ALIGN_LEFT", 1);
-    lvgl_binding_set_enum(global, "LV_TEXT_ALIGN_CENTER", 2);
-    lvgl_binding_set_enum(global, "LV_TEXT_ALIGN_RIGHT", 3);
-    lvgl_binding_set_enum(global, "LV_BASE_DIR_LTR", 0);
-    lvgl_binding_set_enum(global, "LV_BASE_DIR_RTL", 1);
-    lvgl_binding_set_enum(global, "LV_BASE_DIR_AUTO", 2);
-    lvgl_binding_set_enum(global, "LV_BASE_DIR_NEUTRAL", 32);
-    lvgl_binding_set_enum(global, "LV_BASE_DIR_WEAK", 33);
-    lvgl_binding_set_enum(global, "LV_LAYOUT_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_LAYOUT_FLEX", 1);
-    lvgl_binding_set_enum(global, "LV_LAYOUT_GRID", 2);
-    lvgl_binding_set_enum(global, "LV_LAYOUT_LAST", 3);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_START", 0);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_END", 1);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_CENTER", 2);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_SPACE_EVENLY", 3);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_SPACE_AROUND", 4);
-    lvgl_binding_set_enum(global, "LV_FLEX_ALIGN_SPACE_BETWEEN", 5);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_ROW", 0);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_COLUMN", 1);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_ROW_WRAP", 4);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_ROW_REVERSE", 8);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_ROW_WRAP_REVERSE", 12);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_COLUMN_WRAP", 5);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_COLUMN_REVERSE", 9);
-    lvgl_binding_set_enum(global, "LV_FLEX_FLOW_COLUMN_WRAP_REVERSE", 13);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_START", 0);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_CENTER", 1);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_END", 2);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_STRETCH", 3);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_SPACE_EVENLY", 4);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_SPACE_AROUND", 5);
-    lvgl_binding_set_enum(global, "LV_GRID_ALIGN_SPACE_BETWEEN", 6);
-    lvgl_binding_set_enum(global, "LV_BLEND_MODE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_BLEND_MODE_ADDITIVE", 1);
-    lvgl_binding_set_enum(global, "LV_BLEND_MODE_SUBTRACTIVE", 2);
-    lvgl_binding_set_enum(global, "LV_BLEND_MODE_MULTIPLY", 3);
-    lvgl_binding_set_enum(global, "LV_TEXT_DECOR_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_TEXT_DECOR_UNDERLINE", 1);
-    lvgl_binding_set_enum(global, "LV_TEXT_DECOR_STRIKETHROUGH", 2);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_BOTTOM", 1);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_TOP", 2);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_LEFT", 4);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_RIGHT", 8);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_FULL", 15);
-    lvgl_binding_set_enum(global, "LV_BORDER_SIDE_INTERNAL", 16);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_VER", 1);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_HOR", 2);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_LINEAR", 3);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_RADIAL", 4);
-    lvgl_binding_set_enum(global, "LV_GRAD_DIR_CONICAL", 5);
-    lvgl_binding_set_enum(global, "LV_GRAD_EXTEND_PAD", 0);
-    lvgl_binding_set_enum(global, "LV_GRAD_EXTEND_REPEAT", 1);
-    lvgl_binding_set_enum(global, "LV_GRAD_EXTEND_REFLECT", 2);
-    lvgl_binding_set_enum(global, "LV_STYLE_PROP_INV", 0);
-    lvgl_binding_set_enum(global, "LV_STYLE_WIDTH", 1);
-    lvgl_binding_set_enum(global, "LV_STYLE_HEIGHT", 2);
-    lvgl_binding_set_enum(global, "LV_STYLE_LENGTH", 3);
-    lvgl_binding_set_enum(global, "LV_STYLE_MIN_WIDTH", 4);
-    lvgl_binding_set_enum(global, "LV_STYLE_MAX_WIDTH", 5);
-    lvgl_binding_set_enum(global, "LV_STYLE_MIN_HEIGHT", 6);
-    lvgl_binding_set_enum(global, "LV_STYLE_MAX_HEIGHT", 7);
-    lvgl_binding_set_enum(global, "LV_STYLE_X", 8);
-    lvgl_binding_set_enum(global, "LV_STYLE_Y", 9);
-    lvgl_binding_set_enum(global, "LV_STYLE_ALIGN", 10);
-    lvgl_binding_set_enum(global, "LV_STYLE_RADIUS", 12);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_TOP", 16);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_BOTTOM", 17);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_LEFT", 18);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_RIGHT", 19);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_ROW", 20);
-    lvgl_binding_set_enum(global, "LV_STYLE_PAD_COLUMN", 21);
-    lvgl_binding_set_enum(global, "LV_STYLE_LAYOUT", 22);
-    lvgl_binding_set_enum(global, "LV_STYLE_MARGIN_TOP", 24);
-    lvgl_binding_set_enum(global, "LV_STYLE_MARGIN_BOTTOM", 25);
-    lvgl_binding_set_enum(global, "LV_STYLE_MARGIN_LEFT", 26);
-    lvgl_binding_set_enum(global, "LV_STYLE_MARGIN_RIGHT", 27);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_COLOR", 28);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_OPA", 29);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_GRAD_DIR", 32);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_MAIN_STOP", 33);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_GRAD_STOP", 34);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_GRAD_COLOR", 35);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_MAIN_OPA", 36);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_GRAD_OPA", 37);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_GRAD", 38);
-    lvgl_binding_set_enum(global, "LV_STYLE_BASE_DIR", 39);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_IMAGE_SRC", 40);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_IMAGE_OPA", 41);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_IMAGE_RECOLOR", 42);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_IMAGE_RECOLOR_OPA", 43);
-    lvgl_binding_set_enum(global, "LV_STYLE_BG_IMAGE_TILED", 44);
-    lvgl_binding_set_enum(global, "LV_STYLE_CLIP_CORNER", 45);
-    lvgl_binding_set_enum(global, "LV_STYLE_BORDER_WIDTH", 48);
-    lvgl_binding_set_enum(global, "LV_STYLE_BORDER_COLOR", 49);
-    lvgl_binding_set_enum(global, "LV_STYLE_BORDER_OPA", 50);
-    lvgl_binding_set_enum(global, "LV_STYLE_BORDER_SIDE", 52);
-    lvgl_binding_set_enum(global, "LV_STYLE_BORDER_POST", 53);
-    lvgl_binding_set_enum(global, "LV_STYLE_OUTLINE_WIDTH", 56);
-    lvgl_binding_set_enum(global, "LV_STYLE_OUTLINE_COLOR", 57);
-    lvgl_binding_set_enum(global, "LV_STYLE_OUTLINE_OPA", 58);
-    lvgl_binding_set_enum(global, "LV_STYLE_OUTLINE_PAD", 59);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_WIDTH", 60);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_COLOR", 61);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_OPA", 62);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_OFFSET_X", 64);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_OFFSET_Y", 65);
-    lvgl_binding_set_enum(global, "LV_STYLE_SHADOW_SPREAD", 66);
-    lvgl_binding_set_enum(global, "LV_STYLE_IMAGE_OPA", 68);
-    lvgl_binding_set_enum(global, "LV_STYLE_IMAGE_RECOLOR", 69);
-    lvgl_binding_set_enum(global, "LV_STYLE_IMAGE_RECOLOR_OPA", 70);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_WIDTH", 72);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_DASH_WIDTH", 73);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_DASH_GAP", 74);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_ROUNDED", 75);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_COLOR", 76);
-    lvgl_binding_set_enum(global, "LV_STYLE_LINE_OPA", 77);
-    lvgl_binding_set_enum(global, "LV_STYLE_ARC_WIDTH", 80);
-    lvgl_binding_set_enum(global, "LV_STYLE_ARC_ROUNDED", 81);
-    lvgl_binding_set_enum(global, "LV_STYLE_ARC_COLOR", 82);
-    lvgl_binding_set_enum(global, "LV_STYLE_ARC_OPA", 83);
-    lvgl_binding_set_enum(global, "LV_STYLE_ARC_IMAGE_SRC", 84);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_COLOR", 88);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_OPA", 89);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_FONT", 90);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_LETTER_SPACE", 91);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_LINE_SPACE", 92);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_DECOR", 93);
-    lvgl_binding_set_enum(global, "LV_STYLE_TEXT_ALIGN", 94);
-    lvgl_binding_set_enum(global, "LV_STYLE_OPA", 95);
-    lvgl_binding_set_enum(global, "LV_STYLE_OPA_LAYERED", 96);
-    lvgl_binding_set_enum(global, "LV_STYLE_COLOR_FILTER_DSC", 97);
-    lvgl_binding_set_enum(global, "LV_STYLE_COLOR_FILTER_OPA", 98);
-    lvgl_binding_set_enum(global, "LV_STYLE_ANIM", 99);
-    lvgl_binding_set_enum(global, "LV_STYLE_ANIM_DURATION", 100);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSITION", 102);
-    lvgl_binding_set_enum(global, "LV_STYLE_BLEND_MODE", 103);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_WIDTH", 104);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_HEIGHT", 105);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSLATE_X", 106);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSLATE_Y", 107);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_SCALE_X", 108);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_SCALE_Y", 109);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_ROTATION", 110);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_PIVOT_X", 111);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_PIVOT_Y", 112);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_SKEW_X", 113);
-    lvgl_binding_set_enum(global, "LV_STYLE_TRANSFORM_SKEW_Y", 114);
-    lvgl_binding_set_enum(global, "LV_STYLE_BITMAP_MASK_SRC", 115);
-    lvgl_binding_set_enum(global, "LV_STYLE_ROTARY_SENSITIVITY", 116);
-    lvgl_binding_set_enum(global, "LV_STYLE_FLEX_FLOW", 125);
-    lvgl_binding_set_enum(global, "LV_STYLE_FLEX_MAIN_PLACE", 126);
-    lvgl_binding_set_enum(global, "LV_STYLE_FLEX_CROSS_PLACE", 127);
-    lvgl_binding_set_enum(global, "LV_STYLE_FLEX_TRACK_PLACE", 128);
-    lvgl_binding_set_enum(global, "LV_STYLE_FLEX_GROW", 129);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_COLUMN_ALIGN", 130);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_ROW_ALIGN", 131);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_ROW_DSC_ARRAY", 132);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_COLUMN_DSC_ARRAY", 133);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_COLUMN_POS", 134);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_COLUMN_SPAN", 135);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_X_ALIGN", 136);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_ROW_POS", 137);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_ROW_SPAN", 138);
-    lvgl_binding_set_enum(global, "LV_STYLE_GRID_CELL_Y_ALIGN", 139);
-    lvgl_binding_set_enum(global, "LV_STYLE_LAST_BUILT_IN_PROP", 140);
-    lvgl_binding_set_enum(global, "LV_STYLE_NUM_BUILT_IN_PROPS", 141);
-    lvgl_binding_set_enum(global, "LV_STYLE_PROP_ANY", 255);
-    lvgl_binding_set_enum(global, "LV_STYLE_PROP_CONST", 255);
-    lvgl_binding_set_enum(global, "LV_STYLE_RES_NOT_FOUND", 0);
-    lvgl_binding_set_enum(global, "LV_STYLE_RES_FOUND", 1);
-    lvgl_binding_set_enum(global, "LV_EVENT_ALL", 0);
-    lvgl_binding_set_enum(global, "LV_EVENT_PRESSED", 1);
-    lvgl_binding_set_enum(global, "LV_EVENT_PRESSING", 2);
-    lvgl_binding_set_enum(global, "LV_EVENT_PRESS_LOST", 3);
-    lvgl_binding_set_enum(global, "LV_EVENT_SHORT_CLICKED", 4);
-    lvgl_binding_set_enum(global, "LV_EVENT_LONG_PRESSED", 5);
-    lvgl_binding_set_enum(global, "LV_EVENT_LONG_PRESSED_REPEAT", 6);
-    lvgl_binding_set_enum(global, "LV_EVENT_CLICKED", 7);
-    lvgl_binding_set_enum(global, "LV_EVENT_RELEASED", 8);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCROLL_BEGIN", 9);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCROLL_THROW_BEGIN", 10);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCROLL_END", 11);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCROLL", 12);
-    lvgl_binding_set_enum(global, "LV_EVENT_GESTURE", 13);
-    lvgl_binding_set_enum(global, "LV_EVENT_KEY", 14);
-    lvgl_binding_set_enum(global, "LV_EVENT_ROTARY", 15);
-    lvgl_binding_set_enum(global, "LV_EVENT_FOCUSED", 16);
-    lvgl_binding_set_enum(global, "LV_EVENT_DEFOCUSED", 17);
-    lvgl_binding_set_enum(global, "LV_EVENT_LEAVE", 18);
-    lvgl_binding_set_enum(global, "LV_EVENT_HIT_TEST", 19);
-    lvgl_binding_set_enum(global, "LV_EVENT_INDEV_RESET", 20);
-    lvgl_binding_set_enum(global, "LV_EVENT_HOVER_OVER", 21);
-    lvgl_binding_set_enum(global, "LV_EVENT_HOVER_LEAVE", 22);
-    lvgl_binding_set_enum(global, "LV_EVENT_COVER_CHECK", 23);
-    lvgl_binding_set_enum(global, "LV_EVENT_REFR_EXT_DRAW_SIZE", 24);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_MAIN_BEGIN", 25);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_MAIN", 26);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_MAIN_END", 27);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_POST_BEGIN", 28);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_POST", 29);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_POST_END", 30);
-    lvgl_binding_set_enum(global, "LV_EVENT_DRAW_TASK_ADDED", 31);
-    lvgl_binding_set_enum(global, "LV_EVENT_VALUE_CHANGED", 32);
-    lvgl_binding_set_enum(global, "LV_EVENT_INSERT", 33);
-    lvgl_binding_set_enum(global, "LV_EVENT_REFRESH", 34);
-    lvgl_binding_set_enum(global, "LV_EVENT_READY", 35);
-    lvgl_binding_set_enum(global, "LV_EVENT_CANCEL", 36);
-    lvgl_binding_set_enum(global, "LV_EVENT_CREATE", 37);
-    lvgl_binding_set_enum(global, "LV_EVENT_DELETE", 38);
-    lvgl_binding_set_enum(global, "LV_EVENT_CHILD_CHANGED", 39);
-    lvgl_binding_set_enum(global, "LV_EVENT_CHILD_CREATED", 40);
-    lvgl_binding_set_enum(global, "LV_EVENT_CHILD_DELETED", 41);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCREEN_UNLOAD_START", 42);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCREEN_LOAD_START", 43);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCREEN_LOADED", 44);
-    lvgl_binding_set_enum(global, "LV_EVENT_SCREEN_UNLOADED", 45);
-    lvgl_binding_set_enum(global, "LV_EVENT_SIZE_CHANGED", 46);
-    lvgl_binding_set_enum(global, "LV_EVENT_STYLE_CHANGED", 47);
-    lvgl_binding_set_enum(global, "LV_EVENT_LAYOUT_CHANGED", 48);
-    lvgl_binding_set_enum(global, "LV_EVENT_GET_SELF_SIZE", 49);
-    lvgl_binding_set_enum(global, "LV_EVENT_INVALIDATE_AREA", 50);
-    lvgl_binding_set_enum(global, "LV_EVENT_RESOLUTION_CHANGED", 51);
-    lvgl_binding_set_enum(global, "LV_EVENT_COLOR_FORMAT_CHANGED", 52);
-    lvgl_binding_set_enum(global, "LV_EVENT_REFR_REQUEST", 53);
-    lvgl_binding_set_enum(global, "LV_EVENT_REFR_START", 54);
-    lvgl_binding_set_enum(global, "LV_EVENT_REFR_READY", 55);
-    lvgl_binding_set_enum(global, "LV_EVENT_RENDER_START", 56);
-    lvgl_binding_set_enum(global, "LV_EVENT_RENDER_READY", 57);
-    lvgl_binding_set_enum(global, "LV_EVENT_FLUSH_START", 58);
-    lvgl_binding_set_enum(global, "LV_EVENT_FLUSH_FINISH", 59);
-    lvgl_binding_set_enum(global, "LV_EVENT_FLUSH_WAIT_START", 60);
-    lvgl_binding_set_enum(global, "LV_EVENT_FLUSH_WAIT_FINISH", 61);
-    lvgl_binding_set_enum(global, "LV_EVENT_VSYNC", 62);
-    lvgl_binding_set_enum(global, "LV_EVENT_LAST", 63);
-    lvgl_binding_set_enum(global, "LV_EVENT_PREPROCESS", 32768);
-    lvgl_binding_set_enum(global, "LV_FS_RES_OK", 0);
-    lvgl_binding_set_enum(global, "LV_FS_RES_HW_ERR", 1);
-    lvgl_binding_set_enum(global, "LV_FS_RES_FS_ERR", 2);
-    lvgl_binding_set_enum(global, "LV_FS_RES_NOT_EX", 3);
-    lvgl_binding_set_enum(global, "LV_FS_RES_FULL", 4);
-    lvgl_binding_set_enum(global, "LV_FS_RES_LOCKED", 5);
-    lvgl_binding_set_enum(global, "LV_FS_RES_DENIED", 6);
-    lvgl_binding_set_enum(global, "LV_FS_RES_BUSY", 7);
-    lvgl_binding_set_enum(global, "LV_FS_RES_TOUT", 8);
-    lvgl_binding_set_enum(global, "LV_FS_RES_NOT_IMP", 9);
-    lvgl_binding_set_enum(global, "LV_FS_RES_OUT_OF_MEM", 10);
-    lvgl_binding_set_enum(global, "LV_FS_RES_INV_PARAM", 11);
-    lvgl_binding_set_enum(global, "LV_FS_RES_UNKNOWN", 12);
-    lvgl_binding_set_enum(global, "LV_FS_MODE_WR", 1);
-    lvgl_binding_set_enum(global, "LV_FS_MODE_RD", 2);
-    lvgl_binding_set_enum(global, "LV_FS_SEEK_SET", 0);
-    lvgl_binding_set_enum(global, "LV_FS_SEEK_CUR", 1);
-    lvgl_binding_set_enum(global, "LV_FS_SEEK_END", 2);
-    lvgl_binding_set_enum(global, "LV_IMAGE_SRC_VARIABLE", 0);
-    lvgl_binding_set_enum(global, "LV_IMAGE_SRC_FILE", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGE_SRC_SYMBOL", 2);
-    lvgl_binding_set_enum(global, "LV_IMAGE_SRC_UNKNOWN", 3);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_FILL", 1);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_BORDER", 2);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_BOX_SHADOW", 3);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_LABEL", 4);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_IMAGE", 5);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_LAYER", 6);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_LINE", 7);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_ARC", 8);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_TRIANGLE", 9);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_MASK_RECTANGLE", 10);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_MASK_BITMAP", 11);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_TYPE_VECTOR", 12);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_STATE_WAITING", 0);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_STATE_QUEUED", 1);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_STATE_IN_PROGRESS", 2);
-    lvgl_binding_set_enum(global, "LV_DRAW_TASK_STATE_READY", 3);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_ROTATION_0", 0);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_ROTATION_90", 1);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_ROTATION_180", 2);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_ROTATION_270", 3);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_RENDER_MODE_PARTIAL", 0);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_RENDER_MODE_DIRECT", 1);
-    lvgl_binding_set_enum(global, "LV_DISPLAY_RENDER_MODE_FULL", 2);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OVER_LEFT", 1);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OVER_RIGHT", 2);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OVER_TOP", 3);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OVER_BOTTOM", 4);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_MOVE_LEFT", 5);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_MOVE_RIGHT", 6);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_MOVE_TOP", 7);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_MOVE_BOTTOM", 8);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_FADE_IN", 9);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_FADE_ON", 9);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_FADE_OUT", 10);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OUT_LEFT", 11);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OUT_RIGHT", 12);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OUT_TOP", 13);
-    lvgl_binding_set_enum(global, "LV_SCR_LOAD_ANIM_OUT_BOTTOM", 14);
-    lvgl_binding_set_enum(global, "LV_OBJ_TREE_WALK_NEXT", 0);
-    lvgl_binding_set_enum(global, "LV_OBJ_TREE_WALK_SKIP_CHILDREN", 1);
-    lvgl_binding_set_enum(global, "LV_OBJ_TREE_WALK_END", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_POINT_TRANSFORM_FLAG_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_OBJ_POINT_TRANSFORM_FLAG_RECURSIVE", 1);
-    lvgl_binding_set_enum(global, "LV_OBJ_POINT_TRANSFORM_FLAG_INVERSE", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE", 3);
-    lvgl_binding_set_enum(global, "LV_SCROLLBAR_MODE_OFF", 0);
-    lvgl_binding_set_enum(global, "LV_SCROLLBAR_MODE_ON", 1);
-    lvgl_binding_set_enum(global, "LV_SCROLLBAR_MODE_ACTIVE", 2);
-    lvgl_binding_set_enum(global, "LV_SCROLLBAR_MODE_AUTO", 3);
-    lvgl_binding_set_enum(global, "LV_SCROLL_SNAP_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_SCROLL_SNAP_START", 1);
-    lvgl_binding_set_enum(global, "LV_SCROLL_SNAP_END", 2);
-    lvgl_binding_set_enum(global, "LV_SCROLL_SNAP_CENTER", 3);
-    lvgl_binding_set_enum(global, "LV_STYLE_STATE_CMP_SAME", 0);
-    lvgl_binding_set_enum(global, "LV_STYLE_STATE_CMP_DIFF_REDRAW", 1);
-    lvgl_binding_set_enum(global, "LV_STYLE_STATE_CMP_DIFF_DRAW_PAD", 2);
-    lvgl_binding_set_enum(global, "LV_STYLE_STATE_CMP_DIFF_LAYOUT", 3);
-    lvgl_binding_set_enum(global, "LV_LAYER_TYPE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_LAYER_TYPE_SIMPLE", 1);
-    lvgl_binding_set_enum(global, "LV_LAYER_TYPE_TRANSFORM", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_EDITABLE_INHERIT", 0);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_EDITABLE_TRUE", 1);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_EDITABLE_FALSE", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_GROUP_DEF_INHERIT", 0);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_GROUP_DEF_TRUE", 1);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_GROUP_DEF_FALSE", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_THEME_INHERITABLE_FALSE", 0);
-    lvgl_binding_set_enum(global, "LV_OBJ_CLASS_THEME_INHERITABLE_TRUE", 1);
-    lvgl_binding_set_enum(global, "LV_KEY_UP", 17);
-    lvgl_binding_set_enum(global, "LV_KEY_DOWN", 18);
-    lvgl_binding_set_enum(global, "LV_KEY_RIGHT", 19);
-    lvgl_binding_set_enum(global, "LV_KEY_LEFT", 20);
-    lvgl_binding_set_enum(global, "LV_KEY_ESC", 27);
-    lvgl_binding_set_enum(global, "LV_KEY_DEL", 127);
-    lvgl_binding_set_enum(global, "LV_KEY_BACKSPACE", 8);
-    lvgl_binding_set_enum(global, "LV_KEY_ENTER", 10);
-    lvgl_binding_set_enum(global, "LV_KEY_NEXT", 9);
-    lvgl_binding_set_enum(global, "LV_KEY_PREV", 11);
-    lvgl_binding_set_enum(global, "LV_KEY_HOME", 2);
-    lvgl_binding_set_enum(global, "LV_KEY_END", 3);
-    lvgl_binding_set_enum(global, "LV_GROUP_REFOCUS_POLICY_NEXT", 0);
-    lvgl_binding_set_enum(global, "LV_GROUP_REFOCUS_POLICY_PREV", 1);
-    lvgl_binding_set_enum(global, "LV_INDEV_TYPE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_INDEV_TYPE_POINTER", 1);
-    lvgl_binding_set_enum(global, "LV_INDEV_TYPE_KEYPAD", 2);
-    lvgl_binding_set_enum(global, "LV_INDEV_TYPE_BUTTON", 3);
-    lvgl_binding_set_enum(global, "LV_INDEV_TYPE_ENCODER", 4);
-    lvgl_binding_set_enum(global, "LV_INDEV_STATE_RELEASED", 0);
-    lvgl_binding_set_enum(global, "LV_INDEV_STATE_PRESSED", 1);
-    lvgl_binding_set_enum(global, "LV_INDEV_MODE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_INDEV_MODE_TIMER", 1);
-    lvgl_binding_set_enum(global, "LV_INDEV_MODE_EVENT", 2);
-    lvgl_binding_set_enum(global, "LV_COVER_RES_COVER", 0);
-    lvgl_binding_set_enum(global, "LV_COVER_RES_NOT_COVER", 1);
-    lvgl_binding_set_enum(global, "LV_COVER_RES_MASKED", 2);
-    lvgl_binding_set_enum(global, "LV_STATE_DEFAULT", 0);
-    lvgl_binding_set_enum(global, "LV_STATE_CHECKED", 1);
-    lvgl_binding_set_enum(global, "LV_STATE_FOCUSED", 2);
-    lvgl_binding_set_enum(global, "LV_STATE_FOCUS_KEY", 4);
-    lvgl_binding_set_enum(global, "LV_STATE_EDITED", 8);
-    lvgl_binding_set_enum(global, "LV_STATE_HOVERED", 16);
-    lvgl_binding_set_enum(global, "LV_STATE_PRESSED", 32);
-    lvgl_binding_set_enum(global, "LV_STATE_SCROLLED", 64);
-    lvgl_binding_set_enum(global, "LV_STATE_DISABLED", 128);
-    lvgl_binding_set_enum(global, "LV_STATE_USER_1", 4096);
-    lvgl_binding_set_enum(global, "LV_STATE_USER_2", 8192);
-    lvgl_binding_set_enum(global, "LV_STATE_USER_3", 16384);
-    lvgl_binding_set_enum(global, "LV_STATE_USER_4", 32768);
-    lvgl_binding_set_enum(global, "LV_STATE_ANY", 65535);
-    lvgl_binding_set_enum(global, "LV_PART_MAIN", 0);
-    lvgl_binding_set_enum(global, "LV_PART_SCROLLBAR", 65536);
-    lvgl_binding_set_enum(global, "LV_PART_INDICATOR", 131072);
-    lvgl_binding_set_enum(global, "LV_PART_KNOB", 196608);
-    lvgl_binding_set_enum(global, "LV_PART_SELECTED", 262144);
-    lvgl_binding_set_enum(global, "LV_PART_ITEMS", 327680);
-    lvgl_binding_set_enum(global, "LV_PART_CURSOR", 393216);
-    lvgl_binding_set_enum(global, "LV_PART_CUSTOM_FIRST", 524288);
-    lvgl_binding_set_enum(global, "LV_PART_ANY", 983040);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_HIDDEN", 1);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_CLICKABLE", 2);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_CLICK_FOCUSABLE", 4);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_CHECKABLE", 8);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLLABLE", 16);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_ELASTIC", 32);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_MOMENTUM", 64);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_ONE", 128);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_CHAIN_HOR", 256);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_CHAIN_VER", 512);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_CHAIN", 768);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_ON_FOCUS", 1024);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SCROLL_WITH_ARROW", 2048);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SNAPPABLE", 4096);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_PRESS_LOCK", 8192);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_EVENT_BUBBLE", 16384);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_GESTURE_BUBBLE", 32768);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_ADV_HITTEST", 65536);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_IGNORE_LAYOUT", 131072);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_FLOATING", 262144);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS", 524288);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_OVERFLOW_VISIBLE", 1048576);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_FLEX_IN_NEW_TRACK", 2097152);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_LAYOUT_1", 8388608);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_LAYOUT_2", 16777216);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_WIDGET_1", 33554432);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_WIDGET_2", 67108864);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_USER_1", 134217728);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_USER_2", 268435456);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_USER_3", 536870912);
-    lvgl_binding_set_enum(global, "LV_OBJ_FLAG_USER_4", 1073741824);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_CMAP_FORMAT0_FULL", 0);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_CMAP_SPARSE_FULL", 1);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY", 2);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_CMAP_SPARSE_TINY", 3);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_PLAIN", 0);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_COMPRESSED", 1);
-    lvgl_binding_set_enum(global, "LV_FONT_FMT_TXT_COMPRESSED_NO_PREFILTER", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_DEFAULT", 0);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_TOP_LEFT", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_TOP_MID", 2);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_TOP_RIGHT", 3);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_BOTTOM_LEFT", 4);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_BOTTOM_MID", 5);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_BOTTOM_RIGHT", 6);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_LEFT_MID", 7);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_RIGHT_MID", 8);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_CENTER", 9);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_AUTO_TRANSFORM", 10);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_STRETCH", 11);
-    lvgl_binding_set_enum(global, "LV_IMAGE_ALIGN_TILE", 12);
-    lvgl_binding_set_enum(global, "LV_ANIM_IMAGE_PART_MAIN", 0);
-    lvgl_binding_set_enum(global, "LV_ARC_MODE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_ARC_MODE_SYMMETRICAL", 1);
-    lvgl_binding_set_enum(global, "LV_ARC_MODE_REVERSE", 2);
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_WRAP", 0);
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_DOT", 1);
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_SCROLL", 2);
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_SCROLL_CIRCULAR", 3);
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_CLIP", 4);
-    lvgl_binding_set_enum(global, "LV_BAR_MODE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_BAR_MODE_SYMMETRICAL", 1);
-    lvgl_binding_set_enum(global, "LV_BAR_MODE_RANGE", 2);
-    lvgl_binding_set_enum(global, "LV_BAR_ORIENTATION_AUTO", 0);
-    lvgl_binding_set_enum(global, "LV_BAR_ORIENTATION_HORIZONTAL", 1);
-    lvgl_binding_set_enum(global, "LV_BAR_ORIENTATION_VERTICAL", 2);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_HIDDEN", 16);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_NO_REPEAT", 32);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_DISABLED", 64);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_CHECKABLE", 128);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_CHECKED", 256);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_CLICK_TRIG", 512);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_POPOVER", 1024);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_RESERVED_1", 2048);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_RESERVED_2", 4096);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_RESERVED_3", 8192);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_CUSTOM_1", 16384);
-    lvgl_binding_set_enum(global, "LV_BUTTONMATRIX_CTRL_CUSTOM_2", 32768);
-    lvgl_binding_set_enum(global, "LV_CHART_TYPE_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_CHART_TYPE_LINE", 1);
-    lvgl_binding_set_enum(global, "LV_CHART_TYPE_BAR", 2);
-    lvgl_binding_set_enum(global, "LV_CHART_TYPE_SCATTER", 3);
-    lvgl_binding_set_enum(global, "LV_CHART_UPDATE_MODE_SHIFT", 0);
-    lvgl_binding_set_enum(global, "LV_CHART_UPDATE_MODE_CIRCULAR", 1);
-    lvgl_binding_set_enum(global, "LV_CHART_AXIS_PRIMARY_Y", 0);
-    lvgl_binding_set_enum(global, "LV_CHART_AXIS_SECONDARY_Y", 1);
-    lvgl_binding_set_enum(global, "LV_CHART_AXIS_PRIMARY_X", 2);
-    lvgl_binding_set_enum(global, "LV_CHART_AXIS_SECONDARY_X", 4);
-    lvgl_binding_set_enum(global, "LV_CHART_AXIS_LAST", 5);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_RELEASED", 0);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_PRESSED", 1);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_DISABLED", 2);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_CHECKED_RELEASED", 3);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_CHECKED_PRESSED", 4);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_CHECKED_DISABLED", 5);
-    lvgl_binding_set_enum(global, "LV_IMAGEBUTTON_STATE_NUM", 6);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_TEXT_LOWER", 0);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_TEXT_UPPER", 1);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_SPECIAL", 2);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_NUMBER", 3);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_USER_1", 4);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_USER_2", 5);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_USER_3", 6);
-    lvgl_binding_set_enum(global, "LV_KEYBOARD_MODE_USER_4", 7);
-    lvgl_binding_set_enum(global, "LV_MENU_HEADER_TOP_FIXED", 0);
-    lvgl_binding_set_enum(global, "LV_MENU_HEADER_TOP_UNFIXED", 1);
-    lvgl_binding_set_enum(global, "LV_MENU_HEADER_BOTTOM_FIXED", 2);
-    lvgl_binding_set_enum(global, "LV_MENU_ROOT_BACK_BUTTON_DISABLED", 0);
-    lvgl_binding_set_enum(global, "LV_MENU_ROOT_BACK_BUTTON_ENABLED", 1);
-    lvgl_binding_set_enum(global, "LV_ROLLER_MODE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_ROLLER_MODE_INFINITE", 1);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_HORIZONTAL_TOP", 0);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_HORIZONTAL_BOTTOM", 1);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_VERTICAL_LEFT", 2);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_VERTICAL_RIGHT", 3);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_ROUND_INNER", 4);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_ROUND_OUTER", 5);
-    lvgl_binding_set_enum(global, "LV_SCALE_MODE_LAST", 6);
-    lvgl_binding_set_enum(global, "LV_SLIDER_MODE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_SLIDER_MODE_SYMMETRICAL", 1);
-    lvgl_binding_set_enum(global, "LV_SLIDER_MODE_RANGE", 2);
-    lvgl_binding_set_enum(global, "LV_SPAN_OVERFLOW_CLIP", 0);
-    lvgl_binding_set_enum(global, "LV_SPAN_OVERFLOW_ELLIPSIS", 1);
-    lvgl_binding_set_enum(global, "LV_SPAN_OVERFLOW_LAST", 2);
-    lvgl_binding_set_enum(global, "LV_SPAN_MODE_FIXED", 0);
-    lvgl_binding_set_enum(global, "LV_SPAN_MODE_EXPAND", 1);
-    lvgl_binding_set_enum(global, "LV_SPAN_MODE_BREAK", 2);
-    lvgl_binding_set_enum(global, "LV_SPAN_MODE_LAST", 3);
-    lvgl_binding_set_enum(global, "LV_PART_TEXTAREA_PLACEHOLDER", 524288);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_MERGE_RIGHT", 1);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_TEXT_CROP", 2);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_CUSTOM_1", 16);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_CUSTOM_2", 32);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_CUSTOM_3", 64);
-    lvgl_binding_set_enum(global, "LV_TABLE_CELL_CTRL_CUSTOM_4", 128);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_INVALID", 0);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_NONE", 1);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_INT", 2);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_POINTER", 3);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_COLOR", 4);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_GROUP", 5);
-    lvgl_binding_set_enum(global, "LV_SUBJECT_TYPE_STRING", 6);
-    lvgl_binding_set_enum(global, "LV_GRIDNAV_CTRL_NONE", 0);
-    lvgl_binding_set_enum(global, "LV_GRIDNAV_CTRL_ROLLOVER", 1);
-    lvgl_binding_set_enum(global, "LV_GRIDNAV_CTRL_SCROLL_FIRST", 2);
-    lvgl_binding_set_enum(global, "LV_GRIDNAV_CTRL_HORIZONTAL_MOVE_ONLY", 4);
-    lvgl_binding_set_enum(global, "LV_GRIDNAV_CTRL_VERTICAL_MOVE_ONLY", 8);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_FONT_STYLE_NORMAL", 0);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_FONT_STYLE_ITALIC", 1);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_FONT_STYLE_BOLD", 2);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_FONT_RENDER_MODE_BITMAP", 0);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_FONT_RENDER_MODE_OUTLINE", 1);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_OUTLINE_END", 0);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_OUTLINE_MOVE_TO", 1);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_OUTLINE_LINE_TO", 2);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_OUTLINE_CUBIC_TO", 3);
-    lvgl_binding_set_enum(global, "LV_FREETYPE_OUTLINE_CONIC_TO", 4);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_RES_TRANSP", 0);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_RES_FULL_COVER", 1);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_RES_CHANGED", 2);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_RES_UNKNOWN", 3);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_TYPE_LINE", 0);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_TYPE_ANGLE", 1);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_TYPE_RADIUS", 2);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_TYPE_FADE", 3);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_TYPE_MAP", 4);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_LINE_SIDE_LEFT", 0);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_LINE_SIDE_RIGHT", 1);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_LINE_SIDE_TOP", 2);
-    lvgl_binding_set_enum(global, "LV_DRAW_SW_MASK_LINE_SIDE_BOTTOM", 3);
-#ifdef LV_SYMBOL_BULLET
-    jerry_value_t LV_SYMBOL_BULLET_str = jerry_string_sz("LV_SYMBOL_BULLET");
-    jerry_value_t LV_SYMBOL_BULLET_val = jerry_string_sz(LV_SYMBOL_BULLET);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BULLET_str, LV_SYMBOL_BULLET_val));
-    jerry_value_free(LV_SYMBOL_BULLET_str);
-    jerry_value_free(LV_SYMBOL_BULLET_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BULLET is not defined")
-#endif
-#ifdef LV_SYMBOL_AUDIO
-    jerry_value_t LV_SYMBOL_AUDIO_str = jerry_string_sz("LV_SYMBOL_AUDIO");
-    jerry_value_t LV_SYMBOL_AUDIO_val = jerry_string_sz(LV_SYMBOL_AUDIO);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_AUDIO_str, LV_SYMBOL_AUDIO_val));
-    jerry_value_free(LV_SYMBOL_AUDIO_str);
-    jerry_value_free(LV_SYMBOL_AUDIO_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_AUDIO is not defined")
-#endif
-#ifdef LV_SYMBOL_VIDEO
-    jerry_value_t LV_SYMBOL_VIDEO_str = jerry_string_sz("LV_SYMBOL_VIDEO");
-    jerry_value_t LV_SYMBOL_VIDEO_val = jerry_string_sz(LV_SYMBOL_VIDEO);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_VIDEO_str, LV_SYMBOL_VIDEO_val));
-    jerry_value_free(LV_SYMBOL_VIDEO_str);
-    jerry_value_free(LV_SYMBOL_VIDEO_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_VIDEO is not defined")
-#endif
-#ifdef LV_SYMBOL_LIST
-    jerry_value_t LV_SYMBOL_LIST_str = jerry_string_sz("LV_SYMBOL_LIST");
-    jerry_value_t LV_SYMBOL_LIST_val = jerry_string_sz(LV_SYMBOL_LIST);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_LIST_str, LV_SYMBOL_LIST_val));
-    jerry_value_free(LV_SYMBOL_LIST_str);
-    jerry_value_free(LV_SYMBOL_LIST_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_LIST is not defined")
-#endif
-#ifdef LV_SYMBOL_OK
-    jerry_value_t LV_SYMBOL_OK_str = jerry_string_sz("LV_SYMBOL_OK");
-    jerry_value_t LV_SYMBOL_OK_val = jerry_string_sz(LV_SYMBOL_OK);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_OK_str, LV_SYMBOL_OK_val));
-    jerry_value_free(LV_SYMBOL_OK_str);
-    jerry_value_free(LV_SYMBOL_OK_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_OK is not defined")
-#endif
-#ifdef LV_SYMBOL_CLOSE
-    jerry_value_t LV_SYMBOL_CLOSE_str = jerry_string_sz("LV_SYMBOL_CLOSE");
-    jerry_value_t LV_SYMBOL_CLOSE_val = jerry_string_sz(LV_SYMBOL_CLOSE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_CLOSE_str, LV_SYMBOL_CLOSE_val));
-    jerry_value_free(LV_SYMBOL_CLOSE_str);
-    jerry_value_free(LV_SYMBOL_CLOSE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_CLOSE is not defined")
-#endif
-#ifdef LV_SYMBOL_POWER
-    jerry_value_t LV_SYMBOL_POWER_str = jerry_string_sz("LV_SYMBOL_POWER");
-    jerry_value_t LV_SYMBOL_POWER_val = jerry_string_sz(LV_SYMBOL_POWER);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_POWER_str, LV_SYMBOL_POWER_val));
-    jerry_value_free(LV_SYMBOL_POWER_str);
-    jerry_value_free(LV_SYMBOL_POWER_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_POWER is not defined")
-#endif
-#ifdef LV_SYMBOL_SETTINGS
-    jerry_value_t LV_SYMBOL_SETTINGS_str = jerry_string_sz("LV_SYMBOL_SETTINGS");
-    jerry_value_t LV_SYMBOL_SETTINGS_val = jerry_string_sz(LV_SYMBOL_SETTINGS);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_SETTINGS_str, LV_SYMBOL_SETTINGS_val));
-    jerry_value_free(LV_SYMBOL_SETTINGS_str);
-    jerry_value_free(LV_SYMBOL_SETTINGS_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_SETTINGS is not defined")
-#endif
-#ifdef LV_SYMBOL_HOME
-    jerry_value_t LV_SYMBOL_HOME_str = jerry_string_sz("LV_SYMBOL_HOME");
-    jerry_value_t LV_SYMBOL_HOME_val = jerry_string_sz(LV_SYMBOL_HOME);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_HOME_str, LV_SYMBOL_HOME_val));
-    jerry_value_free(LV_SYMBOL_HOME_str);
-    jerry_value_free(LV_SYMBOL_HOME_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_HOME is not defined")
-#endif
-#ifdef LV_SYMBOL_DOWNLOAD
-    jerry_value_t LV_SYMBOL_DOWNLOAD_str = jerry_string_sz("LV_SYMBOL_DOWNLOAD");
-    jerry_value_t LV_SYMBOL_DOWNLOAD_val = jerry_string_sz(LV_SYMBOL_DOWNLOAD);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_DOWNLOAD_str, LV_SYMBOL_DOWNLOAD_val));
-    jerry_value_free(LV_SYMBOL_DOWNLOAD_str);
-    jerry_value_free(LV_SYMBOL_DOWNLOAD_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_DOWNLOAD is not defined")
-#endif
-#ifdef LV_SYMBOL_DRIVE
-    jerry_value_t LV_SYMBOL_DRIVE_str = jerry_string_sz("LV_SYMBOL_DRIVE");
-    jerry_value_t LV_SYMBOL_DRIVE_val = jerry_string_sz(LV_SYMBOL_DRIVE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_DRIVE_str, LV_SYMBOL_DRIVE_val));
-    jerry_value_free(LV_SYMBOL_DRIVE_str);
-    jerry_value_free(LV_SYMBOL_DRIVE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_DRIVE is not defined")
-#endif
-#ifdef LV_SYMBOL_REFRESH
-    jerry_value_t LV_SYMBOL_REFRESH_str = jerry_string_sz("LV_SYMBOL_REFRESH");
-    jerry_value_t LV_SYMBOL_REFRESH_val = jerry_string_sz(LV_SYMBOL_REFRESH);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_REFRESH_str, LV_SYMBOL_REFRESH_val));
-    jerry_value_free(LV_SYMBOL_REFRESH_str);
-    jerry_value_free(LV_SYMBOL_REFRESH_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_REFRESH is not defined")
-#endif
-#ifdef LV_SYMBOL_MUTE
-    jerry_value_t LV_SYMBOL_MUTE_str = jerry_string_sz("LV_SYMBOL_MUTE");
-    jerry_value_t LV_SYMBOL_MUTE_val = jerry_string_sz(LV_SYMBOL_MUTE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_MUTE_str, LV_SYMBOL_MUTE_val));
-    jerry_value_free(LV_SYMBOL_MUTE_str);
-    jerry_value_free(LV_SYMBOL_MUTE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_MUTE is not defined")
-#endif
-#ifdef LV_SYMBOL_VOLUME_MID
-    jerry_value_t LV_SYMBOL_VOLUME_MID_str = jerry_string_sz("LV_SYMBOL_VOLUME_MID");
-    jerry_value_t LV_SYMBOL_VOLUME_MID_val = jerry_string_sz(LV_SYMBOL_VOLUME_MID);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_VOLUME_MID_str, LV_SYMBOL_VOLUME_MID_val));
-    jerry_value_free(LV_SYMBOL_VOLUME_MID_str);
-    jerry_value_free(LV_SYMBOL_VOLUME_MID_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_VOLUME_MID is not defined")
-#endif
-#ifdef LV_SYMBOL_VOLUME_MAX
-    jerry_value_t LV_SYMBOL_VOLUME_MAX_str = jerry_string_sz("LV_SYMBOL_VOLUME_MAX");
-    jerry_value_t LV_SYMBOL_VOLUME_MAX_val = jerry_string_sz(LV_SYMBOL_VOLUME_MAX);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_VOLUME_MAX_str, LV_SYMBOL_VOLUME_MAX_val));
-    jerry_value_free(LV_SYMBOL_VOLUME_MAX_str);
-    jerry_value_free(LV_SYMBOL_VOLUME_MAX_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_VOLUME_MAX is not defined")
-#endif
-#ifdef LV_SYMBOL_IMAGE
-    jerry_value_t LV_SYMBOL_IMAGE_str = jerry_string_sz("LV_SYMBOL_IMAGE");
-    jerry_value_t LV_SYMBOL_IMAGE_val = jerry_string_sz(LV_SYMBOL_IMAGE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_IMAGE_str, LV_SYMBOL_IMAGE_val));
-    jerry_value_free(LV_SYMBOL_IMAGE_str);
-    jerry_value_free(LV_SYMBOL_IMAGE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_IMAGE is not defined")
-#endif
-#ifdef LV_SYMBOL_TINT
-    jerry_value_t LV_SYMBOL_TINT_str = jerry_string_sz("LV_SYMBOL_TINT");
-    jerry_value_t LV_SYMBOL_TINT_val = jerry_string_sz(LV_SYMBOL_TINT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_TINT_str, LV_SYMBOL_TINT_val));
-    jerry_value_free(LV_SYMBOL_TINT_str);
-    jerry_value_free(LV_SYMBOL_TINT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_TINT is not defined")
-#endif
-#ifdef LV_SYMBOL_PREV
-    jerry_value_t LV_SYMBOL_PREV_str = jerry_string_sz("LV_SYMBOL_PREV");
-    jerry_value_t LV_SYMBOL_PREV_val = jerry_string_sz(LV_SYMBOL_PREV);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_PREV_str, LV_SYMBOL_PREV_val));
-    jerry_value_free(LV_SYMBOL_PREV_str);
-    jerry_value_free(LV_SYMBOL_PREV_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_PREV is not defined")
-#endif
-#ifdef LV_SYMBOL_PLAY
-    jerry_value_t LV_SYMBOL_PLAY_str = jerry_string_sz("LV_SYMBOL_PLAY");
-    jerry_value_t LV_SYMBOL_PLAY_val = jerry_string_sz(LV_SYMBOL_PLAY);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_PLAY_str, LV_SYMBOL_PLAY_val));
-    jerry_value_free(LV_SYMBOL_PLAY_str);
-    jerry_value_free(LV_SYMBOL_PLAY_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_PLAY is not defined")
-#endif
-#ifdef LV_SYMBOL_PAUSE
-    jerry_value_t LV_SYMBOL_PAUSE_str = jerry_string_sz("LV_SYMBOL_PAUSE");
-    jerry_value_t LV_SYMBOL_PAUSE_val = jerry_string_sz(LV_SYMBOL_PAUSE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_PAUSE_str, LV_SYMBOL_PAUSE_val));
-    jerry_value_free(LV_SYMBOL_PAUSE_str);
-    jerry_value_free(LV_SYMBOL_PAUSE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_PAUSE is not defined")
-#endif
-#ifdef LV_SYMBOL_STOP
-    jerry_value_t LV_SYMBOL_STOP_str = jerry_string_sz("LV_SYMBOL_STOP");
-    jerry_value_t LV_SYMBOL_STOP_val = jerry_string_sz(LV_SYMBOL_STOP);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_STOP_str, LV_SYMBOL_STOP_val));
-    jerry_value_free(LV_SYMBOL_STOP_str);
-    jerry_value_free(LV_SYMBOL_STOP_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_STOP is not defined")
-#endif
-#ifdef LV_SYMBOL_NEXT
-    jerry_value_t LV_SYMBOL_NEXT_str = jerry_string_sz("LV_SYMBOL_NEXT");
-    jerry_value_t LV_SYMBOL_NEXT_val = jerry_string_sz(LV_SYMBOL_NEXT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_NEXT_str, LV_SYMBOL_NEXT_val));
-    jerry_value_free(LV_SYMBOL_NEXT_str);
-    jerry_value_free(LV_SYMBOL_NEXT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_NEXT is not defined")
-#endif
-#ifdef LV_SYMBOL_EJECT
-    jerry_value_t LV_SYMBOL_EJECT_str = jerry_string_sz("LV_SYMBOL_EJECT");
-    jerry_value_t LV_SYMBOL_EJECT_val = jerry_string_sz(LV_SYMBOL_EJECT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_EJECT_str, LV_SYMBOL_EJECT_val));
-    jerry_value_free(LV_SYMBOL_EJECT_str);
-    jerry_value_free(LV_SYMBOL_EJECT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_EJECT is not defined")
-#endif
-#ifdef LV_SYMBOL_LEFT
-    jerry_value_t LV_SYMBOL_LEFT_str = jerry_string_sz("LV_SYMBOL_LEFT");
-    jerry_value_t LV_SYMBOL_LEFT_val = jerry_string_sz(LV_SYMBOL_LEFT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_LEFT_str, LV_SYMBOL_LEFT_val));
-    jerry_value_free(LV_SYMBOL_LEFT_str);
-    jerry_value_free(LV_SYMBOL_LEFT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_LEFT is not defined")
-#endif
-#ifdef LV_SYMBOL_RIGHT
-    jerry_value_t LV_SYMBOL_RIGHT_str = jerry_string_sz("LV_SYMBOL_RIGHT");
-    jerry_value_t LV_SYMBOL_RIGHT_val = jerry_string_sz(LV_SYMBOL_RIGHT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_RIGHT_str, LV_SYMBOL_RIGHT_val));
-    jerry_value_free(LV_SYMBOL_RIGHT_str);
-    jerry_value_free(LV_SYMBOL_RIGHT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_RIGHT is not defined")
-#endif
-#ifdef LV_SYMBOL_PLUS
-    jerry_value_t LV_SYMBOL_PLUS_str = jerry_string_sz("LV_SYMBOL_PLUS");
-    jerry_value_t LV_SYMBOL_PLUS_val = jerry_string_sz(LV_SYMBOL_PLUS);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_PLUS_str, LV_SYMBOL_PLUS_val));
-    jerry_value_free(LV_SYMBOL_PLUS_str);
-    jerry_value_free(LV_SYMBOL_PLUS_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_PLUS is not defined")
-#endif
-#ifdef LV_SYMBOL_MINUS
-    jerry_value_t LV_SYMBOL_MINUS_str = jerry_string_sz("LV_SYMBOL_MINUS");
-    jerry_value_t LV_SYMBOL_MINUS_val = jerry_string_sz(LV_SYMBOL_MINUS);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_MINUS_str, LV_SYMBOL_MINUS_val));
-    jerry_value_free(LV_SYMBOL_MINUS_str);
-    jerry_value_free(LV_SYMBOL_MINUS_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_MINUS is not defined")
-#endif
-#ifdef LV_SYMBOL_EYE_OPEN
-    jerry_value_t LV_SYMBOL_EYE_OPEN_str = jerry_string_sz("LV_SYMBOL_EYE_OPEN");
-    jerry_value_t LV_SYMBOL_EYE_OPEN_val = jerry_string_sz(LV_SYMBOL_EYE_OPEN);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_EYE_OPEN_str, LV_SYMBOL_EYE_OPEN_val));
-    jerry_value_free(LV_SYMBOL_EYE_OPEN_str);
-    jerry_value_free(LV_SYMBOL_EYE_OPEN_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_EYE_OPEN is not defined")
-#endif
-#ifdef LV_SYMBOL_EYE_CLOSE
-    jerry_value_t LV_SYMBOL_EYE_CLOSE_str = jerry_string_sz("LV_SYMBOL_EYE_CLOSE");
-    jerry_value_t LV_SYMBOL_EYE_CLOSE_val = jerry_string_sz(LV_SYMBOL_EYE_CLOSE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_EYE_CLOSE_str, LV_SYMBOL_EYE_CLOSE_val));
-    jerry_value_free(LV_SYMBOL_EYE_CLOSE_str);
-    jerry_value_free(LV_SYMBOL_EYE_CLOSE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_EYE_CLOSE is not defined")
-#endif
-#ifdef LV_SYMBOL_WARNING
-    jerry_value_t LV_SYMBOL_WARNING_str = jerry_string_sz("LV_SYMBOL_WARNING");
-    jerry_value_t LV_SYMBOL_WARNING_val = jerry_string_sz(LV_SYMBOL_WARNING);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_WARNING_str, LV_SYMBOL_WARNING_val));
-    jerry_value_free(LV_SYMBOL_WARNING_str);
-    jerry_value_free(LV_SYMBOL_WARNING_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_WARNING is not defined")
-#endif
-#ifdef LV_SYMBOL_SHUFFLE
-    jerry_value_t LV_SYMBOL_SHUFFLE_str = jerry_string_sz("LV_SYMBOL_SHUFFLE");
-    jerry_value_t LV_SYMBOL_SHUFFLE_val = jerry_string_sz(LV_SYMBOL_SHUFFLE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_SHUFFLE_str, LV_SYMBOL_SHUFFLE_val));
-    jerry_value_free(LV_SYMBOL_SHUFFLE_str);
-    jerry_value_free(LV_SYMBOL_SHUFFLE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_SHUFFLE is not defined")
-#endif
-#ifdef LV_SYMBOL_UP
-    jerry_value_t LV_SYMBOL_UP_str = jerry_string_sz("LV_SYMBOL_UP");
-    jerry_value_t LV_SYMBOL_UP_val = jerry_string_sz(LV_SYMBOL_UP);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_UP_str, LV_SYMBOL_UP_val));
-    jerry_value_free(LV_SYMBOL_UP_str);
-    jerry_value_free(LV_SYMBOL_UP_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_UP is not defined")
-#endif
-#ifdef LV_SYMBOL_DOWN
-    jerry_value_t LV_SYMBOL_DOWN_str = jerry_string_sz("LV_SYMBOL_DOWN");
-    jerry_value_t LV_SYMBOL_DOWN_val = jerry_string_sz(LV_SYMBOL_DOWN);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_DOWN_str, LV_SYMBOL_DOWN_val));
-    jerry_value_free(LV_SYMBOL_DOWN_str);
-    jerry_value_free(LV_SYMBOL_DOWN_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_DOWN is not defined")
-#endif
-#ifdef LV_SYMBOL_LOOP
-    jerry_value_t LV_SYMBOL_LOOP_str = jerry_string_sz("LV_SYMBOL_LOOP");
-    jerry_value_t LV_SYMBOL_LOOP_val = jerry_string_sz(LV_SYMBOL_LOOP);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_LOOP_str, LV_SYMBOL_LOOP_val));
-    jerry_value_free(LV_SYMBOL_LOOP_str);
-    jerry_value_free(LV_SYMBOL_LOOP_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_LOOP is not defined")
-#endif
-#ifdef LV_SYMBOL_DIRECTORY
-    jerry_value_t LV_SYMBOL_DIRECTORY_str = jerry_string_sz("LV_SYMBOL_DIRECTORY");
-    jerry_value_t LV_SYMBOL_DIRECTORY_val = jerry_string_sz(LV_SYMBOL_DIRECTORY);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_DIRECTORY_str, LV_SYMBOL_DIRECTORY_val));
-    jerry_value_free(LV_SYMBOL_DIRECTORY_str);
-    jerry_value_free(LV_SYMBOL_DIRECTORY_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_DIRECTORY is not defined")
-#endif
-#ifdef LV_SYMBOL_UPLOAD
-    jerry_value_t LV_SYMBOL_UPLOAD_str = jerry_string_sz("LV_SYMBOL_UPLOAD");
-    jerry_value_t LV_SYMBOL_UPLOAD_val = jerry_string_sz(LV_SYMBOL_UPLOAD);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_UPLOAD_str, LV_SYMBOL_UPLOAD_val));
-    jerry_value_free(LV_SYMBOL_UPLOAD_str);
-    jerry_value_free(LV_SYMBOL_UPLOAD_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_UPLOAD is not defined")
-#endif
-#ifdef LV_SYMBOL_CALL
-    jerry_value_t LV_SYMBOL_CALL_str = jerry_string_sz("LV_SYMBOL_CALL");
-    jerry_value_t LV_SYMBOL_CALL_val = jerry_string_sz(LV_SYMBOL_CALL);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_CALL_str, LV_SYMBOL_CALL_val));
-    jerry_value_free(LV_SYMBOL_CALL_str);
-    jerry_value_free(LV_SYMBOL_CALL_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_CALL is not defined")
-#endif
-#ifdef LV_SYMBOL_CUT
-    jerry_value_t LV_SYMBOL_CUT_str = jerry_string_sz("LV_SYMBOL_CUT");
-    jerry_value_t LV_SYMBOL_CUT_val = jerry_string_sz(LV_SYMBOL_CUT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_CUT_str, LV_SYMBOL_CUT_val));
-    jerry_value_free(LV_SYMBOL_CUT_str);
-    jerry_value_free(LV_SYMBOL_CUT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_CUT is not defined")
-#endif
-#ifdef LV_SYMBOL_COPY
-    jerry_value_t LV_SYMBOL_COPY_str = jerry_string_sz("LV_SYMBOL_COPY");
-    jerry_value_t LV_SYMBOL_COPY_val = jerry_string_sz(LV_SYMBOL_COPY);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_COPY_str, LV_SYMBOL_COPY_val));
-    jerry_value_free(LV_SYMBOL_COPY_str);
-    jerry_value_free(LV_SYMBOL_COPY_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_COPY is not defined")
-#endif
-#ifdef LV_SYMBOL_SAVE
-    jerry_value_t LV_SYMBOL_SAVE_str = jerry_string_sz("LV_SYMBOL_SAVE");
-    jerry_value_t LV_SYMBOL_SAVE_val = jerry_string_sz(LV_SYMBOL_SAVE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_SAVE_str, LV_SYMBOL_SAVE_val));
-    jerry_value_free(LV_SYMBOL_SAVE_str);
-    jerry_value_free(LV_SYMBOL_SAVE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_SAVE is not defined")
-#endif
-#ifdef LV_SYMBOL_BARS
-    jerry_value_t LV_SYMBOL_BARS_str = jerry_string_sz("LV_SYMBOL_BARS");
-    jerry_value_t LV_SYMBOL_BARS_val = jerry_string_sz(LV_SYMBOL_BARS);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BARS_str, LV_SYMBOL_BARS_val));
-    jerry_value_free(LV_SYMBOL_BARS_str);
-    jerry_value_free(LV_SYMBOL_BARS_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BARS is not defined")
-#endif
-#ifdef LV_SYMBOL_ENVELOPE
-    jerry_value_t LV_SYMBOL_ENVELOPE_str = jerry_string_sz("LV_SYMBOL_ENVELOPE");
-    jerry_value_t LV_SYMBOL_ENVELOPE_val = jerry_string_sz(LV_SYMBOL_ENVELOPE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_ENVELOPE_str, LV_SYMBOL_ENVELOPE_val));
-    jerry_value_free(LV_SYMBOL_ENVELOPE_str);
-    jerry_value_free(LV_SYMBOL_ENVELOPE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_ENVELOPE is not defined")
-#endif
-#ifdef LV_SYMBOL_CHARGE
-    jerry_value_t LV_SYMBOL_CHARGE_str = jerry_string_sz("LV_SYMBOL_CHARGE");
-    jerry_value_t LV_SYMBOL_CHARGE_val = jerry_string_sz(LV_SYMBOL_CHARGE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_CHARGE_str, LV_SYMBOL_CHARGE_val));
-    jerry_value_free(LV_SYMBOL_CHARGE_str);
-    jerry_value_free(LV_SYMBOL_CHARGE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_CHARGE is not defined")
-#endif
-#ifdef LV_SYMBOL_PASTE
-    jerry_value_t LV_SYMBOL_PASTE_str = jerry_string_sz("LV_SYMBOL_PASTE");
-    jerry_value_t LV_SYMBOL_PASTE_val = jerry_string_sz(LV_SYMBOL_PASTE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_PASTE_str, LV_SYMBOL_PASTE_val));
-    jerry_value_free(LV_SYMBOL_PASTE_str);
-    jerry_value_free(LV_SYMBOL_PASTE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_PASTE is not defined")
-#endif
-#ifdef LV_SYMBOL_BELL
-    jerry_value_t LV_SYMBOL_BELL_str = jerry_string_sz("LV_SYMBOL_BELL");
-    jerry_value_t LV_SYMBOL_BELL_val = jerry_string_sz(LV_SYMBOL_BELL);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BELL_str, LV_SYMBOL_BELL_val));
-    jerry_value_free(LV_SYMBOL_BELL_str);
-    jerry_value_free(LV_SYMBOL_BELL_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BELL is not defined")
-#endif
-#ifdef LV_SYMBOL_KEYBOARD
-    jerry_value_t LV_SYMBOL_KEYBOARD_str = jerry_string_sz("LV_SYMBOL_KEYBOARD");
-    jerry_value_t LV_SYMBOL_KEYBOARD_val = jerry_string_sz(LV_SYMBOL_KEYBOARD);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_KEYBOARD_str, LV_SYMBOL_KEYBOARD_val));
-    jerry_value_free(LV_SYMBOL_KEYBOARD_str);
-    jerry_value_free(LV_SYMBOL_KEYBOARD_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_KEYBOARD is not defined")
-#endif
-#ifdef LV_SYMBOL_GPS
-    jerry_value_t LV_SYMBOL_GPS_str = jerry_string_sz("LV_SYMBOL_GPS");
-    jerry_value_t LV_SYMBOL_GPS_val = jerry_string_sz(LV_SYMBOL_GPS);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_GPS_str, LV_SYMBOL_GPS_val));
-    jerry_value_free(LV_SYMBOL_GPS_str);
-    jerry_value_free(LV_SYMBOL_GPS_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_GPS is not defined")
-#endif
-#ifdef LV_SYMBOL_FILE
-    jerry_value_t LV_SYMBOL_FILE_str = jerry_string_sz("LV_SYMBOL_FILE");
-    jerry_value_t LV_SYMBOL_FILE_val = jerry_string_sz(LV_SYMBOL_FILE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_FILE_str, LV_SYMBOL_FILE_val));
-    jerry_value_free(LV_SYMBOL_FILE_str);
-    jerry_value_free(LV_SYMBOL_FILE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_FILE is not defined")
-#endif
-#ifdef LV_SYMBOL_WIFI
-    jerry_value_t LV_SYMBOL_WIFI_str = jerry_string_sz("LV_SYMBOL_WIFI");
-    jerry_value_t LV_SYMBOL_WIFI_val = jerry_string_sz(LV_SYMBOL_WIFI);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_WIFI_str, LV_SYMBOL_WIFI_val));
-    jerry_value_free(LV_SYMBOL_WIFI_str);
-    jerry_value_free(LV_SYMBOL_WIFI_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_WIFI is not defined")
-#endif
-#ifdef LV_SYMBOL_BATTERY_FULL
-    jerry_value_t LV_SYMBOL_BATTERY_FULL_str = jerry_string_sz("LV_SYMBOL_BATTERY_FULL");
-    jerry_value_t LV_SYMBOL_BATTERY_FULL_val = jerry_string_sz(LV_SYMBOL_BATTERY_FULL);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BATTERY_FULL_str, LV_SYMBOL_BATTERY_FULL_val));
-    jerry_value_free(LV_SYMBOL_BATTERY_FULL_str);
-    jerry_value_free(LV_SYMBOL_BATTERY_FULL_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BATTERY_FULL is not defined")
-#endif
-#ifdef LV_SYMBOL_BATTERY_3
-    jerry_value_t LV_SYMBOL_BATTERY_3_str = jerry_string_sz("LV_SYMBOL_BATTERY_3");
-    jerry_value_t LV_SYMBOL_BATTERY_3_val = jerry_string_sz(LV_SYMBOL_BATTERY_3);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BATTERY_3_str, LV_SYMBOL_BATTERY_3_val));
-    jerry_value_free(LV_SYMBOL_BATTERY_3_str);
-    jerry_value_free(LV_SYMBOL_BATTERY_3_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BATTERY_3 is not defined")
-#endif
-#ifdef LV_SYMBOL_BATTERY_2
-    jerry_value_t LV_SYMBOL_BATTERY_2_str = jerry_string_sz("LV_SYMBOL_BATTERY_2");
-    jerry_value_t LV_SYMBOL_BATTERY_2_val = jerry_string_sz(LV_SYMBOL_BATTERY_2);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BATTERY_2_str, LV_SYMBOL_BATTERY_2_val));
-    jerry_value_free(LV_SYMBOL_BATTERY_2_str);
-    jerry_value_free(LV_SYMBOL_BATTERY_2_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BATTERY_2 is not defined")
-#endif
-#ifdef LV_SYMBOL_BATTERY_1
-    jerry_value_t LV_SYMBOL_BATTERY_1_str = jerry_string_sz("LV_SYMBOL_BATTERY_1");
-    jerry_value_t LV_SYMBOL_BATTERY_1_val = jerry_string_sz(LV_SYMBOL_BATTERY_1);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BATTERY_1_str, LV_SYMBOL_BATTERY_1_val));
-    jerry_value_free(LV_SYMBOL_BATTERY_1_str);
-    jerry_value_free(LV_SYMBOL_BATTERY_1_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BATTERY_1 is not defined")
-#endif
-#ifdef LV_SYMBOL_BATTERY_EMPTY
-    jerry_value_t LV_SYMBOL_BATTERY_EMPTY_str = jerry_string_sz("LV_SYMBOL_BATTERY_EMPTY");
-    jerry_value_t LV_SYMBOL_BATTERY_EMPTY_val = jerry_string_sz(LV_SYMBOL_BATTERY_EMPTY);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BATTERY_EMPTY_str, LV_SYMBOL_BATTERY_EMPTY_val));
-    jerry_value_free(LV_SYMBOL_BATTERY_EMPTY_str);
-    jerry_value_free(LV_SYMBOL_BATTERY_EMPTY_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BATTERY_EMPTY is not defined")
-#endif
-#ifdef LV_SYMBOL_USB
-    jerry_value_t LV_SYMBOL_USB_str = jerry_string_sz("LV_SYMBOL_USB");
-    jerry_value_t LV_SYMBOL_USB_val = jerry_string_sz(LV_SYMBOL_USB);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_USB_str, LV_SYMBOL_USB_val));
-    jerry_value_free(LV_SYMBOL_USB_str);
-    jerry_value_free(LV_SYMBOL_USB_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_USB is not defined")
-#endif
-#ifdef LV_SYMBOL_BLUETOOTH
-    jerry_value_t LV_SYMBOL_BLUETOOTH_str = jerry_string_sz("LV_SYMBOL_BLUETOOTH");
-    jerry_value_t LV_SYMBOL_BLUETOOTH_val = jerry_string_sz(LV_SYMBOL_BLUETOOTH);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BLUETOOTH_str, LV_SYMBOL_BLUETOOTH_val));
-    jerry_value_free(LV_SYMBOL_BLUETOOTH_str);
-    jerry_value_free(LV_SYMBOL_BLUETOOTH_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BLUETOOTH is not defined")
-#endif
-#ifdef LV_SYMBOL_TRASH
-    jerry_value_t LV_SYMBOL_TRASH_str = jerry_string_sz("LV_SYMBOL_TRASH");
-    jerry_value_t LV_SYMBOL_TRASH_val = jerry_string_sz(LV_SYMBOL_TRASH);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_TRASH_str, LV_SYMBOL_TRASH_val));
-    jerry_value_free(LV_SYMBOL_TRASH_str);
-    jerry_value_free(LV_SYMBOL_TRASH_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_TRASH is not defined")
-#endif
-#ifdef LV_SYMBOL_EDIT
-    jerry_value_t LV_SYMBOL_EDIT_str = jerry_string_sz("LV_SYMBOL_EDIT");
-    jerry_value_t LV_SYMBOL_EDIT_val = jerry_string_sz(LV_SYMBOL_EDIT);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_EDIT_str, LV_SYMBOL_EDIT_val));
-    jerry_value_free(LV_SYMBOL_EDIT_str);
-    jerry_value_free(LV_SYMBOL_EDIT_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_EDIT is not defined")
-#endif
-#ifdef LV_SYMBOL_BACKSPACE
-    jerry_value_t LV_SYMBOL_BACKSPACE_str = jerry_string_sz("LV_SYMBOL_BACKSPACE");
-    jerry_value_t LV_SYMBOL_BACKSPACE_val = jerry_string_sz(LV_SYMBOL_BACKSPACE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_BACKSPACE_str, LV_SYMBOL_BACKSPACE_val));
-    jerry_value_free(LV_SYMBOL_BACKSPACE_str);
-    jerry_value_free(LV_SYMBOL_BACKSPACE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_BACKSPACE is not defined")
-#endif
-#ifdef LV_SYMBOL_SD_CARD
-    jerry_value_t LV_SYMBOL_SD_CARD_str = jerry_string_sz("LV_SYMBOL_SD_CARD");
-    jerry_value_t LV_SYMBOL_SD_CARD_val = jerry_string_sz(LV_SYMBOL_SD_CARD);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_SD_CARD_str, LV_SYMBOL_SD_CARD_val));
-    jerry_value_free(LV_SYMBOL_SD_CARD_str);
-    jerry_value_free(LV_SYMBOL_SD_CARD_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_SD_CARD is not defined")
-#endif
-#ifdef LV_SYMBOL_NEW_LINE
-    jerry_value_t LV_SYMBOL_NEW_LINE_str = jerry_string_sz("LV_SYMBOL_NEW_LINE");
-    jerry_value_t LV_SYMBOL_NEW_LINE_val = jerry_string_sz(LV_SYMBOL_NEW_LINE);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_NEW_LINE_str, LV_SYMBOL_NEW_LINE_val));
-    jerry_value_free(LV_SYMBOL_NEW_LINE_str);
-    jerry_value_free(LV_SYMBOL_NEW_LINE_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_NEW_LINE is not defined")
-#endif
-#ifdef LV_SYMBOL_DUMMY
-    jerry_value_t LV_SYMBOL_DUMMY_str = jerry_string_sz("LV_SYMBOL_DUMMY");
-    jerry_value_t LV_SYMBOL_DUMMY_val = jerry_string_sz(LV_SYMBOL_DUMMY);
-    jerry_value_free(jerry_object_set(global, LV_SYMBOL_DUMMY_str, LV_SYMBOL_DUMMY_val));
-    jerry_value_free(LV_SYMBOL_DUMMY_str);
-    jerry_value_free(LV_SYMBOL_DUMMY_val);
-#else
-    #pragma message("WARNING: Macro LV_SYMBOL_DUMMY is not defined")
-#endif
+
+    typedef struct { const char* name; int value; } lvgl_enum_entry_t;
+
+    static const lvgl_enum_entry_t enum_entries[] = {
+        { "LV_RESULT_INVALID", 0 },
+        { "LV_RESULT_OK", 1 },
+        { "LV_ANIM_OFF", 0 },
+        { "LV_ANIM_ON", 1 },
+        { "LV_RB_COLOR_RED", 0 },
+        { "LV_RB_COLOR_BLACK", 1 },
+        { "LV_ALIGN_DEFAULT", 0 },
+        { "LV_ALIGN_TOP_LEFT", 1 },
+        { "LV_ALIGN_TOP_MID", 2 },
+        { "LV_ALIGN_TOP_RIGHT", 3 },
+        { "LV_ALIGN_BOTTOM_LEFT", 4 },
+        { "LV_ALIGN_BOTTOM_MID", 5 },
+        { "LV_ALIGN_BOTTOM_RIGHT", 6 },
+        { "LV_ALIGN_LEFT_MID", 7 },
+        { "LV_ALIGN_RIGHT_MID", 8 },
+        { "LV_ALIGN_CENTER", 9 },
+        { "LV_ALIGN_OUT_TOP_LEFT", 10 },
+        { "LV_ALIGN_OUT_TOP_MID", 11 },
+        { "LV_ALIGN_OUT_TOP_RIGHT", 12 },
+        { "LV_ALIGN_OUT_BOTTOM_LEFT", 13 },
+        { "LV_ALIGN_OUT_BOTTOM_MID", 14 },
+        { "LV_ALIGN_OUT_BOTTOM_RIGHT", 15 },
+        { "LV_ALIGN_OUT_LEFT_TOP", 16 },
+        { "LV_ALIGN_OUT_LEFT_MID", 17 },
+        { "LV_ALIGN_OUT_LEFT_BOTTOM", 18 },
+        { "LV_ALIGN_OUT_RIGHT_TOP", 19 },
+        { "LV_ALIGN_OUT_RIGHT_MID", 20 },
+        { "LV_ALIGN_OUT_RIGHT_BOTTOM", 21 },
+        { "LV_DIR_NONE", 0 },
+        { "LV_DIR_LEFT", 1 },
+        { "LV_DIR_RIGHT", 2 },
+        { "LV_DIR_TOP", 4 },
+        { "LV_DIR_BOTTOM", 8 },
+        { "LV_DIR_HOR", 3 },
+        { "LV_DIR_VER", 12 },
+        { "LV_DIR_ALL", 15 },
+        { "LV_OPA_TRANSP", 0 },
+        { "LV_OPA_0", 0 },
+        { "LV_OPA_10", 25 },
+        { "LV_OPA_20", 51 },
+        { "LV_OPA_30", 76 },
+        { "LV_OPA_40", 102 },
+        { "LV_OPA_50", 127 },
+        { "LV_OPA_60", 153 },
+        { "LV_OPA_70", 178 },
+        { "LV_OPA_80", 204 },
+        { "LV_OPA_90", 229 },
+        { "LV_OPA_100", 255 },
+        { "LV_OPA_COVER", 255 },
+        { "LV_COLOR_FORMAT_UNKNOWN", 0 },
+        { "LV_COLOR_FORMAT_RAW", 1 },
+        { "LV_COLOR_FORMAT_RAW_ALPHA", 2 },
+        { "LV_COLOR_FORMAT_L8", 6 },
+        { "LV_COLOR_FORMAT_I1", 7 },
+        { "LV_COLOR_FORMAT_I2", 8 },
+        { "LV_COLOR_FORMAT_I4", 9 },
+        { "LV_COLOR_FORMAT_I8", 10 },
+        { "LV_COLOR_FORMAT_A8", 14 },
+        { "LV_COLOR_FORMAT_RGB565", 18 },
+        { "LV_COLOR_FORMAT_ARGB8565", 19 },
+        { "LV_COLOR_FORMAT_RGB565A8", 20 },
+        { "LV_COLOR_FORMAT_AL88", 21 },
+        { "LV_COLOR_FORMAT_RGB888", 15 },
+        { "LV_COLOR_FORMAT_ARGB8888", 16 },
+        { "LV_COLOR_FORMAT_XRGB8888", 17 },
+        { "LV_COLOR_FORMAT_A1", 11 },
+        { "LV_COLOR_FORMAT_A2", 12 },
+        { "LV_COLOR_FORMAT_A4", 13 },
+        { "LV_COLOR_FORMAT_YUV_START", 32 },
+        { "LV_COLOR_FORMAT_I420", 32 },
+        { "LV_COLOR_FORMAT_I422", 33 },
+        { "LV_COLOR_FORMAT_I444", 34 },
+        { "LV_COLOR_FORMAT_I400", 35 },
+        { "LV_COLOR_FORMAT_NV21", 36 },
+        { "LV_COLOR_FORMAT_NV12", 37 },
+        { "LV_COLOR_FORMAT_YUY2", 38 },
+        { "LV_COLOR_FORMAT_UYVY", 39 },
+        { "LV_COLOR_FORMAT_YUV_END", 39 },
+        { "LV_COLOR_FORMAT_NATIVE", 18 },
+        { "LV_COLOR_FORMAT_NATIVE_WITH_ALPHA", 20 },
+        { "LV_PALETTE_RED", 0 },
+        { "LV_PALETTE_PINK", 1 },
+        { "LV_PALETTE_PURPLE", 2 },
+        { "LV_PALETTE_DEEP_PURPLE", 3 },
+        { "LV_PALETTE_INDIGO", 4 },
+        { "LV_PALETTE_BLUE", 5 },
+        { "LV_PALETTE_LIGHT_BLUE", 6 },
+        { "LV_PALETTE_CYAN", 7 },
+        { "LV_PALETTE_TEAL", 8 },
+        { "LV_PALETTE_GREEN", 9 },
+        { "LV_PALETTE_LIGHT_GREEN", 10 },
+        { "LV_PALETTE_LIME", 11 },
+        { "LV_PALETTE_YELLOW", 12 },
+        { "LV_PALETTE_AMBER", 13 },
+        { "LV_PALETTE_ORANGE", 14 },
+        { "LV_PALETTE_DEEP_ORANGE", 15 },
+        { "LV_PALETTE_BROWN", 16 },
+        { "LV_PALETTE_BLUE_GREY", 17 },
+        { "LV_PALETTE_GREY", 18 },
+        { "LV_PALETTE_LAST", 19 },
+        { "LV_PALETTE_NONE", 255 },
+        { "LV_IMAGE_FLAGS_PREMULTIPLIED", 1 },
+        { "LV_IMAGE_FLAGS_COMPRESSED", 8 },
+        { "LV_IMAGE_FLAGS_ALLOCATED", 16 },
+        { "LV_IMAGE_FLAGS_MODIFIABLE", 32 },
+        { "LV_IMAGE_FLAGS_USER1", 256 },
+        { "LV_IMAGE_FLAGS_USER2", 512 },
+        { "LV_IMAGE_FLAGS_USER3", 1024 },
+        { "LV_IMAGE_FLAGS_USER4", 2048 },
+        { "LV_IMAGE_FLAGS_USER5", 4096 },
+        { "LV_IMAGE_FLAGS_USER6", 8192 },
+        { "LV_IMAGE_FLAGS_USER7", 16384 },
+        { "LV_IMAGE_FLAGS_USER8", 32768 },
+        { "LV_IMAGE_COMPRESS_NONE", 0 },
+        { "LV_IMAGE_COMPRESS_RLE", 1 },
+        { "LV_IMAGE_COMPRESS_LZ4", 2 },
+        { "LV_STR_SYMBOL_BULLET", 0 },
+        { "LV_STR_SYMBOL_AUDIO", 1 },
+        { "LV_STR_SYMBOL_VIDEO", 2 },
+        { "LV_STR_SYMBOL_LIST", 3 },
+        { "LV_STR_SYMBOL_OK", 4 },
+        { "LV_STR_SYMBOL_CLOSE", 5 },
+        { "LV_STR_SYMBOL_POWER", 6 },
+        { "LV_STR_SYMBOL_SETTINGS", 7 },
+        { "LV_STR_SYMBOL_HOME", 8 },
+        { "LV_STR_SYMBOL_DOWNLOAD", 9 },
+        { "LV_STR_SYMBOL_DRIVE", 10 },
+        { "LV_STR_SYMBOL_REFRESH", 11 },
+        { "LV_STR_SYMBOL_MUTE", 12 },
+        { "LV_STR_SYMBOL_VOLUME_MID", 13 },
+        { "LV_STR_SYMBOL_VOLUME_MAX", 14 },
+        { "LV_STR_SYMBOL_IMAGE", 15 },
+        { "LV_STR_SYMBOL_TINT", 16 },
+        { "LV_STR_SYMBOL_PREV", 17 },
+        { "LV_STR_SYMBOL_PLAY", 18 },
+        { "LV_STR_SYMBOL_PAUSE", 19 },
+        { "LV_STR_SYMBOL_STOP", 20 },
+        { "LV_STR_SYMBOL_NEXT", 21 },
+        { "LV_STR_SYMBOL_EJECT", 22 },
+        { "LV_STR_SYMBOL_LEFT", 23 },
+        { "LV_STR_SYMBOL_RIGHT", 24 },
+        { "LV_STR_SYMBOL_PLUS", 25 },
+        { "LV_STR_SYMBOL_MINUS", 26 },
+        { "LV_STR_SYMBOL_EYE_OPEN", 27 },
+        { "LV_STR_SYMBOL_EYE_CLOSE", 28 },
+        { "LV_STR_SYMBOL_WARNING", 29 },
+        { "LV_STR_SYMBOL_SHUFFLE", 30 },
+        { "LV_STR_SYMBOL_UP", 31 },
+        { "LV_STR_SYMBOL_DOWN", 32 },
+        { "LV_STR_SYMBOL_LOOP", 33 },
+        { "LV_STR_SYMBOL_DIRECTORY", 34 },
+        { "LV_STR_SYMBOL_UPLOAD", 35 },
+        { "LV_STR_SYMBOL_CALL", 36 },
+        { "LV_STR_SYMBOL_CUT", 37 },
+        { "LV_STR_SYMBOL_COPY", 38 },
+        { "LV_STR_SYMBOL_SAVE", 39 },
+        { "LV_STR_SYMBOL_BARS", 40 },
+        { "LV_STR_SYMBOL_ENVELOPE", 41 },
+        { "LV_STR_SYMBOL_CHARGE", 42 },
+        { "LV_STR_SYMBOL_PASTE", 43 },
+        { "LV_STR_SYMBOL_BELL", 44 },
+        { "LV_STR_SYMBOL_KEYBOARD", 45 },
+        { "LV_STR_SYMBOL_GPS", 46 },
+        { "LV_STR_SYMBOL_FILE", 47 },
+        { "LV_STR_SYMBOL_WIFI", 48 },
+        { "LV_STR_SYMBOL_BATTERY_FULL", 49 },
+        { "LV_STR_SYMBOL_BATTERY_3", 50 },
+        { "LV_STR_SYMBOL_BATTERY_2", 51 },
+        { "LV_STR_SYMBOL_BATTERY_1", 52 },
+        { "LV_STR_SYMBOL_BATTERY_EMPTY", 53 },
+        { "LV_STR_SYMBOL_USB", 54 },
+        { "LV_STR_SYMBOL_BLUETOOTH", 55 },
+        { "LV_STR_SYMBOL_TRASH", 56 },
+        { "LV_STR_SYMBOL_EDIT", 57 },
+        { "LV_STR_SYMBOL_BACKSPACE", 58 },
+        { "LV_STR_SYMBOL_SD_CARD", 59 },
+        { "LV_STR_SYMBOL_NEW_LINE", 60 },
+        { "LV_STR_SYMBOL_DUMMY", 61 },
+        { "LV_THREAD_PRIO_LOWEST", 0 },
+        { "LV_THREAD_PRIO_LOW", 1 },
+        { "LV_THREAD_PRIO_MID", 2 },
+        { "LV_THREAD_PRIO_HIGH", 3 },
+        { "LV_THREAD_PRIO_HIGHEST", 4 },
+        { "LV_CACHE_RESERVE_COND_OK", 0 },
+        { "LV_CACHE_RESERVE_COND_TOO_LARGE", 1 },
+        { "LV_CACHE_RESERVE_COND_NEED_VICTIM", 2 },
+        { "LV_CACHE_RESERVE_COND_ERROR", 3 },
+        { "LV_FONT_GLYPH_FORMAT_NONE", 0 },
+        { "LV_FONT_GLYPH_FORMAT_A1", 1 },
+        { "LV_FONT_GLYPH_FORMAT_A2", 2 },
+        { "LV_FONT_GLYPH_FORMAT_A4", 4 },
+        { "LV_FONT_GLYPH_FORMAT_A8", 8 },
+        { "LV_FONT_GLYPH_FORMAT_IMAGE", 9 },
+        { "LV_FONT_GLYPH_FORMAT_VECTOR", 10 },
+        { "LV_FONT_GLYPH_FORMAT_SVG", 11 },
+        { "LV_FONT_GLYPH_FORMAT_CUSTOM", 255 },
+        { "LV_FONT_SUBPX_NONE", 0 },
+        { "LV_FONT_SUBPX_HOR", 1 },
+        { "LV_FONT_SUBPX_VER", 2 },
+        { "LV_FONT_SUBPX_BOTH", 3 },
+        { "LV_FONT_KERNING_NORMAL", 0 },
+        { "LV_FONT_KERNING_NONE", 1 },
+        { "LV_TEXT_FLAG_NONE", 0 },
+        { "LV_TEXT_FLAG_EXPAND", 1 },
+        { "LV_TEXT_FLAG_FIT", 2 },
+        { "LV_TEXT_FLAG_BREAK_ALL", 4 },
+        { "LV_TEXT_ALIGN_AUTO", 0 },
+        { "LV_TEXT_ALIGN_LEFT", 1 },
+        { "LV_TEXT_ALIGN_CENTER", 2 },
+        { "LV_TEXT_ALIGN_RIGHT", 3 },
+        { "LV_BASE_DIR_LTR", 0 },
+        { "LV_BASE_DIR_RTL", 1 },
+        { "LV_BASE_DIR_AUTO", 2 },
+        { "LV_BASE_DIR_NEUTRAL", 32 },
+        { "LV_BASE_DIR_WEAK", 33 },
+        { "LV_LAYOUT_NONE", 0 },
+        { "LV_LAYOUT_FLEX", 1 },
+        { "LV_LAYOUT_GRID", 2 },
+        { "LV_LAYOUT_LAST", 3 },
+        { "LV_FLEX_ALIGN_START", 0 },
+        { "LV_FLEX_ALIGN_END", 1 },
+        { "LV_FLEX_ALIGN_CENTER", 2 },
+        { "LV_FLEX_ALIGN_SPACE_EVENLY", 3 },
+        { "LV_FLEX_ALIGN_SPACE_AROUND", 4 },
+        { "LV_FLEX_ALIGN_SPACE_BETWEEN", 5 },
+        { "LV_FLEX_FLOW_ROW", 0 },
+        { "LV_FLEX_FLOW_COLUMN", 1 },
+        { "LV_FLEX_FLOW_ROW_WRAP", 4 },
+        { "LV_FLEX_FLOW_ROW_REVERSE", 8 },
+        { "LV_FLEX_FLOW_ROW_WRAP_REVERSE", 12 },
+        { "LV_FLEX_FLOW_COLUMN_WRAP", 5 },
+        { "LV_FLEX_FLOW_COLUMN_REVERSE", 9 },
+        { "LV_FLEX_FLOW_COLUMN_WRAP_REVERSE", 13 },
+        { "LV_GRID_ALIGN_START", 0 },
+        { "LV_GRID_ALIGN_CENTER", 1 },
+        { "LV_GRID_ALIGN_END", 2 },
+        { "LV_GRID_ALIGN_STRETCH", 3 },
+        { "LV_GRID_ALIGN_SPACE_EVENLY", 4 },
+        { "LV_GRID_ALIGN_SPACE_AROUND", 5 },
+        { "LV_GRID_ALIGN_SPACE_BETWEEN", 6 },
+        { "LV_BLEND_MODE_NORMAL", 0 },
+        { "LV_BLEND_MODE_ADDITIVE", 1 },
+        { "LV_BLEND_MODE_SUBTRACTIVE", 2 },
+        { "LV_BLEND_MODE_MULTIPLY", 3 },
+        { "LV_TEXT_DECOR_NONE", 0 },
+        { "LV_TEXT_DECOR_UNDERLINE", 1 },
+        { "LV_TEXT_DECOR_STRIKETHROUGH", 2 },
+        { "LV_BORDER_SIDE_NONE", 0 },
+        { "LV_BORDER_SIDE_BOTTOM", 1 },
+        { "LV_BORDER_SIDE_TOP", 2 },
+        { "LV_BORDER_SIDE_LEFT", 4 },
+        { "LV_BORDER_SIDE_RIGHT", 8 },
+        { "LV_BORDER_SIDE_FULL", 15 },
+        { "LV_BORDER_SIDE_INTERNAL", 16 },
+        { "LV_GRAD_DIR_NONE", 0 },
+        { "LV_GRAD_DIR_VER", 1 },
+        { "LV_GRAD_DIR_HOR", 2 },
+        { "LV_GRAD_DIR_LINEAR", 3 },
+        { "LV_GRAD_DIR_RADIAL", 4 },
+        { "LV_GRAD_DIR_CONICAL", 5 },
+        { "LV_GRAD_EXTEND_PAD", 0 },
+        { "LV_GRAD_EXTEND_REPEAT", 1 },
+        { "LV_GRAD_EXTEND_REFLECT", 2 },
+        { "LV_STYLE_PROP_INV", 0 },
+        { "LV_STYLE_WIDTH", 1 },
+        { "LV_STYLE_HEIGHT", 2 },
+        { "LV_STYLE_LENGTH", 3 },
+        { "LV_STYLE_MIN_WIDTH", 4 },
+        { "LV_STYLE_MAX_WIDTH", 5 },
+        { "LV_STYLE_MIN_HEIGHT", 6 },
+        { "LV_STYLE_MAX_HEIGHT", 7 },
+        { "LV_STYLE_X", 8 },
+        { "LV_STYLE_Y", 9 },
+        { "LV_STYLE_ALIGN", 10 },
+        { "LV_STYLE_RADIUS", 12 },
+        { "LV_STYLE_PAD_TOP", 16 },
+        { "LV_STYLE_PAD_BOTTOM", 17 },
+        { "LV_STYLE_PAD_LEFT", 18 },
+        { "LV_STYLE_PAD_RIGHT", 19 },
+        { "LV_STYLE_PAD_ROW", 20 },
+        { "LV_STYLE_PAD_COLUMN", 21 },
+        { "LV_STYLE_LAYOUT", 22 },
+        { "LV_STYLE_MARGIN_TOP", 24 },
+        { "LV_STYLE_MARGIN_BOTTOM", 25 },
+        { "LV_STYLE_MARGIN_LEFT", 26 },
+        { "LV_STYLE_MARGIN_RIGHT", 27 },
+        { "LV_STYLE_BG_COLOR", 28 },
+        { "LV_STYLE_BG_OPA", 29 },
+        { "LV_STYLE_BG_GRAD_DIR", 32 },
+        { "LV_STYLE_BG_MAIN_STOP", 33 },
+        { "LV_STYLE_BG_GRAD_STOP", 34 },
+        { "LV_STYLE_BG_GRAD_COLOR", 35 },
+        { "LV_STYLE_BG_MAIN_OPA", 36 },
+        { "LV_STYLE_BG_GRAD_OPA", 37 },
+        { "LV_STYLE_BG_GRAD", 38 },
+        { "LV_STYLE_BASE_DIR", 39 },
+        { "LV_STYLE_BG_IMAGE_SRC", 40 },
+        { "LV_STYLE_BG_IMAGE_OPA", 41 },
+        { "LV_STYLE_BG_IMAGE_RECOLOR", 42 },
+        { "LV_STYLE_BG_IMAGE_RECOLOR_OPA", 43 },
+        { "LV_STYLE_BG_IMAGE_TILED", 44 },
+        { "LV_STYLE_CLIP_CORNER", 45 },
+        { "LV_STYLE_BORDER_WIDTH", 48 },
+        { "LV_STYLE_BORDER_COLOR", 49 },
+        { "LV_STYLE_BORDER_OPA", 50 },
+        { "LV_STYLE_BORDER_SIDE", 52 },
+        { "LV_STYLE_BORDER_POST", 53 },
+        { "LV_STYLE_OUTLINE_WIDTH", 56 },
+        { "LV_STYLE_OUTLINE_COLOR", 57 },
+        { "LV_STYLE_OUTLINE_OPA", 58 },
+        { "LV_STYLE_OUTLINE_PAD", 59 },
+        { "LV_STYLE_SHADOW_WIDTH", 60 },
+        { "LV_STYLE_SHADOW_COLOR", 61 },
+        { "LV_STYLE_SHADOW_OPA", 62 },
+        { "LV_STYLE_SHADOW_OFFSET_X", 64 },
+        { "LV_STYLE_SHADOW_OFFSET_Y", 65 },
+        { "LV_STYLE_SHADOW_SPREAD", 66 },
+        { "LV_STYLE_IMAGE_OPA", 68 },
+        { "LV_STYLE_IMAGE_RECOLOR", 69 },
+        { "LV_STYLE_IMAGE_RECOLOR_OPA", 70 },
+        { "LV_STYLE_LINE_WIDTH", 72 },
+        { "LV_STYLE_LINE_DASH_WIDTH", 73 },
+        { "LV_STYLE_LINE_DASH_GAP", 74 },
+        { "LV_STYLE_LINE_ROUNDED", 75 },
+        { "LV_STYLE_LINE_COLOR", 76 },
+        { "LV_STYLE_LINE_OPA", 77 },
+        { "LV_STYLE_ARC_WIDTH", 80 },
+        { "LV_STYLE_ARC_ROUNDED", 81 },
+        { "LV_STYLE_ARC_COLOR", 82 },
+        { "LV_STYLE_ARC_OPA", 83 },
+        { "LV_STYLE_ARC_IMAGE_SRC", 84 },
+        { "LV_STYLE_TEXT_COLOR", 88 },
+        { "LV_STYLE_TEXT_OPA", 89 },
+        { "LV_STYLE_TEXT_FONT", 90 },
+        { "LV_STYLE_TEXT_LETTER_SPACE", 91 },
+        { "LV_STYLE_TEXT_LINE_SPACE", 92 },
+        { "LV_STYLE_TEXT_DECOR", 93 },
+        { "LV_STYLE_TEXT_ALIGN", 94 },
+        { "LV_STYLE_OPA", 95 },
+        { "LV_STYLE_OPA_LAYERED", 96 },
+        { "LV_STYLE_COLOR_FILTER_DSC", 97 },
+        { "LV_STYLE_COLOR_FILTER_OPA", 98 },
+        { "LV_STYLE_ANIM", 99 },
+        { "LV_STYLE_ANIM_DURATION", 100 },
+        { "LV_STYLE_TRANSITION", 102 },
+        { "LV_STYLE_BLEND_MODE", 103 },
+        { "LV_STYLE_TRANSFORM_WIDTH", 104 },
+        { "LV_STYLE_TRANSFORM_HEIGHT", 105 },
+        { "LV_STYLE_TRANSLATE_X", 106 },
+        { "LV_STYLE_TRANSLATE_Y", 107 },
+        { "LV_STYLE_TRANSFORM_SCALE_X", 108 },
+        { "LV_STYLE_TRANSFORM_SCALE_Y", 109 },
+        { "LV_STYLE_TRANSFORM_ROTATION", 110 },
+        { "LV_STYLE_TRANSFORM_PIVOT_X", 111 },
+        { "LV_STYLE_TRANSFORM_PIVOT_Y", 112 },
+        { "LV_STYLE_TRANSFORM_SKEW_X", 113 },
+        { "LV_STYLE_TRANSFORM_SKEW_Y", 114 },
+        { "LV_STYLE_BITMAP_MASK_SRC", 115 },
+        { "LV_STYLE_ROTARY_SENSITIVITY", 116 },
+        { "LV_STYLE_FLEX_FLOW", 125 },
+        { "LV_STYLE_FLEX_MAIN_PLACE", 126 },
+        { "LV_STYLE_FLEX_CROSS_PLACE", 127 },
+        { "LV_STYLE_FLEX_TRACK_PLACE", 128 },
+        { "LV_STYLE_FLEX_GROW", 129 },
+        { "LV_STYLE_GRID_COLUMN_ALIGN", 130 },
+        { "LV_STYLE_GRID_ROW_ALIGN", 131 },
+        { "LV_STYLE_GRID_ROW_DSC_ARRAY", 132 },
+        { "LV_STYLE_GRID_COLUMN_DSC_ARRAY", 133 },
+        { "LV_STYLE_GRID_CELL_COLUMN_POS", 134 },
+        { "LV_STYLE_GRID_CELL_COLUMN_SPAN", 135 },
+        { "LV_STYLE_GRID_CELL_X_ALIGN", 136 },
+        { "LV_STYLE_GRID_CELL_ROW_POS", 137 },
+        { "LV_STYLE_GRID_CELL_ROW_SPAN", 138 },
+        { "LV_STYLE_GRID_CELL_Y_ALIGN", 139 },
+        { "LV_STYLE_LAST_BUILT_IN_PROP", 140 },
+        { "LV_STYLE_NUM_BUILT_IN_PROPS", 141 },
+        { "LV_STYLE_PROP_ANY", 255 },
+        { "LV_STYLE_PROP_CONST", 255 },
+        { "LV_STYLE_RES_NOT_FOUND", 0 },
+        { "LV_STYLE_RES_FOUND", 1 },
+        { "LV_EVENT_ALL", 0 },
+        { "LV_EVENT_PRESSED", 1 },
+        { "LV_EVENT_PRESSING", 2 },
+        { "LV_EVENT_PRESS_LOST", 3 },
+        { "LV_EVENT_SHORT_CLICKED", 4 },
+        { "LV_EVENT_LONG_PRESSED", 5 },
+        { "LV_EVENT_LONG_PRESSED_REPEAT", 6 },
+        { "LV_EVENT_CLICKED", 7 },
+        { "LV_EVENT_RELEASED", 8 },
+        { "LV_EVENT_SCROLL_BEGIN", 9 },
+        { "LV_EVENT_SCROLL_THROW_BEGIN", 10 },
+        { "LV_EVENT_SCROLL_END", 11 },
+        { "LV_EVENT_SCROLL", 12 },
+        { "LV_EVENT_GESTURE", 13 },
+        { "LV_EVENT_KEY", 14 },
+        { "LV_EVENT_ROTARY", 15 },
+        { "LV_EVENT_FOCUSED", 16 },
+        { "LV_EVENT_DEFOCUSED", 17 },
+        { "LV_EVENT_LEAVE", 18 },
+        { "LV_EVENT_HIT_TEST", 19 },
+        { "LV_EVENT_INDEV_RESET", 20 },
+        { "LV_EVENT_HOVER_OVER", 21 },
+        { "LV_EVENT_HOVER_LEAVE", 22 },
+        { "LV_EVENT_COVER_CHECK", 23 },
+        { "LV_EVENT_REFR_EXT_DRAW_SIZE", 24 },
+        { "LV_EVENT_DRAW_MAIN_BEGIN", 25 },
+        { "LV_EVENT_DRAW_MAIN", 26 },
+        { "LV_EVENT_DRAW_MAIN_END", 27 },
+        { "LV_EVENT_DRAW_POST_BEGIN", 28 },
+        { "LV_EVENT_DRAW_POST", 29 },
+        { "LV_EVENT_DRAW_POST_END", 30 },
+        { "LV_EVENT_DRAW_TASK_ADDED", 31 },
+        { "LV_EVENT_VALUE_CHANGED", 32 },
+        { "LV_EVENT_INSERT", 33 },
+        { "LV_EVENT_REFRESH", 34 },
+        { "LV_EVENT_READY", 35 },
+        { "LV_EVENT_CANCEL", 36 },
+        { "LV_EVENT_CREATE", 37 },
+        { "LV_EVENT_DELETE", 38 },
+        { "LV_EVENT_CHILD_CHANGED", 39 },
+        { "LV_EVENT_CHILD_CREATED", 40 },
+        { "LV_EVENT_CHILD_DELETED", 41 },
+        { "LV_EVENT_SCREEN_UNLOAD_START", 42 },
+        { "LV_EVENT_SCREEN_LOAD_START", 43 },
+        { "LV_EVENT_SCREEN_LOADED", 44 },
+        { "LV_EVENT_SCREEN_UNLOADED", 45 },
+        { "LV_EVENT_SIZE_CHANGED", 46 },
+        { "LV_EVENT_STYLE_CHANGED", 47 },
+        { "LV_EVENT_LAYOUT_CHANGED", 48 },
+        { "LV_EVENT_GET_SELF_SIZE", 49 },
+        { "LV_EVENT_INVALIDATE_AREA", 50 },
+        { "LV_EVENT_RESOLUTION_CHANGED", 51 },
+        { "LV_EVENT_COLOR_FORMAT_CHANGED", 52 },
+        { "LV_EVENT_REFR_REQUEST", 53 },
+        { "LV_EVENT_REFR_START", 54 },
+        { "LV_EVENT_REFR_READY", 55 },
+        { "LV_EVENT_RENDER_START", 56 },
+        { "LV_EVENT_RENDER_READY", 57 },
+        { "LV_EVENT_FLUSH_START", 58 },
+        { "LV_EVENT_FLUSH_FINISH", 59 },
+        { "LV_EVENT_FLUSH_WAIT_START", 60 },
+        { "LV_EVENT_FLUSH_WAIT_FINISH", 61 },
+        { "LV_EVENT_VSYNC", 62 },
+        { "LV_EVENT_LAST", 63 },
+        { "LV_EVENT_PREPROCESS", 32768 },
+        { "LV_FS_RES_OK", 0 },
+        { "LV_FS_RES_HW_ERR", 1 },
+        { "LV_FS_RES_FS_ERR", 2 },
+        { "LV_FS_RES_NOT_EX", 3 },
+        { "LV_FS_RES_FULL", 4 },
+        { "LV_FS_RES_LOCKED", 5 },
+        { "LV_FS_RES_DENIED", 6 },
+        { "LV_FS_RES_BUSY", 7 },
+        { "LV_FS_RES_TOUT", 8 },
+        { "LV_FS_RES_NOT_IMP", 9 },
+        { "LV_FS_RES_OUT_OF_MEM", 10 },
+        { "LV_FS_RES_INV_PARAM", 11 },
+        { "LV_FS_RES_UNKNOWN", 12 },
+        { "LV_FS_MODE_WR", 1 },
+        { "LV_FS_MODE_RD", 2 },
+        { "LV_FS_SEEK_SET", 0 },
+        { "LV_FS_SEEK_CUR", 1 },
+        { "LV_FS_SEEK_END", 2 },
+        { "LV_IMAGE_SRC_VARIABLE", 0 },
+        { "LV_IMAGE_SRC_FILE", 1 },
+        { "LV_IMAGE_SRC_SYMBOL", 2 },
+        { "LV_IMAGE_SRC_UNKNOWN", 3 },
+        { "LV_DRAW_TASK_TYPE_NONE", 0 },
+        { "LV_DRAW_TASK_TYPE_FILL", 1 },
+        { "LV_DRAW_TASK_TYPE_BORDER", 2 },
+        { "LV_DRAW_TASK_TYPE_BOX_SHADOW", 3 },
+        { "LV_DRAW_TASK_TYPE_LABEL", 4 },
+        { "LV_DRAW_TASK_TYPE_IMAGE", 5 },
+        { "LV_DRAW_TASK_TYPE_LAYER", 6 },
+        { "LV_DRAW_TASK_TYPE_LINE", 7 },
+        { "LV_DRAW_TASK_TYPE_ARC", 8 },
+        { "LV_DRAW_TASK_TYPE_TRIANGLE", 9 },
+        { "LV_DRAW_TASK_TYPE_MASK_RECTANGLE", 10 },
+        { "LV_DRAW_TASK_TYPE_MASK_BITMAP", 11 },
+        { "LV_DRAW_TASK_TYPE_VECTOR", 12 },
+        { "LV_DRAW_TASK_STATE_WAITING", 0 },
+        { "LV_DRAW_TASK_STATE_QUEUED", 1 },
+        { "LV_DRAW_TASK_STATE_IN_PROGRESS", 2 },
+        { "LV_DRAW_TASK_STATE_READY", 3 },
+        { "LV_DISPLAY_ROTATION_0", 0 },
+        { "LV_DISPLAY_ROTATION_90", 1 },
+        { "LV_DISPLAY_ROTATION_180", 2 },
+        { "LV_DISPLAY_ROTATION_270", 3 },
+        { "LV_DISPLAY_RENDER_MODE_PARTIAL", 0 },
+        { "LV_DISPLAY_RENDER_MODE_DIRECT", 1 },
+        { "LV_DISPLAY_RENDER_MODE_FULL", 2 },
+        { "LV_SCR_LOAD_ANIM_NONE", 0 },
+        { "LV_SCR_LOAD_ANIM_OVER_LEFT", 1 },
+        { "LV_SCR_LOAD_ANIM_OVER_RIGHT", 2 },
+        { "LV_SCR_LOAD_ANIM_OVER_TOP", 3 },
+        { "LV_SCR_LOAD_ANIM_OVER_BOTTOM", 4 },
+        { "LV_SCR_LOAD_ANIM_MOVE_LEFT", 5 },
+        { "LV_SCR_LOAD_ANIM_MOVE_RIGHT", 6 },
+        { "LV_SCR_LOAD_ANIM_MOVE_TOP", 7 },
+        { "LV_SCR_LOAD_ANIM_MOVE_BOTTOM", 8 },
+        { "LV_SCR_LOAD_ANIM_FADE_IN", 9 },
+        { "LV_SCR_LOAD_ANIM_FADE_ON", 9 },
+        { "LV_SCR_LOAD_ANIM_FADE_OUT", 10 },
+        { "LV_SCR_LOAD_ANIM_OUT_LEFT", 11 },
+        { "LV_SCR_LOAD_ANIM_OUT_RIGHT", 12 },
+        { "LV_SCR_LOAD_ANIM_OUT_TOP", 13 },
+        { "LV_SCR_LOAD_ANIM_OUT_BOTTOM", 14 },
+        { "LV_OBJ_TREE_WALK_NEXT", 0 },
+        { "LV_OBJ_TREE_WALK_SKIP_CHILDREN", 1 },
+        { "LV_OBJ_TREE_WALK_END", 2 },
+        { "LV_OBJ_POINT_TRANSFORM_FLAG_NONE", 0 },
+        { "LV_OBJ_POINT_TRANSFORM_FLAG_RECURSIVE", 1 },
+        { "LV_OBJ_POINT_TRANSFORM_FLAG_INVERSE", 2 },
+        { "LV_OBJ_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE", 3 },
+        { "LV_SCROLLBAR_MODE_OFF", 0 },
+        { "LV_SCROLLBAR_MODE_ON", 1 },
+        { "LV_SCROLLBAR_MODE_ACTIVE", 2 },
+        { "LV_SCROLLBAR_MODE_AUTO", 3 },
+        { "LV_SCROLL_SNAP_NONE", 0 },
+        { "LV_SCROLL_SNAP_START", 1 },
+        { "LV_SCROLL_SNAP_END", 2 },
+        { "LV_SCROLL_SNAP_CENTER", 3 },
+        { "LV_STYLE_STATE_CMP_SAME", 0 },
+        { "LV_STYLE_STATE_CMP_DIFF_REDRAW", 1 },
+        { "LV_STYLE_STATE_CMP_DIFF_DRAW_PAD", 2 },
+        { "LV_STYLE_STATE_CMP_DIFF_LAYOUT", 3 },
+        { "LV_LAYER_TYPE_NONE", 0 },
+        { "LV_LAYER_TYPE_SIMPLE", 1 },
+        { "LV_LAYER_TYPE_TRANSFORM", 2 },
+        { "LV_OBJ_CLASS_EDITABLE_INHERIT", 0 },
+        { "LV_OBJ_CLASS_EDITABLE_TRUE", 1 },
+        { "LV_OBJ_CLASS_EDITABLE_FALSE", 2 },
+        { "LV_OBJ_CLASS_GROUP_DEF_INHERIT", 0 },
+        { "LV_OBJ_CLASS_GROUP_DEF_TRUE", 1 },
+        { "LV_OBJ_CLASS_GROUP_DEF_FALSE", 2 },
+        { "LV_OBJ_CLASS_THEME_INHERITABLE_FALSE", 0 },
+        { "LV_OBJ_CLASS_THEME_INHERITABLE_TRUE", 1 },
+        { "LV_KEY_UP", 17 },
+        { "LV_KEY_DOWN", 18 },
+        { "LV_KEY_RIGHT", 19 },
+        { "LV_KEY_LEFT", 20 },
+        { "LV_KEY_ESC", 27 },
+        { "LV_KEY_DEL", 127 },
+        { "LV_KEY_BACKSPACE", 8 },
+        { "LV_KEY_ENTER", 10 },
+        { "LV_KEY_NEXT", 9 },
+        { "LV_KEY_PREV", 11 },
+        { "LV_KEY_HOME", 2 },
+        { "LV_KEY_END", 3 },
+        { "LV_GROUP_REFOCUS_POLICY_NEXT", 0 },
+        { "LV_GROUP_REFOCUS_POLICY_PREV", 1 },
+        { "LV_INDEV_TYPE_NONE", 0 },
+        { "LV_INDEV_TYPE_POINTER", 1 },
+        { "LV_INDEV_TYPE_KEYPAD", 2 },
+        { "LV_INDEV_TYPE_BUTTON", 3 },
+        { "LV_INDEV_TYPE_ENCODER", 4 },
+        { "LV_INDEV_STATE_RELEASED", 0 },
+        { "LV_INDEV_STATE_PRESSED", 1 },
+        { "LV_INDEV_MODE_NONE", 0 },
+        { "LV_INDEV_MODE_TIMER", 1 },
+        { "LV_INDEV_MODE_EVENT", 2 },
+        { "LV_COVER_RES_COVER", 0 },
+        { "LV_COVER_RES_NOT_COVER", 1 },
+        { "LV_COVER_RES_MASKED", 2 },
+        { "LV_STATE_DEFAULT", 0 },
+        { "LV_STATE_CHECKED", 1 },
+        { "LV_STATE_FOCUSED", 2 },
+        { "LV_STATE_FOCUS_KEY", 4 },
+        { "LV_STATE_EDITED", 8 },
+        { "LV_STATE_HOVERED", 16 },
+        { "LV_STATE_PRESSED", 32 },
+        { "LV_STATE_SCROLLED", 64 },
+        { "LV_STATE_DISABLED", 128 },
+        { "LV_STATE_USER_1", 4096 },
+        { "LV_STATE_USER_2", 8192 },
+        { "LV_STATE_USER_3", 16384 },
+        { "LV_STATE_USER_4", 32768 },
+        { "LV_STATE_ANY", 65535 },
+        { "LV_PART_MAIN", 0 },
+        { "LV_PART_SCROLLBAR", 65536 },
+        { "LV_PART_INDICATOR", 131072 },
+        { "LV_PART_KNOB", 196608 },
+        { "LV_PART_SELECTED", 262144 },
+        { "LV_PART_ITEMS", 327680 },
+        { "LV_PART_CURSOR", 393216 },
+        { "LV_PART_CUSTOM_FIRST", 524288 },
+        { "LV_PART_ANY", 983040 },
+        { "LV_OBJ_FLAG_HIDDEN", 1 },
+        { "LV_OBJ_FLAG_CLICKABLE", 2 },
+        { "LV_OBJ_FLAG_CLICK_FOCUSABLE", 4 },
+        { "LV_OBJ_FLAG_CHECKABLE", 8 },
+        { "LV_OBJ_FLAG_SCROLLABLE", 16 },
+        { "LV_OBJ_FLAG_SCROLL_ELASTIC", 32 },
+        { "LV_OBJ_FLAG_SCROLL_MOMENTUM", 64 },
+        { "LV_OBJ_FLAG_SCROLL_ONE", 128 },
+        { "LV_OBJ_FLAG_SCROLL_CHAIN_HOR", 256 },
+        { "LV_OBJ_FLAG_SCROLL_CHAIN_VER", 512 },
+        { "LV_OBJ_FLAG_SCROLL_CHAIN", 768 },
+        { "LV_OBJ_FLAG_SCROLL_ON_FOCUS", 1024 },
+        { "LV_OBJ_FLAG_SCROLL_WITH_ARROW", 2048 },
+        { "LV_OBJ_FLAG_SNAPPABLE", 4096 },
+        { "LV_OBJ_FLAG_PRESS_LOCK", 8192 },
+        { "LV_OBJ_FLAG_EVENT_BUBBLE", 16384 },
+        { "LV_OBJ_FLAG_GESTURE_BUBBLE", 32768 },
+        { "LV_OBJ_FLAG_ADV_HITTEST", 65536 },
+        { "LV_OBJ_FLAG_IGNORE_LAYOUT", 131072 },
+        { "LV_OBJ_FLAG_FLOATING", 262144 },
+        { "LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS", 524288 },
+        { "LV_OBJ_FLAG_OVERFLOW_VISIBLE", 1048576 },
+        { "LV_OBJ_FLAG_FLEX_IN_NEW_TRACK", 2097152 },
+        { "LV_OBJ_FLAG_LAYOUT_1", 8388608 },
+        { "LV_OBJ_FLAG_LAYOUT_2", 16777216 },
+        { "LV_OBJ_FLAG_WIDGET_1", 33554432 },
+        { "LV_OBJ_FLAG_WIDGET_2", 67108864 },
+        { "LV_OBJ_FLAG_USER_1", 134217728 },
+        { "LV_OBJ_FLAG_USER_2", 268435456 },
+        { "LV_OBJ_FLAG_USER_3", 536870912 },
+        { "LV_OBJ_FLAG_USER_4", 1073741824 },
+        { "LV_FONT_FMT_TXT_CMAP_FORMAT0_FULL", 0 },
+        { "LV_FONT_FMT_TXT_CMAP_SPARSE_FULL", 1 },
+        { "LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY", 2 },
+        { "LV_FONT_FMT_TXT_CMAP_SPARSE_TINY", 3 },
+        { "LV_FONT_FMT_TXT_PLAIN", 0 },
+        { "LV_FONT_FMT_TXT_COMPRESSED", 1 },
+        { "LV_FONT_FMT_TXT_COMPRESSED_NO_PREFILTER", 1 },
+        { "LV_IMAGE_ALIGN_DEFAULT", 0 },
+        { "LV_IMAGE_ALIGN_TOP_LEFT", 1 },
+        { "LV_IMAGE_ALIGN_TOP_MID", 2 },
+        { "LV_IMAGE_ALIGN_TOP_RIGHT", 3 },
+        { "LV_IMAGE_ALIGN_BOTTOM_LEFT", 4 },
+        { "LV_IMAGE_ALIGN_BOTTOM_MID", 5 },
+        { "LV_IMAGE_ALIGN_BOTTOM_RIGHT", 6 },
+        { "LV_IMAGE_ALIGN_LEFT_MID", 7 },
+        { "LV_IMAGE_ALIGN_RIGHT_MID", 8 },
+        { "LV_IMAGE_ALIGN_CENTER", 9 },
+        { "LV_IMAGE_ALIGN_AUTO_TRANSFORM", 10 },
+        { "LV_IMAGE_ALIGN_STRETCH", 11 },
+        { "LV_IMAGE_ALIGN_TILE", 12 },
+        { "LV_ANIM_IMAGE_PART_MAIN", 0 },
+        { "LV_ARC_MODE_NORMAL", 0 },
+        { "LV_ARC_MODE_SYMMETRICAL", 1 },
+        { "LV_ARC_MODE_REVERSE", 2 },
+        { "LV_LABEL_LONG_WRAP", 0 },
+        { "LV_LABEL_LONG_DOT", 1 },
+        { "LV_LABEL_LONG_SCROLL", 2 },
+        { "LV_LABEL_LONG_SCROLL_CIRCULAR", 3 },
+        { "LV_LABEL_LONG_CLIP", 4 },
+        { "LV_BAR_MODE_NORMAL", 0 },
+        { "LV_BAR_MODE_SYMMETRICAL", 1 },
+        { "LV_BAR_MODE_RANGE", 2 },
+        { "LV_BAR_ORIENTATION_AUTO", 0 },
+        { "LV_BAR_ORIENTATION_HORIZONTAL", 1 },
+        { "LV_BAR_ORIENTATION_VERTICAL", 2 },
+        { "LV_BUTTONMATRIX_CTRL_HIDDEN", 16 },
+        { "LV_BUTTONMATRIX_CTRL_NO_REPEAT", 32 },
+        { "LV_BUTTONMATRIX_CTRL_DISABLED", 64 },
+        { "LV_BUTTONMATRIX_CTRL_CHECKABLE", 128 },
+        { "LV_BUTTONMATRIX_CTRL_CHECKED", 256 },
+        { "LV_BUTTONMATRIX_CTRL_CLICK_TRIG", 512 },
+        { "LV_BUTTONMATRIX_CTRL_POPOVER", 1024 },
+        { "LV_BUTTONMATRIX_CTRL_RESERVED_1", 2048 },
+        { "LV_BUTTONMATRIX_CTRL_RESERVED_2", 4096 },
+        { "LV_BUTTONMATRIX_CTRL_RESERVED_3", 8192 },
+        { "LV_BUTTONMATRIX_CTRL_CUSTOM_1", 16384 },
+        { "LV_BUTTONMATRIX_CTRL_CUSTOM_2", 32768 },
+        { "LV_CHART_TYPE_NONE", 0 },
+        { "LV_CHART_TYPE_LINE", 1 },
+        { "LV_CHART_TYPE_BAR", 2 },
+        { "LV_CHART_TYPE_SCATTER", 3 },
+        { "LV_CHART_UPDATE_MODE_SHIFT", 0 },
+        { "LV_CHART_UPDATE_MODE_CIRCULAR", 1 },
+        { "LV_CHART_AXIS_PRIMARY_Y", 0 },
+        { "LV_CHART_AXIS_SECONDARY_Y", 1 },
+        { "LV_CHART_AXIS_PRIMARY_X", 2 },
+        { "LV_CHART_AXIS_SECONDARY_X", 4 },
+        { "LV_CHART_AXIS_LAST", 5 },
+        { "LV_IMAGEBUTTON_STATE_RELEASED", 0 },
+        { "LV_IMAGEBUTTON_STATE_PRESSED", 1 },
+        { "LV_IMAGEBUTTON_STATE_DISABLED", 2 },
+        { "LV_IMAGEBUTTON_STATE_CHECKED_RELEASED", 3 },
+        { "LV_IMAGEBUTTON_STATE_CHECKED_PRESSED", 4 },
+        { "LV_IMAGEBUTTON_STATE_CHECKED_DISABLED", 5 },
+        { "LV_IMAGEBUTTON_STATE_NUM", 6 },
+        { "LV_KEYBOARD_MODE_TEXT_LOWER", 0 },
+        { "LV_KEYBOARD_MODE_TEXT_UPPER", 1 },
+        { "LV_KEYBOARD_MODE_SPECIAL", 2 },
+        { "LV_KEYBOARD_MODE_NUMBER", 3 },
+        { "LV_KEYBOARD_MODE_USER_1", 4 },
+        { "LV_KEYBOARD_MODE_USER_2", 5 },
+        { "LV_KEYBOARD_MODE_USER_3", 6 },
+        { "LV_KEYBOARD_MODE_USER_4", 7 },
+        { "LV_MENU_HEADER_TOP_FIXED", 0 },
+        { "LV_MENU_HEADER_TOP_UNFIXED", 1 },
+        { "LV_MENU_HEADER_BOTTOM_FIXED", 2 },
+        { "LV_MENU_ROOT_BACK_BUTTON_DISABLED", 0 },
+        { "LV_MENU_ROOT_BACK_BUTTON_ENABLED", 1 },
+        { "LV_ROLLER_MODE_NORMAL", 0 },
+        { "LV_ROLLER_MODE_INFINITE", 1 },
+        { "LV_SCALE_MODE_HORIZONTAL_TOP", 0 },
+        { "LV_SCALE_MODE_HORIZONTAL_BOTTOM", 1 },
+        { "LV_SCALE_MODE_VERTICAL_LEFT", 2 },
+        { "LV_SCALE_MODE_VERTICAL_RIGHT", 3 },
+        { "LV_SCALE_MODE_ROUND_INNER", 4 },
+        { "LV_SCALE_MODE_ROUND_OUTER", 5 },
+        { "LV_SCALE_MODE_LAST", 6 },
+        { "LV_SLIDER_MODE_NORMAL", 0 },
+        { "LV_SLIDER_MODE_SYMMETRICAL", 1 },
+        { "LV_SLIDER_MODE_RANGE", 2 },
+        { "LV_SPAN_OVERFLOW_CLIP", 0 },
+        { "LV_SPAN_OVERFLOW_ELLIPSIS", 1 },
+        { "LV_SPAN_OVERFLOW_LAST", 2 },
+        { "LV_SPAN_MODE_FIXED", 0 },
+        { "LV_SPAN_MODE_EXPAND", 1 },
+        { "LV_SPAN_MODE_BREAK", 2 },
+        { "LV_SPAN_MODE_LAST", 3 },
+        { "LV_PART_TEXTAREA_PLACEHOLDER", 524288 },
+        { "LV_TABLE_CELL_CTRL_MERGE_RIGHT", 1 },
+        { "LV_TABLE_CELL_CTRL_TEXT_CROP", 2 },
+        { "LV_TABLE_CELL_CTRL_CUSTOM_1", 16 },
+        { "LV_TABLE_CELL_CTRL_CUSTOM_2", 32 },
+        { "LV_TABLE_CELL_CTRL_CUSTOM_3", 64 },
+        { "LV_TABLE_CELL_CTRL_CUSTOM_4", 128 },
+        { "LV_SUBJECT_TYPE_INVALID", 0 },
+        { "LV_SUBJECT_TYPE_NONE", 1 },
+        { "LV_SUBJECT_TYPE_INT", 2 },
+        { "LV_SUBJECT_TYPE_POINTER", 3 },
+        { "LV_SUBJECT_TYPE_COLOR", 4 },
+        { "LV_SUBJECT_TYPE_GROUP", 5 },
+        { "LV_SUBJECT_TYPE_STRING", 6 },
+        { "LV_GRIDNAV_CTRL_NONE", 0 },
+        { "LV_GRIDNAV_CTRL_ROLLOVER", 1 },
+        { "LV_GRIDNAV_CTRL_SCROLL_FIRST", 2 },
+        { "LV_GRIDNAV_CTRL_HORIZONTAL_MOVE_ONLY", 4 },
+        { "LV_GRIDNAV_CTRL_VERTICAL_MOVE_ONLY", 8 },
+        { "LV_FREETYPE_FONT_STYLE_NORMAL", 0 },
+        { "LV_FREETYPE_FONT_STYLE_ITALIC", 1 },
+        { "LV_FREETYPE_FONT_STYLE_BOLD", 2 },
+        { "LV_FREETYPE_FONT_RENDER_MODE_BITMAP", 0 },
+        { "LV_FREETYPE_FONT_RENDER_MODE_OUTLINE", 1 },
+        { "LV_FREETYPE_OUTLINE_END", 0 },
+        { "LV_FREETYPE_OUTLINE_MOVE_TO", 1 },
+        { "LV_FREETYPE_OUTLINE_LINE_TO", 2 },
+        { "LV_FREETYPE_OUTLINE_CUBIC_TO", 3 },
+        { "LV_FREETYPE_OUTLINE_CONIC_TO", 4 },
+        { "LV_DRAW_SW_MASK_RES_TRANSP", 0 },
+        { "LV_DRAW_SW_MASK_RES_FULL_COVER", 1 },
+        { "LV_DRAW_SW_MASK_RES_CHANGED", 2 },
+        { "LV_DRAW_SW_MASK_RES_UNKNOWN", 3 },
+        { "LV_DRAW_SW_MASK_TYPE_LINE", 0 },
+        { "LV_DRAW_SW_MASK_TYPE_ANGLE", 1 },
+        { "LV_DRAW_SW_MASK_TYPE_RADIUS", 2 },
+        { "LV_DRAW_SW_MASK_TYPE_FADE", 3 },
+        { "LV_DRAW_SW_MASK_TYPE_MAP", 4 },
+        { "LV_DRAW_SW_MASK_LINE_SIDE_LEFT", 0 },
+        { "LV_DRAW_SW_MASK_LINE_SIDE_RIGHT", 1 },
+        { "LV_DRAW_SW_MASK_LINE_SIDE_TOP", 2 },
+        { "LV_DRAW_SW_MASK_LINE_SIDE_BOTTOM", 3 },
+        { NULL, 0 }
+    };
+
+    /* 宏（数值） */
+    static const lvgl_enum_entry_t macro_entries[] = {
 #ifdef LV_LABEL_TEXT_SELECTION
-    lvgl_binding_set_enum(global, "LV_LABEL_TEXT_SELECTION", LV_LABEL_TEXT_SELECTION);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_TEXT_SELECTION is not defined")
+        { "LV_LABEL_TEXT_SELECTION", LV_LABEL_TEXT_SELECTION },
 #endif
 #ifdef LV_LABEL_LONG_TXT_HINT
-    lvgl_binding_set_enum(global, "LV_LABEL_LONG_TXT_HINT", LV_LABEL_LONG_TXT_HINT);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_LONG_TXT_HINT is not defined")
+        { "LV_LABEL_LONG_TXT_HINT", LV_LABEL_LONG_TXT_HINT },
 #endif
 #ifdef LV_LABEL_WAIT_CHAR_COUNT
-    lvgl_binding_set_enum(global, "LV_LABEL_WAIT_CHAR_COUNT", LV_LABEL_WAIT_CHAR_COUNT);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_WAIT_CHAR_COUNT is not defined")
+        { "LV_LABEL_WAIT_CHAR_COUNT", LV_LABEL_WAIT_CHAR_COUNT },
 #endif
 #ifdef LV_ANIM_REPEAT_INFINITE
-    lvgl_binding_set_enum(global, "LV_ANIM_REPEAT_INFINITE", LV_ANIM_REPEAT_INFINITE);
-#else
-    #pragma message("WARNING: Macro LV_ANIM_REPEAT_INFINITE is not defined")
+        { "LV_ANIM_REPEAT_INFINITE", LV_ANIM_REPEAT_INFINITE },
 #endif
 #ifdef LV_ANIM_PLAYTIME_INFINITE
-    lvgl_binding_set_enum(global, "LV_ANIM_PLAYTIME_INFINITE", LV_ANIM_PLAYTIME_INFINITE);
-#else
-    #pragma message("WARNING: Macro LV_ANIM_PLAYTIME_INFINITE is not defined")
+        { "LV_ANIM_PLAYTIME_INFINITE", LV_ANIM_PLAYTIME_INFINITE },
 #endif
 #ifdef LV_LABEL_DOT_NUM
-    lvgl_binding_set_enum(global, "LV_LABEL_DOT_NUM", LV_LABEL_DOT_NUM);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_DOT_NUM is not defined")
+        { "LV_LABEL_DOT_NUM", LV_LABEL_DOT_NUM },
 #endif
 #ifdef LV_LABEL_POS_LAST
-    lvgl_binding_set_enum(global, "LV_LABEL_POS_LAST", LV_LABEL_POS_LAST);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_POS_LAST is not defined")
+        { "LV_LABEL_POS_LAST", LV_LABEL_POS_LAST },
 #endif
 #ifdef LV_LABEL_TEXT_SELECTION_OFF
-    lvgl_binding_set_enum(global, "LV_LABEL_TEXT_SELECTION_OFF", LV_LABEL_TEXT_SELECTION_OFF);
-#else
-    #pragma message("WARNING: Macro LV_LABEL_TEXT_SELECTION_OFF is not defined")
+        { "LV_LABEL_TEXT_SELECTION_OFF", LV_LABEL_TEXT_SELECTION_OFF },
 #endif
+        { NULL, 0 }
+    };
+
+    typedef struct { const char* name; const char* val; } lvgl_symbol_entry_t;
+    static const lvgl_symbol_entry_t symbol_entries[] = {
+#ifdef LV_SYMBOL_BULLET
+        { "LV_SYMBOL_BULLET", LV_SYMBOL_BULLET },
+#endif
+#ifdef LV_SYMBOL_AUDIO
+        { "LV_SYMBOL_AUDIO", LV_SYMBOL_AUDIO },
+#endif
+#ifdef LV_SYMBOL_VIDEO
+        { "LV_SYMBOL_VIDEO", LV_SYMBOL_VIDEO },
+#endif
+#ifdef LV_SYMBOL_LIST
+        { "LV_SYMBOL_LIST", LV_SYMBOL_LIST },
+#endif
+#ifdef LV_SYMBOL_OK
+        { "LV_SYMBOL_OK", LV_SYMBOL_OK },
+#endif
+#ifdef LV_SYMBOL_CLOSE
+        { "LV_SYMBOL_CLOSE", LV_SYMBOL_CLOSE },
+#endif
+#ifdef LV_SYMBOL_POWER
+        { "LV_SYMBOL_POWER", LV_SYMBOL_POWER },
+#endif
+#ifdef LV_SYMBOL_SETTINGS
+        { "LV_SYMBOL_SETTINGS", LV_SYMBOL_SETTINGS },
+#endif
+#ifdef LV_SYMBOL_HOME
+        { "LV_SYMBOL_HOME", LV_SYMBOL_HOME },
+#endif
+#ifdef LV_SYMBOL_DOWNLOAD
+        { "LV_SYMBOL_DOWNLOAD", LV_SYMBOL_DOWNLOAD },
+#endif
+#ifdef LV_SYMBOL_DRIVE
+        { "LV_SYMBOL_DRIVE", LV_SYMBOL_DRIVE },
+#endif
+#ifdef LV_SYMBOL_REFRESH
+        { "LV_SYMBOL_REFRESH", LV_SYMBOL_REFRESH },
+#endif
+#ifdef LV_SYMBOL_MUTE
+        { "LV_SYMBOL_MUTE", LV_SYMBOL_MUTE },
+#endif
+#ifdef LV_SYMBOL_VOLUME_MID
+        { "LV_SYMBOL_VOLUME_MID", LV_SYMBOL_VOLUME_MID },
+#endif
+#ifdef LV_SYMBOL_VOLUME_MAX
+        { "LV_SYMBOL_VOLUME_MAX", LV_SYMBOL_VOLUME_MAX },
+#endif
+#ifdef LV_SYMBOL_IMAGE
+        { "LV_SYMBOL_IMAGE", LV_SYMBOL_IMAGE },
+#endif
+#ifdef LV_SYMBOL_TINT
+        { "LV_SYMBOL_TINT", LV_SYMBOL_TINT },
+#endif
+#ifdef LV_SYMBOL_PREV
+        { "LV_SYMBOL_PREV", LV_SYMBOL_PREV },
+#endif
+#ifdef LV_SYMBOL_PLAY
+        { "LV_SYMBOL_PLAY", LV_SYMBOL_PLAY },
+#endif
+#ifdef LV_SYMBOL_PAUSE
+        { "LV_SYMBOL_PAUSE", LV_SYMBOL_PAUSE },
+#endif
+#ifdef LV_SYMBOL_STOP
+        { "LV_SYMBOL_STOP", LV_SYMBOL_STOP },
+#endif
+#ifdef LV_SYMBOL_NEXT
+        { "LV_SYMBOL_NEXT", LV_SYMBOL_NEXT },
+#endif
+#ifdef LV_SYMBOL_EJECT
+        { "LV_SYMBOL_EJECT", LV_SYMBOL_EJECT },
+#endif
+#ifdef LV_SYMBOL_LEFT
+        { "LV_SYMBOL_LEFT", LV_SYMBOL_LEFT },
+#endif
+#ifdef LV_SYMBOL_RIGHT
+        { "LV_SYMBOL_RIGHT", LV_SYMBOL_RIGHT },
+#endif
+#ifdef LV_SYMBOL_PLUS
+        { "LV_SYMBOL_PLUS", LV_SYMBOL_PLUS },
+#endif
+#ifdef LV_SYMBOL_MINUS
+        { "LV_SYMBOL_MINUS", LV_SYMBOL_MINUS },
+#endif
+#ifdef LV_SYMBOL_EYE_OPEN
+        { "LV_SYMBOL_EYE_OPEN", LV_SYMBOL_EYE_OPEN },
+#endif
+#ifdef LV_SYMBOL_EYE_CLOSE
+        { "LV_SYMBOL_EYE_CLOSE", LV_SYMBOL_EYE_CLOSE },
+#endif
+#ifdef LV_SYMBOL_WARNING
+        { "LV_SYMBOL_WARNING", LV_SYMBOL_WARNING },
+#endif
+#ifdef LV_SYMBOL_SHUFFLE
+        { "LV_SYMBOL_SHUFFLE", LV_SYMBOL_SHUFFLE },
+#endif
+#ifdef LV_SYMBOL_UP
+        { "LV_SYMBOL_UP", LV_SYMBOL_UP },
+#endif
+#ifdef LV_SYMBOL_DOWN
+        { "LV_SYMBOL_DOWN", LV_SYMBOL_DOWN },
+#endif
+#ifdef LV_SYMBOL_LOOP
+        { "LV_SYMBOL_LOOP", LV_SYMBOL_LOOP },
+#endif
+#ifdef LV_SYMBOL_DIRECTORY
+        { "LV_SYMBOL_DIRECTORY", LV_SYMBOL_DIRECTORY },
+#endif
+#ifdef LV_SYMBOL_UPLOAD
+        { "LV_SYMBOL_UPLOAD", LV_SYMBOL_UPLOAD },
+#endif
+#ifdef LV_SYMBOL_CALL
+        { "LV_SYMBOL_CALL", LV_SYMBOL_CALL },
+#endif
+#ifdef LV_SYMBOL_CUT
+        { "LV_SYMBOL_CUT", LV_SYMBOL_CUT },
+#endif
+#ifdef LV_SYMBOL_COPY
+        { "LV_SYMBOL_COPY", LV_SYMBOL_COPY },
+#endif
+#ifdef LV_SYMBOL_SAVE
+        { "LV_SYMBOL_SAVE", LV_SYMBOL_SAVE },
+#endif
+#ifdef LV_SYMBOL_BARS
+        { "LV_SYMBOL_BARS", LV_SYMBOL_BARS },
+#endif
+#ifdef LV_SYMBOL_ENVELOPE
+        { "LV_SYMBOL_ENVELOPE", LV_SYMBOL_ENVELOPE },
+#endif
+#ifdef LV_SYMBOL_CHARGE
+        { "LV_SYMBOL_CHARGE", LV_SYMBOL_CHARGE },
+#endif
+#ifdef LV_SYMBOL_PASTE
+        { "LV_SYMBOL_PASTE", LV_SYMBOL_PASTE },
+#endif
+#ifdef LV_SYMBOL_BELL
+        { "LV_SYMBOL_BELL", LV_SYMBOL_BELL },
+#endif
+#ifdef LV_SYMBOL_KEYBOARD
+        { "LV_SYMBOL_KEYBOARD", LV_SYMBOL_KEYBOARD },
+#endif
+#ifdef LV_SYMBOL_GPS
+        { "LV_SYMBOL_GPS", LV_SYMBOL_GPS },
+#endif
+#ifdef LV_SYMBOL_FILE
+        { "LV_SYMBOL_FILE", LV_SYMBOL_FILE },
+#endif
+#ifdef LV_SYMBOL_WIFI
+        { "LV_SYMBOL_WIFI", LV_SYMBOL_WIFI },
+#endif
+#ifdef LV_SYMBOL_BATTERY_FULL
+        { "LV_SYMBOL_BATTERY_FULL", LV_SYMBOL_BATTERY_FULL },
+#endif
+#ifdef LV_SYMBOL_BATTERY_3
+        { "LV_SYMBOL_BATTERY_3", LV_SYMBOL_BATTERY_3 },
+#endif
+#ifdef LV_SYMBOL_BATTERY_2
+        { "LV_SYMBOL_BATTERY_2", LV_SYMBOL_BATTERY_2 },
+#endif
+#ifdef LV_SYMBOL_BATTERY_1
+        { "LV_SYMBOL_BATTERY_1", LV_SYMBOL_BATTERY_1 },
+#endif
+#ifdef LV_SYMBOL_BATTERY_EMPTY
+        { "LV_SYMBOL_BATTERY_EMPTY", LV_SYMBOL_BATTERY_EMPTY },
+#endif
+#ifdef LV_SYMBOL_USB
+        { "LV_SYMBOL_USB", LV_SYMBOL_USB },
+#endif
+#ifdef LV_SYMBOL_BLUETOOTH
+        { "LV_SYMBOL_BLUETOOTH", LV_SYMBOL_BLUETOOTH },
+#endif
+#ifdef LV_SYMBOL_TRASH
+        { "LV_SYMBOL_TRASH", LV_SYMBOL_TRASH },
+#endif
+#ifdef LV_SYMBOL_EDIT
+        { "LV_SYMBOL_EDIT", LV_SYMBOL_EDIT },
+#endif
+#ifdef LV_SYMBOL_BACKSPACE
+        { "LV_SYMBOL_BACKSPACE", LV_SYMBOL_BACKSPACE },
+#endif
+#ifdef LV_SYMBOL_SD_CARD
+        { "LV_SYMBOL_SD_CARD", LV_SYMBOL_SD_CARD },
+#endif
+#ifdef LV_SYMBOL_NEW_LINE
+        { "LV_SYMBOL_NEW_LINE", LV_SYMBOL_NEW_LINE },
+#endif
+#ifdef LV_SYMBOL_DUMMY
+        { "LV_SYMBOL_DUMMY", LV_SYMBOL_DUMMY },
+#endif
+        { NULL, NULL }
+    };
+
+    /* 注册枚举条目 */
+    for (size_t i = 0; enum_entries[i].name != NULL; ++i) {
+        lvgl_binding_set_enum(global, enum_entries[i].name, enum_entries[i].value);
+    }
+
+    /* 注册数值宏条目 */
+    for (size_t i = 0; macro_entries[i].name != NULL; ++i) {
+        lvgl_binding_set_enum(global, macro_entries[i].name, macro_entries[i].value);
+    }
+
+    /* 注册 LV_SYMBOL_ 字符串宏（作为全局字符串） */
+    for (size_t i = 0; symbol_entries[i].name != NULL; ++i) {
+        jerry_value_t key = jerry_string_sz(symbol_entries[i].name);
+        jerry_value_t val = jerry_string_sz(symbol_entries[i].val);
+        jerry_value_free(jerry_object_set(global, key, val));
+        jerry_value_free(key);
+        jerry_value_free(val);
+    }
+
     jerry_value_free(global);
 }
 

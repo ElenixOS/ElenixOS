@@ -52,6 +52,7 @@ target_link_libraries(elenaos_lib PRIVATE cjson)
 # JerryScript
 add_compile_options(-Wno-gnu-folding-constant)
 set(JERRY_VM_HALT 1 CACHE INTERNAL "Enable VM halt feature")
+set(JERRY_MEM_STATS 1 CACHE INTERNAL "Enable memory stats")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript)
 target_link_libraries(elenaos_lib PRIVATE jerry-core jerry-ext jerry-port)
 

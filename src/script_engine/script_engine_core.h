@@ -84,8 +84,8 @@ typedef enum {
  * @param prop_name 参数名称（键）
  * @param value 参数：数值
  */
-extern inline void script_engine_set_prop_number(jerry_value_t obj, 
-                                    const char* prop_name, 
+extern inline void script_engine_set_prop_number(jerry_value_t obj,
+                                    const char* prop_name,
                                     double value);
 /**
  * @brief 向指定的JerryScript对象中添加参数 参数为布尔型
@@ -93,8 +93,8 @@ extern inline void script_engine_set_prop_number(jerry_value_t obj,
  * @param prop_name 参数名称（键）
  * @param value 参数：布尔值
  */
-extern inline void script_engine_set_prop_bool(jerry_value_t obj, 
-                                    const char* prop_name, 
+extern inline void script_engine_set_prop_bool(jerry_value_t obj,
+                                    const char* prop_name,
                                     bool value);
 /**
  * @brief 向指定的JerryScript对象中添加参数 参数为字符串
@@ -102,8 +102,8 @@ extern inline void script_engine_set_prop_bool(jerry_value_t obj,
  * @param prop_name 参数名称（键）
  * @param value 参数：字符串
  */
-extern inline void script_engine_set_prop_string(jerry_value_t obj, 
-                                    const char* prop_name, 
+extern inline void script_engine_set_prop_string(jerry_value_t obj,
+                                    const char* prop_name,
                                     const char* value);
 /**
  * @brief 关闭当前运行的 JS 应用
@@ -119,6 +119,11 @@ script_engine_result_t script_engine_request_stop(void);
  */
 script_engine_result_t script_engine_get_manifest(const char *manifest_path, script_pkg_t *pkg);
 
+/**
+ * @brief 初始化脚本引擎
+ * @return script_engine_result_t
+ */
+script_engine_result_t script_engine_init(void);
 /**
  * @brief 运行指定应用，如果当前已有应用在运行则自动清除
  * @param script_package 脚本包
@@ -154,7 +159,7 @@ char *script_engine_get_current_script_id(void);
 char *script_engine_get_current_script_name(void);
 /**
  * @brief 获取当前运行脚本的脚本类型
- * @return script_pkg_type_t 
+ * @return script_pkg_type_t
  */
 script_pkg_type_t script_engine_get_current_script_type(void);
 #ifdef __cplusplus

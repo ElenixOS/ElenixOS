@@ -1,20 +1,24 @@
 /**
  * @file elena_os_icon.c
  * @brief 将图标宏注册到 JerryScript，全自动生成。
- * @date 2025-10-09
+ * @date 2025-10-12
  */
 
 #include "elena_os_icon.h"
 #include "jerryscript.h"
 #include <stdio.h>
 
+// Macros and Definitions
+#define BINDING_OBJ script_engine_eos_obj
+
+// Variables
+extern jerry_value_t script_engine_eos_obj;
+
 /**
  * @brief 将所有图标宏名与Unicode值映射注册到 JerryScript 全局对象
  */
 void eos_icon_register(void)
 {
-    jerry_value_t global = jerry_current_realm();
-
     struct {
         const char *name;
         const char *value;
@@ -8973,10 +8977,9 @@ void eos_icon_register(void)
             continue;
         jerry_value_t key = jerry_string_sz(icons[i].name);
         jerry_value_t val = jerry_string_sz(icons[i].value);
-        jerry_value_free(jerry_object_set(global, key, val));
+        jerry_value_free(jerry_object_set(BINDING_OBJ, key, val));
         jerry_value_free(key);
         jerry_value_free(val);
     }
 
-    jerry_value_free(global);
 }

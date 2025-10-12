@@ -261,7 +261,8 @@ void eos_watchface_delete(void)
     {
         EOS_LOG_D("Request Stop");
         script_engine_request_stop();
-        lv_obj_clean(watchface_screen);
+        lv_obj_delete(watchface_screen);
+        watchface_screen = NULL;
     }
 }
 
@@ -278,10 +279,11 @@ lv_obj_t *eos_watchface_get_screen(void)
 
 void eos_watchface_create(void)
 {
-    if (watchface_screen)
+    if (watchface_screen && lv_obj_has_class(watchface_screen, &lv_obj_class))
     {
         // 如果不为空则清空
         lv_obj_delete(watchface_screen);
+        watchface_screen = NULL;
     }
     watchface_screen = lv_obj_create(NULL);
     lv_obj_add_style(watchface_screen, eos_theme_get_screen_style(), 0);

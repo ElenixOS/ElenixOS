@@ -53,7 +53,9 @@
 #include "elena_os_config.h"
 #include "elena_os_config_internal.h"
 #include "elena_os_services.h"
-
+#include "jerryscript.h"
+#include <time.h>
+#include <sys/time.h>
 // Macros and Definitions
 #if EOS_FONT_TYPE == EOS_FONT_USE_C
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
@@ -61,6 +63,7 @@ LV_FONT_DECLARE(EOS_FONT_C_NAME);
 
 // Variables
 lv_group_t *encoder_group;
+
 
 // Function Implementations
 
@@ -119,6 +122,7 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
 eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
+    script_engine_init();
     eos_sys_init();
     eos_event_init();
 #if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
@@ -177,7 +181,6 @@ eos_result_t eos_run(void)
 
     /************************** 系统启动 **************************/
     eos_watchface_create(); // 加载表盘
-    script_engine_request_stop();
     // 开始绘制
     while (1)
     {

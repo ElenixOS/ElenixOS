@@ -6,13 +6,23 @@
  * @date 2025-8-10
  */
 
+// Includes
+#include <stdio.h>
 #include "lv_bindings_misc.h"
 #include "lv_bindings.h"
 #include <stdlib.h>
 #include <string.h>
 #include "elena_os_nav.h"
 #include "elena_os_watchface.h"
+#include "elena_os_log.h"
 
+// Macros and Definitions
+#define BINDING_OBJ script_engine_eos_obj
+
+// Variables
+extern jerry_value_t script_engine_eos_obj;
+
+// Function Implementations
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char *message)
 {
@@ -47,7 +57,6 @@ static void lv_event_handler(lv_event_t *e)
 
     // 创建事件对象
     jerry_value_t event_obj = jerry_object();
-    jerry_value_t global = jerry_current_realm();
     jerry_value_t args[1] = {event_obj};
 
     // 添加标准属性
@@ -81,14 +90,14 @@ static void lv_event_handler(lv_event_t *e)
     jerry_value_free(prop_name);
 
     // 调用JS回调
-    jerry_value_t ret = jerry_call(data->js_cb, global, args, 1);
+    jerry_value_t ret = jerry_call(data->js_cb, BINDING_OBJ, args, 1);
     if (jerry_value_is_error(ret))
     {
+        EOS_LOG_E("Callback encounter an error");
         // 处理错误
     }
 
     jerry_value_free(ret);
-    jerry_value_free(global);
     jerry_value_free(event_obj);
 }
 
@@ -237,26 +246,27 @@ static void lv_timer_js_cb(lv_timer_t *timer)
 
     if (data && !jerry_value_is_undefined(data->js_cb))
     {
-        jerry_value_t global = jerry_current_realm();
         jerry_value_t args[1] = {data->user_data};
 
-        jerry_value_t ret = jerry_call(data->js_cb, global, args, 1);
+        jerry_value_t ret = jerry_call(data->js_cb, BINDING_OBJ, args, 1);
         if (jerry_value_is_error(ret))
         {
+            EOS_LOG_E("Timer callback encounter an error");
         }
         jerry_value_free(ret);
-        jerry_value_free(global);
     }
 }
 
 static void _lv_timer_auto_delete_cb(lv_event_t *e)
 {
+    EOS_LOG_I("Timer del cb");
     lv_timer_t *timer = lv_event_get_user_data(e);
     if (!timer)
     {
         return;
     }
     lv_timer_delete(timer);
+    EOS_LOG_I("Timer auto deleted");
 }
 
 /**
@@ -314,18 +324,20 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
         lv_obj_t *home_screen = eos_nav_get_home_screen();
         if (!home_screen)
         {
-            return throw_error("Root screen is NULL");
+            return throw_error("Home screen is NULL");
         }
         lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+        EOS_LOG_I("App timer auto delete registered");
     }
     else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
         lv_obj_t *home_screen = eos_watchface_get_screen();
         if (!home_screen)
         {
-            return throw_error("Root screen is NULL");
+            return throw_error("Watchface screen is NULL");
         }
         lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
+        EOS_LOG_I("Screen[%p]Watchface timer auto delete registered",eos_watchface_get_screen());
     }
 
     timer_data->timer = timer;
@@ -687,8 +699,6 @@ static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
 /********************************** 字体系统 **********************************/
 static void register_lvgl_fonts(void)
 {
-    jerry_value_t global = jerry_current_realm();
-
     // 创建字体对象容器
     jerry_value_t fonts = jerry_object();
 
@@ -784,10 +794,9 @@ static void register_lvgl_fonts(void)
 
     // 将字体容器挂载到全局对象
     jerry_value_t font_key = jerry_string_sz("lv_font");
-    jerry_value_free(jerry_object_set(global, font_key, fonts));
+    jerry_value_free(jerry_object_set(BINDING_OBJ, font_key, fonts));
     jerry_value_free(font_key);
     jerry_value_free(fonts);
-    jerry_value_free(global);
 }
 /********************************** 绑定注册 **********************************/
 
@@ -804,16 +813,14 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_special_funcs[] = {
 
 void lv_binding_jerryscript_register_functions(const LVBindingJerryscriptFuncEntry_t *entry, const size_t funcs_count)
 {
-    jerry_value_t global = jerry_current_realm();
     for (size_t i = 0; i < funcs_count; ++i)
     {
         jerry_value_t fn = jerry_function_external(entry[i].handler);
         jerry_value_t name = jerry_string_sz(entry[i].name);
-        jerry_value_free(jerry_object_set(global, name, fn));
+        jerry_value_free(jerry_object_set(BINDING_OBJ, name, fn));
         jerry_value_free(name);
         jerry_value_free(fn);
     }
-    jerry_value_free(global);
 }
 /********************************** 初始化 **********************************/
 void lv_bindings_misc_init(void)

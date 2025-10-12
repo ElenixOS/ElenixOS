@@ -37,6 +37,12 @@ HEADER_CODE = r"""
 #include <stdlib.h>
 #include <string.h>
 
+// Macros and Definitions
+#define BINDING_OBJ script_engine_eos_obj
+
+// Variables
+extern jerry_value_t script_engine_eos_obj;
+
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char* message) {
     jerry_value_t error_obj = jerry_error_sz(JERRY_ERROR_TYPE, (const jerry_char_t*)message);
@@ -867,7 +873,6 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
     """生成枚举绑定代码，使用数组和for循环进行注册，减少冗长重复代码"""
     lines = []
     lines.append("static void register_lvgl_enums(void) {")
-    lines.append("    jerry_value_t global = jerry_current_realm();")
     lines.append("")
     # 定义通用条目结构
     lines.append("    typedef struct { const char* name; int value; } lvgl_enum_entry_t;")
@@ -978,24 +983,24 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
     # 使用for循环遍历数组注册枚举与宏
     lines.append("    /* 注册枚举条目 */")
     lines.append("    for (size_t i = 0; enum_entries[i].name != NULL; ++i) {")
-    lines.append("        lvgl_binding_set_enum(global, enum_entries[i].name, enum_entries[i].value);")
+    lines.append("        lvgl_binding_set_enum(BINDING_OBJ, enum_entries[i].name, enum_entries[i].value);")
     lines.append("    }")
     lines.append("")
     lines.append("    /* 注册数值宏条目 */")
     lines.append("    for (size_t i = 0; macro_entries[i].name != NULL; ++i) {")
-    lines.append("        lvgl_binding_set_enum(global, macro_entries[i].name, macro_entries[i].value);")
+    lines.append("        lvgl_binding_set_enum(BINDING_OBJ, macro_entries[i].name, macro_entries[i].value);")
     lines.append("    }")
     lines.append("")
     lines.append("    /* 注册 LV_SYMBOL_ 字符串宏（作为全局字符串） */")
     lines.append("    for (size_t i = 0; symbol_entries[i].name != NULL; ++i) {")
     lines.append("        jerry_value_t key = jerry_string_sz(symbol_entries[i].name);")
     lines.append("        jerry_value_t val = jerry_string_sz(symbol_entries[i].val);")
-    lines.append("        jerry_value_free(jerry_object_set(global, key, val));")
+    lines.append("        jerry_value_free(jerry_object_set(BINDING_OBJ, key, val));")
     lines.append("        jerry_value_free(key);")
     lines.append("        jerry_value_free(val);")
     lines.append("    }")
     lines.append("")
-    lines.append("    jerry_value_free(global);")
+
     lines.append("}")
     return "\n".join(lines)
 

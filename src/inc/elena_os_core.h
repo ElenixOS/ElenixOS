@@ -77,7 +77,7 @@ typedef struct
     uint8_t hour;
     uint8_t min;
     uint8_t sec;
-    uint8_t day_of_week;
+    uint8_t day_of_week;    /**< 取值范围[0,6] */
 } eos_datetime_t;
 /* Public function prototypes --------------------------------*/
 

@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2025-10-09
+ * @date 2025-10-12
  */
 // Application System header files
 #include "lv_bindings.h"
@@ -14,6 +14,12 @@
 #include "lvgl.h"
 #include <stdlib.h>
 #include <string.h>
+
+// Macros and Definitions
+#define BINDING_OBJ script_engine_eos_obj
+
+// Variables
+extern jerry_value_t script_engine_eos_obj;
 
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char* message) {
@@ -4755,7 +4761,6 @@ const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {
 const unsigned int lvgl_binding_funcs_count = 92;
 
 static void register_lvgl_enums(void) {
-    jerry_value_t global = jerry_current_realm();
 
     typedef struct { const char* name; int value; } lvgl_enum_entry_t;
 
@@ -5742,24 +5747,23 @@ static void register_lvgl_enums(void) {
 
     /* 注册枚举条目 */
     for (size_t i = 0; enum_entries[i].name != NULL; ++i) {
-        lvgl_binding_set_enum(global, enum_entries[i].name, enum_entries[i].value);
+        lvgl_binding_set_enum(BINDING_OBJ, enum_entries[i].name, enum_entries[i].value);
     }
 
     /* 注册数值宏条目 */
     for (size_t i = 0; macro_entries[i].name != NULL; ++i) {
-        lvgl_binding_set_enum(global, macro_entries[i].name, macro_entries[i].value);
+        lvgl_binding_set_enum(BINDING_OBJ, macro_entries[i].name, macro_entries[i].value);
     }
 
     /* 注册 LV_SYMBOL_ 字符串宏（作为全局字符串） */
     for (size_t i = 0; symbol_entries[i].name != NULL; ++i) {
         jerry_value_t key = jerry_string_sz(symbol_entries[i].name);
         jerry_value_t val = jerry_string_sz(symbol_entries[i].val);
-        jerry_value_free(jerry_object_set(global, key, val));
+        jerry_value_free(jerry_object_set(BINDING_OBJ, key, val));
         jerry_value_free(key);
         jerry_value_free(val);
     }
 
-    jerry_value_free(global);
 }
 
 /********************************** 初始化 LVGL 绑定系统 **********************************/

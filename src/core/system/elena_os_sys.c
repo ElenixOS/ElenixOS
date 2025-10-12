@@ -631,9 +631,10 @@ void eos_sys_init()
     }
     // 显示设置
     uint8_t brightness = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
-    if (brightness < 1 || brightness > 100)
+    if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
     eos_display_set_brightness(brightness);
+    EOS_LOG_I("Display brightness set: %d", brightness);
 }
 
 /**

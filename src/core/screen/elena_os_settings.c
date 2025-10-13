@@ -241,20 +241,24 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     lv_obj_t *clear_data_btn = lv_button_create(list);
     lv_obj_set_size(clear_data_btn, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_style_margin_bottom(clear_data_btn, 20, 0);
-    lv_obj_set_style_bg_color(clear_data_btn, EOS_THEME_DANGEROS_COLOR, 0);
+    lv_obj_set_style_bg_color(clear_data_btn, EOS_THEME_SECONDARY_COLOR, 0);
+    lv_obj_set_style_radius(clear_data_btn,LV_RADIUS_CIRCLE,0);
 
     lv_obj_t *clear_data_btn_label = lv_label_create(clear_data_btn);
     lv_label_set_text(clear_data_btn_label, current_lang[STR_ID_SETTINGS_APPS_CLEAR_DATA]);
     lv_obj_add_event_cb(clear_data_btn, _clear_data_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
+    lv_obj_set_style_text_color(clear_data_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
     lv_obj_center(clear_data_btn_label);
 
     lv_obj_t *uninstall_btn = lv_button_create(list);
     lv_obj_set_size(uninstall_btn, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_color(uninstall_btn, EOS_THEME_DANGEROS_COLOR, 0);
+    lv_obj_set_style_bg_color(uninstall_btn, EOS_THEME_SECONDARY_COLOR, 0);
+    lv_obj_set_style_radius(uninstall_btn,LV_RADIUS_CIRCLE,0);
 
     lv_obj_t *uninstall_btn_label = lv_label_create(uninstall_btn);
     lv_label_set_text(uninstall_btn_label, current_lang[STR_ID_SETTINGS_APPS_UINSTALL]);
     lv_obj_add_event_cb(uninstall_btn, _uninstall_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
+    lv_obj_set_style_text_color(uninstall_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
     lv_obj_center(uninstall_btn_label);
 
     eos_list_add_placeholder(list, 50);

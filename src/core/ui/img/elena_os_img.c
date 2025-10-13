@@ -85,6 +85,8 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
 {
     EOS_CHECK_PTR_RETURN(img_obj);
 
+    EOS_LOG_I("Load image bin: %s", bin_path);
+
     // 清除回调
     lv_obj_remove_event_cb_with_user_data(img_obj, _img_delete_event_cb, NULL);
 

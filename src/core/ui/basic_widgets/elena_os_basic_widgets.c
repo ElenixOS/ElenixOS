@@ -270,7 +270,7 @@ void eos_app_header_init(void)
     app_header->container = lv_image_create(lv_layer_top());
     lv_obj_set_size(app_header->container, lv_display_get_horizontal_resolution(NULL), APP_HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_move_foreground(app_header->container);
+    lv_obj_move_background(app_header->container);
     eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
 
     lv_coord_t header_h = APP_HEADER_HEIGHT;
@@ -480,6 +480,11 @@ lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
     // 开关
     lv_obj_t *sw = lv_switch_create(container);
     lv_obj_set_style_margin_right(sw, 18, 0);
+    lv_obj_set_height(sw, lv_pct(100));
+    lv_refr_now(NULL);
+    int32_t w = lv_obj_get_height(sw) * 2;
+    lv_obj_set_width(sw, w);
+
     return sw;
 }
 

@@ -555,6 +555,16 @@ eos_result_t eos_app_init(void)
             }
             index++;
         }
+
+        // 将已安装但不在 app_order 的应用自动添加到顺序列表（追加到末尾）
+        for (size_t i = 0; i < app_list.size; i++)
+        {
+            const char *installed_id = app_list.data[i];
+            if (installed_id == NULL)
+                continue;
+            // _eos_app_order_add 内部会跳过已存在的 id
+            _eos_app_order_add(installed_id);
+        }
     }
 
     return EOS_OK;

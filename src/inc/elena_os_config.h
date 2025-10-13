@@ -36,7 +36,7 @@ extern "C" {
 #if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
 #define EOS_FONT_LVGL   lv_font_montserrat_30
 #elif EOS_FONT_TYPE == EOS_FONT_USE_C
-#define EOS_FONT_C_NAME          eos_font_resource_han_rounded_30
+#define EOS_FONT_C_NAME          source_han_sans_30
 #elif EOS_FONT_TYPE == EOS_FONT_USE_TTF
 #define EOS_FONT_TTF_PATH        EOS_SYS_RES_FONT_DIR "font.ttf"
 #endif /* EOS_FONT_TYPE */

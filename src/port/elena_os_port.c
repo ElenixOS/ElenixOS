@@ -80,3 +80,14 @@ EOS_WEAK void eos_sensor_read(eos_sensor_type_t type)
         break;
     }
 }
+
+EOS_WEAK void eos_locate_phone(void)
+{
+    return;
+}
+
+EOS_WEAK void eos_speaker_set_volume(uint8_t volume)
+{
+    EOS_UNUSED(volume);
+    return;
+}

@@ -45,17 +45,33 @@
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
 
+// helper: write all bytes (handles partial writes and EINTR)
+static ssize_t _write_all(int fd, const char *buf, size_t len)
+{
+    size_t total = 0;
+    while (total < len)
+    {
+        ssize_t w = write(fd, buf + total, len - total);
+        if (w == -1)
+        {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        total += (size_t)w;
+    }
+    return (ssize_t)total;
+}
+
 // Variables
 
 // Function Implementations
 
 eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
 {
-    if (!key)
-    {
-        EOS_LOG_E("Invalid parameter: key is NULL");
-        return -EOS_ERR_VAR_NULL;
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key, EOS_ERR_VAR_NULL);
+
+    EOS_LOG_I("Try set \"%s\" = \"%s\"", key, value ? "true" : "false");
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -73,6 +89,12 @@ eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return -EOS_ERR_FILE_ERROR;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = eos_malloc_large(fsize + 1);
@@ -122,6 +144,8 @@ eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
         return -EOS_ERR_JSON_ERROR;
     }
 
+    size_t json_len = strlen(new_json);
+
     fd = open(EOS_SYS_CONFIG_FILE_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1)
     {
@@ -130,13 +154,19 @@ eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
         return -EOS_ERR_FILE_ERROR;
     }
 
-    ssize_t written = write(fd, new_json, strlen(new_json));
+    ssize_t written = _write_all(fd, new_json, json_len);
+
+    if (fsync(fd) != 0)
+    {
+        EOS_LOG_W("fsync failed, errno=%d", errno);
+    }
+
     cJSON_free(new_json);
     close(fd);
 
-    if (written != (ssize_t)strlen(new_json))
+    if (written != (ssize_t)json_len)
     {
-        EOS_LOG_E("Failed to write config file, written=%zd, errno=%d", written, errno);
+        EOS_LOG_E("Failed to write config file, written=%zd, expected=%zu, errno=%d", written, json_len, errno);
         return -EOS_ERR_FILE_ERROR;
     }
 
@@ -146,11 +176,9 @@ eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
 
 eos_result_t eos_sys_cfg_set_string(const char *key, const char *value)
 {
-    if (!key || !value)
-    {
-        EOS_LOG_E("Invalid parameters: key or value is NULL");
-        return -EOS_ERR_VAR_NULL;
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key && value, EOS_ERR_VAR_NULL);
+
+    EOS_LOG_I("Try set \"%s\" = \"%s\"", key, value);
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -168,6 +196,12 @@ eos_result_t eos_sys_cfg_set_string(const char *key, const char *value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return -EOS_ERR_FILE_ERROR;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = eos_malloc_large(fsize + 1);
@@ -217,6 +251,8 @@ eos_result_t eos_sys_cfg_set_string(const char *key, const char *value)
         return -EOS_ERR_JSON_ERROR;
     }
 
+    size_t json_len = strlen(new_json);
+
     fd = open(EOS_SYS_CONFIG_FILE_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1)
     {
@@ -225,13 +261,19 @@ eos_result_t eos_sys_cfg_set_string(const char *key, const char *value)
         return -EOS_ERR_FILE_ERROR;
     }
 
-    ssize_t written = write(fd, new_json, strlen(new_json));
+    ssize_t written = _write_all(fd, new_json, json_len);
+
+    if (fsync(fd) != 0)
+    {
+        EOS_LOG_W("fsync failed, errno=%d", errno);
+    }
+
     cJSON_free(new_json);
     close(fd);
 
-    if (written != (ssize_t)strlen(new_json))
+    if (written != (ssize_t)json_len)
     {
-        EOS_LOG_E("Failed to write config file, written=%zd, errno=%d", written, errno);
+        EOS_LOG_E("Failed to write config file, written=%zd, expected=%zu, errno=%d", written, json_len, errno);
         return -EOS_ERR_FILE_ERROR;
     }
 
@@ -241,11 +283,9 @@ eos_result_t eos_sys_cfg_set_string(const char *key, const char *value)
 
 eos_result_t eos_sys_cfg_set_number(const char *key, double value)
 {
-    if (!key)
-    {
-        EOS_LOG_E("Invalid parameter: key is NULL");
-        return -EOS_ERR_VAR_NULL;
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key, EOS_ERR_VAR_NULL);
+
+    EOS_LOG_I("Try set \"%s\" = \"%f\"", key, value);
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -263,6 +303,12 @@ eos_result_t eos_sys_cfg_set_number(const char *key, double value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return -EOS_ERR_FILE_ERROR;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = eos_malloc_large(fsize + 1);
@@ -312,6 +358,8 @@ eos_result_t eos_sys_cfg_set_number(const char *key, double value)
         return -EOS_ERR_JSON_ERROR;
     }
 
+    size_t json_len = strlen(new_json);
+
     fd = open(EOS_SYS_CONFIG_FILE_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1)
     {
@@ -320,13 +368,19 @@ eos_result_t eos_sys_cfg_set_number(const char *key, double value)
         return -EOS_ERR_FILE_ERROR;
     }
 
-    ssize_t written = write(fd, new_json, strlen(new_json));
+    ssize_t written = _write_all(fd, new_json, json_len);
+
+    if (fsync(fd) != 0)
+    {
+        EOS_LOG_W("fsync failed, errno=%d", errno);
+    }
+
     cJSON_free(new_json);
     close(fd);
 
-    if (written != (ssize_t)strlen(new_json))
+    if (written != (ssize_t)json_len)
     {
-        EOS_LOG_E("Failed to write config file, written=%zd, errno=%d", written, errno);
+        EOS_LOG_E("Failed to write config file, written=%zd, expected=%zu, errno=%d", written, json_len, errno);
         return -EOS_ERR_FILE_ERROR;
     }
 
@@ -336,11 +390,7 @@ eos_result_t eos_sys_cfg_set_number(const char *key, double value)
 
 bool eos_sys_cfg_get_bool(const char *key, bool default_value)
 {
-    if (!key)
-    {
-        EOS_LOG_E("Invalid parameter: key is NULL");
-        return default_value;
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -358,6 +408,12 @@ bool eos_sys_cfg_get_bool(const char *key, bool default_value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return default_value;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = malloc(fsize + 1);
@@ -412,11 +468,7 @@ bool eos_sys_cfg_get_bool(const char *key, bool default_value)
 
 char *eos_sys_cfg_get_string(const char *key, const char *default_value)
 {
-    if (!key)
-    {
-        EOS_LOG_E("Invalid parameter: key is NULL");
-        return eos_strdup(default_value);
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -434,6 +486,12 @@ char *eos_sys_cfg_get_string(const char *key, const char *default_value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return eos_strdup(default_value);
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = malloc(fsize + 1);
@@ -494,11 +552,7 @@ char *eos_sys_cfg_get_string(const char *key, const char *default_value)
 
 double eos_sys_cfg_get_number(const char *key, double default_value)
 {
-    if (!key)
-    {
-        EOS_LOG_E("Invalid parameter: key is NULL");
-        return default_value;
-    }
+    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
 
     // 检查配置文件是否存在
     if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
@@ -516,6 +570,12 @@ double eos_sys_cfg_get_number(const char *key, double default_value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return default_value;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = malloc(fsize + 1);
@@ -676,6 +736,12 @@ eos_result_t eos_sys_add_config_item(const char *key, const char *value)
     }
 
     off_t fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1)
+    {
+        EOS_LOG_E("Failed to determine config file size, errno=%d", errno);
+        close(fd);
+        return -EOS_ERR_FILE_ERROR;
+    }
     lseek(fd, 0, SEEK_SET);
 
     char *file_content = eos_malloc_large(fsize + 1);
@@ -725,6 +791,8 @@ eos_result_t eos_sys_add_config_item(const char *key, const char *value)
         return -EOS_ERR_JSON_ERROR;
     }
 
+    size_t json_len = strlen(new_json);
+
     fd = open(EOS_SYS_CONFIG_FILE_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1)
     {
@@ -733,13 +801,19 @@ eos_result_t eos_sys_add_config_item(const char *key, const char *value)
         return -EOS_ERR_FILE_ERROR;
     }
 
-    ssize_t written = write(fd, new_json, strlen(new_json));
+    ssize_t written = _write_all(fd, new_json, json_len);
+
+    if (fsync(fd) != 0)
+    {
+        EOS_LOG_W("fsync failed, errno=%d", errno);
+    }
+
     cJSON_free(new_json);
     close(fd);
 
-    if (written != (ssize_t)strlen(new_json))
+    if (written != (ssize_t)json_len)
     {
-        EOS_LOG_E("Failed to write config file, written=%zd, errno=%d", written, errno);
+        EOS_LOG_E("Failed to write config file, written=%zd, expected=%zu, errno=%d", written, json_len, errno);
         return -EOS_ERR_FILE_ERROR;
     }
 

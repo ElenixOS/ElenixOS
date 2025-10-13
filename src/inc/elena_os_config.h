@@ -56,6 +56,11 @@ extern "C" {
 
 #define EOS_BATTERY_DISPLAY_UPDATE_MS  1*1000      /**< 电池电量显示更新时间 */
 
+/************************** 音量配置 **************************/
+
+#define EOS_SPEAKER_VOLUME_MIN 0
+#define EOS_SPEAKER_VOLUME_MAX 100
+
 /************************** 配置结束 **************************/
 
 #ifdef __cplusplus

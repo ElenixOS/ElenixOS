@@ -93,8 +93,18 @@ void eos_display_set_brightness(uint8_t brightness);
  * @brief 读取一次传感器的值
  * @param type 传感器类型
  */
-EOS_WEAK void eos_sensor_read(eos_sensor_type_t type);
-
+void eos_sensor_read(eos_sensor_type_t type);
+/**
+ * @brief 定位手机
+ *
+ * 通过蓝牙或其他方式让手机响铃来定位手机。
+ */
+void eos_locate_phone(void);
+/**
+ * @brief 设置扬声器音量
+ * @param volume 音量
+ */
+void eos_speaker_set_volume(uint8_t volume);
 #ifdef __cplusplus
 }
 #endif

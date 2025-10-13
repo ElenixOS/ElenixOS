@@ -96,7 +96,7 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
 
     lv_obj_t *label = lv_label_create(slider_page);
-    lv_label_set_text(label, RI_SUN_LINE);
+    lv_label_set_text(label, symbol);
     lv_obj_set_user_data(slider, (void *)label);
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_move_foreground(label);
@@ -218,6 +218,59 @@ static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
     return btn;
 }
 
+static void _control_center_phone_find_cb(lv_event_t *e)
+{
+    eos_locate_phone();
+}
+
+static char *_control_center_volume_get_icon_by_value(uint8_t value)
+{
+    if (value > 50)
+    {
+        return RI_VOLUME_UP_FILL;
+    }
+    else if (value > 0)
+    {
+        return RI_VOLUME_DOWN_FILL;
+    }
+    else
+    {
+        return RI_VOLUME_MUTE_FILL;
+    }
+}
+
+static void _control_center_volume_value_changed_cb(lv_event_t *e)
+{
+    lv_obj_t *slider = lv_event_get_target(e);
+    lv_obj_t *label = (lv_obj_t *)lv_obj_get_user_data(slider);
+    EOS_CHECK_PTR_RETURN(label);
+    // 获取 Slider 当前值
+    int16_t value = lv_slider_get_value(slider);
+    eos_speaker_set_volume(value);
+    lv_label_set_text(label, _control_center_volume_get_icon_by_value(value));
+}
+
+static void _control_center_volume_slider_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *slider = lv_event_get_target(e);
+    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, lv_slider_get_value(slider));
+}
+
+static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
+{
+    uint8_t volume = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME, 50);
+
+    lv_obj_t *slider = _control_center_slider_create(_control_center_volume_get_icon_by_value(volume));
+    lv_slider_set_range(slider, EOS_SPEAKER_VOLUME_MIN, EOS_SPEAKER_VOLUME_MAX);
+
+    lv_slider_set_value(slider,
+                        volume,
+                        LV_ANIM_ON);
+    lv_obj_add_event_cb(slider,
+                        _control_center_volume_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(slider, _control_center_volume_slider_delete_cb, LV_EVENT_DELETE, NULL);
+}
+
 /************************** 创建控制中心 **************************/
 void eos_control_center_create(lv_obj_t *parent)
 {
@@ -254,8 +307,14 @@ void eos_control_center_create(lv_obj_t *parent)
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
     /************************** 亮度调整滚动条 **************************/
-    btn = _control_center_create_btn(container, "\uF1BF");
+    btn = _control_center_create_btn(container, RI_SUN_FILL);
     lv_obj_add_event_cb(btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
     /************************** 电量显示 **************************/
     btn = _control_center_create_battery(container);
+    /************************** 查找手机 **************************/
+    btn = _control_center_create_btn(container, RI_PHONE_FIND_FILL);
+    lv_obj_add_event_cb(btn, _control_center_phone_find_cb, LV_EVENT_CLICKED, 0);
+    /************************** 音量调整滚动条 **************************/
+    btn = _control_center_create_btn(container, RI_VOLUME_UP_FILL);
+    lv_obj_add_event_cb(btn, _control_center_volume_btn_clicked_cb, LV_EVENT_CLICKED, 0);
 }

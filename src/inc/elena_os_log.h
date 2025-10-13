@@ -28,7 +28,7 @@ extern "C" {
 
 // 是否启用彩色日志
 #ifndef EOS_LOG_USE_COLOR
-#define EOS_LOG_USE_COLOR 1
+#define EOS_LOG_USE_COLOR 0
 #endif
 
 /************************** 彩色日志 **************************/

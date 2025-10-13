@@ -34,7 +34,7 @@ extern "C" {
 #define EOS_SYS_CFG_KEY_WATCHFACE_ID "wf_id"
 #define EOS_SYS_CFG_KEY_BLUETOOTH "bluetooth"
 #define EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS "display_brightness"
-
+#define EOS_SYS_CFG_KEY_SPEAKER_VOLUME "speaker_volume"
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

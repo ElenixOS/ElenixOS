@@ -19,34 +19,25 @@ extern "C" {
 #include "msh.h"
 #endif
 #include "lvgl.h"
+#include "elena_os_config.h"
 /* Public macros ----------------------------------------------*/
-
-// 是否启用断言
-#ifndef EOS_USE_ASSERT
-#define EOS_USE_ASSERT    1
-#endif
-
-// 是否启用彩色日志
-#ifndef EOS_LOG_USE_COLOR
-#define EOS_LOG_USE_COLOR 0
-#endif
 
 /************************** 彩色日志 **************************/
 #if EOS_LOG_USE_COLOR
-#define EOS_COLOR_RESET   "\033[0m"
-#define EOS_COLOR_RED     "\033[31m"
-#define EOS_COLOR_GREEN   "\033[32m"
-#define EOS_COLOR_YELLOW  "\033[33m"
-#define EOS_COLOR_BLUE    "\033[34m"
-#define EOS_COLOR_CYAN    "\033[36m"
+#define EOS_LOG_COLOR_RESET   "\033[0m"
+#define EOS_LOG_COLOR_RED     "\033[31m"
+#define EOS_LOG_COLOR_GREEN   "\033[32m"
+#define EOS_LOG_COLOR_YELLOW  "\033[33m"
+#define EOS_LOG_COLOR_BLUE    "\033[34m"
+#define EOS_LOG_COLOR_CYAN    "\033[36m"
 #else
-#define EOS_COLOR_RESET   ""
-#define EOS_COLOR_RED     ""
-#define EOS_COLOR_GREEN   ""
-#define EOS_COLOR_YELLOW  ""
-#define EOS_COLOR_BLUE    ""
-#define EOS_COLOR_CYAN    ""
-#endif
+#define EOS_LOG_COLOR_RESET   ""
+#define EOS_LOG_COLOR_RED     ""
+#define EOS_LOG_COLOR_GREEN   ""
+#define EOS_LOG_COLOR_YELLOW  ""
+#define EOS_LOG_COLOR_BLUE    ""
+#define EOS_LOG_COLOR_CYAN    ""
+#endif /* EOS_LOG_USE_COLOR */
 
 
 #define EOS_LOG_BASE(level, color, fmt, ...) \
@@ -54,16 +45,32 @@ extern "C" {
            level, ##__VA_ARGS__)
 
 #define EOS_LOG_ALL(level, color, fmt, ...) \
-    printf(color "[%s:%d %s()] %s: " fmt EOS_COLOR_RESET "\n", \
+    printf(color "[%s:%d %s()] %s: " fmt EOS_LOG_COLOR_RESET "\n", \
            __FILE__, __LINE__, __func__, level, ##__VA_ARGS__)
 
 /************************** 日志宏 **************************/
 
-#define EOS_LOG_D(fmt, ...) EOS_LOG_BASE("DEBUG", EOS_COLOR_CYAN, fmt, ##__VA_ARGS__)
-#define EOS_LOG_I(fmt, ...) EOS_LOG_BASE("INFO",  EOS_COLOR_GREEN, fmt, ##__VA_ARGS__)
-#define EOS_LOG_W(fmt, ...) EOS_LOG_BASE("WARN",  EOS_COLOR_YELLOW, fmt, ##__VA_ARGS__)
-#define EOS_LOG_E(fmt, ...) EOS_LOG_ALL("ERROR", EOS_COLOR_RED, fmt, ##__VA_ARGS__)
+#ifdef EOS_LOG_DISABLE
 
+#define EOS_LOG_D(fmt, ...) do {} while(0)
+#define EOS_LOG_I(fmt, ...) do {} while(0)
+#define EOS_LOG_W(fmt, ...) do {} while(0)
+#define EOS_LOG_E(fmt, ...) do {} while(0)
+
+#else
+
+#ifdef EOS_LOG_TAG
+    #define EOS_LOG_FMT(fmt)  "[" EOS_LOG_TAG "] " fmt
+#else
+    #define EOS_LOG_FMT(fmt)  fmt
+#endif /* EOS_LOG_TAG */
+
+#define EOS_LOG_D(fmt, ...) EOS_LOG_BASE("DEBUG", EOS_LOG_COLOR_CYAN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_I(fmt, ...) EOS_LOG_BASE("INFO",  EOS_LOG_COLOR_GREEN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_W(fmt, ...) EOS_LOG_BASE("WARN",  EOS_LOG_COLOR_YELLOW, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_E(fmt, ...) EOS_LOG_ALL("ERROR", EOS_LOG_COLOR_RED, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+
+#endif /* EOS_LOG_DISABLE */
 /************************** 内存检查 **************************/
 
 
@@ -77,7 +84,7 @@ do                                \
 } while (0)
 #else
     #define EOS_MEM(tag)
-#endif
+#endif /* defined(EOS_USE_MSH) */
 
 /************************** 指针检查 **************************/
 #define EOS_CHECK_PTR_RETURN(ptr) \
@@ -126,7 +133,7 @@ do                                \
     } while(0)
 #else
 #define EOS_ASSERT(expr) ((void)0)
-#endif
+#endif /* EOS_USE_ASSERT */
 
 /* Public typedefs --------------------------------------------*/
 

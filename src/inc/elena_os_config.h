@@ -43,6 +43,11 @@ extern "C" {
 
 /************************** 显示配置 **************************/
 
+#define EOS_DISPLAY_WIDTH   lv_display_get_horizontal_resolution(NULL)      /**< 显示器宽度 */
+#define EOS_DISPLAY_HEIGHT  lv_display_get_vertical_resolution(NULL)        /**< 显示器高度 */
+
+#define EOS_DISPLAY_RADIUS  80          /**< 显示器圆角半径 */
+
 #define EOS_DISPLAY_BRIGHTNESS_MIN 5    /**< 亮度为0即关闭屏幕 */
 #define EOS_DISPLAY_BRIGHTNESS_MAX 100
 
@@ -54,12 +59,24 @@ extern "C" {
 
 /************************** 电量检测 **************************/
 
-#define EOS_BATTERY_DISPLAY_UPDATE_MS  1*1000      /**< 电池电量显示更新时间 */
+#define EOS_BATTERY_DISPLAY_UPDATE_MS  5*60*1000      /**< 电池电量显示更新时间 */
 
 /************************** 音量配置 **************************/
 
 #define EOS_SPEAKER_VOLUME_MIN 0
 #define EOS_SPEAKER_VOLUME_MAX 100
+
+/************************** 日志 **************************/
+
+// 是否启用断言
+#ifndef EOS_USE_ASSERT
+#define EOS_USE_ASSERT    1
+#endif
+
+// 是否启用彩色日志
+#ifndef EOS_LOG_USE_COLOR
+#define EOS_LOG_USE_COLOR 0
+#endif
 
 /************************** 配置结束 **************************/
 

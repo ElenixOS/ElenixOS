@@ -14,13 +14,13 @@
 #include "lvgl_private.h"
 // Macros and Definitions
 /************************** Text **************************/
-#define TEXT_COLOR lv_color_hex(0xffffff)
+#define TEXT_COLOR EOS_COLOR_WHITE
 /************************** Screen **************************/
-#define SCREEN_BG_COLOR lv_color_hex(0x000000)
+#define SCREEN_BG_COLOR EOS_COLOR_BLACK
 /************************** List **************************/
-#define LIST_BG_COLOR lv_color_hex(0x000000)
+#define LIST_BG_COLOR EOS_COLOR_BLACK
 /************************** Switch **************************/
-#define SWITCH_BG_COLOR lv_color_hex(0x34C759)
+#define SWITCH_BG_COLOR EOS_COLOR_GREEN
 /************************** Slider **************************/
 #define SLIDER_MAIN_COLOR lv_color_hex(0x34C759)
 #define SLIDER_BG_COLOR lv_color_hex(0x262737)
@@ -86,7 +86,7 @@ void _init_style_slider(void)
     lv_style_init(&style_slider_knob);
     lv_style_set_bg_opa(&style_slider_knob, LV_OPA_COVER);
     lv_style_set_bg_color(&style_slider_knob, SLIDER_MAIN_COLOR);
-    lv_style_set_border_color(&style_slider_knob, lv_color_white());
+    lv_style_set_border_color(&style_slider_knob, EOS_COLOR_WHITE);
     lv_style_set_border_width(&style_slider_knob, 4);
     lv_style_set_radius(&style_slider_knob, LV_RADIUS_CIRCLE);
     lv_style_set_pad_all(&style_slider_knob, 6); /*Makes the knob larger*/

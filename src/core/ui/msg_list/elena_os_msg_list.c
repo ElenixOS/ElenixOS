@@ -15,13 +15,14 @@
 #include "elena_os_anim.h"
 #include "elena_os_log.h"
 #include "elena_os_img.h"
+#include "elena_os_config.h"
+#include "elena_os_theme.h"
 // Macros and Definitions
 #define MSG_LIST_ITEM_MARGIN_BOTTOM 25
 
 // 滑动删除相关的宏定义
-#define SWIPE_THRESHOLD (lv_display_get_horizontal_resolution(NULL) / 2) // 触发删除的滑动距离阈值
+#define SWIPE_THRESHOLD (EOS_DISPLAY_WIDTH / 2) // 触发删除的滑动距离阈值
 #define SWIPE_ANIM_DURATION 200        // 滑动动画持续时间
-
 #define COMMON_ANIM_DURATION 150
 /**
  * @brief 临时存储用户数据
@@ -208,7 +209,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
             lv_anim_init(&anim);
             lv_anim_set_var(&anim, item_container);
             lv_anim_set_values(&anim, current_x,
-                               (current_x > 0) ? lv_display_get_horizontal_resolution(NULL) : -lv_display_get_horizontal_resolution(NULL));
+                               (current_x > 0) ? EOS_DISPLAY_WIDTH : -EOS_DISPLAY_WIDTH);
             lv_anim_set_time(&anim, SWIPE_ANIM_DURATION);
             lv_anim_set_exec_cb(&anim, _set_translate_x_cb);
             lv_anim_set_completed_cb(&anim, _delete_anim_completed_cb);
@@ -296,9 +297,9 @@ static void _msg_list_item_pressing_cb(lv_event_t *e)
         lv_obj_remove_flag(item->msg_list->list, LV_OBJ_FLAG_SCROLLABLE);
         // 计算新的水平位置
         int32_t new_x = item->swipe_data.start_translate_x + delta_x;
-        if (abs(new_x) > lv_display_get_horizontal_resolution(NULL) * 0.8)
+        if (abs(new_x) > EOS_DISPLAY_WIDTH * 0.8)
         {
-            new_x = (new_x > 0) ? (int32_t)(lv_display_get_horizontal_resolution(NULL) * 0.8) : (int32_t)(-lv_display_get_horizontal_resolution(NULL) * 0.8);
+            new_x = (new_x > 0) ? (int32_t)(EOS_DISPLAY_WIDTH * 0.8) : (int32_t)(-EOS_DISPLAY_WIDTH * 0.8);
         }
 
         // 应用水平偏移
@@ -362,7 +363,7 @@ static void _mark_as_read_btn_click_cb(lv_event_t *e)
     // 获取按钮的父容器（即详情页面container）
     lv_obj_t *container = lv_obj_get_parent(btn);
 
-    eos_anim_t *anim = eos_anim_scale_create(container, lv_display_get_horizontal_resolution(NULL), 0, lv_display_get_vertical_resolution(NULL), 0, COMMON_ANIM_DURATION);
+    eos_anim_t *anim = eos_anim_scale_create(container, EOS_DISPLAY_WIDTH, 0, EOS_DISPLAY_HEIGHT, 0, COMMON_ANIM_DURATION);
     eos_anim_set_cb(anim, _mark_as_read_anim_end_cb, data);
     eos_anim_start(anim);
 
@@ -396,7 +397,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     // 创建详情页面容器
     lv_obj_t *detail_container = lv_obj_create(scr);
     lv_obj_center(detail_container);
-    lv_obj_set_style_bg_color(detail_container, lv_color_hex(0x111111), 0);
+    lv_obj_set_style_bg_color(detail_container, EOS_COLOR_BLACK, 0);
     lv_obj_set_flex_flow(detail_container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_size(detail_container, lv_pct(100), lv_pct(100));
     lv_obj_set_style_pad_all(detail_container, 20, 0);
@@ -437,7 +438,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     lv_obj_t *mark_as_read_btn = lv_button_create(detail_container);
     lv_obj_set_size(mark_as_read_btn, lv_pct(80), 80);
     lv_obj_remove_flag(mark_as_read_btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(mark_as_read_btn, lv_color_hex(0x212121), 0);
+    lv_obj_set_style_bg_color(mark_as_read_btn, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(mark_as_read_btn, 0, 0);
     lv_obj_set_style_margin_bottom(mark_as_read_btn, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(mark_as_read_btn, 0, 0);
@@ -460,8 +461,8 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
 
     // 添加动画
     eos_anim_scale_start(detail_container,
-                         0, lv_display_get_horizontal_resolution(NULL),
-                         0, lv_display_get_vertical_resolution(NULL),
+                         0, EOS_DISPLAY_WIDTH,
+                         0, EOS_DISPLAY_HEIGHT,
                          COMMON_ANIM_DURATION);
 }
 
@@ -483,7 +484,7 @@ msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
     // 垂直排布
     lv_obj_set_flex_flow(item->container, LV_FLEX_FLOW_COLUMN);
     lv_obj_remove_flag(item->container, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(item->container, lv_color_hex(0x212121), 0);
+    lv_obj_set_style_bg_color(item->container, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(item->container, 0, 0);
     lv_obj_set_style_margin_bottom(item->container, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(item->container, 20, 0);
@@ -720,7 +721,7 @@ static void _trigger_msg_anims(msg_list_t *list)
             lv_anim_t anim;
             lv_anim_init(&anim);
             lv_anim_set_var(&anim, item->container);
-            lv_anim_set_values(&anim, lv_obj_get_x(item->container), lv_display_get_horizontal_resolution(NULL));
+            lv_anim_set_values(&anim, lv_obj_get_x(item->container), EOS_DISPLAY_WIDTH);
             lv_anim_set_time(&anim, 120);
             lv_anim_set_exec_cb(&anim, _set_translate_x_cb);
             lv_anim_set_user_data(&anim, list);
@@ -800,7 +801,7 @@ msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     memset(list, 0, sizeof(msg_list_t));
 
     list->swipe_panel = eos_swipe_panel_create(parent);
-    eos_swipe_panel_set_dir(list->swipe_panel, SWIPE_DIR_DOWN);
+    eos_swipe_panel_set_dir(list->swipe_panel, EOS_SWIPE_DIR_DOWN);
 
     list->list = lv_list_create(list->swipe_panel->swipe_obj);
     lv_obj_set_size(list->list, LV_PCT(100), LV_PCT(88));
@@ -816,7 +817,7 @@ msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     list->clear_all_btn = lv_button_create(list->list);
     lv_obj_set_size(list->clear_all_btn, lv_pct(100), 80);
     lv_obj_remove_flag(list->clear_all_btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(list->clear_all_btn, lv_color_hex(0x212121), 0);
+    lv_obj_set_style_bg_color(list->clear_all_btn, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(list->clear_all_btn, 0, 0);
     lv_obj_set_style_margin_bottom(list->clear_all_btn, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(list->clear_all_btn, 0, 0);

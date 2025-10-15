@@ -27,9 +27,11 @@ typedef enum
 {
     EOS_EVENT_SWIPE_PANEL_TOUCH_LOCK=0,
     EOS_EVENT_SWIPE_PANEL_TOUCH_UNLOCK,
+    EOS_EVENT_SWIPE_PANEL_PULL_BACK,
     EOS_EVENT_THEME_UPDATED,
     EOS_EVENT_APP_DELETED,
     EOS_EVENT_APP_INSTALLED,
+    /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_BASE,      /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
     EOS_EVENT_SENSOR_REPORT_GYRO,      /**< 重力传感器             */
@@ -45,7 +47,6 @@ typedef enum
     EOS_EVENT_SENSOR_REPORT_STEP,      /**< 计步传感器             */
     EOS_EVENT_SENSOR_REPORT_FORCE,     /**< 力传感器               */
     EOS_EVENT_SENSOR_REPORT_BAT,       /**< 电池电量传感器          */
-    /* 此处添加新的事件 */
     EOS_EVENT_MAX_NUMBER
 } eos_event_t;
 /* Public function prototypes --------------------------------*/
@@ -83,6 +84,8 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
 
 /**
  * @brief 移除事件回调
+ * - 如果未在广播：立即从链表中移除并释放，同时调用 lv_obj_remove_event_cb
+ * - 如果当前正在广播：标记删除（延迟清理）
  * @param obj 对象指针
  * @param event 事件类型
  * @param cb 回调函数
@@ -91,10 +94,16 @@ void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb)
 
 /**
  * @brief 广播事件
+ * - 支持嵌套广播
+ * - 在广播期间，对象或节点被删除时仅标记，广播结束后统一清理
  * @param event 要广播的事件类型
  * @param param 事件参数
  */
 void eos_event_broadcast(lv_event_code_t event, void *param);
+/**
+ * @brief 允许在外部主动清理（例如系统空闲时调用）
+ */
+void eos_event_cleanup_now(void);
 #ifdef __cplusplus
 }
 #endif

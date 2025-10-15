@@ -21,9 +21,10 @@
 #include "elena_os_services.h"
 #include "elena_os_event.h"
 #include "elena_os_icon.h"
+#include "elena_os_flash_light.h"
 
 // Macros and Definitions
-#define _BTN_DEFAULT_COLOR lv_color_hex(0x232323)
+#define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
 #define _SLIDER_DEFAULT_WIDTH 150
 #define _SLIDER_DEFAULT_HEIGHT 360
 #define _SLIDER_DEFAULT_RADIUS 50
@@ -63,7 +64,7 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
     lv_obj_move_foreground(slider_page);
     lv_obj_set_style_bg_opa(slider_page, LV_OPA_50, 0);
-    lv_obj_set_style_bg_color(slider_page, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(slider_page, EOS_COLOR_BLACK, 0);
     lv_obj_add_event_cb(slider_page, _control_center_slider_page_clicked_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *slider_mask = lv_obj_create(slider_page);
@@ -87,22 +88,22 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_set_style_width(slider, _SLIDER_DEFAULT_WIDTH, LV_PART_MAIN);
     lv_obj_set_style_height(slider, _SLIDER_DEFAULT_HEIGHT, LV_PART_MAIN);
 
-    lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR);
+    lv_obj_set_style_bg_color(slider, EOS_COLOR_WHITE, LV_PART_INDICATOR);
     lv_obj_set_style_radius(slider, 50, LV_PART_INDICATOR);
 
-    lv_obj_set_style_bg_color(slider, lv_color_hex(0x303030), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(slider, EOS_COLOR_DARK_GREY_1, LV_PART_MAIN);
     lv_obj_set_style_radius(slider, 50, LV_PART_MAIN);
 
-    lv_obj_set_style_bg_color(slider, lv_color_white(), LV_PART_INDICATOR | LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(slider, EOS_COLOR_WHITE, LV_PART_INDICATOR | LV_STATE_PRESSED);
 
     lv_obj_t *label = lv_label_create(slider_page);
     lv_label_set_text(label, symbol);
     lv_obj_set_user_data(slider, (void *)label);
-    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_set_style_text_color(label, EOS_COLOR_BLACK, 0);
     lv_obj_move_foreground(label);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -100);
 
-    lv_refr_now(NULL); // 立即刷新屏幕，计算对象真实大小
+    lv_obj_update_layout(label);
     lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
     lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
 
@@ -253,7 +254,7 @@ static void _control_center_volume_value_changed_cb(lv_event_t *e)
 static void _control_center_volume_slider_delete_cb(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target(e);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, lv_slider_get_value(slider));
+    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME, lv_slider_get_value(slider));
 }
 
 static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
@@ -271,11 +272,16 @@ static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
     lv_obj_add_event_cb(slider, _control_center_volume_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
+static void _control_center_flash_light_btn_clicked_cb(lv_event_t *e)
+{
+    eos_flash_light_show();
+}
+
 /************************** 创建控制中心 **************************/
 void eos_control_center_create(lv_obj_t *parent)
 {
     swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
-    eos_swipe_panel_set_dir(swipe_panel, SWIPE_DIR_UP);
+    eos_swipe_panel_set_dir(swipe_panel, EOS_SWIPE_DIR_UP);
     eos_swipe_panel_show_handle_bar(swipe_panel);
 
     lv_obj_t *container = lv_list_create(swipe_panel->swipe_obj);
@@ -317,4 +323,7 @@ void eos_control_center_create(lv_obj_t *parent)
     /************************** 音量调整滚动条 **************************/
     btn = _control_center_create_btn(container, RI_VOLUME_UP_FILL);
     lv_obj_add_event_cb(btn, _control_center_volume_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    /************************** 手电筒 **************************/
+    btn = _control_center_create_btn(container, RI_FLASH_LIGHT);
+    lv_obj_add_event_cb(btn, _control_center_flash_light_btn_clicked_cb, LV_EVENT_CLICKED, 0);
 }

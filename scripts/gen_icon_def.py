@@ -87,7 +87,7 @@ extern "C" {{
 void eos_icon_register(void);
 
 #ifdef __cplusplus
-}}
+}
 #endif
 
 #endif /* ELENA_OS_ICON_H */

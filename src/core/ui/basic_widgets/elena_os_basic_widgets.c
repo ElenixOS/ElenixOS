@@ -23,6 +23,7 @@
 #include "elena_os_port.h"
 #include "elena_os_misc.h"
 #include "elena_os_icon.h"
+#include "elena_os_config.h"
 
 // Macros and Definitions
 #define APP_HEADER_HEIGHT 120
@@ -268,7 +269,7 @@ void eos_app_header_init(void)
 
     // 半透明容器
     app_header->container = lv_image_create(lv_layer_top());
-    lv_obj_set_size(app_header->container, lv_display_get_horizontal_resolution(NULL), APP_HEADER_HEIGHT);
+    lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, APP_HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_move_background(app_header->container);
     eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
@@ -481,7 +482,7 @@ lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
     lv_obj_t *sw = lv_switch_create(container);
     lv_obj_set_style_margin_right(sw, 18, 0);
     lv_obj_set_height(sw, lv_pct(100));
-    lv_refr_now(NULL);
+    lv_obj_update_layout(sw);
     int32_t w = lv_obj_get_height(sw) * 2;
     lv_obj_set_width(sw, w);
 
@@ -493,7 +494,7 @@ lv_obj_t *_split_line_create(lv_obj_t *parent)
     lv_obj_t *sl = lv_obj_create(parent);
     lv_obj_remove_style_all(sl);
     lv_obj_set_size(sl, lv_pct(90), 2);
-    lv_obj_set_style_bg_color(sl, lv_color_hex(0x0e1c38), 0);
+    lv_obj_set_style_bg_color(sl, EOS_COLOR_DARK_GREY_2, 0);
     return sl;
 }
 
@@ -551,7 +552,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_remove_style_all(split_line);
     lv_obj_set_size(split_line, 5, 60);
     lv_obj_set_style_bg_opa(split_line, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(split_line, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(split_line, EOS_COLOR_BLACK, 0);
     lv_obj_align_to(split_line, list_slider->slider, LV_ALIGN_OUT_LEFT_MID, -margin, 0);
 
     list_slider->minus_btn = lv_button_create(inner_container);
@@ -570,7 +571,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_remove_style_all(split_line);
     lv_obj_set_size(split_line, 5, 60);
     lv_obj_set_style_bg_opa(split_line, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(split_line, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(split_line, EOS_COLOR_BLACK, 0);
     lv_obj_align_to(split_line, list_slider->slider, LV_ALIGN_OUT_RIGHT_MID, margin, 0);
 
     list_slider->plus_btn = lv_button_create(inner_container);

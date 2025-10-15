@@ -4,7 +4,7 @@
  *
  * 此文件由 `gen_icon_def.py` 自动生成。
  * 不要手动修改！
- * @date 2025-10-08
+ * @date 2025-10-14
  */
 
 #ifndef ELENA_OS_ICON_H
@@ -22,6 +22,8 @@ extern "C" {
  * License: Apache License 2.0
  * Original source: https://github.com/Remix-Design/RemixIcon
  */
+#define RI__NULL "\u0000"
+#define RI_NONMARKINGRETURN "\u0009"
 #define RI_24_HOURS_FILL "\uEA01"
 #define RI_24_HOURS_LINE "\uEA02"
 #define RI_4K_FILL "\uEA03"
@@ -3004,12 +3006,13 @@ extern "C" {
 #define RI_NO_CREDIT_CARD_LINE "\uF5F0"
 #define RI_SERVICE_BELL_FILL "\uF5F1"
 #define RI_SERVICE_BELL_LINE "\uF5F2"
+#define RI_FLASH_LIGHT "\uF5F3"
 
 
 void eos_icon_register(void);
 
 #ifdef __cplusplus
-}}
+}
 #endif
 
 #endif /* ELENA_OS_ICON_H */

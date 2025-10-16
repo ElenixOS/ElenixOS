@@ -3,6 +3,56 @@
  * @brief 动画库
  * @author Sab1e
  * @date 2025-08-14
+ * @details
+ *
+ * # 动画系统
+ *
+ * 基于 LVGL 动画 封装的动画库
+ *
+ * ## 使用方法
+ *
+ * ### 使用专用函数创建不同类型的动画，例如缩放动画、透明度动画：
+ *
+ * ```c
+ * eos_anim_t *anim = eos_anim_scale_create(obj, w_start, w_end, h_start, h_end, duration);
+ * eos_anim_t *fade_anim = eos_anim_fade_create(obj, opa_start, opa_end, duration);
+ * ```
+ *
+ * ### 动画播放完成后触发的回调：
+ *
+ * ```c
+ * eos_anim_set_cb(anim, user_cb, user_data);
+ * ```
+ *
+ * ### 启动动画
+ *
+ * ```c
+ * eos_anim_start(anim);
+ * ```
+ *
+ * ### 快捷方式（直接创建并播放）
+ *
+ * ```c
+ * eos_anim_scale_start(obj, w_start, w_end, h_start, h_end, duration);
+ * ```
+ *
+ *  - 不需要手动管理动画对象。
+ *  - 完成后自动释放。
+ *
+ * ### 删除动画
+ *
+ * 如果想提前停止或手动清理动画：
+ *
+ * ```c
+ * eos_anim_del(anim);
+ * ```
+ *
+ * ## 注意事项
+ *
+ *  - 动画对象 eos_anim_t 会自动释放。
+ *  - UI 对象不会自动删除，需要在回调中手动处理。
+ *  - 支持多动画并行，通过 anim_count 管理子动画完成情况。
+ *  - 可扩展不同类型的动画（缩放、透明度、宽高、位置等）。
  */
 
 #ifndef ELENA_OS_ANIM_H
@@ -23,7 +73,8 @@ extern "C" {
  * @brief 所有动画类型，可以继续添加。
  */
 typedef enum{
-    EOS_ANIM_SCALE,
+    EOS_ANIM_SCALE, /**< 缩放动画 */
+    EOS_ANIM_FADE,  /**< 透明度渐变动画 */
     // 此处可以添加其他动画类型
 }eos_anim;
 typedef struct eos_anim_t eos_anim_t;   // 预定义
@@ -34,18 +85,25 @@ typedef void (*eos_anim_cb_t)(eos_anim_t* a);
 /**
  * @brief ElenaOS 动画对象的结构体
  */
-struct eos_anim_t{
-    lv_anim_timeline_t* anim_timeline;  /**< 动画的时间线指针 */
-    eos_anim type;                      /**< 动画类型 */
-    uint8_t anim_count;                 /**< 该类型总的动画数量 */
-    uint8_t anim_completed_count;       /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
-    eos_anim_cb_t user_cb;              /**< 用户设定的回调函数 */
-    void* user_data;                    /**< 用户数据 */
-    union {                             /**< 用于存储动画对象的共用体 */
-        struct {
-            lv_anim_t a_width;          /**< 缩放动画的宽度动画对象 */
-            lv_anim_t a_height;         /**< 缩放动画的高度动画对象 */
+struct eos_anim_t
+{
+    lv_anim_timeline_t *anim_timeline; /**< 动画的时间线指针 */
+    eos_anim type;                     /**< 动画类型 */
+    uint8_t anim_count;                /**< 该类型总的动画数量 */
+    uint8_t anim_completed_count;      /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
+    eos_anim_cb_t user_cb;             /**< 用户设定的回调函数 */
+    void *user_data;                   /**< 用户数据 */
+    union
+    { /**< 用于存储动画对象的共用体 */
+        struct
+        {
+            lv_anim_t a_width;  /**< 缩放动画的宽度动画对象 */
+            lv_anim_t a_height; /**< 缩放动画的高度动画对象 */
         } scale;
+        struct
+        {
+            lv_anim_t a_opa;
+        } fade;
         // 此处可以添加其他动画类型的结构
     };
 };
@@ -106,7 +164,29 @@ void eos_anim_blocker_show(void);
  * @brief 移除透明阻碍层
  */
 void eos_anim_blocker_hide(void);
-
+/**
+ * @brief 创建透明度渐变动画
+ * @param tar_obj 目标对象
+ * @param opa_start 初始透明度
+ * @param opa_end 结束透明度
+ * @param duration 持续时间
+ * @return eos_anim_t* 创建成功则返回动画对象，否则为NULL
+ */
+eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
+                                 int32_t opa_start,
+                                 int32_t opa_end,
+                                 uint32_t duration);
+/**
+ * @brief 创建并立即播放透明度渐变动画
+ * @param tar_obj 目标对象
+ * @param opa_start 初始透明度
+ * @param opa_end 结束透明度
+ * @param duration 持续时间
+ */
+void eos_anim_fade_start(lv_obj_t *tar_obj,
+                         int32_t opa_start,
+                         int32_t opa_end,
+                         uint32_t duration);
 #ifdef __cplusplus
 }
 #endif

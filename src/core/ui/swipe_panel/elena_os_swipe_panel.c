@@ -16,12 +16,14 @@
 #include "elena_os_theme.h"
 
 // Macros and Definitions
-#define DEBUG_SWIPE_PANEL 1 /**< 突出显示滑动触摸区域 */
+#define DEBUG_SWIPE_PANEL 0 /**< 突出显示滑动触摸区域 */
 #define GESTURE_AREA_HEIGHT 50
 #define TOUCH_BAR_MARGIN 20
 #define SWIPE_PANEL_MOVE_TIME 250
+#define FRAME_PER_MOVING_CALLBACK 1 /**< x帧调用一次移动回调 */
 // Variables
 static swipe_panel_t *active_swipe_panel = NULL; // 当前正在拖拽的控件 同一时刻只能拖拽一个控件 否则会出现问题
+static uint32_t frame_count;
 // Function Implementations
 static void _swipe_panel_event_cb_pressed(lv_event_t *e)
 {
@@ -100,13 +102,15 @@ static void _swipe_panel_event_cb_pressing(lv_event_t *e)
         lv_obj_set_x(swipe_panel->swipe_obj, new_pos);
         lv_obj_set_x(swipe_panel->touch_area, new_pos);
     }
+    eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_MOVING), (void *)swipe_panel);
 }
 
 static void _swipe_panel_timer_cb(lv_timer_t *timer)
 {
+    swipe_panel_t *swipe_panel = lv_timer_get_user_data(timer);
     EOS_LOG_D("Timer Callback");
     eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_TOUCH_UNLOCK), NULL);
-    eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_PULL_BACK), NULL);
+    eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_PULL_BACK), (void *)swipe_panel);
 }
 
 static void _swipe_panel_anim_completed_cb(lv_anim_t *a)
@@ -178,8 +182,32 @@ static void _swipe_panel_anim_completed_cb(lv_anim_t *a)
         active_swipe_panel = NULL; // 释放活动实例
     }
     // 避免操作过快
-    lv_timer_t *t = lv_timer_create(_swipe_panel_timer_cb, 50, NULL);
+    lv_timer_t *t = lv_timer_create(_swipe_panel_timer_cb, 50, swipe_panel);
     lv_timer_set_repeat_count(t, 1); // 只触发一次
+}
+
+static void _moving_set_x(void *obj, int32_t value)
+{
+    lv_obj_set_x(obj, value);
+    frame_count++;
+    if (frame_count >= FRAME_PER_MOVING_CALLBACK)
+    {
+        frame_count = 0;
+        EOS_LOG_I("MOVING");
+        eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_MOVING), NULL);
+    }
+}
+
+static void _moving_set_y(void *obj, int32_t value)
+{
+    lv_obj_set_y(obj, value);
+    frame_count++;
+    if (frame_count >= FRAME_PER_MOVING_CALLBACK)
+    {
+        frame_count = 0;
+        EOS_LOG_I("MOVING");
+        eos_event_broadcast(eos_event_get_code(EOS_EVENT_SWIPE_PANEL_MOVING), NULL);
+    }
 }
 
 static void _swipe_panel_event_cb_released(lv_event_t *e)
@@ -225,12 +253,12 @@ static void _swipe_panel_event_cb_released(lv_event_t *e)
     if (swipe_panel->dir == EOS_SWIPE_DIR_UP || swipe_panel->dir == EOS_SWIPE_DIR_DOWN)
     {
         lv_anim_set_values(&a, cur_y, target_y);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)_moving_set_y);
     }
     else
     {
         lv_anim_set_values(&a, cur_x, target_x);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_x);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)_moving_set_x);
     }
 
     lv_anim_set_time(&a, 120);

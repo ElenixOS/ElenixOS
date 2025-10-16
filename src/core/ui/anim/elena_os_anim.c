@@ -10,6 +10,7 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
+#include "elena_os_log.h"
 
 // Macros and Definitions
 // #define DEBUG_BLOCKER_VISIBLE
@@ -17,18 +18,20 @@
 static lv_obj_t *blocker;
 // Function Implementations
 
-void eos_anim_blocker_show(void){
+void eos_anim_blocker_show(void)
+{
     blocker = lv_obj_create(lv_layer_top());
-    lv_obj_remove_style_all(blocker);   // 去掉样式，保持透明
+    lv_obj_remove_style_all(blocker); // 去掉样式，保持透明
 #ifdef DEBUG_BLOCKER_VISIBLE
-    lv_obj_set_style_bg_color(blocker,lv_color_hex(0xFF0000),0);
-    lv_obj_set_style_bg_opa(blocker,LV_OPA_40,0);
+    lv_obj_set_style_bg_color(blocker, lv_color_hex(0xFF0000), 0);
+    lv_obj_set_style_bg_opa(blocker, LV_OPA_40, 0);
 #endif
     lv_obj_set_size(blocker, LV_PCT(100), LV_PCT(100));
-    lv_obj_add_flag(blocker, LV_OBJ_FLAG_CLICKABLE);  // 吸收点击
+    lv_obj_add_flag(blocker, LV_OBJ_FLAG_CLICKABLE); // 吸收点击
 }
 
-void eos_anim_blocker_hide(void){
+void eos_anim_blocker_hide(void)
+{
     lv_obj_delete(blocker);
 }
 
@@ -46,6 +49,16 @@ static void _set_height_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_height(var->var, v);
 }
+static void _free_anim_later(lv_timer_t *t)
+{
+    eos_anim_t *anim = lv_timer_get_user_data(t);
+
+    if (anim->anim_timeline)
+        lv_anim_timeline_delete(anim->anim_timeline);
+
+    lv_free(anim);
+    lv_timer_delete(t);
+}
 /**
  * @brief 动画播放完毕回调，回调用户函数，自动清理资源
  */
@@ -60,10 +73,11 @@ static void _eos_anim_ready_cb(lv_anim_t *a)
         {
             anim->user_cb(anim);
         }
-        // 自动清理资源
-        lv_anim_timeline_delete(anim->anim_timeline);
-        lv_free(anim);
+        // 自动清理资源，延时删除
+        lv_timer_t *t = lv_timer_create(_free_anim_later, 10, anim);
+        lv_timer_set_repeat_count(t, 1);
     }
+    EOS_LOG_I("Anim deleted");
     eos_anim_blocker_hide();
 }
 /**
@@ -99,11 +113,13 @@ static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 
-void eos_anim_del(eos_anim_t* anim)
+void eos_anim_del(eos_anim_t *anim)
 {
-    if (!anim) return;
+    if (!anim)
+        return;
 
-    if (anim->anim_timeline) {
+    if (anim->anim_timeline)
+    {
         lv_anim_timeline_delete(anim->anim_timeline);
     }
     lv_free(anim);
@@ -157,7 +173,9 @@ bool eos_anim_start(eos_anim_t *anim)
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->scale.a_width);
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->scale.a_height);
         break;
-    // 其他动画类型...
+    case EOS_ANIM_FADE:
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->fade.a_opa);
+        break;
     default:
         return false;
     }
@@ -195,4 +213,76 @@ void eos_anim_set_cb(
 void *eos_anim_get_user_data(eos_anim_t *anim)
 {
     return anim ? anim->user_data : NULL;
+}
+
+/**
+ * @brief 动画播放时设置透明度的回调
+ */
+static void _set_opa_cb(lv_anim_t *a, int32_t v)
+{
+    lv_obj_t *obj = (lv_obj_t *)a->var; // 使用 anim 的 var 字段获取目标对象
+    lv_obj_set_style_bg_opa(obj, (lv_opa_t)v, 0);
+}
+
+/**
+ * @brief 内部函数：初始化透明度动画
+ */
+static void _init_opa_anim(lv_anim_t *a, lv_obj_t *obj,
+                           int32_t start, int32_t end,
+                           uint32_t duration, eos_anim_t *ctx)
+{
+    lv_anim_init(a);
+    lv_anim_set_var(a, obj);
+    lv_anim_set_values(a, start, end);
+    lv_anim_set_custom_exec_cb(a, _set_opa_cb);
+    lv_anim_set_path_cb(a, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(a, duration);
+    lv_anim_set_completed_cb(a, _eos_anim_ready_cb);
+    lv_anim_set_user_data(a, ctx);
+}
+
+/**
+ * @brief 创建透明度动画对象
+ */
+eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
+                                 int32_t opa_start,
+                                 int32_t opa_end,
+                                 uint32_t duration)
+{
+    if (!tar_obj || duration == 0)
+        return NULL;
+
+    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    if (!anim)
+        return NULL;
+
+    anim->type = EOS_ANIM_FADE;
+    anim->anim_count = 1;
+    anim->anim_completed_count = 0;
+    anim->user_cb = NULL;
+    anim->user_data = NULL;
+    anim->anim_timeline = lv_anim_timeline_create();
+    if (!anim->anim_timeline)
+    {
+        lv_free(anim);
+        return NULL;
+    }
+
+    _init_opa_anim(&anim->fade.a_opa, tar_obj, opa_start, opa_end, duration, anim);
+    return anim;
+}
+
+void eos_anim_fade_start(lv_obj_t *tar_obj,
+                         int32_t opa_start,
+                         int32_t opa_end,
+                         uint32_t duration)
+{
+    eos_anim_t *anim = eos_anim_fade_create(tar_obj, opa_start, opa_end, duration);
+    if (!anim)
+        return;
+
+    if (!eos_anim_start(anim))
+    {
+        eos_anim_del(anim);
+    }
 }

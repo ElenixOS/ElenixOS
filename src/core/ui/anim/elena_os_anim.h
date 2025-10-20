@@ -92,6 +92,8 @@ struct eos_anim_t
     uint8_t anim_count;                /**< 该类型总的动画数量 */
     uint8_t anim_completed_count;      /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
     eos_anim_cb_t user_cb;             /**< 用户设定的回调函数 */
+    lv_obj_t *tar_obj;
+    bool auto_delete_obj;              /**< 动画播放完成时自动删除被绑定对象 */
     void *user_data;                   /**< 用户数据 */
     union
     { /**< 用于存储动画对象的共用体 */
@@ -105,7 +107,15 @@ struct eos_anim_t
             lv_anim_t a_opa;
         } fade;
         // 此处可以添加其他动画类型的结构
-    };
+    } anim;
+    union
+    { /**< 用于存储动画对象的共用体 */
+        struct
+        {
+            bool layered;   /**< 是否随子对象调整透明度 */
+        } fade;
+        // 此处可以添加其他动画类型的结构
+    } cfg;
 };
 /* Public function prototypes --------------------------------*/
  /**
@@ -121,7 +131,7 @@ struct eos_anim_t
 eos_anim_t* eos_anim_scale_create(lv_obj_t* tar_obj,
                                 int32_t w_start, int32_t w_end,
                                 int32_t h_start, int32_t h_end,
-                                uint32_t duration);
+                                uint32_t duration, bool auto_delete);
 /**
  * @brief 开始播放动画
  * @param anim 由create函数创建的动画对象
@@ -135,7 +145,7 @@ bool eos_anim_start(eos_anim_t* anim);
 void eos_anim_scale_start(lv_obj_t* tar_obj,
                                 int32_t w_start, int32_t w_end,
                                 int32_t h_start, int32_t h_end,
-                                uint32_t duration);
+                                uint32_t duration, bool auto_delete);
 /**
  * @brief 给动画设置播放完毕时的回调
  * @param anim 要设置的动画
@@ -175,7 +185,7 @@ void eos_anim_blocker_hide(void);
 eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
                                  int32_t opa_start,
                                  int32_t opa_end,
-                                 uint32_t duration);
+                                 uint32_t duration, bool auto_delete);
 /**
  * @brief 创建并立即播放透明度渐变动画
  * @param tar_obj 目标对象
@@ -186,7 +196,18 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
 void eos_anim_fade_start(lv_obj_t *tar_obj,
                          int32_t opa_start,
                          int32_t opa_end,
-                         uint32_t duration);
+                         uint32_t duration, bool auto_delete);
+/**
+ * @brief 当动画播放完毕时自动删除`tar_obj`
+ * @param anim 目标动画
+ */
+void eos_anim_set_auto_delete(eos_anim_t *anim);
+/**
+ * @brief Fade 动画是否按层调整透明度
+ * @param a 目标动画
+ * @param layered
+ */
+void eos_anim_fade_set_layered(eos_anim_t *a, bool layered);
 #ifdef __cplusplus
 }
 #endif

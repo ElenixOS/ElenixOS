@@ -78,11 +78,11 @@ typedef struct {
  * }
  */
 struct msg_list_t {
-    swipe_panel_t *swipe_panel;     /**< 拖拽对象指针 */
+    eos_swipe_panel_t *swipe_panel;     /**< 拖拽对象指针 */
     lv_obj_t *list;             /**< 列表对象指针 */
     lv_obj_t *clear_all_btn;    /**< 清除所有消息按钮指针 */
     lv_obj_t *no_msg_label;     /**< 无消息时的提示标签 */
-    uint16_t animating_count;   /**< 一键清除按下后，动画中的消息数量 */ 
+    uint16_t animating_count;   /**< 一键清除按下后，动画中的消息数量 */
 };
 
 /* Public function prototypes --------------------------------*/

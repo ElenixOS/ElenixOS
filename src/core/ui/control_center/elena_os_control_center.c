@@ -22,6 +22,7 @@
 #include "elena_os_event.h"
 #include "elena_os_icon.h"
 #include "elena_os_flash_light.h"
+#include "elena_os_anim.h"
 
 // Macros and Definitions
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
@@ -54,7 +55,7 @@ static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char 
 static void _control_center_slider_page_clicked_cb(lv_event_t *e)
 {
     lv_obj_t *page = lv_event_get_target(e);
-    lv_obj_delete(page);
+    eos_anim_fade_start(page, LV_OPA_80, LV_OPA_TRANSP, 300, true);
 }
 
 static lv_obj_t *_control_center_slider_create(const char *symbol)
@@ -63,9 +64,13 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_remove_style_all(slider_page);
     lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
     lv_obj_move_foreground(slider_page);
-    lv_obj_set_style_bg_opa(slider_page, LV_OPA_50, 0);
+    lv_obj_set_style_bg_opa(slider_page, LV_OPA_TRANSP, 0);
     lv_obj_set_style_bg_color(slider_page, EOS_COLOR_BLACK, 0);
     lv_obj_add_event_cb(slider_page, _control_center_slider_page_clicked_cb, LV_EVENT_CLICKED, NULL);
+
+    eos_anim_t *a = eos_anim_fade_create(slider_page, LV_OPA_TRANSP, LV_OPA_80, 300, false);
+    eos_anim_fade_set_layered(a, false);
+    eos_anim_start(a);
 
     lv_obj_t *slider_mask = lv_obj_create(slider_page);
     lv_obj_remove_style_all(slider_mask);
@@ -106,6 +111,8 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_update_layout(label);
     lv_obj_set_style_transform_pivot_x(label, lv_obj_get_width(label) / 2, 0);
     lv_obj_set_style_transform_pivot_y(label, lv_obj_get_height(label) / 2, 0);
+
+    eos_anim_fade_start(slider, LV_OPA_TRANSP, LV_OPA_COVER, 300, false);
 
     return slider;
 }
@@ -280,7 +287,7 @@ static void _control_center_flash_light_btn_clicked_cb(lv_event_t *e)
 /************************** 创建控制中心 **************************/
 void eos_control_center_create(lv_obj_t *parent)
 {
-    swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
+    eos_swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
     eos_swipe_panel_set_dir(swipe_panel, EOS_SWIPE_DIR_UP);
     eos_swipe_panel_show_handle_bar(swipe_panel);
 

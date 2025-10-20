@@ -18,47 +18,65 @@
 #include "elena_os_event.h"
 #include "elena_os_icon.h"
 #include "elena_os_anim.h"
+#include "elena_os_utils.h"
 
 // Macros and Definitions
 #define MASK_OPA LV_OPA_80
+#define EOS_OPA_MAX_DIST_DIV 1 /**< 达到最大不透明度的距离 */
+#define EOS_OPA_SCALE 1000     /**< 比例计算的放大倍数 */
 typedef struct
 {
-    swipe_panel_t *sp;
+    eos_swipe_panel_t *sp;
     lv_obj_t *mask;
 } _pressing_user_data_t;
 // Variables
 
 // Function Implementations
+void eos_flash_light_create(void);
 
 static void _swipe_panel_pull_back_cb(lv_event_t *e)
 {
-    EOS_LOG_I("PB");
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
-    swipe_panel_t *sp = lv_event_get_param(e);
-    EOS_CHECK_PTR_RETURN(ud && sp);
+    EOS_CHECK_PTR_RETURN(ud);
 
-    if (ud->sp == sp)
+    int32_t swipe_obj_coord_y = lv_obj_get_y(ud->sp->swipe_obj);
+    if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
-
-        int32_t swipe_obj_coord_y = lv_obj_get_y(ud->sp->swipe_obj);
-        if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
-        {
-            EOS_LOG_I("Delete flash light");
-            if (lv_obj_has_class(ud->mask, &lv_obj_class))
-                lv_obj_delete(ud->mask);
-            eos_swipe_panel_delete(ud->sp);
-            free(ud);
-        }
+        if (lv_obj_has_class(ud->mask, &lv_obj_class))
+            lv_obj_delete(ud->mask);
+        eos_swipe_panel_delete(ud->sp);
+        free(ud);
     }
 }
 
+/**
+ * @brief 用于设置背景透明度，随y轴增加而降低透明度
+ */
 static void _swipe_panel_moving_cb(lv_event_t *e)
 {
-    EOS_LOG_I("CB");
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
-    int32_t swipe_obj_coord_y = lv_obj_get_y(ud->sp->swipe_obj);
-    float opa = MASK_OPA - ((float)swipe_obj_coord_y / (float)EOS_DISPLAY_HEIGHT * 3.0 * MASK_OPA);
-    lv_obj_set_style_bg_opa(ud->mask, (lv_opa_t)opa, 0);
+    eos_swipe_panel_t *sp = ud->sp;
+
+    lv_obj_update_layout(sp->swipe_obj);
+
+    int32_t y = lv_obj_get_y(sp->swipe_obj);
+
+    int32_t max_dist = EOS_DISPLAY_HEIGHT / EOS_OPA_MAX_DIST_DIV;
+
+    int32_t ratio = ((max_dist - y) * EOS_OPA_SCALE) / max_dist;
+
+    ratio = EOS_CLAMP(ratio, 0, EOS_OPA_SCALE);
+
+    lv_opa_t opa = (lv_opa_t)((ratio * MASK_OPA) / EOS_OPA_SCALE);
+
+    EOS_LOG_I("y=%d, ratio=%d‰, opa=%d", y, ratio, opa);
+
+    lv_obj_set_style_bg_opa(ud->mask, opa, 0);
+}
+
+static void _flash_light_clicked_cb(lv_event_t *e)
+{
+    eos_flash_light_create();
 }
 
 void eos_flash_light_show(void)
@@ -71,13 +89,13 @@ void eos_flash_light_show(void)
     lv_obj_set_size(mask, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(mask, EOS_COLOR_BLACK, 0);
 
-    eos_anim_fade_start(mask, LV_OPA_TRANSP, MASK_OPA, 300);
+    // eos_anim_fade_start(mask, LV_OPA_TRANSP, MASK_OPA, 300);
 
     ud->mask = mask;
 
-    swipe_panel_t *sp = eos_swipe_panel_create(lv_screen_active());
+    eos_swipe_panel_t *sp = eos_swipe_panel_create(lv_screen_active());
     eos_swipe_panel_set_dir(sp, EOS_SWIPE_DIR_UP);
-    eos_swipe_panel_move(sp, 0, true);
+    eos_swipe_panel_slide_down(sp);
     eos_swipe_panel_hide_handle_bar(sp);
     lv_obj_set_style_bg_opa(sp->swipe_obj, LV_OPA_TRANSP, 0);
 
@@ -86,15 +104,15 @@ void eos_flash_light_show(void)
     eos_event_add_cb(
         sp->swipe_obj,
         _swipe_panel_pull_back_cb,
-        eos_event_get_code(EOS_EVENT_SWIPE_PANEL_PULL_BACK),
+        eos_event_get_code(EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD),
         (void *)ud);
     eos_event_add_cb(
         sp->swipe_obj,
         _swipe_panel_moving_cb,
-        eos_event_get_code(EOS_EVENT_SWIPE_PANEL_MOVING),
+        eos_event_get_code(EOS_EVENT_SLIDE_WIDGET_MOVING),
         (void *)ud);
     int32_t touch_area_height = EOS_DISPLAY_HEIGHT * 0.2;
-    lv_obj_set_height(sp->touch_area, touch_area_height);
+    lv_obj_set_height(sp->sw->touch_obj, touch_area_height);
 
     lv_obj_t *container = sp->swipe_obj;
     lv_obj_set_style_bg_opa(container, LV_OPA_TRANSP, 0);
@@ -121,8 +139,11 @@ void eos_flash_light_show(void)
     lv_obj_set_size(flash_light, lv_pct(100), EOS_DISPLAY_HEIGHT);
     lv_obj_set_style_border_width(flash_light, 0, 0);
     lv_obj_set_style_radius(flash_light, EOS_DISPLAY_RADIUS, 0);
+    lv_obj_add_event_cb(flash_light, _flash_light_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 
-void eos_flash_light_create()
+void eos_flash_light_create(void)
 {
+    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_screen_load(scr);
 }

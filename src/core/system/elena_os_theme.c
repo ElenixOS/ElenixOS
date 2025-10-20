@@ -136,7 +136,7 @@ lv_style_t *eos_theme_get_label_style(void)
     return &style_label;
 }
 
-void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, const lv_font_t *font)
+void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font_t *font)
 {
     global_font = font;
 

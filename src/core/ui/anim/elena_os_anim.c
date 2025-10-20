@@ -20,6 +20,9 @@ static lv_obj_t *blocker;
 
 void eos_anim_blocker_show(void)
 {
+    if(blocker){
+        return;
+    }
     blocker = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(blocker); // 去掉样式，保持透明
 #ifdef DEBUG_BLOCKER_VISIBLE
@@ -32,7 +35,9 @@ void eos_anim_blocker_show(void)
 
 void eos_anim_blocker_hide(void)
 {
+    EOS_CHECK_PTR_RETURN(blocker);
     lv_obj_delete(blocker);
+    blocker = NULL;
 }
 
 /**
@@ -55,6 +60,9 @@ static void _free_anim_later(lv_timer_t *t)
 
     if (anim->anim_timeline)
         lv_anim_timeline_delete(anim->anim_timeline);
+
+    if (anim->auto_delete_obj)
+        lv_obj_delete(anim->tar_obj);
 
     lv_free(anim);
     lv_timer_delete(t);
@@ -128,7 +136,7 @@ void eos_anim_del(eos_anim_t *anim)
 eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
                                   int32_t w_start, int32_t w_end,
                                   int32_t h_start, int32_t h_end,
-                                  uint32_t duration)
+                                  uint32_t duration, bool auto_delete)
 {
     if (!tar_obj || duration == 0)
         return NULL;
@@ -143,6 +151,8 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
+    anim->auto_delete_obj = auto_delete;
+    anim->tar_obj = tar_obj;
     anim->anim_timeline = lv_anim_timeline_create();
     if (!anim->anim_timeline)
     {
@@ -151,10 +161,10 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     }
 
     // 初始化宽度动画
-    _init_width_anim(&anim->scale.a_width, tar_obj, w_start, w_end, duration, anim);
+    _init_width_anim(&anim->anim.scale.a_width, tar_obj, w_start, w_end, duration, anim);
 
     // 初始化高度动画
-    _init_height_anim(&anim->scale.a_height, tar_obj, h_start, h_end, duration, anim);
+    _init_height_anim(&anim->anim.scale.a_height, tar_obj, h_start, h_end, duration, anim);
 
     return anim;
 }
@@ -170,11 +180,11 @@ bool eos_anim_start(eos_anim_t *anim)
     switch (anim->type)
     {
     case EOS_ANIM_SCALE:
-        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->scale.a_width);
-        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->scale.a_height);
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.scale.a_width);
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.scale.a_height);
         break;
     case EOS_ANIM_FADE:
-        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->fade.a_opa);
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.fade.a_opa);
         break;
     default:
         return false;
@@ -187,9 +197,9 @@ bool eos_anim_start(eos_anim_t *anim)
 void eos_anim_scale_start(lv_obj_t *tar_obj,
                           int32_t w_start, int32_t w_end,
                           int32_t h_start, int32_t h_end,
-                          uint32_t duration)
+                          uint32_t duration, bool auto_delete)
 {
-    eos_anim_t *anim = eos_anim_scale_create(tar_obj, w_start, w_end, h_start, h_end, duration);
+    eos_anim_t *anim = eos_anim_scale_create(tar_obj, w_start, w_end, h_start, h_end, duration, auto_delete);
     if (!anim)
         return;
 
@@ -197,6 +207,12 @@ void eos_anim_scale_start(lv_obj_t *tar_obj,
     {
         eos_anim_del(anim);
     }
+}
+
+void eos_anim_set_auto_delete(eos_anim_t *anim)
+{
+    EOS_CHECK_PTR_RETURN(anim);
+    anim->auto_delete_obj = true;
 }
 
 void eos_anim_set_cb(
@@ -221,7 +237,15 @@ void *eos_anim_get_user_data(eos_anim_t *anim)
 static void _set_opa_cb(lv_anim_t *a, int32_t v)
 {
     lv_obj_t *obj = (lv_obj_t *)a->var; // 使用 anim 的 var 字段获取目标对象
-    lv_obj_set_style_bg_opa(obj, (lv_opa_t)v, 0);
+    eos_anim_t *anim = lv_anim_get_user_data(a);
+    if (anim->cfg.fade.layered)
+    {
+        lv_obj_set_style_opa_layered(obj, (lv_opa_t)v, 0);
+    }
+    else
+    {
+        lv_obj_set_style_bg_opa(obj, (lv_opa_t)v, 0);
+    }
 }
 
 /**
@@ -247,7 +271,8 @@ static void _init_opa_anim(lv_anim_t *a, lv_obj_t *obj,
 eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
                                  int32_t opa_start,
                                  int32_t opa_end,
-                                 uint32_t duration)
+                                 uint32_t duration,
+                                 bool auto_delete)
 {
     if (!tar_obj || duration == 0)
         return NULL;
@@ -261,28 +286,41 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
+    anim->auto_delete_obj = auto_delete;
+    anim->tar_obj = tar_obj;
     anim->anim_timeline = lv_anim_timeline_create();
+    anim->cfg.fade.layered = true;
     if (!anim->anim_timeline)
     {
         lv_free(anim);
         return NULL;
     }
-
-    _init_opa_anim(&anim->fade.a_opa, tar_obj, opa_start, opa_end, duration, anim);
+    _init_opa_anim(&anim->anim.fade.a_opa, tar_obj, opa_start, opa_end, duration, anim);
+    lv_anim_set_user_data(&anim->anim.fade.a_opa, anim);
     return anim;
 }
 
 void eos_anim_fade_start(lv_obj_t *tar_obj,
                          int32_t opa_start,
                          int32_t opa_end,
-                         uint32_t duration)
+                         uint32_t duration,
+                         bool auto_delete)
 {
-    eos_anim_t *anim = eos_anim_fade_create(tar_obj, opa_start, opa_end, duration);
+    eos_anim_t *anim = eos_anim_fade_create(tar_obj, opa_start, opa_end, duration, auto_delete);
     if (!anim)
         return;
 
     if (!eos_anim_start(anim))
     {
         eos_anim_del(anim);
+    }
+}
+
+void eos_anim_fade_set_layered(eos_anim_t *a, bool layered)
+{
+    EOS_CHECK_PTR_RETURN(a);
+    if (a->type == EOS_ANIM_FADE)
+    {
+        a->cfg.fade.layered = layered;
     }
 }

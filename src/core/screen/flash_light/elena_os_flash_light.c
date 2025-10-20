@@ -104,12 +104,12 @@ void eos_flash_light_show(void)
     eos_event_add_cb(
         sp->swipe_obj,
         _swipe_panel_pull_back_cb,
-        eos_event_get_code(EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD),
+        EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,
         (void *)ud);
     eos_event_add_cb(
         sp->swipe_obj,
         _swipe_panel_moving_cb,
-        eos_event_get_code(EOS_EVENT_SLIDE_WIDGET_MOVING),
+        EOS_EVENT_SLIDE_WIDGET_MOVING,
         (void *)ud);
     int32_t touch_area_height = EOS_DISPLAY_HEIGHT * 0.2;
     lv_obj_set_height(sp->sw->touch_obj, touch_area_height);

@@ -54,7 +54,7 @@ static void _heart_rate(lv_event_t *e)
     eos_event_add_cb(
         label,
         _heart_rate_cb,
-        eos_event_get_code(EOS_EVENT_SENSOR_REPORT_HR),
+        EOS_EVENT_SENSOR_REPORT_HR,
         NULL);
 
     eos_sensor_read(t);
@@ -78,6 +78,6 @@ void eos_sensor_tester_create(void)
 void eos_sensor_report(eos_sensor_t *sensor)
 {
     EOS_CHECK_PTR_RETURN(sensor);
-    uint32_t event_code = eos_event_get_code(sensor->type + EOS_EVENT_SENSOR_REPORT_BASE);
+    uint32_t event_code = sensor->type + EOS_EVENT_SENSOR_REPORT_BASE;
     eos_event_broadcast(event_code, (void *)sensor);
 }

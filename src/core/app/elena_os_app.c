@@ -452,7 +452,7 @@ eos_result_t eos_app_install(const char *eapk_path)
     EOS_LOG_D("App installed successfully: %s", header.pkg_name);
     const char *app_id = eos_app_list_get_existing_id(header.pkg_id);
     EOS_LOG_D("app_id=%s\npkg_id=%s", app_id, header.pkg_id);
-    eos_event_broadcast(eos_event_get_code(EOS_EVENT_APP_INSTALLED), (void *)app_id);
+    eos_event_broadcast(EOS_EVENT_APP_INSTALLED, (void *)app_id);
     return EOS_OK;
 }
 
@@ -460,7 +460,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
 {
     EOS_LOG_D("Uninstall: %s", app_id);
     // 卸载应用程序
-    eos_event_broadcast(eos_event_get_code(EOS_EVENT_APP_DELETED), (void *)app_id);
+    eos_event_broadcast(EOS_EVENT_APP_DELETED, (void *)app_id);
 
     // 从顺序列表中移除
     _eos_app_order_remove(app_id);
@@ -508,7 +508,7 @@ static void _app_delete_cb(lv_event_t *e)
     EOS_LOG_D("_app_delete_cb target obj=%p", obj);
     if (strcmp(deleted_app_id, obj_app_id) == 0)
     {
-        eos_event_remove_cb(obj, eos_event_get_code(EOS_EVENT_APP_DELETED), _app_delete_cb);
+        eos_event_remove_cb(obj, EOS_EVENT_APP_DELETED, _app_delete_cb);
         lv_obj_delete(obj);
     }
 }
@@ -519,7 +519,7 @@ void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id)
     EOS_LOG_D("Auto del regesited: %s, ptr: %p", app_id, obj);
     eos_event_add_cb(obj,
                      _app_delete_cb,
-                     eos_event_get_code(EOS_EVENT_APP_DELETED),
+                     EOS_EVENT_APP_DELETED,
                      (void *)eos_strdup(app_id));
 }
 

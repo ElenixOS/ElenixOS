@@ -221,7 +221,7 @@ static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
     eos_event_add_cb(
         label,
         _control_center_battery_level_update_cb,
-        eos_event_get_code(EOS_EVENT_SENSOR_REPORT_BAT),
+        EOS_EVENT_SENSOR_REPORT_BAT,
         (void *)btn);
     return btn;
 }

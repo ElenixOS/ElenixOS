@@ -214,7 +214,7 @@ static void _container_delete_cb(lv_event_t *e)
 {
     lv_obj_t *container = lv_event_get_target(e);
     EOS_CHECK_PTR_RETURN(container);
-    eos_event_remove_cb(container, eos_event_get_code(EOS_EVENT_APP_INSTALLED), _app_installed_cb);
+    eos_event_remove_cb(container, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
 }
 
 lv_obj_t *eos_app_list_get_screen(void)
@@ -246,7 +246,7 @@ void eos_app_list_create(void)
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_START);
     lv_obj_add_event_cb(container, _container_delete_cb, LV_EVENT_DELETE, NULL);
-    eos_event_add_cb(container, _app_installed_cb, eos_event_get_code(EOS_EVENT_APP_INSTALLED), (void *)container);
+    eos_event_add_cb(container, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)container);
 
     _app_list_refresh(container);
 }

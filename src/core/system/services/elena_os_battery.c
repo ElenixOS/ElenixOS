@@ -49,6 +49,6 @@ eos_result_t eos_battery_service_start(void)
     eos_event_add_cb(
         lv_screen_active(),
         _battery_measurement_cb,
-        eos_event_get_code(EOS_EVENT_SENSOR_REPORT_BAT),
+        EOS_EVENT_SENSOR_REPORT_BAT,
         NULL);
 }

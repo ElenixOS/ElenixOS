@@ -124,7 +124,6 @@ eos_result_t eos_run(void)
     /************************** 系统组件初始化 **************************/
     script_engine_init();
     eos_sys_init();
-    eos_event_init();
 #if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),

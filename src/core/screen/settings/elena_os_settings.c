@@ -317,7 +317,7 @@ static void _settings_screen_apps(lv_event_t *e)
     lv_obj_set_style_pad_ver(app_list, 0, 0);
     lv_obj_center(app_list);
     lv_obj_set_scrollbar_mode(app_list, LV_SCROLLBAR_MODE_OFF);
-    eos_event_add_cb(app_list, _app_installed_cb, eos_event_get_code(EOS_EVENT_APP_INSTALLED), NULL);
+    eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
     eos_list_add_placeholder(app_list, 110);
 
     size_t app_list_size = eos_app_list_size();

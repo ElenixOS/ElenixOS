@@ -18,7 +18,7 @@
 #include "elena_os_event.h"
 
 // Macros and Definitions
-#define DEBUG_TOUCH_AREA 0 /**< 突出显示触摸区域 */
+#define DEBUG_TOUCH_AREA 1 /**< 突出显示触摸区域 */
 #define SLIDE_ANIM_DURATION 120
 
 // Variables
@@ -56,6 +56,7 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
 {
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(sw);
+    EOS_LOG_I("Pressing: [%p]", sw->target_obj);
     sw->state = EOS_SLIDE_WIDGET_STATE_DRAGGING;
     lv_point_t p;
     lv_indev_get_point(lv_indev_active(), &p);
@@ -146,7 +147,7 @@ static void _touch_obj_released_cb(lv_event_t *e)
 
     // 计算滑动方向和目标方向
     lv_coord_t swipe_delta = indev_cur - sw->_indev_start; // 触摸滑动距离
-    lv_coord_t move_delta = sw->target - sw->base;        // target 相对 base 的偏移
+    lv_coord_t move_delta = sw->target - sw->base;         // target 相对 base 的偏移
 
     lv_coord_t target;
 
@@ -220,8 +221,8 @@ static void _sw_touch_lock_cb(lv_event_t *e)
 static void _sw_touch_unlock_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
-    eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
     lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_move_foreground(obj);
 }
 
 void eos_slide_widget_reverse(eos_slide_widget_t *sw)
@@ -282,6 +283,18 @@ void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t 
     lv_anim_set_user_data(&a, sw);
     lv_anim_set_completed_cb(&a, _slide_widget_anim_completed_cb);
     lv_anim_start(&a);
+}
+
+void eos_slide_widget_touch_enable(eos_slide_widget_t *sw)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_flag(sw->touch_obj, LV_OBJ_FLAG_CLICKABLE);
+}
+
+void eos_slide_widget_touch_disable(eos_slide_widget_t *sw)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_remove_flag(sw->touch_obj, LV_OBJ_FLAG_CLICKABLE);
 }
 
 eos_slide_widget_t *eos_slide_widget_create(

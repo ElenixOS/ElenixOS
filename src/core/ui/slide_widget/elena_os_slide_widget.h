@@ -10,8 +10,20 @@
  * ## 简述
  *
  * 此组件为最基本的滑动组件，用于将目标对象从base滑动到target。
- * 当触摸长度（垂直方向或水平方向）/(target-base) 超过阈值时，触发滑动动画，自动滑至target，否则自动滑至base。
+ * 当`触摸长度（垂直方向或水平方向）/(target-base) `超过阈值时，触发滑动动画，自动滑至target，否则自动滑至base。
  *
+ * ## 提示
+ *
+ * 可以通过设置`threshold`为`EOS_THRESHOLD_INFINITE`以实现禁用目标对象移动但仍然可跟随触摸滑动的效果。
+ *
+ * ## 注意
+ *
+ * 所有事件都是发送给目标对象，即`target_obj`。
+ *
+ * 示例：
+ * ```c
+ * lv_obj_add_event_cb(sw->target_obj, my_callback, EOS_EVENT_SLIDE_WIDGET_DONE, NULL);
+ * ```
  */
 
 #ifndef ELENA_OS_SLIDE_WIDGET_H
@@ -31,7 +43,7 @@ extern "C" {
 #define EOS_THRESHOLD_SCALE 256
 /* Public typedefs --------------------------------------------*/
 
-typedef uint8_t eos_threshold_t;
+typedef uint32_t eos_threshold_t;
 
 enum{
     EOS_THRESHOLD_0      = 0,
@@ -43,8 +55,8 @@ enum{
     EOS_THRESHOLD_60     = 153,
     EOS_THRESHOLD_70     = 178,
     EOS_THRESHOLD_80     = 204,
-    EOS_THRESHOLD_90     = 229,
     EOS_THRESHOLD_100    = 255,
+    EOS_THRESHOLD_INFINITE = INT_MAX,
 };
 
 typedef enum
@@ -91,6 +103,16 @@ void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t 
  * @param sw 目标滑动组件
  */
 void eos_slide_widget_reverse(eos_slide_widget_t *sw);
+/**
+ * @brief 禁用触摸区域
+ * @param sw 目标滑动组件
+ */
+void eos_slide_widget_touch_disable(eos_slide_widget_t *sw);
+/**
+ * @brief 启用触摸区域
+ * @param sw 目标滑动组件
+ */
+void eos_slide_widget_touch_enable(eos_slide_widget_t *sw);
 /**
  * @brief 创建滑动组件
  * @param parent        触摸对象的父级对象

@@ -17,8 +17,8 @@
   - [ ] 查找手机
   - [ ] 手电筒
     - [x] 重构 SwipePanel
-    - [ ] CardPager
-      - [ ] Indicator
+    - [x] CardPager
+      - [x] Indicator
 - [x] 将所有 Timer 绑定到 JS 根页面，当 JS 退出时自动删除
 - [ ] 消息提醒
 - [ ] 统一使用LVGL样式(lv_style_t)

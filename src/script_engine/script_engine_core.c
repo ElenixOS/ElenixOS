@@ -251,7 +251,6 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_char_t str_buf_p[256];
 
-    /* Determining required buffer size */
     jerry_size_t req_sz = jerry_string_size(value, JERRY_ENCODING_CESU8);
 
     if (req_sz <= 255)

@@ -75,11 +75,10 @@ struct eos_card_pager_node_t
  */
 typedef struct
 {
-    lv_obj_t *parent;
+    lv_obj_t *container;
     lv_obj_t *background;
     lv_obj_t *indicator_container;
     eos_card_pager_node_t *page_list_head;
-
     uint8_t current_page_index;
     uint8_t page_count;
     eos_slide_widget_t *sw1;

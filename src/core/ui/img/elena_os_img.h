@@ -22,11 +22,12 @@ extern "C" {
 #define EOS_IMG_APP EOS_SYS_RES_IMG_DIR "app.bin"
 #define EOS_IMG_SETTINGS EOS_SYS_RES_IMG_DIR "settings.bin"
 #define EOS_IMG_APP_HEADER_BG EOS_SYS_RES_IMG_DIR "app_header.bin"
+#define EOS_IMG_FLASH_LIGHT EOS_SYS_RES_IMG_DIR "flash_light.bin"
 /* Public typedefs --------------------------------------------*/
 
 /**
  * @brief 用户数据结构体
- * 
+ *
  * 用于清理内存和动态分配的 img
  */
 typedef struct {

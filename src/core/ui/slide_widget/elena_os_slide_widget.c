@@ -78,7 +78,7 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
     {
         lv_obj_set_x(sw->target_obj, new_pos);
     }
-    lv_obj_send_event(sw->target_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)new_pos);
 }
 
 /************************** RELEASED **************************/
@@ -86,15 +86,14 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
 static void _slide_widget_timer_cb(lv_timer_t *timer)
 {
     eos_slide_widget_t *sw = lv_timer_get_user_data(timer);
-    lv_obj_send_event(sw->target_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
-
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
     if (sw->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
-        lv_obj_send_event(sw->target_obj, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, NULL);
+        lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, NULL);
     }
     else if (sw->state == EOS_SLIDE_WIDGET_STATE_REVERTING)
     {
-        lv_obj_send_event(sw->target_obj, EOS_EVENT_SLIDE_WIDGET_REVERTED, NULL);
+        lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REVERTED, NULL);
     }
     sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
 
@@ -106,23 +105,25 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_anim_get_user_data(a);
     EOS_CHECK_PTR_RETURN(sw);
 
-    lv_obj_send_event(sw->target_obj, EOS_EVENT_SLIDE_WIDGET_DONE, NULL);
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, NULL);
 
     // 避免操作过快
     lv_timer_t *t = lv_timer_create(_slide_widget_timer_cb, 50, sw);
     lv_timer_set_repeat_count(t, 1); // 只触发一次
 }
 
-static void _moving_set_x(void *obj, int32_t value)
+static void _moving_set_x(void *var, int32_t value)
 {
-    lv_obj_set_x(obj, value);
-    lv_obj_send_event(obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)var;
+    lv_obj_set_x(sw->target_obj, value);
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)value);
 }
 
-static void _moving_set_y(void *obj, int32_t value)
+static void _moving_set_y(void *var, int32_t value)
 {
-    lv_obj_set_y(obj, value);
-    lv_obj_send_event(obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)var;
+    lv_obj_set_y(sw->target_obj, value);
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)value);
 }
 
 static void _touch_obj_released_cb(lv_event_t *e)
@@ -188,7 +189,7 @@ static void _touch_obj_released_cb(lv_event_t *e)
 
     lv_anim_t a;
     lv_anim_init(&a);
-    lv_anim_set_var(&a, sw->target_obj);
+    lv_anim_set_var(&a, sw);
     lv_anim_set_values(&a, cur, target);
     EOS_LOG_I("Move from %d to %d", cur, target);
 
@@ -212,10 +213,6 @@ static void _touch_obj_released_cb(lv_event_t *e)
 static void _sw_touch_lock_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
-    eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
-    eos_slide_widget_t *active_sw = (eos_slide_widget_t *)lv_event_get_param(e);
-    if (active_sw != NULL && active_sw == sw)
-        return;
     lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -223,7 +220,6 @@ static void _sw_touch_unlock_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
     lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_foreground(obj);
 }
 
 void eos_slide_widget_reverse(eos_slide_widget_t *sw)
@@ -263,10 +259,11 @@ static void _slide_widget_delete_cb(lv_event_t *e)
 
 void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t end, uint32_t duration)
 {
+    EOS_CHECK_PTR_RETURN(sw && sw->target_obj);
     sw->state = EOS_SLIDE_WIDGET_STATE_ANIMATING;
     lv_anim_t a;
     lv_anim_init(&a);
-    lv_anim_set_var(&a, sw->target_obj);
+    lv_anim_set_var(&a, sw);
     lv_anim_set_values(&a,
                        start, end);
     EOS_LOG_I("Move from %d to %d", start, end);

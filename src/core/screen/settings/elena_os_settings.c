@@ -35,9 +35,10 @@
 #include "elena_os_sensor.h"
 #include "elena_os_config.h"
 #include "elena_os_icon.h"
+#include "elena_os_display.h"
 
 // Macros and Definitions
-
+#define _BRIGHTNESS_SMOOTH_DURATION 200
 // Variables
 
 // Function Implementations
@@ -92,12 +93,13 @@ static void _list_slider_minus_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(slider);
     int32_t min = lv_slider_get_min_value(slider);
     int32_t val = lv_slider_get_value(slider);
+    int32_t prev = val;
     if (val == min)
         return;
     val -= 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, val);
-    eos_display_set_brightness(val);
+    eos_display_set_brightness_smooth(prev,val,_BRIGHTNESS_SMOOTH_DURATION);
 }
 
 static void _list_slider_plus_cb(lv_event_t *e)
@@ -106,12 +108,13 @@ static void _list_slider_plus_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(slider);
     int32_t max = lv_slider_get_max_value(slider);
     int32_t val = lv_slider_get_value(slider);
+    int32_t prev = val;
     if (val == max)
         return;
     val += 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, val);
-    eos_display_set_brightness(val);
+    eos_display_set_brightness_smooth(prev,val,_BRIGHTNESS_SMOOTH_DURATION);
 }
 
 static void _settings_screen_display(lv_event_t *e)

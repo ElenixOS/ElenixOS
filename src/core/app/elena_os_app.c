@@ -22,6 +22,8 @@
 #include "elena_os_event.h"
 #include "script_engine_core.h"
 #include "cJSON.h"
+#include "elena_os_app_list.h"
+
 // Macros and Definitions
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
 /**
@@ -94,10 +96,13 @@ static eos_result_t _eos_app_order_load(void)
     // 检查文件是否存在
     if (!eos_is_file(EOS_APP_LIST_APP_ORDER_PATH))
     {
-        // 创建默认的JSON结构
+        // 创建默认的JSON结构，确保所有系统内置应用被加入默认顺序
         app_order_json = cJSON_CreateArray();
-        // 添加系统设置应用
-        cJSON_AddItemToArray(app_order_json, cJSON_CreateString("sys.settings"));
+        for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+        {
+            if (eos_sys_app_id_list[i])
+                cJSON_AddItemToArray(app_order_json, cJSON_CreateString(eos_sys_app_id_list[i]));
+        }
         return _eos_app_order_save();
     }
 
@@ -112,29 +117,37 @@ static eos_result_t _eos_app_order_load(void)
 
     if (!app_order_json)
     {
-        // 解析失败，创建新的JSON
+        // 解析失败，创建新的JSON，加入所有系统内置应用
         app_order_json = cJSON_CreateArray();
-        // 添加系统设置应用
-        cJSON_AddItemToArray(app_order_json, cJSON_CreateString("sys.settings"));
+        for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+        {
+            if (eos_sys_app_id_list[i])
+                cJSON_AddItemToArray(app_order_json, cJSON_CreateString(eos_sys_app_id_list[i]));
+        }
         return _eos_app_order_save();
     }
 
-    // 确保系统设置应用存在
-    bool has_settings = false;
-    cJSON *item = NULL;
-    cJSON_ArrayForEach(item, app_order_json)
+    // 确保所有系统内置应用存在于顺序列表中
+    for (int si = 0; si < EOS_SYS_APP_LAST; si++)
     {
-        if (cJSON_IsString(item) && strcmp(item->valuestring, "sys.settings") == 0)
+        const char *sys_id = eos_sys_app_id_list[si];
+        if (!sys_id)
+            continue;
+        bool has_sys = false;
+        cJSON *item = NULL;
+        cJSON_ArrayForEach(item, app_order_json)
         {
-            has_settings = true;
-            break;
+            if (cJSON_IsString(item) && strcmp(item->valuestring, sys_id) == 0)
+            {
+                has_sys = true;
+                break;
+            }
         }
-    }
-
-    if (!has_settings)
-    {
-        cJSON_AddItemToArray(app_order_json, cJSON_CreateString("sys.settings"));
-        _eos_app_order_save();
+        if (!has_sys)
+        {
+            cJSON_AddItemToArray(app_order_json, cJSON_CreateString(sys_id));
+            _eos_app_order_save();
+        }
     }
 
     return EOS_OK;
@@ -166,20 +179,27 @@ static eos_result_t _eos_app_order_add(const char *app_id)
 // 从顺序列表中移除应用
 static eos_result_t _eos_app_order_remove(const char *app_id)
 {
-    if (!app_order_json || !app_id) {
+    if (!app_order_json || !app_id)
+    {
         return EOS_FAILED;
     }
 
-    // 系统设置应用不能被移除
-    if (strcmp(app_id, "sys.settings") == 0) {
-        return EOS_OK;
+    // 系统内置应用不能被移除
+    for (int si = 0; si < EOS_SYS_APP_LAST; si++)
+    {
+        if (eos_sys_app_id_list[si] && strcmp(app_id, eos_sys_app_id_list[si]) == 0)
+        {
+            return EOS_OK;
+        }
     }
 
     // 查找应用在数组中的位置
     int index = 0;
     cJSON *item = NULL;
-    cJSON_ArrayForEach(item, app_order_json) {
-        if (cJSON_IsString(item) && strcmp(item->valuestring, app_id) == 0) {
+    cJSON_ArrayForEach(item, app_order_json)
+    {
+        if (cJSON_IsString(item) && strcmp(item->valuestring, app_id) == 0)
+        {
             // 使用索引删除元素
             cJSON_DeleteItemFromArray(app_order_json, index);
             return _eos_app_order_save();
@@ -379,6 +399,17 @@ eos_result_t _eos_app_list_refresh()
         EOS_LOG_E("Get installed app failed");
         return EOS_FAILED;
     }
+
+    // 将系统内置应用加入 app_list
+    for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+    {
+        const char *sys_id = eos_sys_app_id_list[i];
+        if (!eos_app_list_contains(sys_id))
+        {
+            _eos_app_list_add(&app_list, sys_id);
+        }
+    }
+
     return EOS_OK;
 }
 
@@ -486,7 +517,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
     // 清理应用数据
     if (eos_is_dir(data_path))
     {
-        ret = eos_rm_recursive(path);
+        ret = eos_rm_recursive(data_path);
     }
 
     if (ret != EOS_OK)
@@ -542,9 +573,18 @@ eos_result_t eos_app_init(void)
             if (cJSON_IsString(item))
             {
                 const char *app_id = item->valuestring;
-                // 系统设置应用始终保留
-                if (strcmp(app_id, "sys.settings") != 0 &&
-                    !eos_app_list_contains(app_id))
+                // 跳过所有系统内置应用
+                bool is_sys = false;
+                for (int si = 0; si < EOS_SYS_APP_LAST; si++)
+                {
+                    if (eos_sys_app_id_list[si] && strcmp(app_id, eos_sys_app_id_list[si]) == 0)
+                    {
+                        is_sys = true;
+                        break;
+                    }
+                }
+
+                if (!is_sys && !eos_app_list_contains(app_id))
                 {
                     // 应用不存在，从JSON中移除
                     cJSON_DeleteItemFromArray(app_order_json, index);

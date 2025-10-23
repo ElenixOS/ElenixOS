@@ -16,6 +16,8 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_theme.h"
 #include "elena_os_app_list.h"
+#include "elena_os_watchface.h"
+
 // Macros and Definitions
 #define NAV_STACK_SIZE 32
 #define NAV_HOME_SCREEN_INDEX 0
@@ -159,11 +161,6 @@ eos_result_t eos_nav_clean_up(void)
 lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 {
     EOS_CHECK_PTR_RETURN_VAL(launcher_screen, NULL);
-    if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
-    {
-        EOS_LOG_E("Watchface can't use nav");
-        return NULL;
-    }
     if (is_eos_nav_stack_initialized())
     {
         eos_nav_clean_up();
@@ -267,8 +264,8 @@ eos_result_t eos_nav_back_clean(void)
     {
         atomic_store(&eos_nav_busy, false);
         // 停止脚本引擎
-        if (script_engine_get_state() == SCRIPT_STATE_RUNNING ||
-            script_engine_get_state() == SCRIPT_STATE_SUSPEND)
+        if ((script_engine_get_state() == SCRIPT_STATE_RUNNING ||
+            script_engine_get_state() == SCRIPT_STATE_SUSPEND ) && lv_screen_active() == eos_watchface_get_screen())
         {
             script_engine_request_stop(); // 内部会自动调用栈清理函数
         }
@@ -276,7 +273,6 @@ eos_result_t eos_nav_back_clean(void)
         {
             eos_nav_clean_up();
         }
-        eos_app_list_create();
         EOS_LOG_D("Nav Exit");
         EOS_MEM("Mem check: eos_nav_back_clean");
         return EOS_OK;

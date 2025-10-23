@@ -34,11 +34,12 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
 /**
  * @brief 将目标 ID 的应用移动到指定位置，以便 app_list 排序
  * @param app_id 目标 ID
  * @param new_index 新的索引值
- * @return eos_result_t 
+ * @return eos_result_t
  */
 eos_result_t eos_app_order_move(const char *app_id, size_t new_index);
 /**
@@ -55,8 +56,8 @@ const char* eos_app_list_get_id(size_t index);
 /**
  * @brief 判断指定 id 字符串的代码是否存在于应用列表中
  * @param app_id id 字符串
- * @return true 
- * @return false 
+ * @return true
+ * @return false
  */
 bool eos_app_list_contains(const char* app_id);
 /**

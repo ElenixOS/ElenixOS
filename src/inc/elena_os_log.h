@@ -135,6 +135,10 @@ do                                \
 #define EOS_ASSERT(expr) ((void)0)
 #endif /* EOS_USE_ASSERT */
 
+/************************** 打印坐标 **************************/
+
+#define EOS_DEBUG_PRINT_POS(obj) EOS_LOG_D("Obj[%p] (%d,%d)", obj, lv_obj_get_x(obj), lv_obj_get_y(obj))
+
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

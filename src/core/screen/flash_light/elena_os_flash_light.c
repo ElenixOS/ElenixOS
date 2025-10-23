@@ -19,11 +19,19 @@
 #include "elena_os_icon.h"
 #include "elena_os_anim.h"
 #include "elena_os_utils.h"
+#include "elena_os_nav.h"
+#include "elena_os_card_pager.h"
+#include "elena_os_watchface.h"
+#include "elena_os_port.h"
+#include "elena_os_sys.h"
+#include "elena_os_display.h"
+#include "elena_os_app_list.h"
 
 // Macros and Definitions
-#define MASK_OPA LV_OPA_80
-#define EOS_OPA_MAX_DIST_DIV 1 /**< 达到最大不透明度的距离 */
-#define EOS_OPA_SCALE 1000     /**< 比例计算的放大倍数 */
+#define _MASK_OPA LV_OPA_80
+#define _OPA_MAX_DIST_DIV 1 /**< 达到最大不透明度的距离 */
+#define _OPA_SCALE 1000     /**< 比例计算的放大倍数 */
+#define _BRIGHTNESS_SMOOTH_DURATION 300
 typedef struct
 {
     eos_swipe_panel_t *sp;
@@ -32,7 +40,27 @@ typedef struct
 // Variables
 
 // Function Implementations
-void eos_flash_light_create(void);
+void _flash_light_create(lv_obj_t *launcher_screen);
+static void _screen_delete_cb(lv_event_t *e);
+
+static inline void _flash_light_delete(_pressing_user_data_t *ud)
+{
+    EOS_CHECK_PTR_RETURN(ud);
+
+    lv_obj_remove_event_cb(lv_screen_active(), _screen_delete_cb);
+
+    if (ud->sp)
+        eos_swipe_panel_delete(ud->sp);
+
+    if (ud->mask && lv_obj_is_valid(ud->mask))
+        lv_obj_delete(ud->mask);
+
+    ud->mask = NULL;
+    ud->sp = NULL;
+
+    free(ud);
+    EOS_LOG_I("Flash light deleted");
+}
 
 static void _swipe_panel_pull_back_cb(lv_event_t *e)
 {
@@ -42,10 +70,9 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
     int32_t swipe_obj_coord_y = lv_obj_get_y(ud->sp->swipe_obj);
     if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
-        if (lv_obj_has_class(ud->mask, &lv_obj_class))
-            lv_obj_delete(ud->mask);
-        eos_swipe_panel_delete(ud->sp);
-        free(ud);
+        _flash_light_delete(ud);
+        uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+        eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
     }
 }
 
@@ -61,13 +88,13 @@ static void _swipe_panel_moving_cb(lv_event_t *e)
 
     int32_t y = lv_obj_get_y(sp->swipe_obj);
 
-    int32_t max_dist = EOS_DISPLAY_HEIGHT / EOS_OPA_MAX_DIST_DIV;
+    int32_t max_dist = EOS_DISPLAY_HEIGHT / _OPA_MAX_DIST_DIV;
 
-    int32_t ratio = ((max_dist - y) * EOS_OPA_SCALE) / max_dist;
+    int32_t ratio = ((max_dist - y) * _OPA_SCALE) / max_dist;
 
-    ratio = EOS_CLAMP(ratio, 0, EOS_OPA_SCALE);
+    ratio = EOS_CLAMP(ratio, 0, _OPA_SCALE);
 
-    lv_opa_t opa = (lv_opa_t)((ratio * MASK_OPA) / EOS_OPA_SCALE);
+    lv_opa_t opa = (lv_opa_t)((ratio * _MASK_OPA) / _OPA_SCALE);
 
     EOS_LOG_I("y=%d, ratio=%d‰, opa=%d", y, ratio, opa);
 
@@ -76,7 +103,17 @@ static void _swipe_panel_moving_cb(lv_event_t *e)
 
 static void _flash_light_clicked_cb(lv_event_t *e)
 {
-    eos_flash_light_create();
+    _pressing_user_data_t *ud = (eos_swipe_panel_t *)lv_event_get_user_data(e);
+    _flash_light_delete(ud);
+    _flash_light_create(eos_watchface_get_screen());
+}
+
+static void _screen_delete_cb(lv_event_t *e)
+{
+    _pressing_user_data_t *ud = lv_event_get_user_data(e);
+    _flash_light_delete(ud);
+    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
 void eos_flash_light_show(void)
@@ -89,8 +126,6 @@ void eos_flash_light_show(void)
     lv_obj_set_size(mask, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(mask, EOS_COLOR_BLACK, 0);
 
-    // eos_anim_fade_start(mask, LV_OPA_TRANSP, MASK_OPA, 300);
-
     ud->mask = mask;
 
     eos_swipe_panel_t *sp = eos_swipe_panel_create(lv_screen_active());
@@ -101,22 +136,22 @@ void eos_flash_light_show(void)
 
     ud->sp = sp;
 
-    eos_event_add_cb(
-        sp->swipe_obj,
+    lv_obj_add_event_cb(
+        sp->sw->touch_obj,
         _swipe_panel_pull_back_cb,
         EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,
-        (void *)ud);
-    eos_event_add_cb(
-        sp->swipe_obj,
+        ud);
+    lv_obj_add_event_cb(
+        sp->sw->touch_obj,
         _swipe_panel_moving_cb,
         EOS_EVENT_SLIDE_WIDGET_MOVING,
-        (void *)ud);
+        ud);
     int32_t touch_area_height = EOS_DISPLAY_HEIGHT * 0.2;
     lv_obj_set_height(sp->sw->touch_obj, touch_area_height);
 
     lv_obj_t *container = sp->swipe_obj;
+    lv_obj_set_height(container, 2 * EOS_DISPLAY_HEIGHT);
     lv_obj_set_style_bg_opa(container, LV_OPA_TRANSP, 0);
-
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(container,
                           LV_FLEX_ALIGN_START,
@@ -139,11 +174,40 @@ void eos_flash_light_show(void)
     lv_obj_set_size(flash_light, lv_pct(100), EOS_DISPLAY_HEIGHT);
     lv_obj_set_style_border_width(flash_light, 0, 0);
     lv_obj_set_style_radius(flash_light, EOS_DISPLAY_RADIUS, 0);
-    lv_obj_add_event_cb(flash_light, _flash_light_clicked_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(flash_light,
+                        _flash_light_clicked_cb,
+                        LV_EVENT_CLICKED,
+                        ud);
+    lv_obj_add_event_cb(lv_screen_active(),
+                        _screen_delete_cb,
+                        LV_EVENT_DELETE,
+                        ud);
+
+    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    eos_display_set_brightness_smooth(b, EOS_DISPLAY_BRIGHTNESS_MAX, _BRIGHTNESS_SMOOTH_DURATION);
+}
+
+static void _flash_light_screen_delete_cb(lv_event_t *e)
+{
+    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
+}
+
+void _flash_light_create(lv_obj_t *launcher_screen)
+{
+    lv_obj_t *scr = eos_nav_init(launcher_screen);
+    lv_screen_load(scr);
+    eos_card_pager_t *cp = eos_card_pager_create(scr, EOS_CARD_PAGER_DIR_HOR);
+    lv_obj_t *page = eos_card_pager_create_page(cp);
+    lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
+    page = eos_card_pager_create_page(cp);
+    lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
+    eos_card_pager_move_node(cp, 0, 1);
+    eos_card_pager_move_page(cp, 1);
+    lv_obj_add_event_cb(scr, _flash_light_screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
 void eos_flash_light_create(void)
 {
-    lv_obj_t *scr = lv_obj_create(NULL);
-    lv_screen_load(scr);
+    _flash_light_create(eos_app_list_get_screen());
 }

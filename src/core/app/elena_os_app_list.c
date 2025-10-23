@@ -26,11 +26,32 @@
 #include "elena_os_lang.h"
 #include "script_engine_core.h"
 #include "elena_os_settings.h"
+#include "elena_os_flash_light.h"
+
 // Macros and Definitions
 
 // Variables
 extern lv_group_t *encoder_group;
 static lv_obj_t *app_list_screen = NULL;
+
+
+const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {
+    "sys.settings",
+    "sys.flash_light"
+};
+
+const char *eos_sys_app_icon_list[EOS_SYS_APP_LAST] = {
+    EOS_IMG_SETTINGS,
+    EOS_IMG_FLASH_LIGHT
+};
+
+
+const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
+    eos_settings_create,
+    eos_flash_light_create
+};
+
+
 // Function Implementations
 void eos_app_list_create(void);
 static void _app_list_icon_clicked_cb(lv_event_t *e);
@@ -38,6 +59,26 @@ static void _app_list_settings_cb(lv_event_t *e);
 static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
+
+/**
+ * @brief 系统内置应用点击回调
+ */
+static void _app_list_sys_app_cb(lv_event_t *e)
+{
+    const char *app_id = (const char *)lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(app_id);
+
+    for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+    {
+        if (strcmp(app_id, eos_sys_app_id_list[i]) == 0)
+        {
+            // 调用系统内置应用的入口函数
+            if (eos_sys_app_entry_list[i])
+                eos_sys_app_entry_list[i]();
+            return;
+        }
+    }
+}
 
 /**
  * @brief 刷新应用列表
@@ -58,22 +99,29 @@ static void _app_list_refresh(lv_obj_t *container)
         {
             if (cJSON_IsString(item))
             {
-                if (strcmp(item->valuestring, "sys.settings") == 0)
+                const char *order_id = item->valuestring;
+
+                // 检查是否为系统内置应用
+                bool is_sys = false;
+                for (int si = 0; si < EOS_SYS_APP_LAST; si++)
                 {
-                    char icon_path[PATH_MAX];
-                    memcpy(icon_path, EOS_IMG_SETTINGS, sizeof(EOS_IMG_SETTINGS));
-                    lv_obj_t *settings_icon = _app_icon_create(container, icon_path);
-                    lv_obj_add_event_cb(settings_icon, _app_list_settings_cb, LV_EVENT_CLICKED, NULL);
-                    // 设置系统应用的ID
-                    lv_obj_set_user_data(settings_icon, (void *)"sys.settings");
-                    continue;
+                    if (strcmp(order_id, eos_sys_app_id_list[si]) == 0)
+                    {
+                        char icon_path[PATH_MAX];
+                        snprintf(icon_path, sizeof(icon_path), "%s", eos_sys_app_icon_list[si]);
+                        lv_obj_t *sys_icon = _app_icon_create(container, icon_path);
+                        lv_obj_add_event_cb(sys_icon, _app_list_sys_app_cb, LV_EVENT_CLICKED, (void *)eos_sys_app_id_list[si]);
+                        lv_obj_set_user_data(sys_icon, (void *)eos_sys_app_id_list[si]);
+                        is_sys = true;
+                        break;
+                    }
                 }
+                if (is_sys)
+                    continue;
 
-                const char *app_id = eos_app_list_get_existing_id(item->valuestring);
-                ;
-
-                // 检查应用是否存在
-                if (!eos_app_list_contains(app_id))
+                // 非系统应用：从已安装列表中查找现有 id
+                const char *app_id = eos_app_list_get_existing_id(order_id);
+                if (!app_id)
                 {
                     continue;
                 }
@@ -83,7 +131,7 @@ static void _app_list_refresh(lv_obj_t *container)
                          app_id);
                 if (!eos_is_file(icon_path))
                 {
-                    memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
+                    snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
                 }
                 lv_obj_t *app_icon = _app_icon_create(container, icon_path);
                 lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);
@@ -94,17 +142,38 @@ static void _app_list_refresh(lv_obj_t *container)
     }
     else
     {
-        // 如果没有JSON顺序文件，按默认顺序添加
+        // 如果没有JSON顺序文件，按默认顺序添加（app_list 已包含系统应用与已安装应用）
         size_t app_list_size = eos_app_list_size();
         for (size_t i = 0; i < app_list_size; i++)
         {
             const char *app_id = eos_app_list_get_id(i);
+            if (!app_id) continue;
+
+            // 系统内置应用使用内置图标与入口
+            bool is_sys = false;
+            for (int si = 0; si < EOS_SYS_APP_LAST; si++)
+            {
+                if (strcmp(app_id, eos_sys_app_id_list[si]) == 0)
+                {
+                    char icon_path[PATH_MAX];
+                    snprintf(icon_path, sizeof(icon_path), "%s", eos_sys_app_icon_list[si]);
+                    lv_obj_t *sys_icon = _app_icon_create(container, icon_path);
+                    lv_obj_add_event_cb(sys_icon, _app_list_sys_app_cb, LV_EVENT_CLICKED, (void *)eos_sys_app_id_list[si]);
+                    lv_obj_set_user_data(sys_icon, (void *)eos_sys_app_id_list[si]);
+                    is_sys = true;
+                    break;
+                }
+            }
+            if (is_sys)
+                continue;
+
+            // 非系统应用：从安装目录读取 icon
             char icon_path[PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                      app_id);
             if (!eos_is_file(icon_path))
             {
-                memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
+                snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
             }
             lv_obj_t *app_icon = _app_icon_create(container, icon_path);
             lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);

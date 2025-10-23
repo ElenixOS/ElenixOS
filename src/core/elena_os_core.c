@@ -30,11 +30,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 #include "lvgl.h"
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
-#include "elena_os_log.h"
 #include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
@@ -54,8 +55,8 @@
 #include "elena_os_config_internal.h"
 #include "elena_os_services.h"
 #include "jerryscript.h"
-#include <time.h>
-#include <sys/time.h>
+#define EOS_LOG_TAG "Core"
+#include "elena_os_log.h"
 // Macros and Definitions
 #if EOS_FONT_TYPE == EOS_FONT_USE_C
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
@@ -63,7 +64,6 @@ LV_FONT_DECLARE(EOS_FONT_C_NAME);
 
 // Variables
 lv_group_t *encoder_group;
-
 
 // Function Implementations
 

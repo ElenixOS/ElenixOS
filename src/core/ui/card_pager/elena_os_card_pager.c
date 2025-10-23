@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "CardPager"
 #include "elena_os_log.h"
 #include "elena_os_config.h"
@@ -27,6 +28,7 @@
 #define _INDICATOR_INACTIVE_COLOR EOS_COLOR_DARK_GREY_2
 #define _INDICATOR_SHADOW_WIDTH 10
 #define _INDICATOR_SHADOW_COLOR _INDICATOR_INACTIVE_COLOR
+#define _PAGE_MARGIN 20
 // Variables
 
 // Function Implementations
@@ -47,7 +49,6 @@ static inline void _set_indicator_inactive(lv_obj_t *indicator)
 
 static void _sw1_reachd_threshold_cb(lv_event_t *e)
 {
-    lv_obj_t *obj = lv_event_get_target(e);
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     if (cp->sw1->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
@@ -67,12 +68,13 @@ static void _sw1_reachd_threshold_cb(lv_event_t *e)
         lv_obj_move_foreground(cp->background);
         lv_obj_move_foreground(eos_card_pager_get_page(cp, cp->current_page_index));
         lv_obj_move_foreground(cp->indicator_container);
+        lv_obj_move_foreground(cp->sw1->touch_obj);
+        lv_obj_move_foreground(cp->sw2->touch_obj);
     }
 }
 
 static void _sw2_reachd_threshold_cb(lv_event_t *e)
 {
-    lv_obj_t *obj = lv_event_get_target(e);
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     if (cp->sw2->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
@@ -91,6 +93,8 @@ static void _sw2_reachd_threshold_cb(lv_event_t *e)
         lv_obj_move_foreground(cp->background);
         lv_obj_move_foreground(eos_card_pager_get_page(cp, cp->current_page_index));
         lv_obj_move_foreground(cp->indicator_container);
+        lv_obj_move_foreground(cp->sw1->touch_obj);
+        lv_obj_move_foreground(cp->sw2->touch_obj);
     }
 }
 
@@ -209,16 +213,14 @@ static void _page_init(lv_obj_t *page)
 
 lv_obj_t *eos_card_pager_create_page(eos_card_pager_t *cp)
 {
-    EOS_CHECK_PTR_RETURN_VAL(cp && cp->parent, NULL);
+    EOS_CHECK_PTR_RETURN_VAL(cp, NULL);
 
     eos_card_pager_node_t *node = lv_malloc(sizeof(eos_card_pager_node_t));
     EOS_CHECK_PTR_RETURN_VAL(node, NULL);
     memset(node, 0, sizeof(eos_card_pager_node_t));
 
-    lv_obj_t *page = lv_obj_create(cp->parent);
+    lv_obj_t *page = lv_obj_create(cp->container);
     _page_init(page);
-    lv_obj_add_event_cb(page, _sw1_reachd_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, cp);
-    lv_obj_add_event_cb(page, _sw2_reachd_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, cp);
     node->page = page;
 
     lv_obj_t *indicator = lv_obj_create(cp->indicator_container);
@@ -431,6 +433,8 @@ static void _sw1_pressed_cb(lv_event_t *e)
     lv_obj_t *obj = lv_event_get_target(e);
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     lv_obj_move_foreground(cp->indicator_container);
+    lv_obj_move_foreground(cp->sw1->touch_obj);
+    lv_obj_move_foreground(cp->sw2->touch_obj);
 }
 
 static void _sw2_pressed_cb(lv_event_t *e)
@@ -438,6 +442,81 @@ static void _sw2_pressed_cb(lv_event_t *e)
     lv_obj_t *obj = lv_event_get_target(e);
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     lv_obj_move_foreground(cp->indicator_container);
+    lv_obj_move_foreground(cp->sw1->touch_obj);
+    lv_obj_move_foreground(cp->sw2->touch_obj);
+}
+
+static void _sw1_moving_cb(lv_event_t *e)
+{
+    int32_t new_pos = (lv_coord_t)lv_event_get_param(e);
+    eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
+    eos_card_pager_node_t *cur_node = eos_card_pager_get_node(cp, cp->current_page_index);
+    lv_obj_t *cur_obj = cur_node->page;
+    if (!cur_node->prev)
+        return;
+    lv_obj_t *prev_obj = cur_node->prev->page;
+    if (_IF_DIR_EQUAL_VER)
+    {
+        lv_obj_set_y(cur_obj, new_pos + EOS_DISPLAY_HEIGHT + _PAGE_MARGIN);
+    }
+    else
+    {
+        lv_obj_set_x(cur_obj, new_pos + EOS_DISPLAY_WIDTH + _PAGE_MARGIN);
+    }
+}
+
+static void _sw2_moving_cb(lv_event_t *e)
+{
+    int32_t new_pos = (lv_coord_t)lv_event_get_param(e);
+    eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
+    eos_card_pager_node_t *cur_node = eos_card_pager_get_node(cp, cp->current_page_index);
+    lv_obj_t *cur_obj = cur_node->page;
+    if (!cur_node->next)
+        return;
+    lv_obj_t *next_obj = cur_node->next->page;
+
+    if (_IF_DIR_EQUAL_VER)
+    {
+        lv_obj_set_y(cur_obj, new_pos - EOS_DISPLAY_HEIGHT - _PAGE_MARGIN);
+    }
+    else
+    {
+        lv_obj_set_x(cur_obj, new_pos - EOS_DISPLAY_WIDTH - _PAGE_MARGIN);
+    }
+}
+
+static void _sw1_reverted_cb(lv_event_t *e)
+{
+    EOS_LOG_D("Reverted");
+    eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
+    lv_obj_t *cur_page = eos_card_pager_get_page(cp, cp->current_page_index);
+    lv_obj_set_pos(cur_page, 0, 0);
+}
+
+static void _sw2_reverted_cb(lv_event_t *e)
+{
+    eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
+    lv_obj_t *cur_page = eos_card_pager_get_page(cp, cp->current_page_index);
+    lv_obj_set_pos(cur_page, 0, 0);
+}
+
+static void _container_delete_cb(lv_event_t *e)
+{
+    eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(cp);
+    cp->sw1 = NULL;
+    cp->sw2 = NULL;
+
+    eos_card_pager_node_t *node = cp->page_list_head;
+    while (node)
+    {
+        eos_card_pager_node_t *next = node->next;
+        lv_free(node);
+        node = next;
+    }
+    cp->page_list_head = NULL;
+
+    lv_free(cp);
 }
 
 eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t dir)
@@ -446,14 +525,18 @@ eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t d
     EOS_CHECK_PTR_RETURN_VAL(cp && parent, NULL);
     memset(cp, 0, sizeof(eos_card_pager_t));
 
-    cp->parent = parent;
+    cp->container = lv_obj_create(parent);
+    lv_obj_remove_style_all(cp->container);
+    lv_obj_set_size(cp->container, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    lv_obj_remove_flag(cp->container, LV_OBJ_FLAG_SCROLLABLE);
     cp->dir = dir;
     cp->loop = false;
-    cp->background = lv_obj_create(parent);
+    cp->background = lv_obj_create(cp->container);
+    lv_obj_set_style_bg_opa(cp->background, LV_OPA_TRANSP, 0);
     _page_init(cp->background);
     lv_obj_set_style_bg_color(cp->background, EOS_COLOR_BLACK, 0);
 
-    lv_obj_t *indicator_container = lv_obj_create(parent);
+    lv_obj_t *indicator_container = lv_obj_create(cp->container);
     lv_obj_remove_style_all(indicator_container);
     cp->indicator_container = indicator_container;
     // 创建初始页面
@@ -473,12 +556,12 @@ eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t d
                               LV_FLEX_ALIGN_CENTER,
                               LV_FLEX_ALIGN_CENTER);
 
-        cp->sw1 = eos_slide_widget_create(parent, page, EOS_SLIDE_DIR_VER, 0, EOS_THRESHOLD_INFINITE);
+        cp->sw1 = eos_slide_widget_create(cp->container, page, EOS_SLIDE_DIR_VER, 0, EOS_THRESHOLD_INFINITE);
         cp->sw1->base = -EOS_DISPLAY_HEIGHT;
         lv_obj_set_size(cp->sw1->touch_obj, EOS_DISPLAY_WIDTH, _CARD_PAGER_TOUCH_OBJ_HEIGHT);
         lv_obj_set_pos(cp->sw1->touch_obj, 0, 0);
 
-        cp->sw2 = eos_slide_widget_create(parent, page, EOS_SLIDE_DIR_VER, 0, EOS_THRESHOLD_INFINITE);
+        cp->sw2 = eos_slide_widget_create(cp->container, page, EOS_SLIDE_DIR_VER, 0, EOS_THRESHOLD_INFINITE);
         cp->sw2->base = EOS_DISPLAY_HEIGHT;
         lv_obj_set_size(cp->sw2->touch_obj, EOS_DISPLAY_WIDTH, _CARD_PAGER_TOUCH_OBJ_HEIGHT);
         lv_obj_set_pos(cp->sw2->touch_obj, 0, EOS_DISPLAY_HEIGHT - _CARD_PAGER_TOUCH_OBJ_HEIGHT);
@@ -496,12 +579,12 @@ eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t d
                               LV_FLEX_ALIGN_CENTER,
                               LV_FLEX_ALIGN_CENTER);
 
-        cp->sw1 = eos_slide_widget_create(parent, page, EOS_SLIDE_DIR_HOR, 0, EOS_THRESHOLD_INFINITE);
+        cp->sw1 = eos_slide_widget_create(cp->container, page, EOS_SLIDE_DIR_HOR, 0, EOS_THRESHOLD_INFINITE);
         cp->sw1->base = -EOS_DISPLAY_WIDTH;
         lv_obj_set_size(cp->sw1->touch_obj, _CARD_PAGER_TOUCH_OBJ_HEIGHT, EOS_DISPLAY_HEIGHT);
         lv_obj_set_pos(cp->sw1->touch_obj, 0, 0);
 
-        cp->sw2 = eos_slide_widget_create(parent, page, EOS_SLIDE_DIR_HOR, 0, EOS_THRESHOLD_INFINITE);
+        cp->sw2 = eos_slide_widget_create(cp->container, page, EOS_SLIDE_DIR_HOR, 0, EOS_THRESHOLD_INFINITE);
         cp->sw2->base = EOS_DISPLAY_WIDTH;
         lv_obj_set_size(cp->sw2->touch_obj, _CARD_PAGER_TOUCH_OBJ_HEIGHT, EOS_DISPLAY_HEIGHT);
         lv_obj_set_pos(cp->sw2->touch_obj, EOS_DISPLAY_WIDTH - _CARD_PAGER_TOUCH_OBJ_HEIGHT, 0);
@@ -512,9 +595,21 @@ eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t d
         break;
     }
 
-    // 保证 indicator 位于最前方
+    // 添加回调
+    lv_obj_add_event_cb(cp->container, _container_delete_cb, LV_EVENT_DELETE, cp);
+
     lv_obj_add_event_cb(cp->sw1->touch_obj, _sw1_pressed_cb, LV_EVENT_PRESSED, cp);
     lv_obj_add_event_cb(cp->sw2->touch_obj, _sw2_pressed_cb, LV_EVENT_PRESSED, cp);
+
+    lv_obj_add_event_cb(cp->sw1->touch_obj, _sw1_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, cp);
+    lv_obj_add_event_cb(cp->sw2->touch_obj, _sw2_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, cp);
+
+    lv_obj_add_event_cb(cp->sw1->touch_obj, _sw1_reachd_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, cp);
+    lv_obj_add_event_cb(cp->sw2->touch_obj, _sw2_reachd_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, cp);
+
+    lv_obj_add_event_cb(cp->sw1->touch_obj, _sw1_reverted_cb, EOS_EVENT_SLIDE_WIDGET_REVERTED, cp);
+    lv_obj_add_event_cb(cp->sw2->touch_obj, _sw2_reverted_cb, EOS_EVENT_SLIDE_WIDGET_REVERTED, cp);
+
     lv_obj_move_foreground(cp->indicator_container);
     return cp;
 }

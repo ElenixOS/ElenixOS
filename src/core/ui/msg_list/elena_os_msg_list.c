@@ -364,7 +364,7 @@ static void _mark_as_read_btn_click_cb(lv_event_t *e)
     lv_obj_t *container = lv_obj_get_parent(btn);
 
     eos_anim_t *anim = eos_anim_scale_create(container, EOS_DISPLAY_WIDTH, 0, EOS_DISPLAY_HEIGHT, 0, COMMON_ANIM_DURATION, false);
-    eos_anim_set_cb(anim, _mark_as_read_anim_end_cb, data);
+    eos_anim_add_cb(anim, _mark_as_read_anim_end_cb, data);
     eos_anim_start(anim);
 
     // 删除消息项并更新UI状态

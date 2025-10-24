@@ -1,15 +1,8 @@
-#if 0
-
 /**
  * @file elena_os_test.c
  * @brief 系统功能测试
  * @author Sab1e
  * @date 2025-08-20
- */
-
-/**
- * TODO:
- * 新增上拉快捷控制台（先做设置App）
  */
 
 #include "elena_os_test.h"
@@ -31,17 +24,19 @@
 #include "elena_os_app_list.h"
 #include "elena_os_core.h"
 #include "script_engine_core.h"
-#include "script_engine_nav.h"
 #include "elena_os_misc.h"
 #include "elena_os_watchface_list.h"
+#include "elena_os_icon.h"
+#include "elena_os_toast.h"
+
 // Macros and Definitions
 // #define TEST_USE_ZH_FONT
 #ifdef TEST_USE_ZH_FONT
 LV_FONT_DECLARE(eos_font_resource_han_rounded_30);
 #endif
 // Variables
-static lv_obj_t *img = NULL;         // 全局图片对象
-static lv_obj_t *ta = NULL;          // 全局文本输入框对象
+static lv_obj_t *img = NULL;    // 全局图片对象
+static lv_obj_t *ta = NULL;     // 全局文本输入框对象
 extern script_pkg_t script_pkg; // 脚本包
 // Function Implementations
 
@@ -254,307 +249,61 @@ static void _test_image()
 
 static void _test_app_list()
 {
-    eos_app_list_create_async();
+    eos_app_list_create();
 }
 
-static void _test_watchface_list(){
-    eos_watchface_list_create_async();
+static void _test_watchface_list()
+{
+    eos_watchface_list_create();
+}
+
+static void _toast_clicked_cb(lv_event_t *e)
+{
+    eos_app_list_create();
+}
+
+static void _test_toast()
+{
+    lv_obj_t *toast = eos_toast_show(NULL, "Click me to open App List!");
+    lv_obj_add_event_cb(toast, _toast_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 
 void eos_test_start(void)
 {
-#ifdef DEBUG_USE_ZH_FONT
-
-    lv_theme_t *th = lv_theme_default_init(lv_display_get_default(), lv_palette_main(LV_PALETTE_BLUE),
-                                           lv_palette_main(LV_PALETTE_RED),
-                                           true, /* 深色模式 */
-                                           &eos_font_resource_han_rounded_30);
-
-#else
-    lv_theme_t *th = lv_theme_default_init(lv_display_get_default(), lv_palette_main(LV_PALETTE_BLUE),
-                                           lv_palette_main(LV_PALETTE_RED),
-                                           true, /* 深色模式 */
-                                           &lv_font_montserrat_24);
-#endif
-    lv_display_set_theme(NULL, th);
-
     lv_obj_t *scr = lv_screen_active();
-
-    // lv_display_t *disp = lv_display_get_default();
-
-    // lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_PARTIAL);
-
-    // lv_obj_t *img = lv_image_create(lv_screen_active());
-    // eos_img_set_src(img, "/bg.bin");
-    // lv_obj_center(img);
-    // lv_obj_move_background(img);
 
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
 
+    eos_nav_init(scr);
+
     lv_obj_t *btn;
     lv_list_add_text(test_list, "[ElenaOS Test List]");
     // 测试导航功能
-    btn = lv_list_add_button(test_list, LV_SYMBOL_HOME, "Navigation");
+    btn = lv_list_add_button(test_list, RI_MENU_UNFOLD_FILL, "Navigation");
     lv_obj_add_event_cb(btn, _test_nav_cb_1, LV_EVENT_CLICKED, NULL);
     // 测试消息列表
-    btn = lv_list_add_button(test_list, LV_SYMBOL_LIST, "Message List");
+    btn = lv_list_add_button(test_list, RI_CHAT_SMILE_FILL, "Message List");
     lv_obj_add_event_cb(btn, _test_msg_list, LV_EVENT_CLICKED, NULL);
     // 测试字体
-    btn = lv_list_add_button(test_list, LV_SYMBOL_FILE, "Font");
+    btn = lv_list_add_button(test_list, RI_FONT_SANS_SERIF, "Font");
     lv_obj_add_event_cb(btn, _test_font, LV_EVENT_CLICKED, NULL);
     // 测试语言切换
-    btn = lv_list_add_button(test_list, LV_SYMBOL_COPY, "Language");
+    btn = lv_list_add_button(test_list, RI_TRANSLATE, "Language");
     lv_obj_add_event_cb(btn, _test_lang, LV_EVENT_CLICKED, NULL);
     // 测试虚拟键盘
-    btn = lv_list_add_button(test_list, LV_SYMBOL_KEYBOARD, "Virtual Keyboard");
+    btn = lv_list_add_button(test_list, RI_KEYBOARD_BOX_FILL, "Virtual Keyboard");
     lv_obj_add_event_cb(btn, _test_vkb, LV_EVENT_CLICKED, NULL);
     // 测试图像显示
-    btn = lv_list_add_button(test_list, LV_SYMBOL_IMAGE, "Image");
+    btn = lv_list_add_button(test_list, RI_IMAGE_FILL, "Image");
     lv_obj_add_event_cb(btn, _test_image, LV_EVENT_CLICKED, NULL);
     // 测试应用列表
-    btn = lv_list_add_button(test_list, LV_SYMBOL_DRIVE, "App List");
+    btn = lv_list_add_button(test_list, RI_APPS_FILL, "App List");
     lv_obj_add_event_cb(btn, _test_app_list, LV_EVENT_CLICKED, NULL);
-    // 测试应用列表
+    // 测试表盘列表
     btn = lv_list_add_button(test_list, LV_SYMBOL_LIST, "Watchface List");
     lv_obj_add_event_cb(btn, _test_watchface_list, LV_EVENT_CLICKED, NULL);
-
-    while (1)
-    {
-        uint32_t d = lv_timer_handler();
-        if (script_engine_get_state()==SCRIPT_STATE_READY)
-        {
-            script_engine_nav_init(scr);
-            script_engine_result_t ret = script_engine_run(&script_pkg);
-            eos_pkg_free(&script_pkg);
-            if (ret != SE_OK)
-            {
-                EOS_LOG_E("Script encounter a fatal error");
-                lv_obj_t *mbox = lv_msgbox_create(NULL);
-                lv_obj_set_width(mbox,lv_pct(80));
-                lv_msgbox_add_title(mbox, "Scrip Runtime");
-
-                lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
-                lv_msgbox_add_close_button(mbox);
-            }
-            script_engine_nav_clean_up();
-            EOS_LOG_D("Script OK");
-        }
-        eos_delay(d);
-    }
+    // 测试 Toast
+    btn = lv_list_add_button(test_list, RI_MESSAGE_2_FILL, "Toast");
+    lv_obj_add_event_cb(btn, _test_toast, LV_EVENT_CLICKED, NULL);
 }
-jerry_value_t jph(const jerry_call_info_t *call_info_p,
-                  const jerry_value_t args_p[],
-                  const jerry_length_t args_count)
-{
-    (void)call_info_p; // 当前未用到 this/func_obj，可忽略
-
-    for (jerry_length_t i = 0; i < args_count; i++)
-    {
-        jerry_value_t str_val;
-
-        if (jerry_value_is_string(args_p[i]))
-        {
-            str_val = jerry_value_copy(args_p[i]);
-        }
-        else
-        {
-            str_val = jerry_value_to_string(args_p[i]); // 转为字符串
-        }
-
-        jerry_size_t size = jerry_string_size(str_val, JERRY_ENCODING_UTF8);
-        jerry_char_t *buf = (jerry_char_t *)malloc(size + 1); // Explicitly cast void* to jerry_char_t*
-        if (!buf)
-        {
-            jerry_value_free(str_val);
-            continue;
-        }
-
-        jerry_string_to_buffer(str_val, JERRY_ENCODING_UTF8, buf, size);
-        buf[size] = '\0';
-
-        printf("%s", buf);
-        if (i < args_count - 1)
-        {
-            printf(" ");
-        }
-
-        free(buf);
-        jerry_value_free(str_val);
-    }
-
-    printf("\n");
-    return jerry_undefined();
-}
-
-
-void print_current_time_ms() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);  // 获取秒和微秒
-    struct tm *tm_info = localtime(&tv.tv_sec);
-
-    printf("%04d-%02d-%02d %02d:%02d:%02d.%03ld\n",
-           tm_info->tm_year + 1900,
-           tm_info->tm_mon + 1,
-           tm_info->tm_mday,
-           tm_info->tm_hour,
-           tm_info->tm_min,
-           tm_info->tm_sec,
-           tv.tv_usec / 1000);  // 微秒转换为毫秒
-}
-
-static void _reg_print(jerry_value_t parent,int i)
-{
-    jerry_value_t fn = jerry_function_external(jph);
-    char str[32]="";
-    snprintf(str,32,"print%d",i);
-    // printf("%s\n",str);
-    jerry_value_t name = jerry_string_sz(str);
-    jerry_value_free(jerry_object_set(parent, name, fn));
-    jerry_value_free(name);
-    jerry_value_free(fn);
-    // jerry_value_free(parent);
-}
-
-jerry_value_t global_func;
-static void _test_js(void)
-{
-    jerry_init(JERRY_INIT_MEM_STATS);
-    jerry_value_t global = jerry_current_realm();
-
-    printf("=== Initial memory ===\n");
-    global_func = jerry_object();
-    print_current_time_ms();
-    for(int i=0;i<1000;i++){
-        _reg_print(global_func,i);
-    }
-    _check_mem();
-
-    for (int i = 0; i < 5; i++) {
-        print_current_time_ms();
-        printf("\n--- Realm iteration %d ---\n", i+1);
-
-        // 创建新 realm
-        jerry_value_t new_realm = jerry_realm();
-
-        // 切换到新 realm
-        jerry_value_t old_realm = jerry_set_realm(new_realm);
-
-        // 挂到 global 上
-        jerry_value_t key = jerry_string_sz("global");
-        jerry_value_free(jerry_object_set(new_realm, key, global_func));
-        jerry_value_free(key);
-
-        // 执行 JS 测试
-        const char *code = "var x = 100; global.print1(x);";
-        jerry_value_free(jerry_eval(code, strlen(code), JERRY_PARSE_NO_OPTS));
-
-        // 切换回原始 realm
-        jerry_value_free(jerry_set_realm(old_realm));
-
-        // 手动触发 GC
-        jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
-        _check_mem();
-    }
-
-}
-
-void benchmark_realm(int iterations, int print_count, const char *label) {
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-
-    for (int i = 0; i < iterations; i++) {
-        jerry_value_t new_realm = jerry_realm();
-        jerry_value_t old_realm = jerry_set_realm(new_realm);
-
-        // attach global_func
-        jerry_value_t key = jerry_string_sz("global");
-        jerry_value_free(jerry_object_set(new_realm, key, global_func));
-        jerry_value_free(key);
-
-        // create print_count prints
-        for (int j = 0; j < print_count; j++) {
-            _reg_print(global_func, j);
-        }
-
-        // eval JS
-        const char *code = "var x = 100; global.print1(x);";
-        jerry_value_free(jerry_eval(code, strlen(code), JERRY_PARSE_NO_OPTS));
-
-        jerry_value_free(jerry_set_realm(old_realm));
-        jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
-    }
-
-    gettimeofday(&end, NULL);
-
-    long elapsed_ms = (end.tv_sec - start.tv_sec) * 1000 +
-                      (end.tv_usec - start.tv_usec) / 1000;
-
-    printf("%s elapsed time: %ld ms\n", label, elapsed_ms);
-}
-long long current_time_ms() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (long long)tv.tv_sec * 1000 + tv.tv_usec / 1000;
-}
-void test_global_vs_per_realm() {
-    long long start, end;
-    jerry_value_t key;
-
-    // Test 1: global_func reused
-    jerry_init(JERRY_INIT_MEM_STATS);
-    jerry_value_t global_func = jerry_object();
-    for (int i = 0; i < 5000; i++) _reg_print(global_func, i);
-
-    start = current_time_ms();
-    for (int i = 0; i < 5; i++) {
-        jerry_value_t new_realm = jerry_realm();
-        jerry_value_t old_realm = jerry_set_realm(new_realm);
-
-        key = jerry_string_sz("global");
-        jerry_value_free(jerry_object_set(new_realm, key, global_func));
-        jerry_value_free(key);
-
-        const char *code = "var x=100; global.print();";
-        jerry_value_free(jerry_eval(code, strlen(code), JERRY_PARSE_NO_OPTS));
-
-        jerry_value_free(jerry_set_realm(old_realm));
-        jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
-        _check_mem();
-    }
-    end = current_time_ms();
-    long long test1_time = end - start;
-    jerry_value_free(global_func);
-    jerry_cleanup();
-
-    // Test 2: per-realm function
-    jerry_init(JERRY_INIT_MEM_STATS);
-    start = current_time_ms();
-    for (int i = 0; i < 5; i++) {
-        jerry_value_t new_realm = jerry_realm();
-        jerry_value_t old_realm = jerry_set_realm(new_realm);
-
-        jerry_value_t realm_func = jerry_object();
-        for (int j = 0; j < 5000; j++) _reg_print(realm_func, j);
-
-        key = jerry_string_sz("global");
-        jerry_value_free(jerry_object_set(new_realm, key, realm_func));
-        jerry_value_free(key);
-
-        const char *code = "var x=100; global.print();";
-        jerry_value_free(jerry_eval(code, strlen(code), JERRY_PARSE_NO_OPTS));
-
-        jerry_value_free(realm_func);
-        jerry_value_free(jerry_set_realm(old_realm));
-        jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
-        _check_mem();
-    }
-    end = current_time_ms();
-    long long test2_time = end - start;
-    jerry_cleanup();
-
-    printf("Test1 total time: %lld ms\n", test1_time);
-    printf("Test2 total time: %lld ms\n", test2_time);
-}
-
-#endif

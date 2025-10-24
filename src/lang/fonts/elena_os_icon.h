@@ -4,7 +4,7 @@
  *
  * 此文件由 `gen_icon_def.py` 自动生成。
  * 不要手动修改！
- * @date 2025-10-14
+ * @date 2025-10-24
  */
 
 #ifndef ELENA_OS_ICON_H
@@ -3007,6 +3007,8 @@ extern "C" {
 #define RI_SERVICE_BELL_FILL "\uF5F1"
 #define RI_SERVICE_BELL_LINE "\uF5F2"
 #define RI_FLASH_LIGHT "\uF5F3"
+#define RI_VOLUME_LOUD_FILL "\uF5F4"
+#define RI_VOLUME_LOUD_LINE "\uF5F5"
 
 
 void eos_icon_register(void);

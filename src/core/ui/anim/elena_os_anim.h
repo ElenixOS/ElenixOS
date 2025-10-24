@@ -21,7 +21,7 @@
  * ### 动画播放完成后触发的回调：
  *
  * ```c
- * eos_anim_set_cb(anim, user_cb, user_data);
+ * eos_anim_add_cb(anim, user_cb, user_data);
  * ```
  *
  * ### 启动动画
@@ -75,6 +75,7 @@ extern "C" {
 typedef enum{
     EOS_ANIM_SCALE, /**< 缩放动画 */
     EOS_ANIM_FADE,  /**< 透明度渐变动画 */
+    EOS_ANIM_MOVE,  /**< 位置移动动画 */
     // 此处可以添加其他动画类型
 }eos_anim;
 typedef struct eos_anim_t eos_anim_t;   // 预定义
@@ -106,6 +107,11 @@ struct eos_anim_t
         {
             lv_anim_t a_opa;
         } fade;
+        struct
+        {
+            lv_anim_t a_x; /**< X 轴位置动画 */
+            lv_anim_t a_y; /**< Y 轴位置动画 */
+        } move;
         // 此处可以添加其他动画类型的结构
     } anim;
     union
@@ -152,7 +158,7 @@ void eos_anim_scale_start(lv_obj_t* tar_obj,
  * @param user_cb 回调函数
  * @param user_data 用户数据指针（需要用户自行管理生命周期）
  */
-void eos_anim_set_cb(
+void eos_anim_add_cb(
     eos_anim_t *anim,
     eos_anim_cb_t user_cb,
     void *user_data);
@@ -196,6 +202,22 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
 void eos_anim_fade_start(lv_obj_t *tar_obj,
                          int32_t opa_start,
                          int32_t opa_end,
+                         uint32_t duration, bool auto_delete);
+
+/**
+ * @brief 创建并返回一个移动动画对象（位置从 start_x,start_y -> end_x,end_y）
+ */
+eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
+                                 int32_t start_x, int32_t start_y,
+                                 int32_t end_x, int32_t end_y,
+                                 uint32_t duration, bool auto_delete);
+
+/**
+ * @brief 创建并立即播放移动动画
+ */
+void eos_anim_move_start(lv_obj_t *tar_obj,
+                         int32_t start_x, int32_t start_y,
+                         int32_t end_x, int32_t end_y,
                          uint32_t duration, bool auto_delete);
 /**
  * @brief 当动画播放完毕时自动删除`tar_obj`

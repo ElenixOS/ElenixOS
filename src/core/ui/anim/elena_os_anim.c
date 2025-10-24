@@ -54,6 +54,20 @@ static void _set_height_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_height(var->var, v);
 }
+/**
+ * @brief 动画播放时设置 X 位置的回调
+ */
+static void _set_x_cb(lv_anim_t *var, int32_t v)
+{
+    lv_obj_set_x(var->var, v);
+}
+/**
+ * @brief 动画播放时设置 Y 位置的回调
+ */
+static void _set_y_cb(lv_anim_t *var, int32_t v)
+{
+    lv_obj_set_y(var->var, v);
+}
 static void _free_anim_later(lv_timer_t *t)
 {
     eos_anim_t *anim = lv_timer_get_user_data(t);
@@ -121,6 +135,40 @@ static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 
+/**
+ * @brief 内部函数：初始化 X 位置动画
+ */
+static void _init_x_anim(lv_anim_t *a, lv_obj_t *obj,
+                        int32_t start, int32_t end,
+                        uint32_t duration, eos_anim_t *ctx)
+{
+    lv_anim_init(a);
+    lv_anim_set_var(a, obj);
+    lv_anim_set_values(a, start, end);
+    lv_anim_set_custom_exec_cb(a, _set_x_cb);
+    lv_anim_set_path_cb(a, lv_anim_path_ease_out);
+    lv_anim_set_duration(a, duration);
+    lv_anim_set_completed_cb(a, _eos_anim_ready_cb);
+    lv_anim_set_user_data(a, ctx);
+}
+
+/**
+ * @brief 内部函数：初始化 Y 位置动画
+ */
+static void _init_y_anim(lv_anim_t *a, lv_obj_t *obj,
+                        int32_t start, int32_t end,
+                        uint32_t duration, eos_anim_t *ctx)
+{
+    lv_anim_init(a);
+    lv_anim_set_var(a, obj);
+    lv_anim_set_values(a, start, end);
+    lv_anim_set_custom_exec_cb(a, _set_y_cb);
+    lv_anim_set_path_cb(a, lv_anim_path_ease_out);
+    lv_anim_set_duration(a, duration);
+    lv_anim_set_completed_cb(a, _eos_anim_ready_cb);
+    lv_anim_set_user_data(a, ctx);
+}
+
 void eos_anim_del(eos_anim_t *anim)
 {
     if (!anim)
@@ -169,6 +217,60 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     return anim;
 }
 
+/**
+ * @brief 创建移动动画（位置移动）
+ */
+eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
+                                 int32_t start_x, int32_t start_y,
+                                 int32_t end_x, int32_t end_y,
+                                 uint32_t duration, bool auto_delete)
+{
+    if (!tar_obj || duration == 0)
+        return NULL;
+
+    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    if (!anim)
+        return NULL;
+
+    // 基础初始化
+    anim->type = EOS_ANIM_MOVE;
+    anim->anim_count = 2;
+    anim->anim_completed_count = 0;
+    anim->user_cb = NULL;
+    anim->user_data = NULL;
+    anim->auto_delete_obj = auto_delete;
+    anim->tar_obj = tar_obj;
+    anim->anim_timeline = lv_anim_timeline_create();
+    if (!anim->anim_timeline)
+    {
+        lv_free(anim);
+        return NULL;
+    }
+
+    // 初始化 X 动画
+    _init_x_anim(&anim->anim.move.a_x, tar_obj, start_x, end_x, duration, anim);
+
+    // 初始化 Y 动画
+    _init_y_anim(&anim->anim.move.a_y, tar_obj, start_y, end_y, duration, anim);
+
+    return anim;
+}
+
+void eos_anim_move_start(lv_obj_t *tar_obj,
+                                 int32_t start_x, int32_t start_y,
+                                 int32_t end_x, int32_t end_y,
+                                 uint32_t duration, bool auto_delete)
+{
+    eos_anim_t *anim = eos_anim_move_create(tar_obj, start_x, start_y, end_x, end_y, duration, auto_delete);
+    if (!anim)
+        return;
+
+    if (!eos_anim_start(anim))
+    {
+        eos_anim_del(anim);
+    }
+}
+
 bool eos_anim_start(eos_anim_t *anim)
 {
     if (!anim || !anim->anim_timeline)
@@ -185,6 +287,10 @@ bool eos_anim_start(eos_anim_t *anim)
         break;
     case EOS_ANIM_FADE:
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.fade.a_opa);
+        break;
+    case EOS_ANIM_MOVE:
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_x);
+        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_y);
         break;
     default:
         return false;
@@ -215,7 +321,7 @@ void eos_anim_set_auto_delete(eos_anim_t *anim)
     anim->auto_delete_obj = true;
 }
 
-void eos_anim_set_cb(
+void eos_anim_add_cb(
     eos_anim_t *anim,
     eos_anim_cb_t user_cb,
     void *user_data)

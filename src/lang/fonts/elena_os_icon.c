@@ -1,9 +1,10 @@
 /**
  * @file elena_os_icon.c
  * @brief 将图标宏注册到 JerryScript，全自动生成。
- * @date 2025-10-12
+ * @date 2025-10-24
  */
 
+// Includes
 #include "elena_os_icon.h"
 #include "jerryscript.h"
 #include <stdio.h>
@@ -14,6 +15,7 @@
 // Variables
 extern jerry_value_t script_engine_eos_obj;
 
+// Function Implementations
 /**
  * @brief 将所有图标宏名与Unicode值映射注册到 JerryScript 全局对象
  */
@@ -8968,6 +8970,15 @@ void eos_icon_register(void)
         #endif
         #ifdef RI_SERVICE_BELL_LINE
         {"RI_SERVICE_BELL_LINE", RI_SERVICE_BELL_LINE},
+        #endif
+        #ifdef RI_FLASH_LIGHT
+        {"RI_FLASH_LIGHT", RI_FLASH_LIGHT},
+        #endif
+        #ifdef RI_VOLUME_LOUD_FILL
+        {"RI_VOLUME_LOUD_FILL", RI_VOLUME_LOUD_FILL},
+        #endif
+        #ifdef RI_VOLUME_LOUD_LINE
+        {"RI_VOLUME_LOUD_LINE", RI_VOLUME_LOUD_LINE},
         #endif
     };
 

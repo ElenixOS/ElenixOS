@@ -233,12 +233,15 @@ static void _control_center_phone_find_cb(lv_event_t *e)
 
 static char *_control_center_volume_get_icon_by_value(uint8_t value)
 {
-    if (value > 50)
+    if (value > 60)
+    {
+        return RI_VOLUME_LOUD_FILL;
+    }
+    else if (value > 30)
     {
         return RI_VOLUME_UP_FILL;
     }
-    else if (value > 0)
-    {
+    else if (value > 0){
         return RI_VOLUME_DOWN_FILL;
     }
     else

@@ -61,6 +61,7 @@
 #if EOS_FONT_TYPE == EOS_FONT_USE_C
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
 #endif
+#define EOS_TEST_ENABLE 1
 
 // Variables
 lv_group_t *encoder_group;
@@ -179,7 +180,11 @@ eos_result_t eos_run(void)
     eos_battery_service_start();
 
     /************************** 系统启动 **************************/
+#if EOS_TEST_ENABLE
+    eos_test_start();
+#else
     eos_watchface_create(); // 加载表盘
+#endif
     // 开始绘制
     while (1)
     {

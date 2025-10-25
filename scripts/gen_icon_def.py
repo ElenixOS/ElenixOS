@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 @file gen_icon_def.py
-@brief 从字体文件自动生成 ElenaOS 图标定义头文件
+@brief 从字体文件自动生成 ElenaOS 图标定义头文件，可指定 Unicode 范围
 
 Usage:
-    python gen_icon_def.py --ttf ./fonts/remixicon.ttf --out ./src/lang/fonts
+    python gen_icon_def.py --ttf ./fonts/remixicon.ttf --out ./src/lang/fonts --start 0xE000 --end 0xEFFF
 
 若不指定参数，将默认使用：
-    ../thrid_party/RemixIcon/fonts/remixicon.ttf
+    ../third_party/RemixIcon/fonts/remixicon.ttf
     ../src/lang/fonts/
 """
 
@@ -19,13 +19,12 @@ from datetime import datetime
 
 def normalize_name(name: str) -> str:
     """规范化符号名为 C 宏格式"""
-    # 替换无效字符为下划线
     invalid_chars = ['-', '.', ' ', '/', '+', '(', ')', '[', ']', '{', '}', '&', '%', '$', '@', '!', '?', ':', ';', ',']
     for ch in invalid_chars:
         name = name.replace(ch, '_')
     return name.upper()
 
-def generate_icon_header(ttf_path: str, out_dir: str):
+def generate_icon_header(ttf_path: str, out_dir: str, start: int = None, end: int = None):
     """生成 elena_os_icon.h 文件"""
     ttf_path = os.path.abspath(ttf_path)
     out_dir = os.path.abspath(out_dir)
@@ -42,6 +41,11 @@ def generate_icon_header(ttf_path: str, out_dir: str):
     unicode_map = {}
     for table in font["cmap"].tables:
         for codepoint, name in table.cmap.items():
+            # 判断是否在指定范围
+            if start is not None and codepoint < start:
+                continue
+            if end is not None and codepoint > end:
+                continue
             unicode_map[codepoint] = name
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -104,12 +108,16 @@ def main():
     parser = argparse.ArgumentParser(description="Generate LVGL icon definitions from TTF.")
     parser.add_argument("--ttf", help="输入 TTF 字体路径", default=DEFAULT_TTF)
     parser.add_argument("--out", help="输出目录", default=DEFAULT_OUT)
+    parser.add_argument("--start", help="Unicode 起始码 (hex)", type=lambda x: int(x, 16))
+    parser.add_argument("--end", help="Unicode 结束码 (hex)", type=lambda x: int(x, 16))
     args = parser.parse_args()
 
     print(f"🔍 使用字体: {args.ttf}")
     print(f"📂 输出目录: {args.out}")
+    if args.start is not None or args.end is not None:
+        print(f"🖤 生成 Unicode 范围: {hex(args.start) if args.start else 'None'} ~ {hex(args.end) if args.end else 'None'}")
 
-    generate_icon_header(args.ttf, args.out)
+    generate_icon_header(args.ttf, args.out, args.start, args.end)
 
 if __name__ == "__main__":
     main()

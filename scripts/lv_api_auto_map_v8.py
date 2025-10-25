@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-自动从 lv_api_map_v8.h 读取 API 映射 (#define old new)，
-并批量替换指定目录下的所有 C 代码文件内容。
+@file lv_api_auto_map_v8.py
+@brief 自动从 lv_api_map_v8.h 读取 API 映射 (#define old new)，并批量替换指定目录下的所有 C 代码文件内容。
 """
 
 import os

@@ -1,7 +1,7 @@
 /**
  * @file elena_os_icon.c
  * @brief 将图标宏注册到 JerryScript，全自动生成。
- * @date 2025-10-24
+ * @date 2025-10-25
  */
 
 // Includes
@@ -8979,6 +8979,9 @@ void eos_icon_register(void)
         #endif
         #ifdef RI_VOLUME_LOUD_LINE
         {"RI_VOLUME_LOUD_LINE", RI_VOLUME_LOUD_LINE},
+        #endif
+        #ifdef RI_ELENA_WATCH
+        {"RI_ELENA_WATCH", RI_ELENA_WATCH},
         #endif
     };
 

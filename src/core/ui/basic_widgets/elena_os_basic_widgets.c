@@ -100,7 +100,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
         btn_label = lv_label_create(btn);
     }
     lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE);
-    lv_obj_set_style_text_color(btn_label, EOS_THEME_PRIMARY_COLOR, 0);
+    lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
     lv_obj_center(btn_label);
 
     return btn;
@@ -134,6 +134,7 @@ static void _app_header_lang_changed_cb(lv_event_t *e)
 
     // 从用户数据中获取str_id
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(lv_screen_active());
+    if(!t)return;
     if (t->type == APP_HEADER_TITLE_TYPE_ID)
     {
         lv_label_set_text(label, current_lang[t->data.id]);

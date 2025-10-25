@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@file gen_lvgl_binding.py
+@brief 从 LVGL JSON 描述文件生成 LVGL 绑定到 JerryScript 的实现文件
+"""
+
 import json
 import os
 from datetime import date

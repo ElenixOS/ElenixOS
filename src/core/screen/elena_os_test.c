@@ -34,16 +34,91 @@
 #ifdef TEST_USE_ZH_FONT
 LV_FONT_DECLARE(eos_font_resource_han_rounded_30);
 #endif
+#define LV_KB_BTN(width) LV_BUTTONMATRIX_CTRL_POPOVER | width
+
 // Variables
 static lv_obj_t *img = NULL;    // 全局图片对象
 static lv_obj_t *ta = NULL;     // 全局文本输入框对象
 extern script_pkg_t script_pkg; // 脚本包
 // Function Implementations
 
+typedef struct
+{
+    const char *symbol;
+    uint32_t codepoint;
+} symbol_t;
+
+// 所有 LVGL 内置符号
+static const symbol_t lv_symbols[] = {
+    {LV_SYMBOL_AUDIO, 0xF001},
+    {LV_SYMBOL_VIDEO, 0xF008},
+    {LV_SYMBOL_LIST, 0xF00B},
+    {LV_SYMBOL_OK, 0xF00C},
+    {LV_SYMBOL_CLOSE, 0xF00D},
+    {LV_SYMBOL_POWER, 0xF011},
+    {LV_SYMBOL_SETTINGS, 0xF013},
+    {LV_SYMBOL_HOME, 0xF015},
+    {LV_SYMBOL_DOWNLOAD, 0xF019},
+    {LV_SYMBOL_DRIVE, 0xF01C},
+    {LV_SYMBOL_REFRESH, 0xF021},
+    {LV_SYMBOL_MUTE, 0xF026},
+    {LV_SYMBOL_VOLUME_MID, 0xF027},
+    {LV_SYMBOL_VOLUME_MAX, 0xF028},
+    {LV_SYMBOL_IMAGE, 0xF03E},
+    {LV_SYMBOL_TINT, 0xF043},
+    {LV_SYMBOL_PREV, 0xF048},
+    {LV_SYMBOL_PLAY, 0xF04B},
+    {LV_SYMBOL_PAUSE, 0xF04C},
+    {LV_SYMBOL_STOP, 0xF04D},
+    {LV_SYMBOL_NEXT, 0xF051},
+    {LV_SYMBOL_EJECT, 0xF052},
+    {LV_SYMBOL_LEFT, 0xF053},
+    {LV_SYMBOL_RIGHT, 0xF054},
+    {LV_SYMBOL_PLUS, 0xF067},
+    {LV_SYMBOL_MINUS, 0xF068},
+    {LV_SYMBOL_EYE_OPEN, 0xF06E},
+    {LV_SYMBOL_EYE_CLOSE, 0xF070},
+    {LV_SYMBOL_WARNING, 0xF071},
+    {LV_SYMBOL_SHUFFLE, 0xF074},
+    {LV_SYMBOL_UP, 0xF077},
+    {LV_SYMBOL_DOWN, 0xF078},
+    {LV_SYMBOL_LOOP, 0xF079},
+    {LV_SYMBOL_DIRECTORY, 0xF07B},
+    {LV_SYMBOL_UPLOAD, 0xF093},
+    {LV_SYMBOL_CALL, 0xF095},
+    {LV_SYMBOL_CUT, 0xF0C4},
+    {LV_SYMBOL_COPY, 0xF0C5},
+    {LV_SYMBOL_SAVE, 0xF0C7},
+    {LV_SYMBOL_BARS, 0xF0C9},
+    {LV_SYMBOL_ENVELOPE, 0xF0E0},
+    {LV_SYMBOL_CHARGE, 0xF0E7},
+    {LV_SYMBOL_PASTE, 0xF0EA},
+    {LV_SYMBOL_BELL, 0xF0F3},
+    {LV_SYMBOL_KEYBOARD, 0xF11C},
+    {LV_SYMBOL_GPS, 0xF124},
+    {LV_SYMBOL_FILE, 0xF158},
+    {LV_SYMBOL_WIFI, 0xF1EB},
+    {LV_SYMBOL_BATTERY_FULL, 0xF240},
+    {LV_SYMBOL_BATTERY_3, 0xF241},
+    {LV_SYMBOL_BATTERY_2, 0xF242},
+    {LV_SYMBOL_BATTERY_1, 0xF243},
+    {LV_SYMBOL_BATTERY_EMPTY, 0xF244},
+    {LV_SYMBOL_USB, 0xF287},
+    {LV_SYMBOL_BLUETOOTH, 0xF293},
+    {LV_SYMBOL_TRASH, 0xF2ED},
+    {LV_SYMBOL_EDIT, 0xF304},
+    {LV_SYMBOL_BACKSPACE, 0xF55A},
+    {LV_SYMBOL_SD_CARD, 0xF7C2},
+    {LV_SYMBOL_NEW_LINE, 0xF8A2},
+    {LV_SYMBOL_DUMMY, 0xFFFF},
+};
+
 void _create_new_scr()
 {
-    lv_obj_t *scr = eos_nav_scr_create();
+    lv_obj_t *scr = eos_nav_init(lv_screen_active());
+    eos_screen_bind_header(scr, "ElenaOS Test");
     lv_screen_load(scr);
+
 }
 
 static void _test_msg_list_cb(lv_event_t *e)
@@ -78,7 +153,7 @@ static void _test_msg_list()
     lv_obj_t *btn = lv_button_create(lv_screen_active());
     lv_obj_center(btn);
     lv_obj_t *btn_label = lv_label_create(btn);
-    lv_label_set_text(btn_label, LV_SYMBOL_PLUS " Add new message");
+    lv_label_set_text(btn_label, RI_CHAT_FOLLOW_UP_FILL " Add new message");
     lv_obj_add_event_cb(btn, _test_msg_list_cb, LV_EVENT_CLICKED, msg_list);
 }
 
@@ -136,7 +211,7 @@ static void _test_lang(lv_event_t *e)
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
     lv_obj_t *btn = lv_button_create(lv_screen_active());
     lv_obj_t *btn_label = lv_label_create(btn);
-    lv_label_set_text(btn_label, LV_SYMBOL_LOOP " Switch Language");
+    lv_label_set_text(btn_label, RI_REPEAT_2_FILL " Switch Language");
     lv_obj_add_event_cb(btn, _test_lang_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, -20);
 }
@@ -183,6 +258,7 @@ static void _test_vkb()
 
     /*Create a keyboard and add it to ime_pinyin*/
     lv_obj_t *kb = lv_keyboard_create(lv_screen_active());
+
     lv_ime_pinyin_set_keyboard(pinyin_ime, kb);
     lv_keyboard_set_textarea(kb, ta1);
 
@@ -268,6 +344,27 @@ static void _test_toast()
     lv_obj_add_event_cb(toast, _toast_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 
+static void _test_show_all_lv_symbols_list()
+{
+    _create_new_scr();
+    lv_obj_t *screen = lv_screen_active();
+
+    // 创建列表
+    lv_obj_t *list = lv_list_create(screen);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_pad_all(list, 5, 0);
+
+    for (size_t i = 0; i < sizeof(lv_symbols) / sizeof(lv_symbols[0]); i++)
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "%s  U+%04X", lv_symbols[i].symbol, lv_symbols[i].codepoint);
+
+        // 在列表中添加条目
+        lv_obj_t *label = lv_list_add_text(list, buf);
+        // lv_obj_set_style_text_font(label, &lv_font_montserrat_30, 0); // 设置字体
+    }
+}
+
 void eos_test_start(void)
 {
     lv_obj_t *scr = lv_screen_active();
@@ -275,10 +372,12 @@ void eos_test_start(void)
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
 
-    eos_nav_init(scr);
-
     lv_obj_t *btn;
-    lv_list_add_text(test_list, "[ElenaOS Test List]");
+    lv_obj_t *label = lv_list_add_text(test_list, RI_ELENA_WATCH " ElenaOS Test List");
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+
+
+
     // 测试导航功能
     btn = lv_list_add_button(test_list, RI_MENU_UNFOLD_FILL, "Navigation");
     lv_obj_add_event_cb(btn, _test_nav_cb_1, LV_EVENT_CLICKED, NULL);
@@ -301,9 +400,12 @@ void eos_test_start(void)
     btn = lv_list_add_button(test_list, RI_APPS_FILL, "App List");
     lv_obj_add_event_cb(btn, _test_app_list, LV_EVENT_CLICKED, NULL);
     // 测试表盘列表
-    btn = lv_list_add_button(test_list, LV_SYMBOL_LIST, "Watchface List");
+    btn = lv_list_add_button(test_list, RI_APPS_FILL, "Watchface List");
     lv_obj_add_event_cb(btn, _test_watchface_list, LV_EVENT_CLICKED, NULL);
     // 测试 Toast
     btn = lv_list_add_button(test_list, RI_MESSAGE_2_FILL, "Toast");
     lv_obj_add_event_cb(btn, _test_toast, LV_EVENT_CLICKED, NULL);
+    // 测试 LVGL 默认符号
+    btn = lv_list_add_button(test_list, RI_OMEGA, "LVGL Symbols");
+    lv_obj_add_event_cb(btn, _test_show_all_lv_symbols_list, LV_EVENT_CLICKED, NULL);
 }

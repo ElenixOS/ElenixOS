@@ -123,7 +123,7 @@ void _create_new_scr()
 
 static void _test_msg_list_cb(lv_event_t *e)
 {
-    msg_list_t *msg_list = lv_event_get_user_data(e);
+    eos_msg_list_t *msg_list = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(msg_list);
     char *message = "Sab1e: No one's born being good at all things."
                     "You become good at things through hard work. "
@@ -131,15 +131,15 @@ static void _test_msg_list_cb(lv_event_t *e)
                     "you play a new sport.";
 
     // 添加消息项
-    msg_list_item_t *item = eos_msg_list_item_create(msg_list);
+    eos_msg_list_item_t *item = eos_msg_list_item_create(msg_list);
     // 设置内容
-    eos_msg_list_item_set_title(item, "WeChat");
+    eos_msg_list_item_set_title(item, "Settings");
     eos_msg_list_item_set_msg(item, message);
     eos_msg_list_item_set_time(item, "12:30");
 
-    eos_msg_list_item_icon_set_src(item, "/wx.bin");
+    eos_msg_list_item_icon_set_src(item, EOS_IMG_SETTINGS);
 
-    msg_list_item_t *item1 = eos_msg_list_item_create(msg_list);
+    eos_msg_list_item_t *item1 = eos_msg_list_item_create(msg_list);
     eos_msg_list_item_set_title(item1, "QQ");
     eos_msg_list_item_set_msg(item1, message);
     eos_msg_list_item_set_time(item1, "21:00");
@@ -148,7 +148,7 @@ static void _test_msg_list_cb(lv_event_t *e)
 static void _test_msg_list()
 {
     _create_new_scr();
-    msg_list_t *msg_list = eos_msg_list_create(lv_screen_active());
+    eos_msg_list_t *msg_list = eos_msg_list_create(lv_screen_active());
     EOS_CHECK_PTR_RETURN(msg_list);
     lv_obj_t *btn = lv_button_create(lv_screen_active());
     lv_obj_center(btn);

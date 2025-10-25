@@ -37,22 +37,22 @@
 
 // Function Implementations
 
-static void _update_handle_bar_position(eos_swipe_panel_t *swipe_panel, eos_swipe_dir_t dir)
+static void _update_handle_bar_position(eos_swipe_panel_t *sp, eos_swipe_dir_t dir)
 {
-    EOS_CHECK_PTR_RETURN(swipe_panel && swipe_panel->handle_bar);
+    EOS_CHECK_PTR_RETURN(sp && sp->handle_bar);
     switch (dir)
     {
     case EOS_SWIPE_DIR_DOWN:
-        lv_obj_align(swipe_panel->handle_bar, LV_ALIGN_BOTTOM_MID, 0, -TOUCH_BAR_MARGIN); // 底部上方10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_BOTTOM_MID, 0, -TOUCH_BAR_MARGIN); // 底部上方10px
         break;
     case EOS_SWIPE_DIR_UP:
-        lv_obj_align(swipe_panel->handle_bar, LV_ALIGN_TOP_MID, 0, TOUCH_BAR_MARGIN); // 顶部下方10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_TOP_MID, 0, TOUCH_BAR_MARGIN); // 顶部下方10px
         break;
     case EOS_SWIPE_DIR_LEFT:
-        lv_obj_align(swipe_panel->handle_bar, LV_ALIGN_LEFT_MID, TOUCH_BAR_MARGIN, 0); // 右侧10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_LEFT_MID, TOUCH_BAR_MARGIN, 0); // 右侧10px
         break;
     case EOS_SWIPE_DIR_RIGHT:
-        lv_obj_align(swipe_panel->handle_bar, LV_ALIGN_RIGHT_MID, -TOUCH_BAR_MARGIN, 0); // 左侧10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_RIGHT_MID, -TOUCH_BAR_MARGIN, 0); // 左侧10px
         break;
     }
 
@@ -60,11 +60,11 @@ static void _update_handle_bar_position(eos_swipe_panel_t *swipe_panel, eos_swip
     {
     case EOS_SWIPE_DIR_UP:
     case EOS_SWIPE_DIR_DOWN:
-        lv_obj_set_size(swipe_panel->handle_bar, HANDLE_BAR_WIDTH, HANDLE_BAR_HEIGHT);
+        lv_obj_set_size(sp->handle_bar, HANDLE_BAR_WIDTH, HANDLE_BAR_HEIGHT);
         break;
     case EOS_SWIPE_DIR_LEFT:
     case EOS_SWIPE_DIR_RIGHT:
-        lv_obj_set_size(swipe_panel->handle_bar, HANDLE_BAR_HEIGHT, HANDLE_BAR_WIDTH);
+        lv_obj_set_size(sp->handle_bar, HANDLE_BAR_HEIGHT, HANDLE_BAR_WIDTH);
         break;
 
     default:
@@ -89,11 +89,11 @@ void eos_swipe_panel_move(eos_swipe_panel_t *sp, int32_t target, bool anim)
     eos_slide_widget_move(sp->sw, cur, target, anim ? 120 : 0);
 }
 
-void eos_swipe_panel_pull_back(eos_swipe_panel_t *swipe_panel)
+void eos_swipe_panel_pull_back(eos_swipe_panel_t *sp)
 {
-    EOS_CHECK_PTR_RETURN(swipe_panel);
+    EOS_CHECK_PTR_RETURN(sp);
     int32_t target = 0;
-    switch (swipe_panel->dir)
+    switch (sp->dir)
     {
     case EOS_SWIPE_DIR_UP:
         target = EOS_DISPLAY_HEIGHT; // 向上拉回时完全隐藏
@@ -108,23 +108,32 @@ void eos_swipe_panel_pull_back(eos_swipe_panel_t *swipe_panel)
         target = -EOS_DISPLAY_WIDTH; // 向右拉回时完全隐藏
         break;
     }
-    eos_swipe_panel_move(swipe_panel, target, true);
+    eos_swipe_panel_move(sp, target, true);
+    eos_slide_widget_reverse(sp->sw);
+    if (sp->sw->dir == EOS_SLIDE_DIR_VER)
+    {
+        lv_obj_set_y(sp->sw->touch_obj, sp->sw->touch_obj_base);
+    }
+    else
+    {
+        lv_obj_set_x(sp->sw->touch_obj, sp->sw->touch_obj_base);
+    }
 }
 
-void eos_swipe_panel_hide_handle_bar(eos_swipe_panel_t *swipe_panel)
+void eos_swipe_panel_hide_handle_bar(eos_swipe_panel_t *sp)
 {
-    if (!swipe_panel || !swipe_panel->handle_bar)
+    if (!sp || !sp->handle_bar)
         return;
 
-    lv_obj_add_flag(swipe_panel->handle_bar, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(sp->handle_bar, LV_OBJ_FLAG_HIDDEN);
 }
 
-void eos_swipe_panel_show_handle_bar(eos_swipe_panel_t *swipe_panel)
+void eos_swipe_panel_show_handle_bar(eos_swipe_panel_t *sp)
 {
-    if (!swipe_panel || !swipe_panel->handle_bar)
+    if (!sp || !sp->handle_bar)
         return;
 
-    lv_obj_remove_flag(swipe_panel->handle_bar, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(sp->handle_bar, LV_OBJ_FLAG_HIDDEN);
 }
 
 void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
@@ -189,11 +198,11 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
     _update_handle_bar_position(sp, dir);
 }
 
-void eos_swipe_panel_delete(eos_swipe_panel_t *swipe_panel)
+void eos_swipe_panel_delete(eos_swipe_panel_t *sp)
 {
-    EOS_CHECK_PTR_RETURN(swipe_panel);
-    lv_obj_delete(swipe_panel->swipe_obj);
-    lv_free(swipe_panel);
+    EOS_CHECK_PTR_RETURN(sp);
+    lv_obj_delete(sp->swipe_obj);
+    lv_free(sp);
 }
 
 static void _slide_widget_move_done_cb(lv_event_t *e)

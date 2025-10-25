@@ -323,7 +323,7 @@ void eos_watchface_create(void)
     pkg->script_str = eos_read_file(script_path);
 
     // 设置下拉面板
-    msg_list_t *msg_list = eos_msg_list_create(watchface_screen);
+    eos_msg_list_t *msg_list = eos_msg_list_create(watchface_screen);
     if (!msg_list)
     {
         EOS_LOG_E("Create msg_list failed");

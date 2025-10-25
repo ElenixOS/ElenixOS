@@ -20,9 +20,11 @@
     - [x] CardPager
       - [x] Indicator
   - [x] Toast
-- [ ] 系统功能测试页面
-- [ ] MessageList bug
-- [ ] 手表图标
+- [x] 系统功能测试页面
+- [ ] MessageList
+  - [x] 修复 obj NULL bug
+  - [ ] 消息块改为使用 slide_widget
+- [x] 手表图标
 - [ ] 关于本机
 - [x] 将所有 Timer 绑定到 JS 根页面，当 JS 退出时自动删除
 - [ ] 消息提醒

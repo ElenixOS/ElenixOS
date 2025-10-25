@@ -13,23 +13,33 @@
 #include <string.h>
 #include "elena_os_lang.h"
 #include "elena_os_anim.h"
+#define EOS_LOG_TAG "MessageList"
 #include "elena_os_log.h"
 #include "elena_os_img.h"
 #include "elena_os_config.h"
 #include "elena_os_theme.h"
 // Macros and Definitions
-#define MSG_LIST_ITEM_MARGIN_BOTTOM 25
+#define _DEBUG_LAYOUT 0
 
+#define _MSG_LIST_ITEM_MARGIN_BOTTOM 25
+
+#define _ICON_WIDTH 64
+#define _ICON_HEIGHT _ICON_WIDTH
+
+#define _ICON_LARGE_WIDTH 80
+#define _ICON_LARGE_HEIGHT _ICON_LARGE_WIDTH
+
+#define _TIME_LABEL_FONT lv_font_montserrat_24
 // 滑动删除相关的宏定义
-#define SWIPE_THRESHOLD (EOS_DISPLAY_WIDTH / 2) // 触发删除的滑动距离阈值
-#define SWIPE_ANIM_DURATION 200                 // 滑动动画持续时间
-#define COMMON_ANIM_DURATION 150
+#define _SWIPE_THRESHOLD (EOS_DISPLAY_WIDTH / 2) // 触发删除的滑动距离阈值
+#define _SWIPE_ANIM_DURATION 200                 // 滑动动画持续时间
+#define _COMMON_ANIM_DURATION 150
 /**
  * @brief 临时存储用户数据
  */
 typedef struct
 {
-    msg_list_item_t *item;
+    eos_msg_list_item_t *item;
     lv_obj_t *detail_container;
 } btn_data_t;
 
@@ -61,7 +71,7 @@ static void _set_translate_y_cb(void *var, int32_t value)
 
 /************************** 删除 Item 回调 **************************/
 
-static void _del_item_cb(msg_list_t *list)
+static void _del_item_cb(eos_msg_list_t *list)
 {
     EOS_CHECK_PTR_RETURN(list);
     uint8_t child_count = lv_obj_get_child_count(list->list);
@@ -97,7 +107,7 @@ static void _up_anim_completed_cb(lv_anim_t *a)
  * @param msg_list 消息列表
  * @param deleted_item 被删除的 msg_list_item
  */
-static void _animate_items_up(msg_list_t *msg_list, msg_list_item_t *deleted_item)
+static void _animate_items_up(eos_msg_list_t *msg_list, eos_msg_list_item_t *deleted_item)
 {
     EOS_CHECK_PTR_RETURN(msg_list && msg_list->list && deleted_item);
     // 获取被删除项的高度（包括外边距）
@@ -129,7 +139,7 @@ static void _animate_items_up(msg_list_t *msg_list, msg_list_item_t *deleted_ite
             lv_anim_init(&anim);
             lv_anim_set_var(&anim, child);
             lv_anim_set_values(&anim, deleted_height, 0);
-            lv_anim_set_time(&anim, SWIPE_ANIM_DURATION);
+            lv_anim_set_time(&anim, _SWIPE_ANIM_DURATION);
             lv_anim_set_exec_cb(&anim, _set_translate_y_cb);
             lv_anim_set_completed_cb(&anim, _up_anim_completed_cb);
             lv_anim_set_path_cb(&anim, lv_anim_path_ease_out);
@@ -143,11 +153,11 @@ static void _animate_items_up(msg_list_t *msg_list, msg_list_item_t *deleted_ite
  */
 static void _delete_anim_completed_cb(lv_anim_t *a)
 {
-    msg_list_item_t *item = (msg_list_item_t *)lv_anim_get_user_data(a);
+    eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_anim_get_user_data(a);
     EOS_CHECK_PTR_RETURN(item);
 
     // 获取列表
-    msg_list_t *msg_list = item->msg_list;
+    eos_msg_list_t *msg_list = item->msg_list;
 
     if (msg_list)
     {
@@ -171,7 +181,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
 {
     EOS_LOG_D("_msg_list_item_released_cb");
     lv_obj_t *item_container = lv_event_get_current_target(e);
-    msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(item_container);
+    eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(item_container);
     EOS_CHECK_PTR_RETURN(item && item->container && !item->is_deleted);
 
     // 获取释放位置
@@ -201,7 +211,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
     {
     case SWIPE_HORIZONTAL:
         // 水平滑动释放处理
-        if (abs_delta_x > SWIPE_THRESHOLD)
+        if (abs_delta_x > _SWIPE_THRESHOLD)
         {
             item->is_deleted = true;
             // 创建滑动删除动画
@@ -210,7 +220,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
             lv_anim_set_var(&anim, item_container);
             lv_anim_set_values(&anim, current_x,
                                (current_x > 0) ? EOS_DISPLAY_WIDTH : -EOS_DISPLAY_WIDTH);
-            lv_anim_set_time(&anim, SWIPE_ANIM_DURATION);
+            lv_anim_set_time(&anim, _SWIPE_ANIM_DURATION);
             lv_anim_set_exec_cb(&anim, _set_translate_x_cb);
             lv_anim_set_completed_cb(&anim, _delete_anim_completed_cb);
             lv_anim_set_user_data(&anim, item);
@@ -223,7 +233,7 @@ static void _msg_list_item_released_cb(lv_event_t *e)
             lv_anim_init(&anim);
             lv_anim_set_var(&anim, item_container);
             lv_anim_set_values(&anim, current_x, 0);
-            lv_anim_set_time(&anim, SWIPE_ANIM_DURATION);
+            lv_anim_set_time(&anim, _SWIPE_ANIM_DURATION);
             lv_anim_set_exec_cb(&anim, _set_translate_x_cb);
             lv_anim_start(&anim);
         }
@@ -257,7 +267,7 @@ static void _msg_list_item_pressing_cb(lv_event_t *e)
 {
     EOS_LOG_D("_msg_list_item_pressing_cb");
     lv_obj_t *item_container = lv_event_get_current_target(e);
-    msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(item_container);
+    eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(item_container);
     EOS_CHECK_PTR_RETURN(item && item->container && !item->is_deleted);
 
     // 获取当前触摸点
@@ -315,7 +325,7 @@ static void _msg_list_item_pressed_cb(lv_event_t *e)
 {
     EOS_LOG_D("_msg_list_item_pressed_cb");
     lv_obj_t *item_container = lv_event_get_current_target(e);
-    msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(item_container);
+    eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(item_container);
     EOS_CHECK_PTR_RETURN(item && item->container && !item->is_deleted);
     // 初始化滑动数据
     memset(&item->swipe_data, 0, sizeof(swipe_data_t));
@@ -363,17 +373,18 @@ static void _mark_as_read_btn_click_cb(lv_event_t *e)
     // 获取按钮的父容器（即详情页面container）
     lv_obj_t *container = lv_obj_get_parent(btn);
 
-    eos_anim_t *anim = eos_anim_scale_create(container, EOS_DISPLAY_WIDTH, 0, EOS_DISPLAY_HEIGHT, 0, COMMON_ANIM_DURATION, false);
+    eos_anim_t *anim = eos_anim_scale_create(container, EOS_DISPLAY_WIDTH, 0, EOS_DISPLAY_HEIGHT, 0, _COMMON_ANIM_DURATION, false);
     eos_anim_add_cb(anim, _mark_as_read_anim_end_cb, data);
     eos_anim_start(anim);
 
     // 删除消息项并更新UI状态
     if (data->item)
     {
+        eos_msg_list_t *msg_list = data->item->msg_list;
         eos_msg_list_item_delete(data->item);
-        if (data->item->msg_list)
+        if (msg_list)
         {
-            _del_item_cb(data->item->msg_list);
+            _del_item_cb(msg_list);
         }
     }
     detail_flag = false;
@@ -386,7 +397,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
 {
     // 获取被点击的消息项容器
     lv_obj_t *item_container = lv_event_get_current_target(e);
-    msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(item_container);
+    eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(item_container);
     EOS_CHECK_PTR_RETURN(item && !item->is_deleted && item->container && !detail_flag);
     // 如果已经打开一个详情页，就不能再打开了，即便按钮继续按下。
     detail_flag = true;
@@ -414,9 +425,10 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     if (original_icon)
     {
         lv_obj_t *icon = lv_image_create(detail_container);
-        lv_obj_set_size(icon, 80, 80);
+        lv_obj_set_size(icon, _ICON_LARGE_WIDTH, _ICON_LARGE_HEIGHT);
         lv_obj_set_style_border_width(icon, 0, 0);
         lv_image_set_src(icon, lv_image_get_src(original_icon));
+        eos_img_set_size(icon, _ICON_LARGE_WIDTH, _ICON_LARGE_HEIGHT);
         lv_obj_remove_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
     }
 
@@ -440,7 +452,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     lv_obj_remove_flag(mark_as_read_btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(mark_as_read_btn, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(mark_as_read_btn, 0, 0);
-    lv_obj_set_style_margin_bottom(mark_as_read_btn, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
+    lv_obj_set_style_margin_bottom(mark_as_read_btn, _MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(mark_as_read_btn, 0, 0);
     lv_obj_set_style_align(mark_as_read_btn, LV_ALIGN_CENTER, 0);
     lv_obj_set_style_radius(mark_as_read_btn, 50, 0);
@@ -463,17 +475,17 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     eos_anim_scale_start(detail_container,
                          0, EOS_DISPLAY_WIDTH,
                          0, EOS_DISPLAY_HEIGHT,
-                         COMMON_ANIM_DURATION, false);
+                         _COMMON_ANIM_DURATION, false);
 }
 
 /************************** 公共函数 **************************/
 
-msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
+eos_msg_list_item_t *eos_msg_list_item_create(eos_msg_list_t *list)
 {
-    msg_list_item_t *item = lv_malloc(sizeof(msg_list_item_t));
+    eos_msg_list_item_t *item = lv_malloc(sizeof(eos_msg_list_item_t));
     EOS_CHECK_PTR_RETURN_VAL(list, NULL);
     EOS_CHECK_PTR_RETURN_VAL_FREE(item, NULL, item);
-    memset(item, 0, sizeof(msg_list_item_t));
+    memset(item, 0, sizeof(eos_msg_list_item_t));
 
     item->msg_list = list;
     item->is_deleted = false;
@@ -486,7 +498,7 @@ msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
     lv_obj_remove_flag(item->container, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(item->container, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(item->container, 0, 0);
-    lv_obj_set_style_margin_bottom(item->container, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
+    lv_obj_set_style_margin_bottom(item->container, _MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(item->container, 20, 0);
     lv_obj_set_style_align(item->container, LV_ALIGN_CENTER, 0);
     lv_obj_set_style_radius(item->container, 30, 0);
@@ -503,27 +515,33 @@ msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
     lv_obj_set_size(item->row1, lv_pct(100), 64);
     lv_obj_set_style_bg_opa(item->row1, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(item->row1, 0, 0);
-    lv_obj_set_style_pad_all(item->row1, 5, 0);
+    lv_obj_set_style_pad_all(item->row1, 0, 0);
     lv_obj_remove_flag(item->row1, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_flex_flow(item->row1, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(item->row1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_BETWEEN);
+#if _DEBUG_LAYOUT
+    lv_obj_set_style_bg_opa(item->row1, LV_OPA_60, 0);
+    lv_obj_set_style_bg_color(item->row1, EOS_COLOR_RED, 0);
+#endif
     // 图标区域
     item->icon = lv_image_create(item->row1);
-    lv_obj_set_size(item->icon, 64, 64);
+    lv_obj_set_size(item->icon, _ICON_WIDTH, _ICON_HEIGHT);
     lv_obj_set_style_bg_opa(item->icon, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(item->icon, 0, 0);
-    lv_obj_set_flex_align(item->icon, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_margin_all(item->icon, 0, 0);
     lv_obj_remove_flag(item->icon, LV_OBJ_FLAG_SCROLLABLE);
     eos_img_set_src(item->icon, EOS_IMG_APP);
+    eos_img_set_size(item->icon, _ICON_WIDTH, _ICON_HEIGHT);
 
     // 标题
     item->title_label = lv_label_create(item->row1);
     lv_label_set_long_mode(item->title_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_align_to(item->title_label, item->icon, LV_ALIGN_OUT_RIGHT_MID, 12, 0);
+    lv_obj_set_flex_grow(item->title_label, 1);
 
     // 时间
     item->time_label = lv_label_create(item->row1);
-    lv_obj_align(item->time_label, LV_TEXT_ALIGN_RIGHT, 0, 0);
-    lv_obj_set_height(item->time_label, LV_SIZE_CONTENT);
+    lv_obj_set_style_text_font(item->time_label, &_TIME_LABEL_FONT, 0);
+    lv_obj_set_style_text_align(item->time_label, LV_TEXT_ALIGN_RIGHT, 0);
 
     // 消息内容
     item->msg_label = lv_label_create(item->container);
@@ -552,7 +570,7 @@ msg_list_item_t *eos_msg_list_item_create(msg_list_t *list)
     return item;
 }
 
-void eos_msg_list_item_delete(msg_list_item_t *item)
+void eos_msg_list_item_delete(eos_msg_list_item_t *item)
 {
     EOS_CHECK_PTR_RETURN(item);
 
@@ -572,7 +590,6 @@ void eos_msg_list_item_delete(msg_list_item_t *item)
     // 直接删除容器（LVGL会自动删除子对象）
     if (item->container)
     {
-        lv_obj_set_user_data(item->container, NULL);
         lv_obj_delete(item->container);
         item->container = NULL;
     }
@@ -581,7 +598,7 @@ void eos_msg_list_item_delete(msg_list_item_t *item)
     lv_free(item);
 }
 
-void eos_msg_list_item_set_msg(msg_list_item_t *item, const char *msg)
+void eos_msg_list_item_set_msg(eos_msg_list_item_t *item, const char *msg)
 {
     EOS_CHECK_PTR_RETURN(item);
 
@@ -612,25 +629,26 @@ void eos_msg_list_item_set_msg(msg_list_item_t *item, const char *msg)
     }
 }
 
-void eos_msg_list_item_set_title(msg_list_item_t *item, const char *title)
+void eos_msg_list_item_set_title(eos_msg_list_item_t *item, const char *title)
 {
     EOS_CHECK_PTR_RETURN(item);
     lv_label_set_text(item->title_label, title ? title : "");
 }
 
-void eos_msg_list_item_set_time(msg_list_item_t *item, const char *time)
+void eos_msg_list_item_set_time(eos_msg_list_item_t *item, const char *time)
 {
     EOS_CHECK_PTR_RETURN(item);
     lv_label_set_text(item->time_label, time ? time : "");
 }
 
-void eos_msg_list_item_icon_set_src(msg_list_item_t *item, const char *src)
+void eos_msg_list_item_icon_set_src(eos_msg_list_item_t *item, const char *src)
 {
     EOS_CHECK_PTR_RETURN(item && src);
     eos_img_set_src(item->icon, src);
+    eos_img_set_size(item->icon, _ICON_WIDTH, _ICON_HEIGHT);
 }
 
-void eos_msg_list_clear_all(msg_list_t *msg_list)
+void eos_msg_list_clear_all(eos_msg_list_t *msg_list)
 {
     EOS_CHECK_PTR_RETURN(msg_list && msg_list->list);
 
@@ -652,7 +670,7 @@ void eos_msg_list_clear_all(msg_list_t *msg_list)
         {
             continue;
         }
-        msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(child);
+        eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(child);
         if (item)
         {
             eos_msg_list_item_delete(item);
@@ -673,7 +691,7 @@ void eos_msg_list_clear_all(msg_list_t *msg_list)
  */
 static void _msg_list_item_anim_end_cb(lv_anim_t *a)
 {
-    msg_list_t *list = (msg_list_t *)lv_anim_get_user_data(a);
+    eos_msg_list_t *list = (eos_msg_list_t *)lv_anim_get_user_data(a);
     EOS_CHECK_PTR_RETURN(list);
     // 减少动画计数
     if (list->animating_count > 0)
@@ -695,7 +713,7 @@ static void _msg_list_item_anim_end_cb(lv_anim_t *a)
  * @brief 触发消息删除动画
  * @param list 目标消息列表
  */
-static void _trigger_msg_anims(msg_list_t *list)
+static void _trigger_msg_anims(eos_msg_list_t *list)
 {
     EOS_CHECK_PTR_RETURN(list);
     static uint8_t anim_index = 0; // 静态变量记录当前动画序号
@@ -706,7 +724,7 @@ static void _trigger_msg_anims(msg_list_t *list)
     for (uint8_t i = anim_index; i < child_count && list->animating_count < 2; i++)
     {
         lv_obj_t *child = lv_obj_get_child(parent, i);
-        msg_list_item_t *item = (msg_list_item_t *)lv_obj_get_user_data(child);
+        eos_msg_list_item_t *item = (eos_msg_list_item_t *)lv_obj_get_user_data(child);
 
         // 跳过清除按钮本身
         if (child == list->clear_all_btn)
@@ -741,7 +759,7 @@ static void _trigger_msg_anims(msg_list_t *list)
  */
 static void _msg_list_clear_all_btn_cb(lv_event_t *e)
 {
-    msg_list_t *list = (msg_list_t *)lv_event_get_user_data(e);
+    eos_msg_list_t *list = (eos_msg_list_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(list);
     // 隐藏无消息标签
     if (list->no_msg_label)
@@ -758,7 +776,7 @@ static void _msg_list_clear_all_btn_cb(lv_event_t *e)
 
 /************************** List相关函数 **************************/
 
-void eos_msg_list_delete(msg_list_t *list)
+void eos_msg_list_delete(eos_msg_list_t *list)
 {
     EOS_CHECK_PTR_RETURN(list);
 
@@ -785,25 +803,27 @@ void eos_msg_list_delete(msg_list_t *list)
 
 static void _msg_list_deleted_cb(lv_event_t *e)
 {
-    msg_list_t *list = (msg_list_t *)lv_event_get_user_data(e);
+    eos_msg_list_t *list = (eos_msg_list_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(list);
 
     // 调用清理函数
     eos_msg_list_delete(list);
 }
 
-msg_list_t *eos_msg_list_create(lv_obj_t *parent)
+eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-    msg_list_t *list = lv_malloc(sizeof(msg_list_t));
+    eos_msg_list_t *list = lv_malloc(sizeof(eos_msg_list_t));
     EOS_CHECK_PTR_RETURN_VAL_FREE(list, NULL, list);
     detail_flag = false;
-    memset(list, 0, sizeof(msg_list_t));
+    memset(list, 0, sizeof(eos_msg_list_t));
 
     list->swipe_panel = eos_swipe_panel_create(parent);
+    EOS_CHECK_PTR_RETURN_VAL_FREE(list->swipe_panel, NULL, list);
     eos_swipe_panel_set_dir(list->swipe_panel, EOS_SWIPE_DIR_DOWN);
 
     list->list = lv_list_create(list->swipe_panel->swipe_obj);
+    EOS_CHECK_PTR_RETURN_VAL_FREE(list->list, NULL, list);
     lv_obj_set_size(list->list, LV_PCT(100), LV_PCT(88));
     lv_obj_center(list->list);
     lv_obj_set_style_bg_opa(list->list, LV_OPA_TRANSP, 0);
@@ -819,7 +839,7 @@ msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     lv_obj_remove_flag(list->clear_all_btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(list->clear_all_btn, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_border_width(list->clear_all_btn, 0, 0);
-    lv_obj_set_style_margin_bottom(list->clear_all_btn, MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
+    lv_obj_set_style_margin_bottom(list->clear_all_btn, _MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
     lv_obj_set_style_pad_all(list->clear_all_btn, 0, 0);
     lv_obj_set_style_align(list->clear_all_btn, LV_ALIGN_CENTER, 0);
     lv_obj_set_style_radius(list->clear_all_btn, 50, 0);

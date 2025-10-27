@@ -47,7 +47,8 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_UINSTALL] = "Uinstall",
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "Clear data",
     [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "Additional settings",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "Language"
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "Language",
+    [STR_ID_APP_FLASH_LIGHT_IGNORE] = "Ignore",
     // 在此添加新的字符串ID和英文翻译
 };
 
@@ -80,7 +81,8 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_UINSTALL] = "卸载",
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "删除应用数据",
     [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "更多设置",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "语言"
+    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "语言",
+    [STR_ID_APP_FLASH_LIGHT_IGNORE] = "忽略",
     // 在此添加新的字符串ID和中文翻译
 };
 

@@ -24,25 +24,6 @@ extern "C" {
 typedef struct eos_msg_list_t eos_msg_list_t;   // 预定义
 
 /**
- * @brief 滑动状态判断
- */
-typedef enum {
-    SWIPE_UNKNOWN = 0,  /**< 未知类型 */
-    SWIPE_HORIZONTAL,   /**< 水平滑动 */
-    SWIPE_VERTICAL,     /**< 垂直滑动 */
-    SWIPE_CLICK         /**< 点击 */
-} swipe_type_t;
-
-/**
- * @brief 滑动删除数据结构
- */
-typedef struct {
-    int32_t start_x;
-    int32_t start_y;
-    int32_t start_translate_x;
-    swipe_type_t swipe_type;
-} swipe_data_t;
-/**
  * @brief 消息列表项结构体
  * 层级结构：
  * container{
@@ -59,9 +40,7 @@ typedef struct {
     lv_obj_t *msg_label;
     lv_obj_t *time_label;
     const char *msg_str;     /**< 消息字符串 */
-    swipe_data_t swipe_data;
     bool is_deleted;
-    lv_point_t press_pos;
 } eos_msg_list_item_t;
 
 /**

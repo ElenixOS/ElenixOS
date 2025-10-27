@@ -26,6 +26,7 @@
 #include "elena_os_sys.h"
 #include "elena_os_display.h"
 #include "elena_os_app_list.h"
+#include "elena_os_lang.h"
 
 // Macros and Definitions
 #define _MASK_OPA LV_OPA_80
@@ -71,8 +72,7 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
     if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
         _flash_light_delete(ud);
-        uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
-        eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
+        eos_display_tmp_restore_brightness_smooth();
     }
 }
 
@@ -112,8 +112,7 @@ static void _screen_delete_cb(lv_event_t *e)
 {
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
     _flash_light_delete(ud);
-    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
-    eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_tmp_restore_brightness_smooth();
 }
 
 void eos_flash_light_show(void)
@@ -165,7 +164,9 @@ void eos_flash_light_show(void)
 
     lv_obj_t *label = lv_label_create(row1);
     lv_obj_set_height(label, LV_SIZE_CONTENT);
-    lv_label_set_text(label, "Ignore\n" RI_ARROW_DOWN_WIDE_FILL);
+
+    lv_label_set_text_fmt(label, "%s\n" RI_ARROW_DOWN_WIDE_FILL,
+                      current_lang[STR_ID_APP_FLASH_LIGHT_IGNORE]);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -183,18 +184,17 @@ void eos_flash_light_show(void)
                         LV_EVENT_DELETE,
                         ud);
 
-    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
-    eos_display_set_brightness_smooth(b, EOS_DISPLAY_BRIGHTNESS_MAX, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
 }
 
 static void _flash_light_screen_delete_cb(lv_event_t *e)
 {
-    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
-    eos_display_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX, b, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_tmp_restore_brightness_smooth();
 }
 
 void _flash_light_create(lv_obj_t *launcher_screen)
 {
+    eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_t *scr = eos_nav_init(launcher_screen);
     lv_screen_load(scr);
     eos_card_pager_t *cp = eos_card_pager_create(scr, EOS_CARD_PAGER_DIR_HOR);

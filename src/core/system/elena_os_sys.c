@@ -5,13 +5,6 @@
  * @date 2025-08-21
  */
 
-/**
- * TODO:
- * 应用列表详情页
- * 主题设置
- * 退出页面时再存储配置信息
- */
-
 #include "elena_os_sys.h"
 
 // Includes

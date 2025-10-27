@@ -31,8 +31,6 @@
 
 #define APP_HEADER_MARGIN_RIGHT 30
 
-#define APP_HEADER_TIME_STR_ARRAY_MAX 32
-
 #define APP_HEADER_TITLE_WIDTH 240
 
 typedef enum
@@ -112,9 +110,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 static inline void _app_header_update_clock_label(lv_obj_t *label)
 {
     eos_datetime_t dt = eos_time_get();
-    char time_str[APP_HEADER_TIME_STR_ARRAY_MAX];
-    snprintf(time_str, sizeof(time_str), "%02d:%02d", dt.hour, dt.min);
-    lv_label_set_text(label, time_str);
+    lv_label_set_text_fmt(label,  "%02d:%02d", dt.hour, dt.min);
 }
 
 /**

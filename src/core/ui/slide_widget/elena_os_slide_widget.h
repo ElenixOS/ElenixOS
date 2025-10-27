@@ -86,6 +86,9 @@ typedef struct
     eos_threshold_t threshold; /**< 阈值：(当前点 - 基点)/（目标点 - 基点）> threshold时触发阈值 */
     eos_slide_widget_state_t state;
     lv_coord_t _indev_start;    /**< 触摸起始点 */
+    lv_coord_t last_touch_displacement;    /**< 上一次移动的位移量 */
+    bool bidirectional;   /**< 是否支持双向滑动 */
+    bool move_foreground_on_pressed;    /**< 当被点击时是否移动到父级前方，默认打开，在父级对象为`lv_list_class`时自动关闭 */
 } eos_slide_widget_t;
 
 /* Public function prototypes --------------------------------*/
@@ -103,16 +106,6 @@ void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t 
  * @param sw 目标滑动组件
  */
 void eos_slide_widget_reverse(eos_slide_widget_t *sw);
-/**
- * @brief 禁用触摸区域
- * @param sw 目标滑动组件
- */
-void eos_slide_widget_touch_disable(eos_slide_widget_t *sw);
-/**
- * @brief 启用触摸区域
- * @param sw 目标滑动组件
- */
-void eos_slide_widget_touch_enable(eos_slide_widget_t *sw);
 /**
  * @brief 创建滑动组件
  * @param parent        触摸对象的父级对象
@@ -132,6 +125,22 @@ eos_slide_widget_t *eos_slide_widget_create(
     eos_slide_widget_dir_t dir,
     lv_coord_t target,
     eos_threshold_t threshold);
+/**
+ * @brief 创建滑动组件（内部不创建触摸对象）
+ * @param touch_obj 触摸对象
+ */
+eos_slide_widget_t *eos_slide_widget_create_with_touch(
+    lv_obj_t *touch_obj,
+    lv_obj_t *target_obj,
+    eos_slide_widget_dir_t dir,
+    lv_coord_t target,
+    eos_threshold_t threshold);
+/**
+ * @brief 设置是否支持双向滑动
+ */
+void eos_slide_widget_set_bidirectional(eos_slide_widget_t *sw, bool enable);
+void eos_slide_widget_set_move_foreground_on_pressed(eos_slide_widget_t *sw, bool enable);
+void eos_slide_widget_delete(eos_slide_widget_t *sw);
 #ifdef __cplusplus
 }
 #endif

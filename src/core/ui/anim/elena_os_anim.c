@@ -11,22 +11,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_log.h"
+#include "elena_os_theme.h"
 
 // Macros and Definitions
-// #define DEBUG_BLOCKER_VISIBLE
+#define DEBUG_BLOCKER_VISIBLE 1
 // Variables
 static lv_obj_t *blocker;
 // Function Implementations
 
 void eos_anim_blocker_show(void)
 {
-    if(blocker){
+    if (blocker)
         return;
-    }
+
     blocker = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(blocker); // 去掉样式，保持透明
-#ifdef DEBUG_BLOCKER_VISIBLE
-    lv_obj_set_style_bg_color(blocker, lv_color_hex(0xFF0000), 0);
+#if DEBUG_BLOCKER_VISIBLE
+    lv_obj_set_style_bg_color(blocker, EOS_COLOR_MINT, 0);
     lv_obj_set_style_bg_opa(blocker, LV_OPA_40, 0);
 #endif
     lv_obj_set_size(blocker, LV_PCT(100), LV_PCT(100));
@@ -35,7 +36,8 @@ void eos_anim_blocker_show(void)
 
 void eos_anim_blocker_hide(void)
 {
-    EOS_CHECK_PTR_RETURN(blocker);
+    if (!blocker)
+        return;
     lv_obj_delete(blocker);
     blocker = NULL;
 }
@@ -139,8 +141,8 @@ static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
  * @brief 内部函数：初始化 X 位置动画
  */
 static void _init_x_anim(lv_anim_t *a, lv_obj_t *obj,
-                        int32_t start, int32_t end,
-                        uint32_t duration, eos_anim_t *ctx)
+                         int32_t start, int32_t end,
+                         uint32_t duration, eos_anim_t *ctx)
 {
     lv_anim_init(a);
     lv_anim_set_var(a, obj);
@@ -156,8 +158,8 @@ static void _init_x_anim(lv_anim_t *a, lv_obj_t *obj,
  * @brief 内部函数：初始化 Y 位置动画
  */
 static void _init_y_anim(lv_anim_t *a, lv_obj_t *obj,
-                        int32_t start, int32_t end,
-                        uint32_t duration, eos_anim_t *ctx)
+                         int32_t start, int32_t end,
+                         uint32_t duration, eos_anim_t *ctx)
 {
     lv_anim_init(a);
     lv_anim_set_var(a, obj);
@@ -257,9 +259,9 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
 }
 
 void eos_anim_move_start(lv_obj_t *tar_obj,
-                                 int32_t start_x, int32_t start_y,
-                                 int32_t end_x, int32_t end_y,
-                                 uint32_t duration, bool auto_delete)
+                         int32_t start_x, int32_t start_y,
+                         int32_t end_x, int32_t end_y,
+                         uint32_t duration, bool auto_delete)
 {
     eos_anim_t *anim = eos_anim_move_create(tar_obj, start_x, start_y, end_x, end_y, duration, auto_delete);
     if (!anim)

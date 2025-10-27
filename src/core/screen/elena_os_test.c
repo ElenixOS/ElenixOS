@@ -28,6 +28,7 @@
 #include "elena_os_watchface_list.h"
 #include "elena_os_icon.h"
 #include "elena_os_toast.h"
+#include "elena_os_slide_widget.h"
 
 // Macros and Definitions
 // #define TEST_USE_ZH_FONT
@@ -118,7 +119,6 @@ void _create_new_scr()
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header(scr, "ElenaOS Test");
     lv_screen_load(scr);
-
 }
 
 static void _test_msg_list_cb(lv_event_t *e)
@@ -365,6 +365,71 @@ static void _test_show_all_lv_symbols_list()
     }
 }
 
+static void _slide_widget_reached_threshold_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
+    eos_slide_widget_delete(sw);
+}
+
+static void _slide_widget_moving_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    lv_obj_t *label = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_label_set_text_fmt(label, "(%d,%d)", lv_obj_get_x(obj), lv_obj_get_y(obj));
+}
+
+static void _slide_widget_reset_btn_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    lv_obj_t *target = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_obj_set_pos(target, 0, 160);
+}
+
+static lv_obj_t *_add_slide_wdiget(lv_obj_t *parent)
+{
+    lv_obj_t *obj = lv_button_create(parent);
+
+    lv_obj_set_size(obj, EOS_DISPLAY_WIDTH - 100, 100);
+    lv_obj_set_style_margin_ver(obj, 10, 0);
+    lv_obj_update_layout(obj);
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+
+    eos_slide_widget_t *sw = eos_slide_widget_create_with_touch(obj, obj, EOS_SLIDE_DIR_HOR, EOS_DISPLAY_WIDTH, EOS_THRESHOLD_30);
+    eos_slide_widget_set_bidirectional(sw, true);
+    lv_obj_add_event_cb(sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, sw);
+
+    return obj;
+}
+
+static void _test_slide_widget()
+{
+    _create_new_scr();
+    lv_obj_t *scr = lv_screen_active();
+    lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *list = lv_list_create(scr);
+    lv_obj_set_size(list, LV_PCT(100), LV_PCT(88));
+    lv_obj_center(list);
+    lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(list, 0, 0);
+    lv_obj_set_style_pad_all(list, 30, 0);
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_user_data(list, list);
+    lv_obj_set_scroll_dir(list, LV_DIR_VER);
+    lv_obj_add_flag(list, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *obj = _add_slide_wdiget(list);
+    obj = _add_slide_wdiget(list);
+    obj = _add_slide_wdiget(list);
+    obj = _add_slide_wdiget(list);
+    // lv_obj_t *reset_btn = lv_button_create(scr);
+    // lv_obj_t *label = lv_label_create(reset_btn);
+    // lv_obj_align(reset_btn, LV_ALIGN_BOTTOM_MID, 0, -40);
+    // lv_obj_add_event_cb(reset_btn, _slide_widget_reset_btn_clicked_cb, LV_EVENT_CLICKED, obj);
+    // lv_obj_add_event_cb(sw->touch_obj, _slide_widget_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, label);
+}
+
 void eos_test_start(void)
 {
     lv_obj_t *scr = lv_screen_active();
@@ -376,8 +441,9 @@ void eos_test_start(void)
     lv_obj_t *label = lv_list_add_text(test_list, RI_ELENA_WATCH " ElenaOS Test List");
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
 
-
-
+    // 测试滑动组件
+    btn = lv_list_add_button(test_list, RI_CAROUSEL_VIEW, "Slide Widget");
+    lv_obj_add_event_cb(btn, _test_slide_widget, LV_EVENT_CLICKED, NULL);
     // 测试导航功能
     btn = lv_list_add_button(test_list, RI_MENU_UNFOLD_FILL, "Navigation");
     lv_obj_add_event_cb(btn, _test_nav_cb_1, LV_EVENT_CLICKED, NULL);

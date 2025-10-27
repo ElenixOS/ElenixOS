@@ -467,7 +467,7 @@ static void _sw1_moving_cb(lv_event_t *e)
 
 static void _sw2_moving_cb(lv_event_t *e)
 {
-    int32_t new_pos = (lv_coord_t)lv_event_get_param(e);
+    lv_coord_t new_pos = (lv_coord_t)lv_event_get_param(e);
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     eos_card_pager_node_t *cur_node = eos_card_pager_get_node(cp, cp->current_page_index);
     lv_obj_t *cur_obj = cur_node->page;
@@ -487,7 +487,6 @@ static void _sw2_moving_cb(lv_event_t *e)
 
 static void _sw1_reverted_cb(lv_event_t *e)
 {
-    EOS_LOG_D("Reverted");
     eos_card_pager_t *cp = (eos_card_pager_t *)lv_event_get_user_data(e);
     lv_obj_t *cur_page = eos_card_pager_get_page(cp, cp->current_page_index);
     lv_obj_set_pos(cur_page, 0, 0);

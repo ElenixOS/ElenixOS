@@ -59,6 +59,7 @@ typedef enum {
     STR_ID_SETTINGS_APPS_CLEAR_DATA,
     STR_ID_SETTINGS_ADDITIONAL_SETTINGS,
     STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE,
+    STR_ID_APP_FLASH_LIGHT_IGNORE,
     /* 此处可添加新的字符串ID */
     STR_ID_MAX_NUMBER   /**< 字符串ID最大值 */
 } lang_string_id_t;
@@ -67,7 +68,7 @@ typedef enum {
 
 /**
  * @brief 获取当前语言的字符串
- * 
+ *
  * 例如当前语言是英语，那么 `current_lang[STR_ID_LANGUAGE]` 等于 `"English"`
  */
 extern const char** current_lang;
@@ -89,7 +90,7 @@ void eos_lang_set(language_id_t lang);
 language_id_t eos_lang_get(void);
 /**
  * @brief 通过语言字符串获得语言类型
- * 
+ *
  * 例如`English`返回`LANG_EN`
  * @param language_str 字符串
  * @return language_id_t 语言类型

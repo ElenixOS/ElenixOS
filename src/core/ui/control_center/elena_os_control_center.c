@@ -193,15 +193,11 @@ static void _control_center_battery_level_update_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(sensor && label && btn);
     if (sensor->data.bat.charging)
     {
-        char str[16];
-        snprintf(str, sizeof(str), RI_FLASHLIGHT_FILL " %d%%", sensor->data.bat.level);
-        lv_label_set_text(label, str);
+        lv_label_set_text_fmt(label, RI_FLASHLIGHT_FILL " %d%%", sensor->data.bat.level);
     }
     else
     {
-        char str[16];
-        snprintf(str, sizeof(str), "%d%%", sensor->data.bat.level);
-        lv_label_set_text(label, str);
+        lv_label_set_text_fmt(label, "%d%%", sensor->data.bat.level);
     }
 }
 
@@ -213,9 +209,7 @@ static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
     lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, 0);
 
     lv_obj_t *label = lv_label_create(btn);
-    char str[16];
-    snprintf(str, sizeof(str), "%d%%", eos_battery_service_get_level());
-    lv_label_set_text(label, str);
+    lv_label_set_text_fmt(label, "%d%%", eos_battery_service_get_level());
     lv_obj_center(label);
 
     eos_event_add_cb(
@@ -241,7 +235,8 @@ static char *_control_center_volume_get_icon_by_value(uint8_t value)
     {
         return RI_VOLUME_UP_FILL;
     }
-    else if (value > 0){
+    else if (value > 0)
+    {
         return RI_VOLUME_DOWN_FILL;
     }
     else

@@ -4,7 +4,7 @@
  *
  * 此文件由 `gen_icon_def.py` 自动生成。
  * 不要手动修改！
- * @date 2025-10-25
+ * @date 2025-10-28
  */
 
 #ifndef ELENA_OS_ICON_H
@@ -22,6 +22,8 @@ extern "C" {
  * License: Apache License 2.0
  * Original source: https://github.com/Remix-Design/RemixIcon
  */
+#define RI__NULL "\u0000"
+#define RI_NONMARKINGRETURN "\u0009"
 #define RI_24_HOURS_FILL "\uE000"
 #define RI_24_HOURS_LINE "\uE001"
 #define RI_4K_FILL "\uE002"
@@ -3008,6 +3010,7 @@ extern "C" {
 #define RI_VOLUME_LOUD_FILL "\uEBF3"
 #define RI_VOLUME_LOUD_LINE "\uEBF4"
 #define RI_ELENA_WATCH "\uEBF5"
+#define RI_ARROW_LEFT_S_LINE_LARGE "\uEBF6"
 
 
 void eos_icon_register(void);

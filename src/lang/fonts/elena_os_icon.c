@@ -1,7 +1,7 @@
 /**
  * @file elena_os_icon.c
  * @brief 将图标宏注册到 JerryScript，全自动生成。
- * @date 2025-10-25
+ * @date 2025-10-28
  */
 
 // Includes

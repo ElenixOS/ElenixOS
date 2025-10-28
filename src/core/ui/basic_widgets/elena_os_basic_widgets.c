@@ -97,9 +97,9 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     {
         btn_label = lv_label_create(btn);
     }
-    lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE);
+    lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE_LARGE);
     lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
-    lv_obj_center(btn_label);
+    lv_obj_align(btn_label, LV_ALIGN_CENTER, -2, 0);
 
     return btn;
 }
@@ -110,7 +110,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 static inline void _app_header_update_clock_label(lv_obj_t *label)
 {
     eos_datetime_t dt = eos_time_get();
-    lv_label_set_text_fmt(label,  "%02d:%02d", dt.hour, dt.min);
+    lv_label_set_text_fmt(label, "%02d:%02d", dt.hour, dt.min);
 }
 
 /**
@@ -130,7 +130,8 @@ static void _app_header_lang_changed_cb(lv_event_t *e)
 
     // 从用户数据中获取str_id
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(lv_screen_active());
-    if(!t)return;
+    if (!t)
+        return;
     if (t->type == APP_HEADER_TITLE_TYPE_ID)
     {
         lv_label_set_text(label, current_lang[t->data.id]);
@@ -187,7 +188,6 @@ static void _screen_delete_cb(lv_event_t *e)
 void eos_app_header_set_title(lv_obj_t *scr, const char *title)
 {
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    EOS_CHECK_PTR_RETURN(t);
     EOS_CHECK_PTR_RETURN(app_header && t);
     // 复制一份避免被删除
     t->type = APP_HEADER_TITLE_TYPE_STRING;
@@ -201,7 +201,6 @@ void eos_app_header_set_title(lv_obj_t *scr, const char *title)
 void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
 {
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    EOS_CHECK_PTR_RETURN(t);
     EOS_CHECK_PTR_RETURN(app_header && t);
     // 复制一份避免被删除
     t->type = APP_HEADER_TITLE_TYPE_ID;

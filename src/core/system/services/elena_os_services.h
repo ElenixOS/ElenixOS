@@ -22,6 +22,10 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 
+/**
+ * @brief 电池电量获取函数
+ * @return uint8_t 返回电池电量，范围：0～100
+ */
 uint8_t eos_battery_service_get_level(void);
 
 /**

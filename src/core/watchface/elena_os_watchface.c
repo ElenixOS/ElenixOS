@@ -290,7 +290,7 @@ void eos_watchface_create(void)
     lv_screen_load(watchface_screen);
     // JSON中获取表盘id
     EOS_LOG_D("Loading wf_id");
-    const char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, "cn.sab1e.clock");
+    const char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
     EOS_CHECK_PTR_RETURN(wf_id);
     // 直接通过表盘id 获取相关信息并存储到script_package
     EOS_LOG_D("Loading manifest");

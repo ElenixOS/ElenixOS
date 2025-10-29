@@ -26,6 +26,14 @@ extern "C" {
  * @brief 创建设置页面
  */
 void eos_settings_create(void);
+/**
+ * @brief 启用静音模式
+ */
+void eos_settings_slient_mode_on(void);
+/**
+ * @brief 关闭静音模式
+ */
+void eos_settings_slient_mode_off(void);
 #ifdef __cplusplus
 }
 #endif

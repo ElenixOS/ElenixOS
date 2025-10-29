@@ -34,9 +34,11 @@
 
 #define _TOAST_ANIM_DURATION 500
 #define _TOAST_MARGIN_TOP 35
-#define _TOAST_SHOW_SCROLL_SPEED 10          /**< 每像素滚动时间，单位毫秒 */
+#define _TOAST_SHOW_SCROLL_SPEED 10         /**< 每像素滚动时间，单位毫秒 */
 #define _TOAST_SHOW_DURATION 3000           /**< 基础显示时间，单位毫秒 */
 #define _TOAST_SHOW_ANIM_BASE_DURATION 1000 /**< 此持续时间是用于滚动结束后持续的时间 */
+
+#define _TOAST_LABEL_MAX_LENGTH 128
 // Variables
 
 // Function Implementations
@@ -54,7 +56,7 @@ static void _anim_move_end_cb(eos_anim_t *a)
     lv_obj_t *label = (lv_obj_t *)eos_anim_get_user_data(a);
     if (label)
     {
-        lv_label_set_long_mode(label,LV_LABEL_LONG_SCROLL_CIRCULAR);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     }
 }
 
@@ -79,11 +81,11 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     // 创建 mask
     lv_obj_t *mask = lv_obj_create(toast);
     lv_obj_remove_style_all(mask);
-    lv_obj_set_style_radius(mask, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_clip_corner(mask, true, 0);
     lv_obj_set_size(mask, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(mask, LV_OPA_TRANSP, 0);
     lv_obj_set_style_translate_y(mask, 2, 0);
+    lv_obj_set_style_margin_right(mask, 5, 0);
 
     // 创建 label
     lv_obj_t *label = lv_label_create(mask);
@@ -104,6 +106,7 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     {
         uint32_t scroll_time = size.x * _TOAST_SHOW_SCROLL_SPEED;
         lv_obj_set_style_anim_duration(label, scroll_time, 0);
+        lv_obj_set_style_radius(mask, LV_RADIUS_CIRCLE, 0);
     }
 
     // 顶部居中
@@ -113,7 +116,7 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     // 动画移入屏幕
     eos_anim_t *a = eos_anim_move_create(toast, 0, -lv_obj_get_height(toast), 0, _TOAST_MARGIN_TOP, _TOAST_ANIM_DURATION, false);
 
-    eos_anim_add_cb(a,_anim_move_end_cb, label);
+    eos_anim_add_cb(a, _anim_move_end_cb, label);
     eos_anim_start(a);
 
     // 定时器时长计算
@@ -131,4 +134,15 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     EOS_LOG_D("Toast will show for %d ms", delay);
     lv_timer_create(_toast_timer_cb, delay, toast);
     return toast;
+}
+
+lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...)
+{
+    char buf[_TOAST_LABEL_MAX_LENGTH];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    return eos_toast_show(icon_src, buf);
 }

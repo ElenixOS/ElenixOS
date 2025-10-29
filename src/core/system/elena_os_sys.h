@@ -29,12 +29,13 @@ extern "C" {
 
 #define EOS_SYS_RES_FONT_DIR EOS_SYS_RES_DIR "font/"
 /************************** 系统配置信息的键 **************************/
-#define EOS_SYS_CFG_KEY_VERSION "version"
-#define EOS_SYS_CFG_KEY_LANGUAGE "language"
-#define EOS_SYS_CFG_KEY_WATCHFACE_ID "wf_id"
-#define EOS_SYS_CFG_KEY_BLUETOOTH "bluetooth"
-#define EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS "display_brightness"
-#define EOS_SYS_CFG_KEY_SPEAKER_VOLUME "speaker_volume"
+#define EOS_SYS_CFG_KEY_VERSION_STR "version"
+#define EOS_SYS_CFG_KEY_LANGUAGE_STR "language"
+#define EOS_SYS_CFG_KEY_WATCHFACE_ID_STR "wf_id"
+#define EOS_SYS_CFG_KEY_BLUETOOTH_BOOL "bluetooth"
+#define EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER "display_brightness"
+#define EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER "speaker_volume"
+#define EOS_SYS_CFG_KEY_MUTE_BOOL "mute"
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

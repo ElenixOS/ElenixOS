@@ -51,4 +51,6 @@ eos_result_t eos_battery_service_start(void)
         _battery_measurement_cb,
         EOS_EVENT_SENSOR_REPORT_BAT,
         NULL);
+    // 先读取一次电量
+    eos_sensor_read(EOS_SENSOR_BAT);
 }

@@ -14,7 +14,7 @@
 #include "elena_os_theme.h"
 
 // Macros and Definitions
-#define DEBUG_BLOCKER_VISIBLE 1
+#define DEBUG_BLOCKER_VISIBLE 0
 // Variables
 static lv_obj_t *blocker;
 // Function Implementations
@@ -69,6 +69,13 @@ static void _set_x_cb(lv_anim_t *var, int32_t v)
 static void _set_y_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_y(var->var, v);
+}
+/**
+ * @brief 动画播放时设置变换缩放的回调
+ */
+static void _set_scale_cb(void *var, int32_t v)
+{
+    lv_obj_set_style_transform_scale((lv_obj_t *)var, v, 0);
 }
 static void _free_anim_later(lv_timer_t *t)
 {
@@ -171,6 +178,23 @@ static void _init_y_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 
+/**
+ * @brief 内部函数：初始化变换缩放动画
+ */
+static void _init_scale_anim(lv_anim_t *a, lv_obj_t *obj,
+                             int32_t start, int32_t end,
+                             uint32_t duration, eos_anim_t *ctx)
+{
+    lv_anim_init(a);
+    lv_anim_set_var(a, obj);
+    lv_anim_set_values(a, start, end);
+    lv_anim_set_exec_cb(a, _set_scale_cb);
+    lv_anim_set_path_cb(a, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(a, duration);
+    lv_anim_set_completed_cb(a, _eos_anim_ready_cb);
+    lv_anim_set_user_data(a, ctx);
+}
+
 void eos_anim_del(eos_anim_t *anim)
 {
     if (!anim)
@@ -258,6 +282,38 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     return anim;
 }
 
+eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
+                                            int32_t scale_start, int32_t scale_end,
+                                            uint32_t duration, bool auto_delete)
+{
+    if (!tar_obj || duration == 0)
+        return NULL;
+
+    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    if (!anim)
+        return NULL;
+
+    // 基础初始化
+    anim->type = EOS_ANIM_TRANSFORM_SCALE;
+    anim->anim_count = 1;
+    anim->anim_completed_count = 0;
+    anim->user_cb = NULL;
+    anim->user_data = NULL;
+    anim->auto_delete_obj = auto_delete;
+    anim->tar_obj = tar_obj;
+    anim->anim_timeline = lv_anim_timeline_create();
+    if (!anim->anim_timeline)
+    {
+        lv_free(anim);
+        return NULL;
+    }
+
+    // 初始化变换缩放动画
+    _init_scale_anim(&anim->anim.transform_scale.a_scale, tar_obj, scale_start, scale_end, duration, anim);
+
+    return anim;
+}
+
 void eos_anim_move_start(lv_obj_t *tar_obj,
                          int32_t start_x, int32_t start_y,
                          int32_t end_x, int32_t end_y,
@@ -294,6 +350,9 @@ bool eos_anim_start(eos_anim_t *anim)
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_x);
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_y);
         break;
+    case EOS_ANIM_TRANSFORM_SCALE:
+        lv_anim_start(&anim->anim.transform_scale.a_scale);
+        return true;
     default:
         return false;
     }
@@ -308,6 +367,49 @@ void eos_anim_scale_start(lv_obj_t *tar_obj,
                           uint32_t duration, bool auto_delete)
 {
     eos_anim_t *anim = eos_anim_scale_create(tar_obj, w_start, w_end, h_start, h_end, duration, auto_delete);
+    if (!anim)
+        return;
+
+    if (!eos_anim_start(anim))
+    {
+        eos_anim_del(anim);
+    }
+}
+
+void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
+                                       int32_t scale_start, int32_t scale_end,
+                                       uint32_t duration, uint32_t playback_time,
+                                       uint16_t repeat_count, bool auto_delete)
+{
+    if (!tar_obj)
+        return;
+
+    eos_anim_t *anim = eos_anim_transform_scale_create(tar_obj, scale_start, scale_end, duration, auto_delete);
+    if (!anim)
+        return;
+
+    // 设置高级参数
+    if (playback_time > 0)
+    {
+        EOS_LOG_D("Playback: %d", playback_time);
+        lv_anim_set_playback_time(&anim->anim.transform_scale.a_scale, playback_time);
+    }
+    if (repeat_count > 0)
+    {
+        lv_anim_set_repeat_count(&anim->anim.transform_scale.a_scale, repeat_count);
+    }
+
+    if (!eos_anim_start(anim))
+    {
+        eos_anim_del(anim);
+    }
+}
+
+void eos_anim_transform_scale_start(lv_obj_t *tar_obj,
+                                    int32_t scale_start, int32_t scale_end,
+                                    uint32_t duration, bool auto_delete)
+{
+    eos_anim_t *anim = eos_anim_transform_scale_create(tar_obj, scale_start, scale_end, duration, auto_delete);
     if (!anim)
         return;
 

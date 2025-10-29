@@ -42,14 +42,14 @@ void eos_display_set_brightness_smooth(uint8_t start_brightness, uint8_t end_bri
 
 void eos_display_tmp_set_brightness_smooth(uint8_t target_brightness)
 {
-    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     eos_display_set_brightness_smooth(b, target_brightness, 300);
     last_target_brightness = target_brightness;
 }
 
 void eos_display_tmp_restore_brightness_smooth(void)
 {
-    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    uint8_t b = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     eos_display_set_brightness_smooth(last_target_brightness, b, 300);
     last_target_brightness = 50;
 }

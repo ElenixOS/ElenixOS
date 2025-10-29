@@ -166,7 +166,7 @@ void eos_flash_light_show(void)
     lv_obj_set_height(label, LV_SIZE_CONTENT);
 
     lv_label_set_text_fmt(label, "%s\n" RI_ARROW_DOWN_WIDE_FILL,
-                      current_lang[STR_ID_APP_FLASH_LIGHT_IGNORE]);
+                          current_lang[STR_ID_APP_FLASH_LIGHT_DISMISS]);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -197,6 +197,7 @@ void _flash_light_create(lv_obj_t *launcher_screen)
     eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_t *scr = eos_nav_init(launcher_screen);
     lv_screen_load(scr);
+    lv_obj_remove_style_all(scr);
     eos_card_pager_t *cp = eos_card_pager_create(scr, EOS_CARD_PAGER_DIR_HOR);
     lv_obj_t *page = eos_card_pager_create_page(cp);
     lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);

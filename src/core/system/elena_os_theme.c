@@ -29,7 +29,12 @@
 static lv_style_t style_screen;
 static lv_style_t style_label;
 static lv_style_t style_list;
-static lv_style_t style_switch;
+
+static lv_style_t style_switch_main;
+static lv_style_t style_switch_indicator;
+
+static lv_style_t style_roller_main;
+static lv_style_t style_roller_selected;
 
 static lv_style_t style_slider_main;
 static lv_style_t style_slider_indicator;
@@ -54,8 +59,11 @@ void _init_style_label(void)
 
 void _init_style_switch(void)
 {
-    lv_style_init(&style_switch);
-    lv_style_set_bg_color(&style_switch, SWITCH_BG_COLOR);
+    lv_style_init(&style_switch_main);
+    lv_style_set_bg_color(&style_switch_main, EOS_COLOR_GREY);
+
+    lv_style_init(&style_switch_indicator);
+    lv_style_set_bg_color(&style_switch_indicator, SWITCH_BG_COLOR);
 }
 
 void _init_style_list(void)
@@ -96,6 +104,18 @@ void _init_style_slider(void)
     lv_style_set_bg_color(&style_slider_pressed_color, lv_color_darken(SLIDER_MAIN_COLOR, 2));
 }
 
+void _init_style_roller(void)
+{
+    lv_style_init(&style_roller_main);
+    lv_style_set_bg_color(&style_roller_main, EOS_COLOR_BLACK);
+    lv_style_set_border_color(&style_roller_main, EOS_COLOR_DARK_GREY_1);
+    lv_style_set_radius(&style_roller_main, 20);
+    lv_style_set_text_color(&style_roller_main, EOS_COLOR_DARK_GREY_2);
+
+    lv_style_init(&style_roller_selected);
+    lv_style_set_bg_opa(&style_roller_selected, LV_OPA_TRANSP);
+}
+
 static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
 {
     LV_UNUSED(th);
@@ -114,7 +134,8 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_switch_class))
     {
         // 开关开启的状态
-        lv_obj_add_style(obj, &style_switch, LV_PART_INDICATOR | LV_STATE_CHECKED);
+        lv_obj_add_style(obj, &style_switch_main, LV_PART_MAIN);
+        lv_obj_add_style(obj, &style_switch_indicator, LV_PART_INDICATOR | LV_STATE_CHECKED);
     }
     else if (lv_obj_check_type(obj, &lv_slider_class))
     {
@@ -123,6 +144,11 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &style_slider_indicator, LV_PART_INDICATOR);
         lv_obj_add_style(obj, &style_slider_pressed_color, LV_PART_INDICATOR | LV_STATE_PRESSED);
         lv_obj_add_style(obj, &style_slider_knob, LV_PART_KNOB);
+    }
+    else if (lv_obj_check_type(obj, &lv_roller_class))
+    {
+        lv_obj_add_style(obj, &style_roller_main, LV_PART_MAIN);
+        lv_obj_add_style(obj, &style_roller_selected, LV_PART_SELECTED);
     }
 }
 
@@ -145,6 +171,7 @@ void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font
     _init_style_list();
     _init_style_switch();
     _init_style_slider();
+    _init_style_roller();
 
     lv_theme_t *th_act = lv_theme_default_init(lv_display_get_default(),
                                                primary_color,

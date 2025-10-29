@@ -76,6 +76,7 @@ typedef enum{
     EOS_ANIM_SCALE, /**< 缩放动画 */
     EOS_ANIM_FADE,  /**< 透明度渐变动画 */
     EOS_ANIM_MOVE,  /**< 位置移动动画 */
+    EOS_ANIM_TRANSFORM_SCALE /**< 缩放动画，支持 Label */
     // 此处可以添加其他动画类型
 }eos_anim;
 typedef struct eos_anim_t eos_anim_t;   // 预定义
@@ -112,6 +113,10 @@ struct eos_anim_t
             lv_anim_t a_x; /**< X 轴位置动画 */
             lv_anim_t a_y; /**< Y 轴位置动画 */
         } move;
+        struct
+        {
+            lv_anim_t a_scale;
+        } transform_scale;
         // 此处可以添加其他动画类型的结构
     } anim;
     union
@@ -230,6 +235,43 @@ void eos_anim_set_auto_delete(eos_anim_t *anim);
  * @param layered
  */
 void eos_anim_fade_set_layered(eos_anim_t *a, bool layered);
+/**
+ * @brief 创建变换缩放动画（基于 transform_scale）
+ * @param tar_obj
+ * @param scale_start
+ * @param scale_end
+ * @param duration
+ * @param auto_delete
+ * @return eos_anim_t*
+ */
+eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
+                                            int32_t scale_start, int32_t scale_end,
+                                            uint32_t duration, bool auto_delete);
+/**
+ * @brief 启动变换缩放动画（带高级配置）
+ * @param tar_obj
+ * @param scale_start
+ * @param scale_end
+ * @param duration
+ * @param playback_time
+ * @param repeat_count
+ * @param auto_delete
+ */
+void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
+                                      int32_t scale_start, int32_t scale_end,
+                                      uint32_t duration, uint32_t playback_time,
+                                      uint16_t repeat_count, bool auto_delete);
+/**
+ * @brief 启动简单的变换缩放动画（默认参数）
+ * @param tar_obj
+ * @param scale_start
+ * @param scale_end
+ * @param duration
+ * @param auto_delete
+ */
+void eos_anim_transform_scale_start(lv_obj_t *tar_obj,
+                                    int32_t scale_start, int32_t scale_end,
+                                    uint32_t duration, bool auto_delete);
 #ifdef __cplusplus
 }
 #endif

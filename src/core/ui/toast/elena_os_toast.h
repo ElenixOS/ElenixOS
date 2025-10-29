@@ -30,6 +30,10 @@ extern "C" {
  * @return lv_obj_t* 返回创建的 Toast 对象指针
  */
 lv_obj_t * eos_toast_show(const char *icon_src, const char *message);
+/**
+ * @brief 支持格式化字符串的 Toast 提示
+ */
+lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...);
 #ifdef __cplusplus
 }
 #endif

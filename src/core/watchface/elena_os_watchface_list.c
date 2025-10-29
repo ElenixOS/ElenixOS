@@ -47,7 +47,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     }
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
-    eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID, watchface_id);
+    eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, watchface_id);
     eos_watchface_create(); // 回到表盘页面
 }
 

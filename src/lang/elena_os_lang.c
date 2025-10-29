@@ -46,9 +46,14 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_DESCRIPTON] = "Description",
     [STR_ID_SETTINGS_APPS_UINSTALL] = "Uinstall",
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "Clear data",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "Additional settings",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "Language",
-    [STR_ID_APP_FLASH_LIGHT_IGNORE] = "Ignore",
+    [STR_ID_SETTINGS_GENERAL] = "General",
+    [STR_ID_SETTINGS_GENERAL_LANGUAGE] = "Language",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS] = "Sound & Haptics",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "Silent Mode",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "Volume",
+    [STR_ID_APP_FLASH_LIGHT_DISMISS] = "Dismiss",
+    [STR_ID_TOAST_SHOW_MUTE]="Muted",
+    [STR_ID_TOAST_SHOW_UNMUTE]="Unmuted"
     // 在此添加新的字符串ID和英文翻译
 };
 
@@ -80,9 +85,14 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_DESCRIPTON] = "描述",
     [STR_ID_SETTINGS_APPS_UINSTALL] = "卸载",
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "删除应用数据",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS] = "更多设置",
-    [STR_ID_SETTINGS_ADDITIONAL_SETTINGS_LANGUAGE] = "语言",
-    [STR_ID_APP_FLASH_LIGHT_IGNORE] = "忽略",
+    [STR_ID_SETTINGS_GENERAL] = "通用",
+    [STR_ID_SETTINGS_GENERAL_LANGUAGE] = "语言",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS] = "声效与触感反馈",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "静音模式",
+    [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "音量",
+    [STR_ID_APP_FLASH_LIGHT_DISMISS] = "忽略",
+    [STR_ID_TOAST_SHOW_MUTE]= "已开启静音",
+    [STR_ID_TOAST_SHOW_UNMUTE]="已关闭静音"
     // 在此添加新的字符串ID和中文翻译
 };
 
@@ -105,7 +115,7 @@ void eos_lang_init(void)
     EOS_LOG_D("Init eos_lang");
     if (!lang_initialized)
     {
-        const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE, "English");
+        const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
         eos_lang_set(eos_lang_get_with_str(lang_str));
         free(lang_str);
         lang_initialized = true;

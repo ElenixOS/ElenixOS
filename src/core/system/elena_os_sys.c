@@ -630,9 +630,9 @@ eos_result_t _create_default_cfg_json(const char *path)
         return -EOS_ERR_JSON_ERROR;
     }
 
-    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_VERSION, ELENA_OS_VERSION_FULL);
-    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_LANGUAGE, EOS_SYS_DEFAULT_LANG_STR);
-    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_WATCHFACE_ID, EOS_SYS_DEFAULT_WATCHFACE_ID_STR);
+    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_VERSION_STR, ELENA_OS_VERSION_FULL);
+    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_LANGUAGE_STR, EOS_SYS_DEFAULT_LANG_STR);
+    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, EOS_SYS_DEFAULT_WATCHFACE_ID_STR);
     // 转换为字符串
     char *json_str = cJSON_PrintUnformatted(root);
     if (!json_str)
@@ -678,12 +678,12 @@ void eos_sys_init()
 
     /************************** 加载系统设置 **************************/
     // 蓝牙设置
-    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH, false))
+    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
     {
         eos_bluetooth_enable();
     }
     // 显示设置
-    uint8_t brightness = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS, 50);
+    uint8_t brightness = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
     eos_display_set_brightness(brightness);

@@ -39,7 +39,8 @@ static int32_t _slider_symbol_label_center_y = 0;
 static lv_obj_t *mute_btn;
 // Function Implementations
 
-/************************** 基础组件 **************************/
+/************************** 列表回调 **************************/
+
 static void _list_scroll_cb(lv_event_t *e)
 {
     lv_obj_t *list = lv_event_get_user_data(e);
@@ -96,6 +97,14 @@ static void _list_scroll_cb(lv_event_t *e)
         lv_obj_set_style_transform_scale(child, scale, 0);
     }
 }
+
+static void _slide_widget_reached_threshold_cb(lv_event_t *e)
+{
+    lv_obj_t *container = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_obj_scroll_to_y(container, 0, LV_ANIM_OFF);
+}
+
+/************************** 基础组件 **************************/
 
 static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char *symbol, lv_color_t color)
 {
@@ -392,7 +401,8 @@ void eos_control_center_create(lv_obj_t *parent)
                           LV_FLEX_ALIGN_START);
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(container, _list_scroll_cb, LV_EVENT_SCROLL, container);
-    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, LV_EVENT_PRESSING, container);
+    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, container);
+    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, container);
     lv_obj_t *btn;
     /************************** 蓝牙开关 **************************/
     btn = _control_center_create_switch_btn(container, RI_BLUETOOTH_FILL, EOS_COLOR_BLUE);

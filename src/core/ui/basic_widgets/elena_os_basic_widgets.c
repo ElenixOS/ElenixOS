@@ -90,16 +90,13 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     lv_obj_set_style_border_width(btn, 0, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
 
-    lv_obj_t *btn_label;
+    lv_obj_t *btn_label = lv_label_create(btn);
     if (show_text)
     {
-        btn_label = eos_lang_label_create(btn, STR_ID_BASE_ITEM_BACK);
+        lv_label_set_text_fmt(btn_label, RI_ARROW_LEFT_S_LINE_LARGE "%s", current_lang[STR_ID_BASE_ITEM_BACK]);
+    }else{
+        lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE_LARGE);
     }
-    else
-    {
-        btn_label = lv_label_create(btn);
-    }
-    lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE_LARGE);
     lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
     lv_obj_align(btn_label, LV_ALIGN_CENTER, -2, 0);
 
@@ -401,7 +398,8 @@ lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circ
     lv_image_set_src(icon, icon_src);
     lv_obj_center(icon);
     // 文字
-    lv_obj_t *label = eos_lang_label_create(btn, id);
+    lv_obj_t *label = lv_label_create(btn);
+    eos_label_set_text_id(label,id);
     lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
@@ -431,7 +429,8 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
     // 文字
-    lv_obj_t *label = eos_lang_label_create(btn, id);
+    lv_obj_t *label = lv_label_create(btn);
+    eos_label_set_text_id(label,id);
     lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);

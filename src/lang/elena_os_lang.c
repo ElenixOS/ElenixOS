@@ -52,8 +52,8 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "Silent Mode",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "Volume",
     [STR_ID_APP_FLASH_LIGHT_DISMISS] = "Dismiss",
-    [STR_ID_TOAST_SHOW_MUTE]="Muted",
-    [STR_ID_TOAST_SHOW_UNMUTE]="Unmuted"
+    [STR_ID_TOAST_SHOW_MUTE] = "Muted",
+    [STR_ID_TOAST_SHOW_UNMUTE] = "Unmuted"
     // 在此添加新的字符串ID和英文翻译
 };
 
@@ -91,8 +91,8 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "静音模式",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "音量",
     [STR_ID_APP_FLASH_LIGHT_DISMISS] = "忽略",
-    [STR_ID_TOAST_SHOW_MUTE]= "已开启静音",
-    [STR_ID_TOAST_SHOW_UNMUTE]="已关闭静音"
+    [STR_ID_TOAST_SHOW_MUTE] = "已开启静音",
+    [STR_ID_TOAST_SHOW_UNMUTE] = "已关闭静音"
     // 在此添加新的字符串ID和中文翻译
 };
 
@@ -202,30 +202,28 @@ static void _lang_label_delete_cb(lv_event_t *e)
     eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
 }
 
+void eos_label_set_text_id(lv_obj_t *label, uint32_t str_id)
+{
+    EOS_CHECK_PTR_RETURN(label);
+
+    if (str_id < STR_ID_MAX_NUMBER && current_lang && current_lang[str_id])
+    {
+        lv_label_set_text(label, current_lang[str_id]);
+    }
+
+    eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)str_id);
+}
+
 lv_obj_t *eos_lang_label_create(lv_obj_t *parent, uint32_t str_id)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-
-    // 初始化语言系统（如果未初始化）
-    if (!lang_initialized)
-    {
-        eos_lang_init();
-    }
 
     // 创建标签
     lv_obj_t *label = lv_label_create(parent);
     if (!label)
         return NULL;
 
-    // 设置初始文本
-    if (str_id < STR_ID_MAX_NUMBER && current_lang && current_lang[str_id])
-    {
-        lv_label_set_text(label, current_lang[str_id]);
-    }
-
-    // 使用事件系统注册回调
-    lv_obj_add_event_cb(label, _lang_label_delete_cb, LV_EVENT_DELETE, NULL);
-    eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)str_id);
+    eos_label_set_text_id(label, str_id);
 
     return label;
 }

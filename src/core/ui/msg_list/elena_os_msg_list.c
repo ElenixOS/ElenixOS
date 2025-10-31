@@ -230,8 +230,8 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     lv_obj_set_style_margin_top(msg_label, 10, 0);
 
     // 添加按钮标签
-    lv_obj_t *btn_label = eos_lang_label_create(mark_as_read_btn, STR_ID_MSG_LIST_ITEM_MARK_AS_READ);
-
+    lv_obj_t *btn_label = lv_label_create(mark_as_read_btn);
+    eos_label_set_text_id(btn_label, STR_ID_MSG_LIST_ITEM_MARK_AS_READ);
     lv_obj_center(btn_label);
 
     btn_data_t *data = lv_malloc(sizeof(btn_data_t));
@@ -619,14 +619,16 @@ eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     // 初始时隐藏清除按钮
     lv_obj_add_flag(list->clear_all_btn, LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_t *clear_all_label = eos_lang_label_create(list->clear_all_btn, STR_ID_MSG_LIST_CLEAR_ALL);
+    lv_obj_t *clear_all_label = lv_label_create(list->clear_all_btn);
+    eos_label_set_text_id(clear_all_label, STR_ID_MSG_LIST_CLEAR_ALL);
 
     lv_obj_center(clear_all_label);
 
     lv_obj_add_event_cb(list->clear_all_btn, _msg_list_clear_all_btn_cb, LV_EVENT_CLICKED, list);
 
     // 创建无消息标签
-    list->no_msg_label = eos_lang_label_create(list->swipe_panel->swipe_obj, STR_ID_MSG_LIST_NO_MSG);
+    list->no_msg_label = lv_label_create(list->swipe_panel->swipe_obj);
+    eos_label_set_text_id(list->no_msg_label, STR_ID_MSG_LIST_NO_MSG);
 
     lv_obj_center(list->no_msg_label);
 

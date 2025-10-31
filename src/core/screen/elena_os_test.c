@@ -203,8 +203,9 @@ static void _test_lang(lv_event_t *e)
 {
     _create_new_scr();
 
-    lv_obj_t *label = eos_lang_label_create(lv_screen_active(), STR_ID_TEST_LANG_STR);
+    lv_obj_t *label = lv_label_create(lv_screen_active());
     lv_obj_set_width(label, lv_pct(100));
+    lv_obj_center(label);
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(label, &eos_font_resource_han_rounded_30, LV_PART_MAIN);
 #endif

@@ -3,6 +3,40 @@
  * @brief 多语言系统
  * @author Sab1e
  * @date 2025-08-14
+ * @details
+ *
+ * # Lang
+ *
+ * ## 简述
+ *
+ * 多语言系统主要用于多种语言的动态切换。
+ *
+ * ## 使用方法
+ *
+ * 只需要在需要字符串的标签`lv_label`的文字处，使用`current_lang[<String ID>]`即可获取当前语言的字符串。
+ *
+ * 示例：
+ *
+ * ```c
+ *
+ * // System init
+ * eos_lang_init();
+ *
+ * // Somewhere
+ * eos_lang_set(LANG_EN);
+ * lv_obj_t *label = lv_label_create(lv_screen_active());
+ * lv_label_set_text(label, current_lang[STR_ID_LANGUAGE]);
+ * lv_obj_center(label);
+ *
+ * ```
+ *
+ * 显示：
+ * -------------
+ * |           |
+ * |  English  |
+ * |           |
+ * -------------
+ *
  */
 
 #ifndef ELENA_OS_LANG_H
@@ -107,12 +141,18 @@ language_id_t eos_lang_get_with_str(const char *language_str);
  */
 char *eos_lang_get_language_str(void);
 /**
- * @brief 创建一个支持多语言的 LVGL label
- * @param parent label 的父级 LVGL 对象
+ * @brief 通过字符串 ID 设置标签的字符串
+ * @param label 标签对象
  * @param str_id 字符串 ID
- * @return lv_obj_t* 返回创建的 label
  */
-lv_obj_t * eos_lang_label_create(lv_obj_t * parent, uint32_t str_id);
+void eos_label_set_text_id(lv_obj_t *label, uint32_t str_id);
+/**
+ * @brief 支持格式化字符串
+ * @param label
+ * @param fmt
+ * @return eos_label_lang_fmt_t*
+ */
+void eos_label_set_text_fmt(lv_obj_t *label, const char *fmt, ...);
 #ifdef __cplusplus
 }
 #endif

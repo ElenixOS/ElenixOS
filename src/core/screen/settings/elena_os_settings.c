@@ -314,7 +314,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     lv_obj_center(list);
     lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
 
-    eos_list_add_placeholder(list, 110);
+    eos_list_add_placeholder(list, EOS_LIST_PLACEHOLDER_HEIGHT);
 
     lv_obj_t *container = eos_list_add_container(list);
     lv_obj_set_size(container, lv_pct(100), LV_SIZE_CONTENT);
@@ -428,7 +428,7 @@ static void _settings_screen_apps(lv_event_t *e)
     lv_obj_center(app_list);
     lv_obj_set_scrollbar_mode(app_list, LV_SCROLLBAR_MODE_OFF);
     eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
-    eos_list_add_placeholder(app_list, 110);
+    eos_list_add_placeholder(app_list, EOS_LIST_PLACEHOLDER_HEIGHT);
 
     size_t app_list_size = eos_app_list_size();
     for (size_t i = 0; i < app_list_size; i++)

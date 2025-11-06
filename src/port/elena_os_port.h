@@ -37,10 +37,6 @@ extern "C" {
 #else
     #error not supported tool chain
 #endif
-/**
- * @brief UNUSED 宏
- */
-#define EOS_UNUSED(x) (void)(x)
 
 /* Public typedefs --------------------------------------------*/
 

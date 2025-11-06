@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "elena_os_log.h"
 #include "lvgl_private.h"
+#include "elena_os_font.h"
 // Macros and Definitions
 /************************** Text **************************/
 #define TEXT_COLOR EOS_COLOR_WHITE
@@ -126,6 +127,10 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_label_class))
     {
         lv_obj_add_style(obj, &style_label, 0);
+#if EOS_FONT_TYPE == EOS_FONT_C_SCALE
+        eos_label_add_size_changed_cb(obj);
+        eos_label_set_font_size(obj, EOS_FONT_SIZE_MEDIUM);
+#endif
     }
     else if (lv_obj_check_type(obj, &lv_list_class))
     {

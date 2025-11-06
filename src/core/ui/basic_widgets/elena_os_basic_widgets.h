@@ -42,6 +42,7 @@ extern "C" {
 
 #define EOS_LIST_CONTAINER_HEIGHT 100
 #define EOS_LIST_OBJ_RADIUS 25
+#define EOS_LIST_PLACEHOLDER_HEIGHT 110
 
 /* Public typedefs --------------------------------------------*/
 /**

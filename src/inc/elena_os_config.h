@@ -25,20 +25,73 @@ extern "C" {
 /************************** 字体配置 **************************/
 
 /**
- * 选择字体格式
+ * 选择字体源类型
+ *
+ * `EOS_FONT_C_*`使用 LVGL Font Converter 生成的 C 文字字库，或 LVGL 内置的字体
+ *
  * 可用格式:
- *  - EOS_FONT_USE_LVGL:    LVGL内置的 Montserrat 字体
- *  - EOS_FONT_USE_C:       使用 LVGL Font Converter 生成的 C 文字字库
- *  - EOS_FONT_USE_TTF:     使用文件系统的TTF字体文件
+ *  - EOS_FONT_C_SCALE:     只存储一种点阵字体，多级字号使用缩放效果实现
+ *  - EOS_FONT_C_MULTI:     存储多种点阵字体，多级字号使用不同字体
+ *  - EOS_FONT_TTF:         使用文件系统的TTF字体文件
  */
-#define EOS_FONT_TYPE EOS_FONT_USE_C
+#define EOS_FONT_TYPE EOS_FONT_TTF
 
-#if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
-#define EOS_FONT_LVGL   lv_font_montserrat_30
-#elif EOS_FONT_TYPE == EOS_FONT_USE_C
-#define EOS_FONT_C_NAME          source_han_sans_30
-#elif EOS_FONT_TYPE == EOS_FONT_USE_TTF
-#define EOS_FONT_TTF_PATH        EOS_SYS_RES_FONT_DIR "font.ttf"
+/**
+ * 配置字体对应字号，下面三个配置分配对应三种字体：
+ * - EOS_FONT_SIZE_LARGE
+ * - EOS_FONT_SIZE_MEDIUM
+ * - EOS_FONT_SIZE_SMALL
+ */
+#define EOS_FONT_CFG_LARGE_SIZE     30
+#define EOS_FONT_CFG_MEDIUM_SIZE    EOS_FONT_CFG_LARGE_SIZE - 4
+#define EOS_FONT_CFG_SMALL_SIZE     EOS_FONT_CFG_MEDIUM_SIZE - 4
+
+#if EOS_FONT_TYPE == EOS_FONT_C_SCALE
+
+    #define EOS_FONT_C_NAME             source_han_sans_30  /**< 字体名称 */
+    #define EOS_FONT_C_SIZE             30                  /**< C 字体的大小 */
+
+#elif EOS_FONT_TYPE == EOS_FONT_C_MULTI
+
+    #define EOS_FONT_LARGE_NAME         source_han_sans_30
+    #define EOS_FONT_MEDIUM_NAME        source_han_sans_26
+    #define EOS_FONT_SMALL_NAME         source_han_sans_22
+
+#elif EOS_FONT_TYPE == EOS_FONT_TTF
+
+/**
+ * 选择 TTF 数据格式
+ * 可用格式:
+ *  - EOS_FONT_TTF_DATA:    将 TTF 字体数据编译进固件
+ *  - EOS_FONT_TTF_FILE:    从文件系统加载 TTF 字体文件
+ */
+#define EOS_FONT_TTF_TYPE EOS_FONT_TTF_FILE
+
+#if EOS_FONT_TTF_TYPE == EOS_FONT_TTF_DATA
+
+    #define EOS_FONT_TTF_DATA_NAME  SourceHanSansSC_12M
+    #define EOS_FONT_TTF_DATA_SIZE  SourceHanSansSC_12M_size
+
+#elif EOS_FONT_TTF_TYPE == EOS_FONT_TTF_FILE
+
+    #define LV_FS_STDIO_LETTER_STR "A"
+    #define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR":" EOS_SYS_RES_FONT_DIR "SourceHanSansCN-Bold.ttf"
+
+#endif /* EOS_FONT_TTF_TYPE */
+
+/**
+ * 启用额外功能
+ */
+
+#define EOS_FONT_TTF_ENABLE_EXTENDED 1
+
+#if EOS_FONT_TTF_ENABLE_EXTENDED
+
+    #define EOS_FONT_TTF_KERNING     0      /**< 字距，单位：px */
+    #define EOS_FONT_TTF_CACHE_SIZE  256    /**< TTF 字体缓存大小 */
+
+#endif /* EOS_FONT_TTF_ENABLE_EXTENDED */
+
 #endif /* EOS_FONT_TYPE */
 
 /************************** 显示配置 **************************/
@@ -54,8 +107,8 @@ extern "C" {
 /************************** 系统文件目录配置 **************************/
 
 #ifndef EOS_SYS_ROOT_DIR
-#define EOS_SYS_ROOT_DIR "/"     /**< 系统根目录 例如：`/user/elenaos/` */
-#endif
+    #define EOS_SYS_ROOT_DIR "/"     /**< 系统根目录 例如：`/user/elenaos/` */
+#endif /* EOS_SYS_ROOT_DIR */
 
 /************************** 电量检测 **************************/
 
@@ -69,14 +122,10 @@ extern "C" {
 /************************** 日志 **************************/
 
 // 是否启用断言
-#ifndef EOS_USE_ASSERT
 #define EOS_USE_ASSERT    1
-#endif
 
 // 是否启用彩色日志
-#ifndef EOS_LOG_USE_COLOR
 #define EOS_LOG_USE_COLOR 0
-#endif
 
 /************************** 配置结束 **************************/
 

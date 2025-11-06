@@ -55,12 +55,10 @@
 #include "elena_os_config_internal.h"
 #include "elena_os_services.h"
 #include "jerryscript.h"
+#include "elena_os_font.h"
 #define EOS_LOG_TAG "Core"
 #include "elena_os_log.h"
 // Macros and Definitions
-#if EOS_FONT_TYPE == EOS_FONT_USE_C
-LV_FONT_DECLARE(EOS_FONT_C_NAME);
-#endif
 #define EOS_TEST_ENABLE 1
 
 // Variables
@@ -125,28 +123,11 @@ eos_result_t eos_run(void)
     /************************** 系统组件初始化 **************************/
     script_engine_init();
     eos_sys_init();
-#if EOS_FONT_TYPE == EOS_FONT_USE_LVGL
+    lv_font_t *default_font = eos_font_init();
+    EOS_ASSERT(default_font != NULL);
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),
-                  &EOS_FONT_LVGL);
-#elif EOS_FONT_TYPE == EOS_FONT_USE_C
-    eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
-                  lv_palette_main(LV_PALETTE_RED),
-                  &EOS_FONT_C_NAME);
-#elif EOS_FONT_TYPE == EOS_FONT_USE_TTF
-    static lv_font_t *font_ttf;
-    font_ttf = lv_tiny_ttf_create_file(argv[1], 24); // 24px 大小
-    if (font_ttf == NULL)
-    {
-        EOS_LOG_E("Failed to load TTF font!");
-    }
-    else
-    {
-        eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
-                      lv_palette_main(LV_PALETTE_RED),
-                      font_ttf);
-    }
-#endif /* EOS_FONT_TYPE */
+                  default_font);
     eos_app_init();
     eos_watchface_init();
     eos_lang_init();

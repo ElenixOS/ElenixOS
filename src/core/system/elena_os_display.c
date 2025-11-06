@@ -24,7 +24,7 @@ static uint8_t last_target_brightness = 50;
  */
 static void _brightness_anim_cb(void *var, int32_t v)
 {
-    EOS_UNUSED(var);
+    LV_UNUSED(var);
     eos_display_set_brightness((uint8_t)v);
 }
 

@@ -103,7 +103,7 @@ static void _swipe_panel_moving_cb(lv_event_t *e)
 
 static void _flash_light_clicked_cb(lv_event_t *e)
 {
-    _pressing_user_data_t *ud = (eos_swipe_panel_t *)lv_event_get_user_data(e);
+    _pressing_user_data_t *ud = lv_event_get_user_data(e);
     _flash_light_delete(ud);
     _flash_light_create(eos_watchface_get_screen());
 }

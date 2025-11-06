@@ -3,7 +3,7 @@
 可以调整编译模式为`MinSizeRel`暂时忽略JS内存泄漏
 - [x] JS内存泄漏问题
 ## GUI
-- [ ] 字体大小问题
+- [x] 字体大小问题
 - [ ] 实现各种外部接口，例如震动器，扬声器，传感器。
 - [x] 应用头的文字显示有问题
 - [x] 自定义图标
@@ -22,6 +22,7 @@
     - [x] CardPager
       - [x] Indicator
   - [x] Toast
+    - [ ] Toast 消息队列
 - [x] 系统功能测试页面
 - [x] MessageList
   - [x] 修复 obj NULL bug

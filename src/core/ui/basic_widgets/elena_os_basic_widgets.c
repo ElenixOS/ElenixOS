@@ -79,7 +79,7 @@ lv_obj_t *eos_list_create(lv_obj_t *parent)
     lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
 
     // 占位符
-    eos_list_add_placeholder(list, 110);
+    eos_list_add_placeholder(list, EOS_LIST_PLACEHOLDER_HEIGHT);
     return list;
 }
 

@@ -29,6 +29,7 @@
 #include "elena_os_icon.h"
 #include "elena_os_toast.h"
 #include "elena_os_slide_widget.h"
+#include "elena_os_font.h"
 
 // Macros and Definitions
 // #define TEST_USE_ZH_FONT
@@ -176,7 +177,7 @@ static void _test_font()
                                               /* 常用汉字测试 */ "在夏末的午后，风把阳台上的风铃吹得叮当作响，像是某种不经意的暗号。"
                                               /* 罕见汉字测试 */ "霡霂淅沥，薜荔葳蕤。彳亍踟蹰，睥睨娉婷。觊觎饕餮，倥偬倜傥。菡萏猗傩，蘼芜菁菁。";
 
-    lv_obj_t *container = lv_obj_create(lv_screen_active());
+    lv_obj_t *container = eos_list_create(lv_screen_active());
     lv_obj_set_size(container, lv_pct(100), lv_pct(100));
     lv_obj_t *font_label = lv_label_create(container);
     lv_label_set_text(font_label, test_str);
@@ -431,6 +432,30 @@ static void _test_slide_widget()
     // lv_obj_add_event_cb(sw->touch_obj, _slide_widget_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, label);
 }
 
+static void _test_font_size()
+{
+    _create_new_scr();
+    lv_obj_t *scr = lv_screen_active();
+    lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+
+    static const char *test_text = "AaBbCc 你好中国 1234567890";
+
+    lv_obj_t *label = lv_label_create(list);
+    lv_label_set_text(label, test_text);
+    eos_label_set_font_size(label, EOS_FONT_SIZE_SMALL);
+
+    label = lv_label_create(list);
+    lv_label_set_text(label, test_text);
+    eos_label_set_font_size(label, EOS_FONT_SIZE_MEDIUM);
+
+    label = lv_label_create(list);
+    lv_label_set_text(label, test_text);
+    eos_label_set_font_size(label, EOS_FONT_SIZE_LARGE);
+}
+
 void eos_test_start(void)
 {
     lv_obj_t *scr = lv_screen_active();
@@ -441,7 +466,6 @@ void eos_test_start(void)
     lv_obj_t *btn;
     lv_obj_t *label = lv_list_add_text(test_list, RI_ELENA_WATCH " ElenaOS Test List");
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-
     // 测试滑动组件
     btn = lv_list_add_button(test_list, RI_CAROUSEL_VIEW, "Slide Widget");
     lv_obj_add_event_cb(btn, _test_slide_widget, LV_EVENT_CLICKED, NULL);
@@ -454,6 +478,9 @@ void eos_test_start(void)
     // 测试字体
     btn = lv_list_add_button(test_list, RI_FONT_SANS_SERIF, "Font");
     lv_obj_add_event_cb(btn, _test_font, LV_EVENT_CLICKED, NULL);
+    // 测试字号
+    btn = lv_list_add_button(test_list, RI_FONT_SIZE, "Font Size");
+    lv_obj_add_event_cb(btn, _test_font_size, LV_EVENT_CLICKED, NULL);
     // 测试语言切换
     btn = lv_list_add_button(test_list, RI_TRANSLATE, "Language");
     lv_obj_add_event_cb(btn, _test_lang, LV_EVENT_CLICKED, NULL);

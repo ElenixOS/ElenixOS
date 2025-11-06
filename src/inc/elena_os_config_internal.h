@@ -18,9 +18,12 @@ extern "C" {
 
 /* Public macros ----------------------------------------------*/
 
-#define EOS_FONT_USE_LVGL   0
-#define EOS_FONT_USE_C      1
-#define EOS_FONT_USE_TTF    2
+#define EOS_FONT_C_SCALE    0
+#define EOS_FONT_C_MULTI    1
+#define EOS_FONT_TTF        2
+
+#define EOS_FONT_TTF_DATA   0
+#define EOS_FONT_TTF_FILE   1
 
 /* Public typedefs --------------------------------------------*/
 

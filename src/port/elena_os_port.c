@@ -29,7 +29,7 @@ EOS_WEAK void eos_free_large(void *ptr)
 
 EOS_WEAK void eos_delay(uint32_t ms)
 {
-    EOS_UNUSED(ms);
+    LV_UNUSED(ms);
     return;
 }
 
@@ -64,7 +64,7 @@ EOS_WEAK eos_datetime_t eos_time_get(void)
 
 EOS_WEAK void eos_display_set_brightness(uint8_t brightness)
 {
-    EOS_UNUSED(brightness);
+    LV_UNUSED(brightness);
     return;
 }
 
@@ -88,6 +88,6 @@ EOS_WEAK void eos_locate_phone(void)
 
 EOS_WEAK void eos_speaker_set_volume(uint8_t volume)
 {
-    EOS_UNUSED(volume);
+    LV_UNUSED(volume);
     return;
 }

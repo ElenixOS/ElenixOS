@@ -7,7 +7,7 @@
 
 #include "elena_os_sys.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +34,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_sensor.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
 
@@ -56,9 +56,9 @@ static ssize_t _write_all(int fd, const char *buf, size_t len)
     return (ssize_t)total;
 }
 
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
 {
@@ -409,7 +409,7 @@ bool eos_sys_cfg_get_bool(const char *key, bool default_value)
     }
     lseek(fd, 0, SEEK_SET);
 
-    char *file_content = malloc(fsize + 1);
+    char *file_content = eos_malloc(fsize + 1);
     if (!file_content)
     {
         EOS_LOG_E("Memory allocation failed");
@@ -422,14 +422,14 @@ bool eos_sys_cfg_get_bool(const char *key, bool default_value)
     if (read_size != fsize)
     {
         EOS_LOG_E("Failed to read config file, read_size=%zd, errno=%d", read_size, errno);
-        free(file_content);
+        eos_free(file_content);
         return default_value;
     }
     file_content[fsize] = '\0';
 
     // 解析JSON
     cJSON *root = cJSON_Parse(file_content);
-    free(file_content);
+    eos_free(file_content);
     if (!root)
     {
         EOS_LOG_E("Failed to parse JSON");
@@ -487,7 +487,7 @@ char *eos_sys_cfg_get_string(const char *key, const char *default_value)
     }
     lseek(fd, 0, SEEK_SET);
 
-    char *file_content = malloc(fsize + 1);
+    char *file_content = eos_malloc(fsize + 1);
     if (!file_content)
     {
         EOS_LOG_E("Memory allocation failed");
@@ -500,14 +500,14 @@ char *eos_sys_cfg_get_string(const char *key, const char *default_value)
     if (read_size != fsize)
     {
         EOS_LOG_E("Failed to read config file, read_size=%zd, errno=%d", read_size, errno);
-        free(file_content);
+        eos_free(file_content);
         return eos_strdup(default_value);
     }
     file_content[fsize] = '\0';
 
     // 解析JSON
     cJSON *root = cJSON_Parse(file_content);
-    free(file_content);
+    eos_free(file_content);
     if (!root)
     {
         EOS_LOG_E("Failed to parse JSON");
@@ -571,7 +571,7 @@ double eos_sys_cfg_get_number(const char *key, double default_value)
     }
     lseek(fd, 0, SEEK_SET);
 
-    char *file_content = malloc(fsize + 1);
+    char *file_content = eos_malloc(fsize + 1);
     if (!file_content)
     {
         EOS_LOG_E("Memory allocation failed");
@@ -584,14 +584,14 @@ double eos_sys_cfg_get_number(const char *key, double default_value)
     if (read_size != fsize)
     {
         EOS_LOG_E("Failed to read config file, read_size=%zd, errno=%d", read_size, errno);
-        free(file_content);
+        eos_free(file_content);
         return default_value;
     }
     file_content[fsize] = '\0';
 
     // 解析JSON
     cJSON *root = cJSON_Parse(file_content);
-    free(file_content);
+    eos_free(file_content);
     if (!root)
     {
         EOS_LOG_E("Failed to parse JSON");
@@ -696,6 +696,7 @@ void eos_sys_init()
  */
 void eos_sys_factory_reset()
 {
+    // TODO: 完成此功能
     // int ret = rmdir(EOS_SYS_DIR);
     // if (ret != 0)
     // {

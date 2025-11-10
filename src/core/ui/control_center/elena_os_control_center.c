@@ -7,7 +7,7 @@
 
 #include "elena_os_control_center.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_swipe_panel.h"
@@ -27,17 +27,17 @@
 #include "elena_os_lang.h"
 #include "elena_os_settings.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
 #define _SLIDER_DEFAULT_WIDTH 150
 #define _SLIDER_DEFAULT_HEIGHT 360
 #define _SLIDER_DEFAULT_RADIUS 50
 #define _LIST_SCALE_THRESHOLD_Y ((float)EOS_DISPLAY_HEIGHT * 0.8)
-// Variables
+/* Variables --------------------------------------------------*/
 static int32_t _slider_symbol_label_center_x = 0;
 static int32_t _slider_symbol_label_center_y = 0;
 static lv_obj_t *mute_btn;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /************************** 列表回调 **************************/
 

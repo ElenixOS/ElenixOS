@@ -7,7 +7,7 @@
 
 #include "elena_os_flash_light.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_theme.h"
@@ -28,7 +28,7 @@
 #include "elena_os_app_list.h"
 #include "elena_os_lang.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
 #define _OPA_MAX_DIST_DIV 1 /**< 达到最大不透明度的距离 */
 #define _OPA_SCALE 1000     /**< 比例计算的放大倍数 */
@@ -38,9 +38,9 @@ typedef struct
     eos_swipe_panel_t *sp;
     lv_obj_t *mask;
 } _pressing_user_data_t;
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 void _flash_light_create(lv_obj_t *launcher_screen);
 static void _screen_delete_cb(lv_event_t *e);
 
@@ -59,7 +59,7 @@ static inline void _flash_light_delete(_pressing_user_data_t *ud)
     ud->mask = NULL;
     ud->sp = NULL;
 
-    free(ud);
+    eos_free(ud);
     EOS_LOG_I("Flash light deleted");
 }
 
@@ -117,7 +117,7 @@ static void _screen_delete_cb(lv_event_t *e)
 
 void eos_flash_light_show(void)
 {
-    _pressing_user_data_t *ud = malloc(sizeof(_pressing_user_data_t));
+    _pressing_user_data_t *ud = eos_malloc(sizeof(_pressing_user_data_t));
     EOS_CHECK_PTR_RETURN(ud);
 
     lv_obj_t *mask = lv_obj_create(lv_screen_active());

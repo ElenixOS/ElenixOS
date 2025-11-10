@@ -3,6 +3,16 @@
  * @brief 传感器定义
  * @author Sab1e
  * @date 2025-09-14
+ * @details
+ *
+ * # Sensor
+ *
+ * ## 简述
+ *
+ * 本模块提供了 ElenaOS 中对传感器对象的统一抽象与管理，
+ * 支持多类型、多实例的注册、查找和异步数据上报。
+ *
+ * >[!NOTE] 传感器读取函数参见`elena_os_port.c`
  */
 
 #ifndef ELENA_OS_SENSOR_H
@@ -16,33 +26,42 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "elena_os_core.h"
+#include "elena_os_event.h"
 
 /* Public macros ----------------------------------------------*/
+#define EOS_SENSOR_NUMBER       _EOS_SENSOR_MAX - 1   /**< 传感器总数 */
 
 /* Public typedefs --------------------------------------------*/
+
+typedef enum
+{
+    EOS_SENSOR_STATE_IDLE,
+    EOS_SENSOR_STATE_READING,
+    EOS_SENSOR_STATE_ERROR,
+} eos_sensor_state_t;
 
 /**
  * @brief 传感器类型
  */
 typedef enum
 {
-    EOS_SENSOR_UNKONWN = 0,
-    EOS_SENSOR_ACCE,      /**< 加速度传感器     */
-    EOS_SENSOR_GYRO,      /**< 重力传感器       */
-    EOS_SENSOR_MAG,       /**< 磁传感器         */
-    EOS_SENSOR_TEMP,      /**< 温度传感器       */
-    EOS_SENSOR_HUMI,      /**< 相对湿度传感器   */
-    EOS_SENSOR_BARO,      /**< 气压传感器       */
-    EOS_SENSOR_LIGHT,     /**< 环境光传感器     */
-    EOS_SENSOR_PROXIMITY, /**< 距离传感器       */
-    EOS_SENSOR_HR,        /**< 心率传感器       */
-    EOS_SENSOR_TVOC,      /**< TOVC传感器       */
-    EOS_SENSOR_NOISE,     /**< 噪声传感器       */
-    EOS_SENSOR_STEP,      /**< 计步传感器       */
-    EOS_SENSOR_FORCE,     /**< 力传感器         */
-    EOS_SENSOR_BAT        /**< 电池电量传感器    */
+    EOS_SENSOR_TYPE_UNKNOWN = 0,
+    EOS_SENSOR_TYPE_ACCE,      /**< 加速度传感器     */
+    EOS_SENSOR_TYPE_GYRO,      /**< 重力传感器       */
+    EOS_SENSOR_TYPE_MAG,       /**< 磁传感器         */
+    EOS_SENSOR_TYPE_TEMP,      /**< 温度传感器       */
+    EOS_SENSOR_TYPE_HUMI,      /**< 相对湿度传感器   */
+    EOS_SENSOR_TYPE_BARO,      /**< 气压传感器       */
+    EOS_SENSOR_TYPE_LIGHT,     /**< 环境光传感器     */
+    EOS_SENSOR_TYPE_PROXIMITY, /**< 距离传感器       */
+    EOS_SENSOR_TYPE_HR,        /**< 心率传感器       */
+    EOS_SENSOR_TYPE_TVOC,      /**< TOVC传感器       */
+    EOS_SENSOR_TYPE_NOISE,     /**< 噪声传感器       */
+    EOS_SENSOR_TYPE_STEP,      /**< 计步传感器       */
+    EOS_SENSOR_TYPE_FORCE,     /**< 力传感器         */
+    EOS_SENSOR_TYPE_BAT,       /**< 电池电量传感器    */
+    _EOS_SENSOR_MAX            /**< 传感器最大的枚举值 */
 } eos_sensor_type_t;
-
 
 /**
  * @brief 加速度传感器数据
@@ -171,11 +190,14 @@ typedef union
     eos_bat_data_t bat;
 }eos_sensor_data_t;
 
+typedef uint8_t eos_sensor_id_t;
+
 /**
  * @brief 传感器结构体
  */
 typedef struct
 {
+    eos_sensor_id_t id;
     eos_sensor_type_t type;
     eos_sensor_data_t data;
 }eos_sensor_t;
@@ -183,12 +205,48 @@ typedef struct
 typedef void (*eos_sensor_cb_t)(eos_sensor_t, void *);
 
 /* Public function prototypes --------------------------------*/
-void eos_sensor_tester_create(void);
 /**
  * @brief 上报传感器数据
  * @param sensor 传感器指针
  */
 void eos_sensor_report(eos_sensor_t *sensor);
+/**
+ * @brief 根据传感器类型获取第一个传感器实例
+ * @param type 传感器类型
+ * @return eos_sensor_t* 获取成功则返回传感器指针，否则返回 NULL
+ */
+eos_sensor_t *eos_sensor_get(eos_sensor_type_t type);
+/**
+ * @brief 根据类型和索引查找传感器实例
+ * @param type 传感器类型
+ * @param index 传感器数值
+ * @return eos_sensor_t* 查找成功则返回传感器指针，否则返回 NULL
+ */
+eos_sensor_t *eos_sensor_find(eos_sensor_type_t type, uint8_t index);
+/**
+ * @brief 注册传感器实例（自动分配ID）
+ * @param type 传感器类型
+ * @return eos_sensor_t* 注册成功则返回传感器指针，否则返回 NULL
+ */
+eos_sensor_t *eos_sensor_register(eos_sensor_type_t type);
+/**
+ * @brief 获取某类型传感器数量
+ * @param type 传感器类型
+ * @return uint8_t 数量
+ */
+uint8_t eos_sensor_get_count(eos_sensor_type_t type);
+/**
+ * @brief 获取传感器事件代码
+ * @param type 传感器类型
+ * @return eos_event_code_t 事件代码
+ */
+eos_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type);
+/**
+ * @brief 通过事件代码获取传感器类型
+ * @param code 事件代码
+ * @return eos_sensor_type_t 传感器类型
+ */
+eos_sensor_type_t eos_sensor_get_type_by_event_code(eos_event_code_t code);
 #ifdef __cplusplus
 }
 #endif

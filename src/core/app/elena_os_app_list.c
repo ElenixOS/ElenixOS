@@ -7,7 +7,7 @@
 
 #include "elena_os_app_list.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
@@ -28,9 +28,9 @@
 #include "elena_os_settings.h"
 #include "elena_os_flash_light.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern lv_group_t *encoder_group;
 static lv_obj_t *app_list_screen = NULL;
 
@@ -52,7 +52,7 @@ const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
 };
 
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 void eos_app_list_create(void);
 static void _app_list_icon_clicked_cb(lv_event_t *e);
 static void _app_list_settings_cb(lv_event_t *e);
@@ -199,7 +199,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
-    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    script_pkg_t *pkg = eos_malloc(sizeof(script_pkg_t));
     memset((void *)pkg, 0, sizeof(script_pkg_t));
     pkg->type = SCRIPT_TYPE_APPLICATION;
     if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)

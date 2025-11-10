@@ -7,7 +7,7 @@
 
 #include "elena_os_card_pager.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +17,9 @@
 #include "elena_os_config.h"
 #include "elena_os_theme.h"
 #include "elena_os_event.h"
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _CARD_PAGER_TOUCH_OBJ_HEIGHT 50
 #define _CP_GET_DIR (cp->dir)
 #define _IF_DIR_EQUAL_VER (_CP_GET_DIR == EOS_CARD_PAGER_DIR_VER)
@@ -29,9 +30,9 @@
 #define _INDICATOR_SHADOW_WIDTH 10
 #define _INDICATOR_SHADOW_COLOR _INDICATOR_INACTIVE_COLOR
 #define _PAGE_MARGIN 20
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 lv_obj_t *eos_card_pager_get_page(eos_card_pager_t *cp, uint8_t page_index);
 static void _page_switch_handler(eos_card_pager_t *cp);
 lv_obj_t *eos_card_pager_get_indicator(eos_card_pager_t *cp, uint8_t page_index);
@@ -215,7 +216,7 @@ lv_obj_t *eos_card_pager_create_page(eos_card_pager_t *cp)
 {
     EOS_CHECK_PTR_RETURN_VAL(cp, NULL);
 
-    eos_card_pager_node_t *node = lv_malloc(sizeof(eos_card_pager_node_t));
+    eos_card_pager_node_t *node = eos_malloc(sizeof(eos_card_pager_node_t));
     EOS_CHECK_PTR_RETURN_VAL(node, NULL);
     memset(node, 0, sizeof(eos_card_pager_node_t));
 
@@ -294,7 +295,7 @@ bool eos_card_pager_remove_page(eos_card_pager_t *cp, uint8_t page_index)
         lv_obj_delete(cur->page);
     if (cur->indicator)
         lv_obj_delete(cur->indicator);
-    lv_free(cur);
+    eos_free(cur);
 
     cp->page_count--;
     return true;
@@ -510,17 +511,17 @@ static void _container_delete_cb(lv_event_t *e)
     while (node)
     {
         eos_card_pager_node_t *next = node->next;
-        lv_free(node);
+        eos_free(node);
         node = next;
     }
     cp->page_list_head = NULL;
 
-    lv_free(cp);
+    eos_free(cp);
 }
 
 eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t dir)
 {
-    eos_card_pager_t *cp = lv_malloc(sizeof(eos_card_pager_t));
+    eos_card_pager_t *cp = eos_malloc(sizeof(eos_card_pager_t));
     EOS_CHECK_PTR_RETURN_VAL(cp && parent, NULL);
     memset(cp, 0, sizeof(eos_card_pager_t));
 

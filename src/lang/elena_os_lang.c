@@ -7,7 +7,7 @@
 
 #include "elena_os_lang.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +17,7 @@
 #include "elena_os_sys.h"
 #include "elena_os_icon.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 /**
  * @brief 英文语言数组
  * @note 在此处新增字符串
@@ -53,7 +53,21 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "Volume",
     [STR_ID_APP_FLASH_LIGHT_DISMISS] = "Dismiss",
     [STR_ID_TOAST_SHOW_MUTE] = "Muted",
-    [STR_ID_TOAST_SHOW_UNMUTE] = "Unmuted"
+    [STR_ID_TOAST_SHOW_UNMUTE] = "Unmuted",
+    [STR_ID_SENSOR_ACCE]     = "Accelerometer",
+    [STR_ID_SENSOR_GYRO]     = "Gyroscope",
+    [STR_ID_SENSOR_MAG]      = "Magnetometer",
+    [STR_ID_SENSOR_TEMP]     = "Temperature Sensor",
+    [STR_ID_SENSOR_HUMI]     = "Humidity Sensor",
+    [STR_ID_SENSOR_BARO]     = "Barometer",
+    [STR_ID_SENSOR_LIGHT]    = "Ambient Light Sensor",
+    [STR_ID_SENSOR_PROXIMITY]= "Proximity Sensor",
+    [STR_ID_SENSOR_HR]       = "Heart Rate Sensor",
+    [STR_ID_SENSOR_TVOC]     = "TVOC Sensor",
+    [STR_ID_SENSOR_NOISE]    = "Noise Sensor",
+    [STR_ID_SENSOR_STEP]     = "Step Counter",
+    [STR_ID_SENSOR_FORCE]    = "Force Sensor",
+    [STR_ID_SENSOR_BAT]      = "Battery Sensor",
     // 在此添加新的字符串ID和英文翻译
 };
 
@@ -92,7 +106,21 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "音量",
     [STR_ID_APP_FLASH_LIGHT_DISMISS] = "忽略",
     [STR_ID_TOAST_SHOW_MUTE] = "已开启静音",
-    [STR_ID_TOAST_SHOW_UNMUTE] = "已关闭静音"
+    [STR_ID_TOAST_SHOW_UNMUTE] = "已关闭静音",
+    [STR_ID_SENSOR_ACCE]     = "加速度传感器",
+    [STR_ID_SENSOR_GYRO]     = "重力传感器",
+    [STR_ID_SENSOR_MAG]      = "磁传感器",
+    [STR_ID_SENSOR_TEMP]     = "温度传感器",
+    [STR_ID_SENSOR_HUMI]     = "相对湿度传感器",
+    [STR_ID_SENSOR_BARO]     = "气压传感器",
+    [STR_ID_SENSOR_LIGHT]    = "环境光传感器",
+    [STR_ID_SENSOR_PROXIMITY]= "距离传感器",
+    [STR_ID_SENSOR_HR]       = "心率传感器",
+    [STR_ID_SENSOR_TVOC]     = "TVOC传感器",
+    [STR_ID_SENSOR_NOISE]    = "噪声传感器",
+    [STR_ID_SENSOR_STEP]     = "计步传感器",
+    [STR_ID_SENSOR_FORCE]    = "力传感器",
+    [STR_ID_SENSOR_BAT]      = "电池电量传感器",
     // 在此添加新的字符串ID和中文翻译
 };
 
@@ -106,7 +134,7 @@ static bool lang_initialized = false; // 语言系统初始化标志
 // 函数声明
 static void lang_event_cb(lv_event_t *e);
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 void eos_lang_set(language_id_t lang);
 language_id_t eos_lang_get_with_str(const char *language_str);
 
@@ -117,7 +145,7 @@ void eos_lang_init(void)
     {
         const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
         eos_lang_set(eos_lang_get_with_str(lang_str));
-        free(lang_str);
+        eos_free(lang_str);
         lang_initialized = true;
     }
 }

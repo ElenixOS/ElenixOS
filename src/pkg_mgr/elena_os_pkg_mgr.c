@@ -7,7 +7,7 @@
 
 #include "elena_os_pkg_mgr.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,11 +17,11 @@
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
 #include "elena_os_log.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define EOS_PKG_HEADER_LENGTH EOS_PKG_TABLE_OFFSET
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
 {
@@ -192,7 +192,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         }
 
         // 动态分配内存
-        char *name = (char *)malloc(name_len + 1);
+        char *name = (char *)eos_malloc(name_len + 1);
         if (!name)
         {
             close(fd);
@@ -203,7 +203,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         // 读取文件名
         if (read(fd, name, name_len) != name_len)
         {
-            free(name);
+            eos_free(name);
             close(fd);
             EOS_LOG_E("Failed to read name for entry %u", i);
             return -EOS_ERR_FILE_ERROR;
@@ -216,7 +216,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             read(fd, &offset, sizeof(uint32_t)) != sizeof(uint32_t) ||
             read(fd, &size, sizeof(uint32_t)) != sizeof(uint32_t))
         {
-            free(name);
+            eos_free(name);
             close(fd);
             EOS_LOG_E("Failed to read entry fields for %s", name);
             return -EOS_ERR_FILE_ERROR;
@@ -231,7 +231,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // 创建目录
             if (eos_create_dir_recursive(full_path) != EOS_OK)
             {
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("Failed to create directory: %s", full_path);
                 return -EOS_ERR_FILE_ERROR;
@@ -243,7 +243,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // 验证文件偏移量和大小
             if (offset < EOS_PKG_TABLE_OFFSET || offset >= file_size)
             {
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("Invalid file offset: %u for %s", offset, name);
                 return -EOS_ERR_FILE_ERROR;
@@ -251,7 +251,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
 
             if (offset + size > file_size)
             {
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("File size overflow: %u+%u=%u for %s",
                           offset, size, offset + size, name);
@@ -265,7 +265,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 *last_slash = '\0';
                 if (eos_create_dir_recursive(full_path) != EOS_OK)
                 {
-                    free(name);
+                    eos_free(name);
                     close(fd);
                     EOS_LOG_E("Failed to create parent directory: %s", full_path);
                     return -EOS_ERR_FILE_ERROR;
@@ -277,7 +277,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             FILE *out_fp = fopen(full_path, "wb");
             if (!out_fp)
             {
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("Failed to create file: %s", full_path);
                 return -EOS_ERR_FILE_ERROR;
@@ -290,7 +290,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             if (lseek(fd, offset, SEEK_SET) == -1)
             {
                 fclose(out_fp);
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("Failed to seek to file data for %s", name);
                 return -EOS_ERR_FILE_ERROR;
@@ -306,7 +306,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 if (r <= 0)
                 {
                     fclose(out_fp);
-                    free(name);
+                    eos_free(name);
                     close(fd);
                     EOS_LOG_E("Failed to read file data for %s", name);
                     return -EOS_ERR_FILE_ERROR;
@@ -314,7 +314,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 if (fwrite(buffer, 1, r, out_fp) != (size_t)r)
                 {
                     fclose(out_fp);
-                    free(name);
+                    eos_free(name);
                     close(fd);
                     EOS_LOG_E("Failed to write file data for %s", name);
                     return -EOS_ERR_FILE_ERROR;
@@ -328,14 +328,14 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // 返回到文件表位置继续读取下一个条目
             if (lseek(fd, current_pos, SEEK_SET) == -1)
             {
-                free(name);
+                eos_free(name);
                 close(fd);
                 EOS_LOG_E("Failed to return to file table");
                 return -EOS_ERR_FILE_ERROR;
             }
         }
 
-        free(name);
+        eos_free(name);
     }
 
     close(fd);

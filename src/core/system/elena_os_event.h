@@ -27,6 +27,7 @@ extern "C" {
 typedef enum
 {
     EOS_EVENT_BASE = LV_EVENT_LAST,
+    EOS_EVENT_UNKNOWN = EOS_EVENT_BASE,
     EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,  /**< 滑动超过阈值 */
     EOS_EVENT_SLIDE_WIDGET_REVERTED,           /**< 滑动未超过阈值自动回弹 */
     EOS_EVENT_SLIDE_WIDGET_MOVING,
@@ -35,7 +36,7 @@ typedef enum
     EOS_EVENT_APP_DELETED,
     EOS_EVENT_APP_INSTALLED,
     /* 此处添加新的事件 */
-    EOS_EVENT_SENSOR_REPORT_BASE,      /**< 用于传感器事件序号对齐   */
+    EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
     EOS_EVENT_SENSOR_REPORT_GYRO,      /**< 重力传感器             */
     EOS_EVENT_SENSOR_REPORT_MAG,       /**< 磁传感器              */
@@ -50,6 +51,7 @@ typedef enum
     EOS_EVENT_SENSOR_REPORT_STEP,      /**< 计步传感器             */
     EOS_EVENT_SENSOR_REPORT_FORCE,     /**< 力传感器               */
     EOS_EVENT_SENSOR_REPORT_BAT,       /**< 电池电量传感器          */
+    EOS_EVENT_SENSOR_REPORT_END,       /**< 用于传感器事件序号对齐   */
 } eos_event_code_t;
 
 /* Public function prototypes --------------------------------*/

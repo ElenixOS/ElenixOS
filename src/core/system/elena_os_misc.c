@@ -7,17 +7,17 @@
 
 #include "elena_os_misc.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include "elena_os_log.h"
 #include "elena_os_port.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 bool eos_is_dir(const char *path)
 {
     struct stat st;
@@ -229,7 +229,7 @@ const char *eos_strdup(const char *s)
     if (!s)
         return NULL;
     size_t len = strlen(s) + 1;
-    char *copy = malloc(len);
+    char *copy = eos_malloc(len);
     if (copy)
     {
         memcpy(copy, s, len);
@@ -242,17 +242,17 @@ void eos_pkg_free(script_pkg_t *pkg)
     EOS_CHECK_PTR_RETURN(pkg);
 
     if (pkg->id)
-        free((void *)pkg->id);
+        eos_free((void *)pkg->id);
     if (pkg->name)
-        free((void *)pkg->name);
+        eos_free((void *)pkg->name);
     if (pkg->version)
-        free((void *)pkg->version);
+        eos_free((void *)pkg->version);
     if (pkg->author)
-        free((void *)pkg->author);
+        eos_free((void *)pkg->author);
     if (pkg->description)
-        free((void *)pkg->description);
+        eos_free((void *)pkg->description);
     if (pkg->script_str)
-        free((void *)pkg->script_str);
+        eos_free((void *)pkg->script_str);
     pkg->id = NULL;
     pkg->name = NULL;
     pkg->type = SCRIPT_TYPE_UNKNOWN;

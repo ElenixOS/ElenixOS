@@ -7,7 +7,7 @@
 
 #include "elena_os_msg_list.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +20,8 @@
 #include "elena_os_theme.h"
 #include "elena_os_slide_widget.h"
 #include "elena_os_event.h"
-// Macros and Definitions
+#include "elena_os_port.h"
+/* Macros and Definitions -------------------------------------*/
 #define _DEBUG_LAYOUT 0
 
 #define _MSG_LIST_ITEM_MARGIN_BOTTOM 25
@@ -47,9 +48,9 @@ typedef struct
     lv_obj_t *detail_container;
 } btn_data_t;
 
-// Variables
+/* Variables --------------------------------------------------*/
 static bool detail_flag = false;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 static void _msg_list_item_clicked_cb(lv_event_t *e);
 
@@ -122,7 +123,7 @@ static void _mark_as_read_anim_end_cb(eos_anim_t *a)
     }
 
     // 释放数据内存
-    lv_free(data);
+    eos_free(data);
 }
 
 /**
@@ -234,7 +235,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     eos_label_set_text_id(btn_label, STR_ID_MSG_LIST_ITEM_MARK_AS_READ);
     lv_obj_center(btn_label);
 
-    btn_data_t *data = lv_malloc(sizeof(btn_data_t));
+    btn_data_t *data = eos_malloc(sizeof(btn_data_t));
     data->item = item;
     data->detail_container = detail_container;
 
@@ -252,7 +253,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
 
 eos_msg_list_item_t *eos_msg_list_item_create(eos_msg_list_t *list)
 {
-    eos_msg_list_item_t *item = lv_malloc(sizeof(eos_msg_list_item_t));
+    eos_msg_list_item_t *item = eos_malloc(sizeof(eos_msg_list_item_t));
     EOS_CHECK_PTR_RETURN_VAL(list, NULL);
     EOS_CHECK_PTR_RETURN_VAL_FREE(item, NULL, item);
     memset(item, 0, sizeof(eos_msg_list_item_t));
@@ -354,7 +355,7 @@ void eos_msg_list_item_delete(eos_msg_list_item_t *item)
     // 释放消息字符串
     if (item->msg_str)
     {
-        lv_free(item->msg_str);
+        eos_free(item->msg_str);
         item->msg_str = NULL;
     }
 
@@ -366,7 +367,7 @@ void eos_msg_list_item_delete(eos_msg_list_item_t *item)
     }
 
     // 释放结构体
-    lv_free(item);
+    eos_free(item);
 }
 
 void eos_msg_list_item_set_msg(eos_msg_list_item_t *item, const char *msg)
@@ -376,7 +377,7 @@ void eos_msg_list_item_set_msg(eos_msg_list_item_t *item, const char *msg)
     // 释放旧消息
     if (item->msg_str)
     {
-        lv_free(item->msg_str);
+        eos_free(item->msg_str);
         item->msg_str = NULL;
     }
 
@@ -387,7 +388,7 @@ void eos_msg_list_item_set_msg(eos_msg_list_item_t *item, const char *msg)
     else
     {
         // 分配新内存并复制
-        item->msg_str = lv_malloc(strlen(msg) + 1);
+        item->msg_str = eos_malloc(strlen(msg) + 1);
         if (item->msg_str)
         {
             strcpy(item->msg_str, msg);
@@ -425,7 +426,7 @@ void eos_msg_list_clear_all(eos_msg_list_t *msg_list)
 
     // 获取所有子对象
     uint32_t child_count = lv_obj_get_child_count(msg_list->list);
-    lv_obj_t **children = lv_malloc(sizeof(lv_obj_t *) * child_count);
+    lv_obj_t **children = eos_malloc(sizeof(lv_obj_t *) * child_count);
 
     // 保存子对象指针（避免动态删除影响遍历）
     for (uint32_t i = 0; i < child_count; i++)
@@ -452,7 +453,7 @@ void eos_msg_list_clear_all(eos_msg_list_t *msg_list)
         }
     }
 
-    lv_free(children);
+    eos_free(children);
 }
 
 /************************** 清除按钮相关回调 **************************/
@@ -569,7 +570,7 @@ void eos_msg_list_delete(eos_msg_list_t *list)
     }
 
     // 释放列表结构体
-    lv_free(list);
+    eos_free(list);
 }
 
 static void _msg_list_deleted_cb(lv_event_t *e)
@@ -584,7 +585,7 @@ static void _msg_list_deleted_cb(lv_event_t *e)
 eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-    eos_msg_list_t *list = lv_malloc(sizeof(eos_msg_list_t));
+    eos_msg_list_t *list = eos_malloc(sizeof(eos_msg_list_t));
     EOS_CHECK_PTR_RETURN_VAL_FREE(list, NULL, list);
     detail_flag = false;
     memset(list, 0, sizeof(eos_msg_list_t));

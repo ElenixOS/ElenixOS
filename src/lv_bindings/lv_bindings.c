@@ -3,22 +3,24 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2025-10-12
+ * @date 2025-11-07
  */
-// Application System header files
+
+// Third party header files
+#include <stdlib.h>
+#include <string.h>
+#include "jerryscript.h"
+#include "lvgl.h"
+// ElenaOS header files
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
 #include "script_engine_core.h"
-// Third party header files
-#include "jerryscript.h"
-#include "lvgl.h"
-#include <stdlib.h>
-#include <string.h>
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern jerry_value_t script_engine_eos_obj;
 
 /********************************** 错误处理辅助函数 **********************************/
@@ -898,7 +900,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_txt_str = (char*)malloc(arg_txt_len + 1);
+        arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_txt_str, arg_txt_len);
         arg_txt_str[arg_txt_len] = '\0';
         arg_txt = arg_txt_str;
@@ -908,7 +910,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
     lv_checkbox_set_text(arg_obj, arg_txt);
 
     // 释放临时字符串内存
-    if (arg_txt_str) free(arg_txt_str);
+    if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
 }
@@ -1177,7 +1179,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_options_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_options_str = (char*)malloc(arg_options_len + 1);
+        arg_options_str = (char*)eos_malloc(arg_options_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_options_str, arg_options_len);
         arg_options_str[arg_options_len] = '\0';
         arg_options = arg_options_str;
@@ -1187,7 +1189,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
     lv_dropdown_set_options(arg_obj, arg_options);
 
     // 释放临时字符串内存
-    if (arg_options_str) free(arg_options_str);
+    if (arg_options_str) eos_free(arg_options_str);
 
     return jerry_undefined();
 }
@@ -1777,7 +1779,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_text_str = (char*)malloc(arg_text_len + 1);
+        arg_text_str = (char*)eos_malloc(arg_text_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
         arg_text_str[arg_text_len] = '\0';
         arg_text = arg_text_str;
@@ -1787,7 +1789,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
     lv_label_set_text(arg_obj, arg_text);
 
     // 释放临时字符串内存
-    if (arg_text_str) free(arg_text_str);
+    if (arg_text_str) eos_free(arg_text_str);
 
     return jerry_undefined();
 }
@@ -1894,7 +1896,7 @@ static jerry_value_t js_lv_msgbox_add_footer_button(const jerry_call_info_t* cal
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_text_str = (char*)malloc(arg_text_len + 1);
+        arg_text_str = (char*)eos_malloc(arg_text_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
         arg_text_str[arg_text_len] = '\0';
         arg_text = arg_text_str;
@@ -1919,7 +1921,7 @@ static jerry_value_t js_lv_msgbox_add_footer_button(const jerry_call_info_t* cal
     jerry_value_free(cls);
 
     // 释放临时字符串内存
-    if (arg_text_str) free(arg_text_str);
+    if (arg_text_str) eos_free(arg_text_str);
 
     return js_result;
 }
@@ -1969,7 +1971,7 @@ static jerry_value_t js_lv_msgbox_add_header_button(const jerry_call_info_t* cal
         if (jerry_value_is_string(args[1])) {
             // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
             jerry_size_t arg_icon_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-            arg_icon_str = (char*)malloc(arg_icon_len + 1);
+            arg_icon_str = (char*)eos_malloc(arg_icon_len + 1);
             if (!arg_icon_str) {
                 return throw_error("Failed to allocate memory for string argument");
             }
@@ -1995,12 +1997,12 @@ static jerry_value_t js_lv_msgbox_add_header_button(const jerry_call_info_t* cal
             arg_icon = (void*)ptr_num;
         }
         else {
-            if (arg_icon_str) free(arg_icon_str);
+            if (arg_icon_str) eos_free(arg_icon_str);
             return throw_error("Argument 1 must be string, object or number");
         }
     }
 
-    // 注意：需要在函数末尾添加 free(arg_icon_str);
+    // 注意：需要在函数末尾添加 eos_free(arg_icon_str);
     // 调用底层函数
     lv_obj_t* ret_value = lv_msgbox_add_header_button(arg_obj, arg_icon);
 
@@ -2067,7 +2069,7 @@ static jerry_value_t js_lv_msgbox_add_text(const jerry_call_info_t* call_info_p,
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_text_str = (char*)malloc(arg_text_len + 1);
+        arg_text_str = (char*)eos_malloc(arg_text_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
         arg_text_str[arg_text_len] = '\0';
         arg_text = arg_text_str;
@@ -2092,7 +2094,7 @@ static jerry_value_t js_lv_msgbox_add_text(const jerry_call_info_t* call_info_p,
     jerry_value_free(cls);
 
     // 释放临时字符串内存
-    if (arg_text_str) free(arg_text_str);
+    if (arg_text_str) eos_free(arg_text_str);
 
     return js_result;
 }
@@ -2142,7 +2144,7 @@ static jerry_value_t js_lv_msgbox_add_title(const jerry_call_info_t* call_info_p
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_title_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_title_str = (char*)malloc(arg_title_len + 1);
+        arg_title_str = (char*)eos_malloc(arg_title_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_title_str, arg_title_len);
         arg_title_str[arg_title_len] = '\0';
         arg_title = arg_title_str;
@@ -2167,7 +2169,7 @@ static jerry_value_t js_lv_msgbox_add_title(const jerry_call_info_t* call_info_p
     jerry_value_free(cls);
 
     // 释放临时字符串内存
-    if (arg_title_str) free(arg_title_str);
+    if (arg_title_str) eos_free(arg_title_str);
 
     return js_result;
 }
@@ -3718,7 +3720,7 @@ static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* call_info
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_options_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_options_str = (char*)malloc(arg_options_len + 1);
+        arg_options_str = (char*)eos_malloc(arg_options_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_options_str, arg_options_len);
         arg_options_str[arg_options_len] = '\0';
         arg_options = arg_options_str;
@@ -3736,7 +3738,7 @@ static jerry_value_t js_lv_roller_set_options(const jerry_call_info_t* call_info
     lv_roller_set_options(arg_obj, arg_options, arg_mode);
 
     // 释放临时字符串内存
-    if (arg_options_str) free(arg_options_str);
+    if (arg_options_str) eos_free(arg_options_str);
 
     return jerry_undefined();
 }
@@ -4309,7 +4311,7 @@ static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* call_in
             return throw_error("Argument 3 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[3], JERRY_ENCODING_UTF8);
-        arg_txt_str = (char*)malloc(arg_txt_len + 1);
+        arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
         jerry_string_to_buffer(args[3], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_txt_str, arg_txt_len);
         arg_txt_str[arg_txt_len] = '\0';
         arg_txt = arg_txt_str;
@@ -4319,7 +4321,7 @@ static jerry_value_t js_lv_table_set_cell_value(const jerry_call_info_t* call_in
     lv_table_set_cell_value(arg_obj, arg_row, arg_col, arg_txt);
 
     // 释放临时字符串内存
-    if (arg_txt_str) free(arg_txt_str);
+    if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
 }
@@ -4469,7 +4471,7 @@ static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t* call_info_
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_txt_str = (char*)malloc(arg_txt_len + 1);
+        arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_txt_str, arg_txt_len);
         arg_txt_str[arg_txt_len] = '\0';
         arg_txt = arg_txt_str;
@@ -4479,7 +4481,7 @@ static jerry_value_t js_lv_textarea_add_text(const jerry_call_info_t* call_info_
     lv_textarea_add_text(arg_obj, arg_txt);
 
     // 释放临时字符串内存
-    if (arg_txt_str) free(arg_txt_str);
+    if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
 }
@@ -4586,7 +4588,7 @@ static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_txt_str = (char*)malloc(arg_txt_len + 1);
+        arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_txt_str, arg_txt_len);
         arg_txt_str[arg_txt_len] = '\0';
         arg_txt = arg_txt_str;
@@ -4596,7 +4598,7 @@ static jerry_value_t js_lv_textarea_set_placeholder_text(const jerry_call_info_t
     lv_textarea_set_placeholder_text(arg_obj, arg_txt);
 
     // 释放临时字符串内存
-    if (arg_txt_str) free(arg_txt_str);
+    if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
 }
@@ -4646,7 +4648,7 @@ static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t* call_info_
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_txt_str = (char*)malloc(arg_txt_len + 1);
+        arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_txt_str, arg_txt_len);
         arg_txt_str[arg_txt_len] = '\0';
         arg_txt = arg_txt_str;
@@ -4656,7 +4658,7 @@ static jerry_value_t js_lv_textarea_set_text(const jerry_call_info_t* call_info_
     lv_textarea_set_text(arg_obj, arg_txt);
 
     // 释放临时字符串内存
-    if (arg_txt_str) free(arg_txt_str);
+    if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
 }

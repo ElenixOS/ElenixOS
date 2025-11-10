@@ -77,7 +77,7 @@ bool eos_sys_cfg_get_bool(const char *key, bool default_value);
  * @param key 配置项的键
  * @param default_value 默认值（当配置项不存在或类型不匹配时返回）
  * @return 获取到的字符串值或默认值
- * @warning 返回的字符串在不需要时需要使用`free(str)`释放
+ * @warning 返回的字符串在不需要时需要使用`eos_malloc(str)`释放
  */
 char *eos_sys_cfg_get_string(const char *key, const char *default_value);
 /**

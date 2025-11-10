@@ -7,7 +7,7 @@
 
 #include "elena_os_settings.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,11 +38,11 @@
 #include "elena_os_display.h"
 #include "elena_os_toast.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /************************** 通用功能 **************************/
 
@@ -437,13 +437,6 @@ static void _settings_screen_apps(lv_event_t *e)
     }
 }
 
-/************************** 传感器测试 **************************/
-
-static void _settings_screen_sensor(lv_event_t *e)
-{
-    eos_sensor_tester_create();
-}
-
 /************************** 更多设置 **************************/
 
 static void _language_roller_event_handler(lv_event_t *e)
@@ -493,7 +486,7 @@ static void _settings_screen_language(lv_event_t *e)
     uint32_t sel_opt = (uint32_t)eos_lang_get_with_str(sel_str);
     lv_roller_set_selected(roller, sel_opt, LV_ANIM_OFF);
     lv_obj_add_event_cb(roller, _language_roller_event_handler, LV_EVENT_ALL, NULL);
-    free(sel_str);
+    eos_free(sel_str);
 }
 
 static void _settings_screen_general(lv_event_t *e)
@@ -535,9 +528,6 @@ void eos_settings_create(void)
     // 应用列表
     btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
     lv_obj_add_event_cb(btn, _settings_screen_apps, LV_EVENT_CLICKED, NULL);
-    // 传感器测试
-    btn = eos_list_add_circle_icon_button(settings_list, EOS_COLOR_PURPLE, RI_SENSOR_LINE, "SensorTester");
-    lv_obj_add_event_cb(btn, _settings_screen_sensor, LV_EVENT_CLICKED, NULL);
     // 其他设置
     btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
     lv_obj_add_event_cb(btn, _settings_screen_general, LV_EVENT_CLICKED, NULL);

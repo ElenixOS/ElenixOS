@@ -9,20 +9,20 @@
 #if EOS_FONT_TYPE == EOS_FONT_C_MULTI
 #include "elena_os_font.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 LV_FONT_DECLARE(EOS_FONT_LARGE_NAME);
 LV_FONT_DECLARE(EOS_FONT_MEDIUM_NAME);
 LV_FONT_DECLARE(EOS_FONT_SMALL_NAME);
 LV_FONT_DECLARE(EOS_FONT_ICON);
-// Variables
+/* Variables --------------------------------------------------*/
 static lv_font_t *font_large;
 static lv_font_t *font_medium;
 static lv_font_t *font_small;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 lv_font_t *eos_font_init(void)
 {

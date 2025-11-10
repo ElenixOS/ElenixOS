@@ -7,13 +7,13 @@
 
 #include "elena_os_theme.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_log.h"
 #include "lvgl_private.h"
 #include "elena_os_font.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 /************************** Text **************************/
 #define TEXT_COLOR EOS_COLOR_WHITE
 /************************** Screen **************************/
@@ -26,7 +26,7 @@
 #define SLIDER_MAIN_COLOR lv_color_hex(0x34C759)
 #define SLIDER_BG_COLOR lv_color_hex(0x262737)
 
-// Variables
+/* Variables --------------------------------------------------*/
 static lv_style_t style_screen;
 static lv_style_t style_label;
 static lv_style_t style_list;
@@ -43,7 +43,7 @@ static lv_style_t style_slider_knob;
 static lv_style_t style_slider_pressed_color;
 
 static lv_font_t *global_font = NULL;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 void _init_style_screen(void)
 {

@@ -7,17 +7,17 @@
 
 #include "elena_os_display.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_port.h"
 #include "elena_os_config.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 
-// Variables
+/* Variables --------------------------------------------------*/
 static uint8_t last_target_brightness = 50;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /**
  * @brief 动画回调：在动画过程中设置亮度

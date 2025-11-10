@@ -4,18 +4,18 @@
  * @date 2025-10-28
  */
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include "elena_os_icon.h"
 #include "jerryscript.h"
 #include <stdio.h>
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern jerry_value_t script_engine_eos_obj;
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 /**
  * @brief 将所有图标宏名与Unicode值映射注册到 JerryScript 全局对象
  */

@@ -7,17 +7,18 @@
 
 #include "elena_os_anim.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_log.h"
 #include "elena_os_theme.h"
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define DEBUG_BLOCKER_VISIBLE 0
-// Variables
+/* Variables --------------------------------------------------*/
 static lv_obj_t *blocker;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 void eos_anim_blocker_show(void)
 {
@@ -87,7 +88,7 @@ static void _free_anim_later(lv_timer_t *t)
     if (anim->auto_delete_obj)
         lv_obj_delete(anim->tar_obj);
 
-    lv_free(anim);
+    eos_free(anim);
     lv_timer_delete(t);
 }
 /**
@@ -204,7 +205,7 @@ void eos_anim_del(eos_anim_t *anim)
     {
         lv_anim_timeline_delete(anim->anim_timeline);
     }
-    lv_free(anim);
+    eos_free(anim);
 }
 
 eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
@@ -215,7 +216,7 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     if (!tar_obj || duration == 0)
         return NULL;
 
-    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
     if (!anim)
         return NULL;
 
@@ -230,7 +231,7 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     anim->anim_timeline = lv_anim_timeline_create();
     if (!anim->anim_timeline)
     {
-        lv_free(anim);
+        eos_free(anim);
         return NULL;
     }
 
@@ -254,7 +255,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (!tar_obj || duration == 0)
         return NULL;
 
-    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
     if (!anim)
         return NULL;
 
@@ -269,7 +270,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     anim->anim_timeline = lv_anim_timeline_create();
     if (!anim->anim_timeline)
     {
-        lv_free(anim);
+        eos_free(anim);
         return NULL;
     }
 
@@ -289,7 +290,7 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
     if (!tar_obj || duration == 0)
         return NULL;
 
-    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
     if (!anim)
         return NULL;
 
@@ -304,7 +305,7 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
     anim->anim_timeline = lv_anim_timeline_create();
     if (!anim->anim_timeline)
     {
-        lv_free(anim);
+        eos_free(anim);
         return NULL;
     }
 
@@ -487,7 +488,7 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
     if (!tar_obj || duration == 0)
         return NULL;
 
-    eos_anim_t *anim = lv_malloc(sizeof(eos_anim_t));
+    eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
     if (!anim)
         return NULL;
 
@@ -502,7 +503,7 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
     anim->cfg.fade.layered = true;
     if (!anim->anim_timeline)
     {
-        lv_free(anim);
+        eos_free(anim);
         return NULL;
     }
     _init_opa_anim(&anim->anim.fade.a_opa, tar_obj, opa_start, opa_end, duration, anim);

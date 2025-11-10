@@ -34,15 +34,17 @@ HEADER_CODE = r"""
  * @author Sab1e
  * @date """ + date.today().strftime("%Y-%m-%d") + r"""
  */
-// Application System header files
+
+// Third party header files
+#include <stdlib.h>
+#include <string.h>
+#include "jerryscript.h"
+#include "lvgl.h"
+// ElenaOS header files
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
 #include "script_engine_core.h"
-// Third party header files
-#include "jerryscript.h"
-#include "lvgl.h"
-#include <stdlib.h>
-#include <string.h>
+#include "elena_os_port.h"
 
 // Macros and Definitions
 #define BINDING_OBJ script_engine_eos_obj
@@ -217,7 +219,7 @@ def generate_void_pointer_arg_parsing(index, name):
         if (jerry_value_is_string(args[{index}])) {{
             // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
             jerry_size_t {name}_len = jerry_string_size(args[{index}], JERRY_ENCODING_UTF8);
-            {name}_str = (char*)malloc({name}_len + 1);
+            {name}_str = (char*)eos_malloc({name}_len + 1);
             if (!{name}_str) {{
                 return throw_error("Failed to allocate memory for string argument");
             }}
@@ -243,12 +245,12 @@ def generate_void_pointer_arg_parsing(index, name):
             {name} = (void*)ptr_num;
         }}
         else {{
-            if ({name}_str) free({name}_str);
+            if ({name}_str) eos_free({name}_str);
             return throw_error("Argument {index} must be string, object or number");
         }}
     }}
 
-    // 注意：需要在函数末尾添加 free({name}_str);
+    // 注意：需要在函数末尾添加 eos_free({name}_str);
 """
 
 def generate_generic_pointer_arg_parsing(index, name, type_str):
@@ -317,7 +319,7 @@ def generate_string_arg_parsing(index, name):
         }}
 
         jerry_size_t {name}_len = jerry_string_size(js_{name}, JERRY_ENCODING_UTF8);
-        {name} = (char*)malloc({name}_len + 1);
+        {name} = (char*)eos_malloc({name}_len + 1);
         if (!{name}) {{
             return throw_error("Out of memory");
         }}
@@ -643,7 +645,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
             return throw_error("Argument {i} must be a string");
         }}
         jerry_size_t {var_name}_len = jerry_string_size(args[{i}], JERRY_ENCODING_UTF8);
-        {str_var} = (char*)malloc({var_name}_len + 1);
+        {str_var} = (char*)eos_malloc({var_name}_len + 1);
         jerry_string_to_buffer(args[{i}], JERRY_ENCODING_UTF8, (jerry_char_t*){str_var}, {var_name}_len);
         {str_var}[{var_name}_len] = '\0';
         {var_name} = {str_var};
@@ -720,7 +722,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
     if string_vars:
         code += "\n    // 释放临时字符串内存\n"
         for var in string_vars:
-            code += f"    if ({var}) free({var});\n"
+            code += f"    if ({var}) eos_free({var});\n"
 
     # 添加返回值
     if return_type == 'void':

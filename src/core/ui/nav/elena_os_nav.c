@@ -7,7 +7,7 @@
 
 #include "elena_os_nav.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdatomic.h>
@@ -18,7 +18,7 @@
 #include "elena_os_app_list.h"
 #include "elena_os_watchface.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define NAV_STACK_SIZE 32
 #define NAV_HOME_SCREEN_INDEX 0
 /**
@@ -61,10 +61,10 @@ typedef struct
         }                                                                    \
     } while (0)
 
-// Variables
+/* Variables --------------------------------------------------*/
 static eos_nav_stack_t eos_nav = {.top = -1, .initialized = false};
 static atomic_bool eos_nav_busy = false; // 正在清除
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);
 bool is_eos_nav_stack_initialized(void);
 static bool _is_eos_nav_stack_full(void);

@@ -7,7 +7,7 @@
 
 #include "elena_os_app.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,7 +24,7 @@
 #include "cJSON.h"
 #include "elena_os_app_list.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
 /**
  * @brief 应用列表结构体
@@ -39,9 +39,9 @@ typedef struct
 } eos_app_list_t;
 static eos_app_list_t app_list;
 static bool app_list_initialized = false;
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 // 添加排序相关的函数声明
 static eos_result_t _eos_app_order_save(void);
@@ -71,13 +71,13 @@ static eos_result_t _eos_app_order_save(void)
     FILE *fp = fopen(EOS_APP_LIST_APP_ORDER_PATH, "w");
     if (!fp)
     {
-        free(json_str);
+        eos_free(json_str);
         return EOS_FAILED;
     }
 
     fputs(json_str, fp);
     fclose(fp);
-    free(json_str);
+    eos_free(json_str);
 
     return EOS_OK;
 }
@@ -313,7 +313,7 @@ const char *eos_app_list_get_existing_id(const char *id)
  */
 void _eos_app_list_init(eos_app_list_t *list, size_t capacity)
 {
-    list->data = malloc(capacity * sizeof(char *));
+    list->data = eos_malloc(capacity * sizeof(char *));
     list->size = 0;
     list->capacity = capacity;
 }
@@ -339,9 +339,9 @@ void _eos_app_list_free(eos_app_list_t *list)
 {
     for (size_t i = 0; i < list->size; i++)
     {
-        free(list->data[i]);
+        eos_free(list->data[i]);
     }
-    free(list->data);
+    eos_free(list->data);
 }
 
 /**

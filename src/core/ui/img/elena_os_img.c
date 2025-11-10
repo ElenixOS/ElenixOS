@@ -7,7 +7,7 @@
 
 #include "elena_os_img.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -17,14 +17,14 @@
 #include "lvgl.h"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define LV_IMG_BIN_HEADER_SIZE 12 // Bytes
 #define LV_IMG_BIN_HEADER_WIDTH_LB 4
 #define LV_IMG_BIN_HEADER_HEIGHT_LB 6
 #define LV_IMG_BIN_HEADER_STRIDE_LB 8
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 /**
  * @brief 删除事件回调函数
  */
@@ -45,10 +45,10 @@ static void _img_delete_event_cb(lv_event_t *e)
     }
     if (user_data->img_dsc)
     {
-        lv_free(user_data->img_dsc);
+        eos_free(user_data->img_dsc);
         user_data->img_dsc = NULL;
     }
-    lv_free(user_data);
+    eos_free(user_data);
     EOS_LOG_D("Image deleted.");
 }
 
@@ -139,7 +139,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     }
 
     // 动态分配图像描述符
-    lv_image_dsc_t *img_dsc = (lv_image_dsc_t *)lv_malloc(sizeof(lv_image_dsc_t));
+    lv_image_dsc_t *img_dsc = (lv_image_dsc_t *)eos_malloc(sizeof(lv_image_dsc_t));
     if (!img_dsc)
     {
         EOS_LOG_E("Failed to allocate image descriptor");
@@ -153,7 +153,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     if (img_dsc->header.magic != LV_IMAGE_HEADER_MAGIC)
     {
         EOS_LOG_E("Invalid image magic");
-        lv_free(img_dsc);
+        eos_free(img_dsc);
         eos_free_large(bin_data);
         return;
     }
@@ -163,12 +163,12 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     img_dsc->data = (const uint8_t *)bin_data + sizeof(lv_image_header_t);
 
     // 创建用户数据结构
-    img_user_data_t *user_data = (img_user_data_t *)lv_malloc(sizeof(img_user_data_t));
+    img_user_data_t *user_data = (img_user_data_t *)eos_malloc(sizeof(img_user_data_t));
     if (!user_data)
     {
         EOS_LOG_E("Failed to allocate user data");
         eos_free_large(bin_data);
-        lv_free(img_dsc);
+        eos_free(img_dsc);
         return;
     }
     user_data->bin_data = bin_data;

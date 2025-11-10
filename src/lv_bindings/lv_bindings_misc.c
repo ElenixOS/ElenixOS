@@ -6,7 +6,7 @@
  * @date 2025-8-10
  */
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include "lv_bindings_misc.h"
 #include "lv_bindings.h"
@@ -15,14 +15,15 @@
 #include "elena_os_nav.h"
 #include "elena_os_watchface.h"
 #include "elena_os_log.h"
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern jerry_value_t script_engine_eos_obj;
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 /********************************** 错误处理辅助函数 **********************************/
 static jerry_value_t throw_error(const char *message)
 {
@@ -51,7 +52,7 @@ static void lv_event_handler(lv_event_t *e)
     {
         jerry_value_free(data->js_cb);
         jerry_value_free(data->js_user_data);
-        free(data);
+        eos_free(data);
         return;
     }
 
@@ -132,7 +133,7 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
     int event = (int)jerry_value_as_number(args[1]);
 
     // 创建JS回调数据
-    lv_event_js_data_t *data = malloc(sizeof(lv_event_js_data_t));
+    lv_event_js_data_t *data = eos_malloc(sizeof(lv_event_js_data_t));
     data->js_cb = jerry_value_copy(args[2]); // 增加引用计数
     data->js_user_data = (arg_cnt >= 4 && !jerry_value_is_undefined(args[3]))
                              ? jerry_value_copy(args[3])
@@ -221,7 +222,7 @@ static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_i
 
     jerry_value_free(data->js_cb);
     jerry_value_free(data->js_user_data);
-    free(data);
+    eos_free(data);
 
     return jerry_undefined();
 }
@@ -299,7 +300,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     jerry_value_t js_cb = jerry_value_copy(args[0]);
 
     // 创建定时器数据结构
-    timer_js_data_t *timer_data = (timer_js_data_t *)malloc(sizeof(timer_js_data_t));
+    timer_js_data_t *timer_data = (timer_js_data_t *)eos_malloc(sizeof(timer_js_data_t));
     if (!timer_data)
     {
         jerry_value_free(js_cb);
@@ -314,7 +315,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     lv_timer_t *timer = lv_timer_create(lv_timer_js_cb, period, timer_data);
     if (!timer)
     {
-        free(timer_data);
+        eos_free(timer_data);
         return throw_error("Failed to create timer");
     }
 
@@ -398,7 +399,7 @@ static jerry_value_t js_lv_timer_delete(const jerry_call_info_t *call_info_p,
     {
         jerry_value_free(timer_data->js_cb);
         jerry_value_free(timer_data->user_data);
-        free(timer_data);
+        eos_free(timer_data);
     }
 
     // 删除定时器
@@ -637,7 +638,7 @@ static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
     else
     {
         // 没有指针的情况，分配新内存
-        style = (lv_style_t *)malloc(sizeof(lv_style_t));
+        style = (lv_style_t *)eos_malloc(sizeof(lv_style_t));
         if (!style)
         {
             jerry_value_free(ptr_val);
@@ -684,7 +685,7 @@ static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
     if (jerry_value_is_number(ptr_val))
     {
         lv_style_t *style = (lv_style_t *)(uintptr_t)jerry_value_as_number(ptr_val);
-        free(style);
+        eos_free(style);
 
         // 清除指针引用
         ptr_prop = jerry_string_sz("__ptr");

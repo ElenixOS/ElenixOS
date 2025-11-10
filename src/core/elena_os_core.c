@@ -24,7 +24,7 @@
 
 #include "elena_os_core.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,13 +58,15 @@
 #include "elena_os_font.h"
 #define EOS_LOG_TAG "Core"
 #include "elena_os_log.h"
-// Macros and Definitions
+#include "elena_os_sensor.h"
+#include "elena_os_async.h"
+/* Macros and Definitions -------------------------------------*/
 #define EOS_TEST_ENABLE 1
 
-// Variables
+/* Variables --------------------------------------------------*/
 lv_group_t *encoder_group;
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 static lv_indev_t *_get_key_indev()
 {
@@ -107,20 +109,21 @@ static void _side_btn_async_cb(void *user_data)
     default:
         break;
     }
-    free(state);
+    eos_free(state);
 }
 
 void eos_side_btn_handler(eos_side_btn_state_t state)
 {
-    eos_side_btn_state_t *side_btn_state = malloc(sizeof(eos_side_btn_state_t));
+    eos_side_btn_state_t *side_btn_state = eos_malloc(sizeof(eos_side_btn_state_t));
     EOS_CHECK_PTR_RETURN(side_btn_state);
     *side_btn_state = state;
-    lv_async_call(_side_btn_async_cb, (void *)side_btn_state);
+    eos_async_call(_side_btn_async_cb, (void *)side_btn_state);
 }
 
 eos_result_t eos_run(void)
 {
     /************************** 系统组件初始化 **************************/
+    eos_async_init();
     script_engine_init();
     eos_sys_init();
     lv_font_t *default_font = eos_font_init();
@@ -169,6 +172,7 @@ eos_result_t eos_run(void)
     // 开始绘制
     while (1)
     {
+        eos_async_handler();
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);
     }

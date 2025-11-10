@@ -14,13 +14,21 @@ extern "C" {
 
 /* Includes ---------------------------------------------------*/
 #include "elena_os_sys.h"
+#include "elena_os_sensor.h"
 #include "elena_os_config_internal.h"
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public macros ----------------------------------------------*/
 
-/************************** 配置开始 **************************/
+/* 配置开始 ----------------------------------------------------*/
+#ifndef EOS_COMPILE_MODE
+#define EOS_COMPILE_MODE DEBUG
+#endif
+
+/************************** 传感器配置 **************************/
+
+#define EOS_SENSOR_CFG_INST_MAX     1                   /**< 传感器实例最大值，同一类型的传感器允许存在的最大值，一般设置为`1`即可 */
 
 /************************** 字体配置 **************************/
 
@@ -34,7 +42,7 @@ extern "C" {
  *  - EOS_FONT_C_MULTI:     存储多种点阵字体，多级字号使用不同字体
  *  - EOS_FONT_TTF:         使用文件系统的TTF字体文件
  */
-#define EOS_FONT_TYPE EOS_FONT_TTF
+#define EOS_FONT_TYPE EOS_FONT_C_SCALE
 
 /**
  * 配置字体对应字号，下面三个配置分配对应三种字体：
@@ -75,15 +83,14 @@ extern "C" {
 #elif EOS_FONT_TTF_TYPE == EOS_FONT_TTF_FILE
 
     #define LV_FS_STDIO_LETTER_STR "A"
-    #define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR":" EOS_SYS_RES_FONT_DIR "SourceHanSansCN-Bold.ttf"
+    #define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR":" EOS_SYS_RES_FONT_DIR "MiSans-Normal.ttf"
 
 #endif /* EOS_FONT_TTF_TYPE */
 
 /**
  * 启用额外功能
  */
-
-#define EOS_FONT_TTF_ENABLE_EXTENDED 1
+#define EOS_FONT_TTF_ENABLE_EXTENDED 0
 
 #if EOS_FONT_TTF_ENABLE_EXTENDED
 
@@ -119,6 +126,10 @@ extern "C" {
 #define EOS_SPEAKER_VOLUME_MIN 0
 #define EOS_SPEAKER_VOLUME_MAX 100
 
+/************************** MISC **************************/
+
+#define EOS_ASYNC_SEM_TIMEOUT 1000
+
 /************************** 日志 **************************/
 
 // 是否启用断言
@@ -127,7 +138,7 @@ extern "C" {
 // 是否启用彩色日志
 #define EOS_LOG_USE_COLOR 0
 
-/************************** 配置结束 **************************/
+/* 配置结束 ----------------------------------------------------*/
 
 #ifdef __cplusplus
 }

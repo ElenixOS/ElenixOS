@@ -9,21 +9,21 @@
 #if EOS_FONT_TYPE == EOS_FONT_TTF
 #include "elena_os_font.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 LV_FONT_DECLARE(EOS_FONT_ICON);
 #if EOS_FONT_TTF_TYPE == EOS_FONT_TTF_DATA
 EOS_FONT_DATA_DECLARE(EOS_FONT_TTF_DATA_NAME);
 EOS_FONT_DATA_SIZE_DECLARE(EOS_FONT_TTF_DATA_SIZE);
 #endif /* EOS_FONT_TTF_TYPE */
-// Variables
+/* Variables --------------------------------------------------*/
 static lv_font_t *font_large;
 static lv_font_t *font_medium;
 static lv_font_t *font_small;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 lv_font_t *eos_font_init(void)
 {

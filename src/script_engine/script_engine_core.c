@@ -46,7 +46,7 @@
 
 #include "script_engine_core.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include <stdatomic.h>
@@ -67,10 +67,10 @@
 #include "elena_os_icon.h"
 #include "elena_os_watchface.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define SCRIPT_EOS_OBJ_KEY "eos"
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
-// Variables
+/* Variables --------------------------------------------------*/
 static atomic_bool should_terminate = ATOMIC_VAR_INIT(false); /**< 请求终止脚本标志位 */
 static script_state_t script_state = SCRIPT_STATE_STOPPED;
 static bool is_terminated_by_req = false;
@@ -78,7 +78,7 @@ static script_pkg_t *current_script_pkg = NULL; /**< 保存指针以便清理内
 static bool script_engine_initialized = false;
 jerry_value_t script_engine_eos_obj; /**< 通过此对象访问到所有已注册的函数 */
 jerry_value_t old_realm;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 static void _check_mem(void)
 {
@@ -331,15 +331,15 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
 
     // 释放原有指针（如果有），防止内存泄漏
     if (pkg->id)
-        free((void *)pkg->id);
+        eos_free((void *)pkg->id);
     if (pkg->name)
-        free((void *)pkg->name);
+        eos_free((void *)pkg->name);
     if (pkg->version)
-        free((void *)pkg->version);
+        eos_free((void *)pkg->version);
     if (pkg->author)
-        free((void *)pkg->author);
+        eos_free((void *)pkg->author);
     if (pkg->description)
-        free((void *)pkg->description);
+        eos_free((void *)pkg->description);
 
     // 分配并赋值
     pkg->id = eos_strdup(id->valuestring);

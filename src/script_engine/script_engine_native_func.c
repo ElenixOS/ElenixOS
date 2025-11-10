@@ -6,7 +6,7 @@
  * @date 2025-07-26
  */
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include "script_engine_native_func.h"
 #include "jerryscript.h"
 #include <stdio.h>
@@ -24,11 +24,11 @@
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 /********************************** 错误处理 **********************************/
 static jerry_value_t throw_error(const char *message)
 {
@@ -64,12 +64,12 @@ static bool config_write_to_file(cJSON *root)
     if (!fp)
     {
         EOS_LOG_E("Open file failed");
-        free(json_str);
+        eos_free(json_str);
         return false;
     }
     fputs(json_str, fp);
     fclose(fp);
-    free(json_str);
+    eos_free(json_str);
     return true;
 }
 
@@ -109,13 +109,13 @@ static cJSON *config_load_from_file(void)
     long size = ftell(fp);
     rewind(fp);
 
-    char *data = (char *)malloc(size + 1);
+    char *data = (char *)eos_malloc(size + 1);
     fread(data, 1, size, fp);
     data[size] = '\0';
     fclose(fp);
 
     cJSON *root = cJSON_Parse(data);
-    free(data);
+    eos_free(data);
 
     if (!root)
     {
@@ -156,7 +156,7 @@ jerry_value_t js_print_handler(const jerry_call_info_t *call_info_p,
         }
 
         jerry_size_t size = jerry_string_size(str_val, JERRY_ENCODING_UTF8);
-        jerry_char_t *buf = (jerry_char_t *)malloc(size + 1); // Explicitly cast void* to jerry_char_t*
+        jerry_char_t *buf = (jerry_char_t *)eos_malloc(size + 1); // Explicitly cast void* to jerry_char_t*
         if (!buf)
         {
             jerry_value_free(str_val);
@@ -172,7 +172,7 @@ jerry_value_t js_print_handler(const jerry_call_info_t *call_info_p,
             printf(" ");
         }
 
-        free(buf);
+        eos_free(buf);
         jerry_value_free(str_val);
     }
 
@@ -293,7 +293,7 @@ static jerry_value_t js_lv_image_set_src(const jerry_call_info_t *call_info_p,
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_src_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_src_str = (char *)malloc(arg_src_len + 1);
+        arg_src_str = (char *)eos_malloc(arg_src_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_src_str, arg_src_len);
         arg_src_str[arg_src_len] = '\0';
         arg_src = arg_src_str;
@@ -327,7 +327,7 @@ static jerry_value_t js_lv_image_set_src(const jerry_call_info_t *call_info_p,
 
     // 释放临时字符串内存
     if (arg_src_str)
-        free(arg_src_str);
+        eos_free(arg_src_str);
 
     return jerry_undefined();
 }
@@ -344,13 +344,13 @@ static jerry_value_t js_config_set_str(const jerry_call_info_t *call_info_p,
 
     // key
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
     // value
     jerry_size_t val_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-    char *value = malloc(val_len + 1);
+    char *value = eos_malloc(val_len + 1);
     jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t *)value, val_len);
     value[val_len] = '\0';
 
@@ -369,8 +369,8 @@ static jerry_value_t js_config_set_str(const jerry_call_info_t *call_info_p,
     config_write_to_file(root);
     cJSON_Delete(root);
 
-    free(key);
-    free(value);
+    eos_free(key);
+    eos_free(value);
     return jerry_undefined();
 }
 
@@ -386,7 +386,7 @@ static jerry_value_t js_config_set_boolean(const jerry_call_info_t *call_info_p,
 
     // key
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
@@ -411,7 +411,7 @@ static jerry_value_t js_config_set_boolean(const jerry_call_info_t *call_info_p,
     config_write_to_file(root);
     cJSON_Delete(root);
 
-    free(key);
+    eos_free(key);
     return jerry_undefined();
 }
 
@@ -427,7 +427,7 @@ static jerry_value_t js_config_set_number(const jerry_call_info_t *call_info_p,
 
     // key
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
@@ -455,7 +455,7 @@ static jerry_value_t js_config_set_number(const jerry_call_info_t *call_info_p,
 
     cJSON_Delete(root);
 
-    free(key);
+    eos_free(key);
     return jerry_undefined();
 }
 
@@ -470,7 +470,7 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
@@ -492,7 +492,7 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
     }
 
     cJSON_Delete(root);
-    free(key);
+    eos_free(key);
     return ret;
 }
 
@@ -507,7 +507,7 @@ static jerry_value_t js_config_get_boolean(const jerry_call_info_t *call_info_p,
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
@@ -529,7 +529,7 @@ static jerry_value_t js_config_get_boolean(const jerry_call_info_t *call_info_p,
     }
 
     cJSON_Delete(root);
-    free(key);
+    eos_free(key);
     return ret;
 }
 
@@ -544,7 +544,7 @@ static jerry_value_t js_config_get_number(const jerry_call_info_t *call_info_p,
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-    char *key = malloc(key_len + 1);
+    char *key = eos_malloc(key_len + 1);
     jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)key, key_len);
     key[key_len] = '\0';
 
@@ -566,7 +566,7 @@ static jerry_value_t js_config_get_number(const jerry_call_info_t *call_info_p,
     }
 
     cJSON_Delete(root);
-    free(key);
+    eos_free(key);
     return ret;
 }
 
@@ -612,7 +612,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
             return throw_error("Argument 0 must be a string");
         }
         jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-        arg_src_str = (char *)malloc(arg_src_len + 0);
+        arg_src_str = (char *)eos_malloc(arg_src_len + 0);
         jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_src_str, arg_src_len);
         arg_src_str[arg_src_len] = '\0';
         arg_src = arg_src_str;
@@ -622,7 +622,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     if (!jerry_value_is_number(args[1]))
     {
         if (arg_src_str)
-            free(arg_src_str);
+            eos_free(arg_src_str);
         return throw_error("Argument 1 must be a number");
     }
     uint32_t font_size = (uint32_t)jerry_value_as_number(args[1]);
@@ -631,7 +631,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     if (script_engine_get_current_script_id() == NULL)
     {
         if (arg_src_str)
-            free(arg_src_str);
+            eos_free(arg_src_str);
         return throw_error("Script package info is NULL");
     }
 
@@ -648,14 +648,14 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
     else
     {
         if (arg_src_str)
-            free(arg_src_str);
+            eos_free(arg_src_str);
         return throw_error("Unknown script type");
     }
 
     if (!eos_is_file(font_path))
     {
         if (arg_src_str)
-            free(arg_src_str);
+            eos_free(arg_src_str);
         return throw_error("Font file not found");
     }
 
@@ -666,7 +666,7 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
 
     // 释放临时字符串内存
     if (arg_src_str)
-        free(arg_src_str);
+        eos_free(arg_src_str);
 
     if (!font)
     {
@@ -730,7 +730,7 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_text_str = (char*)malloc(arg_text_len + 1);
+        arg_text_str = (char*)eos_malloc(arg_text_len + 1);
         jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
         arg_text_str[arg_text_len] = '\0';
         arg_text = arg_text_str;
@@ -740,7 +740,7 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
     eos_app_header_set_title(arg_obj, arg_text);
 
     // 释放临时字符串内存
-    if (arg_text_str) free(arg_text_str);
+    if (arg_text_str) eos_free(arg_text_str);
 
     return jerry_undefined();
 }

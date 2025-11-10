@@ -20,6 +20,7 @@ extern "C" {
 #endif
 #include "lvgl.h"
 #include "elena_os_config.h"
+#include "elena_os_port.h"
 /* Public macros ----------------------------------------------*/
 
 /************************** 彩色日志 **************************/
@@ -99,7 +100,7 @@ do                                \
     do { \
         if (!(ptr)) { \
             EOS_LOG_E("NULL pointer at %s:%d, at function: %s", __FILE__, __LINE__, __func__); \
-            lv_free(free_var); \
+            eos_free(free_var); \
             return; \
         } \
     } while(0)
@@ -117,7 +118,7 @@ do                                \
     do { \
         if (!(ptr)) { \
             EOS_LOG_E("NULL pointer at %s:%d, at function: %s", __FILE__, __LINE__, __func__); \
-            lv_free(free_var); \
+            eos_free(free_var); \
             return ret_val; \
         } \
     } while(0)

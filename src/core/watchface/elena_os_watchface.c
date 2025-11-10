@@ -7,7 +7,7 @@
 
 #include "elena_os_watchface.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,7 +24,7 @@
 #include "elena_os_watchface_list.h"
 #include "elena_os_theme.h"
 #include "elena_os_control_center.h"
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
  * @brief 应用结构体
@@ -37,11 +37,11 @@ typedef struct
     size_t size;
     size_t capacity;
 } eos_watchface_list_t;
-// Variables
+/* Variables --------------------------------------------------*/
 static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
 static lv_obj_t *watchface_screen = NULL;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 size_t eos_watchface_list_size(void)
 {
@@ -72,7 +72,7 @@ bool eos_watchface_list_contains(const char *watchface_id)
 
 void _eos_watchface_list_init(eos_watchface_list_t *list, size_t capacity)
 {
-    list->data = malloc(capacity * sizeof(char *));
+    list->data = eos_malloc(capacity * sizeof(char *));
     list->size = 0;
     list->capacity = capacity;
 }
@@ -92,9 +92,9 @@ void _eos_watchface_list_free(eos_watchface_list_t *list)
 {
     for (size_t i = 0; i < list->size; i++)
     {
-        free(list->data[i]);
+        eos_free(list->data[i]);
     }
-    free(list->data);
+    eos_free(list->data);
 }
 
 eos_result_t _eos_watchface_list_get_installed()
@@ -297,7 +297,7 @@ void eos_watchface_create(void)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
              wf_id);
-    script_pkg_t *pkg = malloc(sizeof(script_pkg_t));
+    script_pkg_t *pkg = eos_malloc(sizeof(script_pkg_t));
     memset((void *)pkg, 0, sizeof(script_pkg_t));
     pkg->type = SCRIPT_TYPE_WATCHFACE;
     EOS_LOG_D("script_engine_get_manifest");
@@ -314,7 +314,7 @@ void eos_watchface_create(void)
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
              wf_id);
-    free((void *)wf_id);
+    eos_free((void *)wf_id);
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);

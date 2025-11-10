@@ -12,7 +12,7 @@
 
 #include "elena_os_watchface_list.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
@@ -28,12 +28,12 @@
 #include "script_engine_core.h"
 #include "elena_os_sys.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern lv_group_t *encoder_group;
 static lv_obj_t *watchface_list_screen = NULL;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /**
  * @brief 表盘列表中 表盘按下的回调

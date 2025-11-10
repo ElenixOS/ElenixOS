@@ -7,15 +7,16 @@
 
 #include "elena_os_swipe_panel.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_log.h"
 #include "elena_os_event.h"
 #include "elena_os_config.h"
 #include "elena_os_theme.h"
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define GESTURE_AREA_HEIGHT 50
 #define TOUCH_BAR_MARGIN 20
 #define HANDLE_BAR_WIDTH 80
@@ -33,9 +34,9 @@
 
 #define DIR_RIGHT_HIDE_TARGET_COORD -EOS_DISPLAY_WIDTH
 #define DIR_RIGHT_SHOW_TARGET_COORD 0
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 static void _update_handle_bar_position(eos_swipe_panel_t *sp, eos_swipe_dir_t dir)
 {
@@ -202,7 +203,7 @@ void eos_swipe_panel_delete(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
     lv_obj_delete(sp->swipe_obj);
-    lv_free(sp);
+    eos_free(sp);
 }
 
 static void _slide_widget_move_done_cb(lv_event_t *e)
@@ -312,7 +313,7 @@ void eos_swipe_panel_slide_up(eos_swipe_panel_t *sp)
 
 eos_swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)
 {
-    eos_swipe_panel_t *sp = lv_malloc(sizeof(eos_swipe_panel_t));
+    eos_swipe_panel_t *sp = eos_malloc(sizeof(eos_swipe_panel_t));
     EOS_CHECK_PTR_RETURN_VAL(sp && parent, NULL);
 
     // 初始化 swipe_obj

@@ -7,14 +7,15 @@
 
 #include "elena_os_event.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "EventSystem"
 #include "elena_os_log.h"
-// Macros and Definitions
+#include "elena_os_port.h"
+/* Macros and Definitions -------------------------------------*/
 /**
  * @brief 事件回调节点结构
  */
@@ -27,12 +28,12 @@ typedef struct _event_node_t
     struct _event_node_t *next;
     bool marked_for_delete;
 } event_node_t;
-// Variables
+/* Variables --------------------------------------------------*/
 static event_node_t *event_list_head = NULL; // 事件链表头
 static int g_broadcast_depth = 0;             // 嵌套广播计数（>0 表示正在广播）
 static bool g_event_list_modified = false;    // 在广播期间，如果链表被修改（节点被标记删除），置为 true
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 void _event_list_show(void)
 {
@@ -80,7 +81,7 @@ static void _cleanup_deleted_nodes(void)
 
             EOS_LOG_D("Freeing node [%p] obj[%p] event[%d] cb[%p]", tmp, tmp->obj, (int)tmp->event, (void *)tmp->cb);
 
-            lv_free(tmp);
+            eos_free(tmp);
             g_event_list_modified = true;
         }
         else
@@ -119,7 +120,7 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
     EOS_CHECK_PTR_RETURN(obj && cb);
     EOS_LOG_I("Event %d add callback: [%p], obj: [%p]", (int)event, (void *)cb, (void *)obj);
 
-    event_node_t *new_node = lv_malloc(sizeof(event_node_t));
+    event_node_t *new_node = eos_malloc(sizeof(event_node_t));
     if (!new_node)
     {
         EOS_LOG_E("Failed to allocate event node");
@@ -168,7 +169,7 @@ void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb)
                 *curr = n->next;
                 lv_obj_remove_event_cb(obj, cb);
                 EOS_LOG_D("Immediately freeing node [%p] (manual remove)", n);
-                lv_free(n);
+                eos_free(n);
             }
             return;
         }

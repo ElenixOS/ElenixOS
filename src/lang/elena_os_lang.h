@@ -99,6 +99,22 @@ typedef enum {
     STR_ID_APP_FLASH_LIGHT_DISMISS,
     STR_ID_TOAST_SHOW_MUTE,
     STR_ID_TOAST_SHOW_UNMUTE,
+
+    STR_ID_SENSOR_START,
+    STR_ID_SENSOR_ACCE,      /**< 加速度传感器     */
+    STR_ID_SENSOR_GYRO,      /**< 重力传感器       */
+    STR_ID_SENSOR_MAG,       /**< 磁传感器         */
+    STR_ID_SENSOR_TEMP,      /**< 温度传感器       */
+    STR_ID_SENSOR_HUMI,      /**< 相对湿度传感器   */
+    STR_ID_SENSOR_BARO,      /**< 气压传感器       */
+    STR_ID_SENSOR_LIGHT,     /**< 环境光传感器     */
+    STR_ID_SENSOR_PROXIMITY, /**< 距离传感器       */
+    STR_ID_SENSOR_HR,        /**< 心率传感器       */
+    STR_ID_SENSOR_TVOC,      /**< TOVC传感器       */
+    STR_ID_SENSOR_NOISE,     /**< 噪声传感器       */
+    STR_ID_SENSOR_STEP,      /**< 计步传感器       */
+    STR_ID_SENSOR_FORCE,     /**< 力传感器         */
+    STR_ID_SENSOR_BAT,        /**< 电池电量传感器    */
     /* 此处可添加新的字符串ID */
     STR_ID_MAX_NUMBER   /**< 字符串ID最大值 */
 } lang_string_id_t;

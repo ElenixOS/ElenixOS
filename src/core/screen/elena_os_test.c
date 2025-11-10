@@ -7,7 +7,7 @@
 
 #include "elena_os_test.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,19 +30,20 @@
 #include "elena_os_toast.h"
 #include "elena_os_slide_widget.h"
 #include "elena_os_font.h"
+#include "elena_os_sensor.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
 #ifdef TEST_USE_ZH_FONT
 LV_FONT_DECLARE(eos_font_resource_han_rounded_30);
 #endif
 #define LV_KB_BTN(width) LV_BUTTONMATRIX_CTRL_POPOVER | width
 
-// Variables
+/* Variables --------------------------------------------------*/
 static lv_obj_t *img = NULL;    // 全局图片对象
 static lv_obj_t *ta = NULL;     // 全局文本输入框对象
 extern script_pkg_t script_pkg; // 脚本包
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 typedef struct
 {
@@ -115,11 +116,12 @@ static const symbol_t lv_symbols[] = {
     {LV_SYMBOL_DUMMY, 0xFFFF},
 };
 
-void _create_new_scr()
+lv_obj_t *_create_new_scr()
 {
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header(scr, "ElenaOS Test");
     lv_screen_load(scr);
+    return scr;
 }
 
 static void _test_msg_list_cb(lv_event_t *e)
@@ -303,21 +305,21 @@ static void _test_image_input_cb(lv_event_t *e)
 
 static void _test_image()
 {
-    _create_new_scr();
+    lv_obj_t *scr = _create_new_scr();
     // 创建图片对象但不设置源
-    img = lv_image_create(lv_screen_active());
+    img = lv_image_create(scr);
     lv_obj_center(img);
     lv_obj_move_background(img);
 
     // 创建文本输入框
-    ta = lv_textarea_create(lv_screen_active());
+    ta = lv_textarea_create(scr);
     lv_obj_set_size(ta, LV_HOR_RES - 40, 80);
     lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
     lv_textarea_set_placeholder_text(ta, "Input image path here.(e.g. /flower.bin)");
     lv_textarea_set_one_line(ta, true);
 
     // 添加键盘
-    lv_obj_t *kb = lv_keyboard_create(lv_screen_active());
+    lv_obj_t *kb = lv_keyboard_create(scr);
     lv_keyboard_set_textarea(kb, ta);
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); // 默认隐藏键盘
 
@@ -348,11 +350,10 @@ static void _test_toast()
 
 static void _test_show_all_lv_symbols_list()
 {
-    _create_new_scr();
-    lv_obj_t *screen = lv_screen_active();
+    lv_obj_t *scr = _create_new_scr();
 
     // 创建列表
-    lv_obj_t *list = lv_list_create(screen);
+    lv_obj_t *list = lv_list_create(scr);
     lv_obj_set_size(list, lv_pct(100), lv_pct(100));
     lv_obj_set_style_pad_all(list, 5, 0);
 
@@ -406,8 +407,7 @@ static lv_obj_t *_add_slide_wdiget(lv_obj_t *parent)
 
 static void _test_slide_widget()
 {
-    _create_new_scr();
-    lv_obj_t *scr = lv_screen_active();
+    lv_obj_t *scr = _create_new_scr();
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *list = lv_list_create(scr);
@@ -434,8 +434,7 @@ static void _test_slide_widget()
 
 static void _test_font_size()
 {
-    _create_new_scr();
-    lv_obj_t *scr = lv_screen_active();
+    lv_obj_t *scr = _create_new_scr();
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *list = eos_list_create(scr);
@@ -456,6 +455,154 @@ static void _test_font_size()
     eos_label_set_font_size(label, EOS_FONT_SIZE_LARGE);
 }
 
+static void _sensor_meas_cb(lv_event_t *e)
+{
+    lv_obj_t *tb = lv_event_get_target(e);
+    eos_sensor_t *s = lv_event_get_param(e);
+    EOS_CHECK_PTR_RETURN(s && tb);
+    int32_t i = eos_sensor_get_type_by_event_code(lv_event_get_code(e));
+
+    const uint8_t _SENSOR_VAL_COL = 1;
+    switch (i)
+    {
+    case EOS_SENSOR_TYPE_ACCE: /**< 加速度传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "X=%d\nY=%d\nZ=%d",
+                                    s->data.acce.x,
+                                    s->data.acce.y,
+                                    s->data.acce.z);
+        break;
+
+    case EOS_SENSOR_TYPE_GYRO: /**< 陀螺仪传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "X=%d\nY=%d\nZ=%d",
+                                    s->data.gyro.x,
+                                    s->data.gyro.y,
+                                    s->data.gyro.z);
+        break;
+
+    case EOS_SENSOR_TYPE_MAG: /**< 磁传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "X=%d\nY=%d\nZ=%d",
+                                    s->data.mag.x,
+                                    s->data.mag.y,
+                                    s->data.mag.z);
+        break;
+
+    case EOS_SENSOR_TYPE_TEMP: /**< 温度传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%.2f °C",
+                                    s->data.temp.temp / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_HUMI: /**< 相对湿度传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%.2f %%RH",
+                                    s->data.humi.humidity / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_BARO: /**< 气压传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%.2f hPa",
+                                    s->data.baro.pressure / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_LIGHT: /**< 环境光传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%u lx",
+                                    s->data.light.lux);
+        break;
+
+    case EOS_SENSOR_TYPE_PROXIMITY: /**< 距离传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%u mm",
+                                    s->data.proximity.distance_mm);
+        break;
+
+    case EOS_SENSOR_TYPE_HR: /**< 心率传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "HR=%u bpm\nSpO₂=%.2f%%",
+                                    s->data.hr.heart_rate,
+                                    s->data.hr.spo2 / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_TVOC: /**< TVOC传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%u ppb",
+                                    s->data.tvoc.tvoc);
+        break;
+
+    case EOS_SENSOR_TYPE_NOISE: /**< 噪声传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%.2f dB",
+                                    s->data.noise.noise_db / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_STEP: /**< 计步传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%lu 步",
+                                    (unsigned long)s->data.step.steps);
+        break;
+
+    case EOS_SENSOR_TYPE_FORCE: /**< 力传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%.2f N",
+                                    s->data.force.force / 100.0f);
+        break;
+
+    case EOS_SENSOR_TYPE_BAT: /**< 电池电量传感器 */
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "%d%% %s",
+                                    s->data.bat.level,
+                                    s->data.bat.charging ? "(充电中)" : "(未充电)");
+        break;
+
+    case EOS_SENSOR_TYPE_UNKNOWN:
+    default:
+        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
+                                    "未知传感器类型 (%d)", i);
+        break;
+    }
+}
+
+static void _timer_cb(lv_timer_t *t)
+{
+
+}
+
+static void _test_sensor()
+{
+    lv_obj_t *scr = _create_new_scr();
+
+    lv_obj_t *list = eos_list_create(scr);
+
+    lv_obj_t *tb = lv_table_create(list);
+    lv_table_set_row_count(tb, EOS_SENSOR_NUMBER + 1);
+    lv_table_set_column_count(tb, 2);
+    lv_obj_set_width(tb, lv_pct(100));
+    lv_table_set_cell_value(tb, 0, 0, "Sensor");
+    lv_table_set_cell_value(tb, 0, 1, "Value");
+    lv_table_set_column_width(tb, 0, 180);
+    lv_table_set_column_width(tb, 1, 180);
+
+    for (int i = 0; i < EOS_SENSOR_NUMBER; i++)
+    {
+        lv_table_set_cell_value(tb, i + 1, 0, current_lang[STR_ID_SENSOR_START + 1 + i]);
+    }
+
+    for (int i = 0; i < EOS_SENSOR_NUMBER; i++)
+    {
+        lv_table_set_cell_value(tb, i + 1, 1, "NaN");
+    }
+
+    for (int i = 1; i <= EOS_SENSOR_NUMBER; i++)
+    {
+        eos_event_add_cb(tb, _sensor_meas_cb, eos_sensor_get_event_code(i), NULL);
+        EOS_LOG_D("Sensor event add: %d", eos_sensor_get_event_code(i));
+    }
+    eos_sensor_read_async((eos_sensor_type_t)EOS_SENSOR_TYPE_ACCE);
+}
+
 void eos_test_start(void)
 {
     lv_obj_t *scr = lv_screen_active();
@@ -466,6 +613,9 @@ void eos_test_start(void)
     lv_obj_t *btn;
     lv_obj_t *label = lv_list_add_text(test_list, RI_ELENA_WATCH " ElenaOS Test List");
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    // 传感器测试
+    btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "SensorTester");
+    lv_obj_add_event_cb(btn, _test_sensor, LV_EVENT_CLICKED, NULL);
     // 测试滑动组件
     btn = lv_list_add_button(test_list, RI_CAROUSEL_VIEW, "Slide Widget");
     lv_obj_add_event_cb(btn, _test_slide_widget, LV_EVENT_CLICKED, NULL);

@@ -38,13 +38,48 @@ extern "C" {
     #error not supported tool chain
 #endif
 
-/* Public typedefs --------------------------------------------*/
+#define EOS_TIMEOUT_INFINITE UINT32_MAX
 
+/* Public typedefs --------------------------------------------*/
+typedef struct eos_sem eos_sem_t;   /**< 信号量 */
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 创建一个信号量
+ * @param initial_count 初始计数
+ * @param max_count 最大计数
+ * @return 指向信号量对象的指针，如果失败返回 NULL
+ */
+eos_sem_t* eos_sem_create(uint32_t initial_count, uint32_t max_count);
+/**
+ * @brief 销毁信号量
+ */
+void eos_sem_destroy(eos_sem_t* sem);
+/**
+ * @brief 等待信号量
+ * @param timeout_ms 超时时间（毫秒），0 表示非阻塞，EOS_TIMEOUT_INFINITE 表示无限等待
+ * @return true 成功获取
+ * @return false 超时或失败
+ */
+bool eos_sem_take(eos_sem_t* sem, uint32_t timeout_ms);
+/**
+ * @brief 释放信号量
+ */
+void eos_sem_give(eos_sem_t* sem);
+/**
  * @brief 内存分配函数
- * @param size 要分配的内存大小
+ * @param size 内存大小，单位：字节
+ * @return void* 分配成功则返回内存地址，否则返回 NULL
+ */
+void *eos_malloc(size_t size);
+/**
+ * @brief 释放目标内存
+ * @param ptr 目标内存指针
+ */
+void eos_free(void *ptr);
+/**
+ * @brief 内存分配函数
+ * @param size 内存大小，单位：字节
  * @return void* 分配成功则返回内存地址，否则返回 NULL
  * @note 主要用于图片内存分配
  */
@@ -86,10 +121,21 @@ eos_datetime_t eos_time_get(void);
  */
 void eos_display_set_brightness(uint8_t brightness);
 /**
- * @brief 读取一次传感器的值
+ * @brief 异步读取一次传感器的值
+ *
+ * 示例用法：
+ * 提前创建读取线程，在此函数中启动线程，开始读取传感器，读取完毕后上报数据。
  * @param type 传感器类型
+ * @note 读取完毕后，必须使用`eos_sensor_report()`上报读取结果，否则上层无法得知传感器数据
+ * @warning 禁止在函数中执行高耗时任务
  */
-void eos_sensor_read(eos_sensor_type_t type);
+void eos_sensor_read_async(eos_sensor_type_t type);
+/**
+ * @brief 同步读取一次传感器的值
+ * @param type 传感器类型
+ * @param out 传感器读取结果
+ */
+ void eos_sensor_read_sync(eos_sensor_type_t type, eos_sensor_t *out);
 /**
  * @brief 定位手机
  *

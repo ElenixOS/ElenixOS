@@ -7,7 +7,7 @@
 
 #include "elena_os_toast.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_theme.h"
@@ -17,7 +17,7 @@
 #define EOS_LOG_TAG "Toast"
 #include "elena_os_log.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _TOAST_PAD_ALL 12
 
 #define _ICON_WIDTH 44
@@ -39,9 +39,9 @@
 #define _TOAST_SHOW_ANIM_BASE_DURATION 1000 /**< 此持续时间是用于滚动结束后持续的时间 */
 
 #define _TOAST_LABEL_MAX_LENGTH 128
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 static void _toast_timer_cb(lv_timer_t *t)
 {

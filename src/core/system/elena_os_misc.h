@@ -60,7 +60,7 @@ eos_result_t eos_create_dir_recursive(const char *path);
 /**
  * @brief 递归删除目录
  * @param path 目标目录
- * @return eos_result_t 删除结果 
+ * @return eos_result_t 删除结果
  */
 eos_result_t eos_rm_recursive(const char *path);
 /**
@@ -71,9 +71,9 @@ eos_result_t eos_rm_recursive(const char *path);
 bool eos_is_valid_filename(const char *name);
 /**
  * @brief 从指定文件中读取文本字符串
- * @param filename 目标文件路径 
+ * @param filename 目标文件路径
  * @return char* 获取成功则返回文本字符串
- * 
+ *
  * 获取失败则返回 NULL
  */
 char *eos_read_file(const char *filename);
@@ -81,9 +81,9 @@ char *eos_read_file(const char *filename);
  * @brief 用于创建给定字符串 s 的副本。
  * @param s 目标字符串
  * @return const char* 创建成功则返回新分配的字符串指针
- * 
+ *
  * 内存分配失败则返回 NULL
- * @note 使用`free(str)`释放复制的字符串
+ * @note 使用`eos_malloc(str)`释放复制的字符串
  */
 const char *eos_strdup(const char *s);
 /**

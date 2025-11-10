@@ -7,7 +7,7 @@
 
 #include "elena_os_basic_widgets.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,8 +25,9 @@
 #include "elena_os_icon.h"
 #include "elena_os_config.h"
 #include "elena_os_anim.h"
+#include "elena_os_font.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define APP_HEADER_HEIGHT 120
 #define APP_HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
 
@@ -52,9 +53,9 @@ typedef struct
     eos_app_header_title_data_t data;
 } eos_app_header_title_t;
 
-// Variables
+/* Variables --------------------------------------------------*/
 static eos_app_header_t *app_header = NULL;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /**
  * @brief 返回按钮的回调
@@ -94,7 +95,9 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     if (show_text)
     {
         lv_label_set_text_fmt(btn_label, RI_ARROW_LEFT_S_LINE_LARGE "%s", current_lang[STR_ID_BASE_ITEM_BACK]);
-    }else{
+    }
+    else
+    {
         lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE_LARGE);
     }
     lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
@@ -177,11 +180,11 @@ static void _screen_delete_cb(lv_event_t *e)
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
     EOS_CHECK_PTR_RETURN(t);
     if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
-        free(t->data.string);
+        eos_free(t->data.string);
     lv_obj_set_user_data(scr, NULL);
     eos_app_header_hide();
     eos_event_remove_cb(scr, LV_EVENT_REFRESH, _app_header_lang_changed_cb);
-    free(t);
+    eos_free(t);
 }
 
 void eos_app_header_set_title(lv_obj_t *scr, const char *title)
@@ -191,7 +194,7 @@ void eos_app_header_set_title(lv_obj_t *scr, const char *title)
     // 复制一份避免被删除
     t->type = APP_HEADER_TITLE_TYPE_STRING;
     if (t->data.string)
-        free(t->data.string);
+        eos_free(t->data.string);
     t->data.string = eos_strdup(title);
     // 更新字符串
     lv_label_set_text(app_header->title_label, t->data.string);
@@ -204,7 +207,7 @@ void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
     // 复制一份避免被删除
     t->type = APP_HEADER_TITLE_TYPE_ID;
     if (t->data.string)
-        free(t->data.string);
+        eos_free(t->data.string);
     t->data.id = id;
     // 更新字符串
     lv_label_set_text(app_header->title_label, current_lang[id]);
@@ -225,7 +228,7 @@ void eos_app_header_show(void)
 void eos_screen_bind_header(lv_obj_t *scr, const char *title)
 {
     EOS_CHECK_PTR_RETURN(scr);
-    eos_app_header_title_t *t = malloc(sizeof(eos_app_header_title_t));
+    eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
     EOS_CHECK_PTR_RETURN(t);
     t->type = APP_HEADER_TITLE_TYPE_STRING;
     t->data.string = eos_strdup(title);
@@ -242,7 +245,7 @@ void eos_screen_bind_header_str_id(lv_obj_t *scr, lang_string_id_t id)
 {
     EOS_CHECK_PTR_RETURN(scr);
 
-    eos_app_header_title_t *t = malloc(sizeof(eos_app_header_title_t));
+    eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
     EOS_CHECK_PTR_RETURN(t);
     t->type = APP_HEADER_TITLE_TYPE_ID;
     t->data.id = id;
@@ -258,7 +261,7 @@ void eos_screen_bind_header_str_id(lv_obj_t *scr, lang_string_id_t id)
 void eos_app_header_init(void)
 {
     EOS_LOG_D("Init eos_app_header");
-    app_header = lv_malloc(sizeof(eos_app_header_t));
+    app_header = eos_malloc(sizeof(eos_app_header_t));
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
     memset(app_header, 0, sizeof(eos_app_header_t));
 
@@ -291,6 +294,7 @@ void eos_app_header_init(void)
     lv_obj_add_style(app_header->title_label, eos_theme_get_label_style(), 0);
     lv_obj_set_width(app_header->title_label, APP_HEADER_TITLE_WIDTH);
     lv_label_set_text(app_header->title_label, "");
+    eos_label_set_font_size(app_header->title_label, EOS_FONT_SIZE_LARGE);
 
     lv_label_set_long_mode(app_header->title_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_style_text_align(app_header->title_label, LV_TEXT_ALIGN_RIGHT, 0);
@@ -399,7 +403,7 @@ lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circ
     lv_obj_center(icon);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
-    eos_label_set_text_id(label,id);
+    eos_label_set_text_id(label, id);
     lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
@@ -430,7 +434,7 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     lv_obj_t *btn = _list_btn_container_create(list);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
-    eos_label_set_text_id(label,id);
+    eos_label_set_text_id(label, id);
     lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
@@ -499,7 +503,7 @@ static void _list_slider_delete_cb(lv_event_t *e)
 {
     eos_list_slider_t *list_slider = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(list_slider);
-    lv_free(list_slider);
+    eos_free(list_slider);
 }
 
 lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title)
@@ -567,7 +571,7 @@ void eos_list_slider_set_plus_label_scale(eos_list_slider_t *ls, uint16_t scale)
 
 eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
 {
-    eos_list_slider_t *list_slider = (eos_list_slider_t *)lv_malloc(sizeof(eos_list_slider_t));
+    eos_list_slider_t *list_slider = (eos_list_slider_t *)eos_malloc(sizeof(eos_list_slider_t));
     EOS_CHECK_PTR_RETURN_VAL_FREE(list_slider, NULL, list_slider);
     memset(list_slider, 0, sizeof(eos_list_slider_t));
 

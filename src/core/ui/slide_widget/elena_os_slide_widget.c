@@ -7,7 +7,7 @@
 
 #include "elena_os_slide_widget.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,14 +17,15 @@
 #include "elena_os_theme.h"
 #include "elena_os_event.h"
 #include "elena_os_anim.h"
+#include "elena_os_port.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define DEBUG_TOUCH_AREA 0 /**< 突出显示触摸区域 */
 #define SLIDE_ANIM_DURATION 120
 
-// Variables
+/* Variables --------------------------------------------------*/
 
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 /************************** PRESSED **************************/
 
@@ -285,7 +286,7 @@ static void _slide_widget_delete_cb(lv_event_t *e)
     }
 
     sw->target_obj = NULL;
-    lv_free(sw);
+    eos_free(sw);
 }
 
 void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t end, uint32_t duration)
@@ -354,7 +355,7 @@ void eos_slide_widget_delete(eos_slide_widget_t *sw)
     }
 
     eos_anim_blocker_hide();
-    lv_free(sw);
+    eos_free(sw);
 }
 
 /**
@@ -408,7 +409,7 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
     lv_coord_t target,
     eos_threshold_t threshold)
 {
-    eos_slide_widget_t *sw = lv_malloc(sizeof(eos_slide_widget_t));
+    eos_slide_widget_t *sw = eos_malloc(sizeof(eos_slide_widget_t));
     EOS_CHECK_PTR_RETURN_VAL(sw && touch_obj && target_obj, NULL);
     memset(sw, 0, sizeof(eos_slide_widget_t));
 
@@ -423,7 +424,7 @@ eos_slide_widget_t *eos_slide_widget_create(
     lv_coord_t target,
     eos_threshold_t threshold)
 {
-    eos_slide_widget_t *sw = lv_malloc(sizeof(eos_slide_widget_t));
+    eos_slide_widget_t *sw = eos_malloc(sizeof(eos_slide_widget_t));
     EOS_CHECK_PTR_RETURN_VAL(sw && parent && target_obj, NULL);
     memset(sw, 0, sizeof(eos_slide_widget_t));
 

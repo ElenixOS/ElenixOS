@@ -9,18 +9,18 @@
 #if EOS_FONT_TYPE == EOS_FONT_C_SCALE
 #include "elena_os_font.h"
 
-// Includes
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define _SCALE_DEFAULT 255
 LV_FONT_DECLARE(EOS_FONT_C_NAME);
-// Variables
+/* Variables --------------------------------------------------*/
 static const uint16_t scale_large = _SCALE_DEFAULT * EOS_FONT_SIZE_LARGE / EOS_FONT_C_SIZE;
 static const uint16_t scale_medium = _SCALE_DEFAULT * EOS_FONT_SIZE_MEDIUM / EOS_FONT_C_SIZE;
 static const uint16_t scale_small = _SCALE_DEFAULT * EOS_FONT_SIZE_SMALL / EOS_FONT_C_SIZE;
-// Function Implementations
+/* Function Implementations -----------------------------------*/
 
 lv_font_t *eos_font_init(void)
 {

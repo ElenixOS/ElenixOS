@@ -10,17 +10,19 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdatomic.h>
 
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_theme.h"
 #include "elena_os_app_list.h"
 #include "elena_os_watchface.h"
+#include "elena_os_port.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define NAV_STACK_SIZE 32
 #define NAV_HOME_SCREEN_INDEX 0
+#define NAV_SEMAPHORE_TIMEOUT 0  // 信号量获取超时时间(ms)
+
 /**
  * @brief 导航栈结构体
  */
@@ -30,40 +32,12 @@ typedef struct
     lv_obj_t *launcher_screen;
     int8_t top;
     bool initialized;
+    eos_sem_t *semaphore;
 } eos_nav_stack_t;
 
-/**
- * @brief 导航正忙，等待响应
- */
-#define NAV_BUSY_WAIT()                                                       \
-    do                                                                        \
-    {                                                                         \
-        bool expected = false;                                                \
-        while (!atomic_compare_exchange_weak(&eos_nav_busy, &expected, true)) \
-        {                                                                     \
-            expected = false;                                                 \
-            EOS_LOG_D("Waiting for eos_nav stack to be available");           \
-            lv_timer_handler();                                               \
-        }                                                                     \
-    } while (0)
-
-/**
- * @brief 导航正忙，取消操作
- */
-#define NAV_BUSY_CHECK()                                                     \
-    do                                                                       \
-    {                                                                        \
-        bool expected = false;                                               \
-        if (!atomic_compare_exchange_strong(&eos_nav_busy, &expected, true)) \
-        {                                                                    \
-            EOS_LOG_D("Nav stack busy, operation rejected");                 \
-            return -EOS_ERR_BUSY;                                            \
-        }                                                                    \
-    } while (0)
-
 /* Variables --------------------------------------------------*/
-static eos_nav_stack_t eos_nav = {.top = -1, .initialized = false};
-static atomic_bool eos_nav_busy = false; // 正在清除
+static eos_nav_stack_t eos_nav = {.top = -1, .initialized = false, .semaphore = NULL};
+
 /* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);
 bool is_eos_nav_stack_initialized(void);
@@ -71,6 +45,38 @@ static bool _is_eos_nav_stack_full(void);
 static bool _is_eos_nav_stack_empty(void);
 eos_result_t eos_nav_back_clean(void);
 static eos_result_t _eos_nav_clear_stack(void);
+static eos_result_t _eos_nav_sem_take(void);
+static void _eos_nav_sem_give(void);
+
+/**
+ * @brief 获取导航栈信号量
+ * @return 成功返回EOS_OK，超时返回-EOS_ERR_TIMEOUT
+ */
+static eos_result_t _eos_nav_sem_take(void)
+{
+    if (eos_nav.semaphore == NULL) {
+        EOS_LOG_E("Nav semaphore not created");
+        return -EOS_ERR_NOT_INITIALIZED;
+    }
+
+    if (!eos_sem_take(eos_nav.semaphore, NAV_SEMAPHORE_TIMEOUT)) {
+        EOS_LOG_E("Take nav semaphore timeout");
+        return -EOS_ERR_TIMEOUT;
+    }
+
+    return EOS_OK;
+}
+
+/**
+ * @brief 释放导航栈信号量
+ */
+static void _eos_nav_sem_give(void)
+{
+    if (eos_nav.semaphore != NULL) {
+        eos_sem_give(eos_nav.semaphore);
+    }
+}
+
 /**
  * @brief 检查导航栈是否已初始化
  */
@@ -114,17 +120,15 @@ lv_obj_t *eos_nav_get_home_screen(void)
  */
 eos_result_t eos_nav_clean_up(void)
 {
-    if (eos_nav_busy)
-    {
-        EOS_LOG_E("Nav stack busy");
-        return -EOS_ERR_BUSY;
+    eos_result_t ret = _eos_nav_sem_take();
+    if (ret != EOS_OK) {
+        return ret;
     }
-    atomic_store(&eos_nav_busy, true);
 
     if (!is_eos_nav_stack_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
@@ -152,7 +156,12 @@ eos_result_t eos_nav_clean_up(void)
     eos_nav.launcher_screen = NULL;
     eos_nav.top = -1;
     eos_nav.initialized = false;
-    atomic_store(&eos_nav_busy, false);
+
+    // 销毁信号量
+    if (eos_nav.semaphore != NULL) {
+        eos_sem_destroy(eos_nav.semaphore);
+        eos_nav.semaphore = NULL;
+    }
 
     EOS_LOG_D("Nav stack completely cleared.");
     return EOS_OK;
@@ -161,9 +170,17 @@ eos_result_t eos_nav_clean_up(void)
 lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 {
     EOS_CHECK_PTR_RETURN_VAL(launcher_screen, NULL);
+
     if (is_eos_nav_stack_initialized())
     {
         eos_nav_clean_up();
+    }
+
+    // 创建信号量
+    eos_nav.semaphore = eos_sem_create(1, 1);
+    if (eos_nav.semaphore == NULL) {
+        EOS_LOG_E("Create nav semaphore failed");
+        return NULL;
     }
 
     // 创建home_screen（脚本的根页面）
@@ -171,6 +188,8 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     if (!home_screen)
     {
         EOS_LOG_E("Create root screen failed.");
+        eos_sem_destroy(eos_nav.semaphore);
+        eos_nav.semaphore = NULL;
         return NULL;
     }
 
@@ -194,22 +213,22 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
  */
 lv_obj_t *eos_nav_scr_create(void)
 {
-    if (eos_nav_busy)
-    {
-        EOS_LOG_E("Nav stack busy");
+    eos_result_t ret = _eos_nav_sem_take();
+    if (ret != EOS_OK) {
         return NULL;
     }
-    atomic_store(&eos_nav_busy, true);
 
     if (!is_eos_nav_stack_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
+        _eos_nav_sem_give();
         return NULL;
     }
 
     if (_is_eos_nav_stack_full())
     {
         EOS_LOG_E("Nav stack full");
+        _eos_nav_sem_give();
         return NULL;
     }
 
@@ -217,6 +236,7 @@ lv_obj_t *eos_nav_scr_create(void)
     if (!scr)
     {
         EOS_LOG_E("Create screen failed.");
+        _eos_nav_sem_give();
         return NULL;
     }
     lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
@@ -227,6 +247,7 @@ lv_obj_t *eos_nav_scr_create(void)
         {
             EOS_LOG_E("New screen address conflicts with existing screen!");
             lv_obj_delete(scr);
+            _eos_nav_sem_give();
             return NULL;
         }
     }
@@ -234,7 +255,7 @@ lv_obj_t *eos_nav_scr_create(void)
     EOS_LOG_D("NAV PUSH: new screen at %p", scr);
     eos_nav.stack[++eos_nav.top] = scr;
     EOS_MEM("Create new scr");
-    atomic_store(&eos_nav_busy, false);
+    _eos_nav_sem_give();
     return scr;
 }
 
@@ -243,26 +264,30 @@ lv_obj_t *eos_nav_scr_create(void)
  */
 eos_result_t eos_nav_back_clean(void)
 {
-    NAV_BUSY_CHECK();
+    eos_result_t ret = _eos_nav_sem_take();
+    if (ret != EOS_OK) {
+        return ret;
+    }
 
     if (!is_eos_nav_stack_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
     if (_is_eos_nav_stack_empty())
     {
         EOS_LOG_E("Nav stack empty (cannot back from root screen)");
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();
         return -EOS_ERR_STACK_EMPTY;
     }
 
     // 如果当前在home_screen（top==0），则清理整个栈
     if (eos_nav.top == NAV_HOME_SCREEN_INDEX)
     {
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();  // 先释放信号量，因为eos_nav_clean_up内部会获取
+
         // 停止脚本引擎
         if ((script_engine_get_state() == SCRIPT_STATE_RUNNING ||
             script_engine_get_state() == SCRIPT_STATE_SUSPEND ) && lv_screen_active() == eos_watchface_get_screen())
@@ -301,7 +326,7 @@ eos_result_t eos_nav_back_clean(void)
     lv_screen_load(prev_scr);
 
     EOS_MEM("Clear scr");
-    atomic_store(&eos_nav_busy, false);
+    _eos_nav_sem_give();
     return EOS_OK;
 }
 
@@ -310,19 +335,22 @@ eos_result_t eos_nav_back_clean(void)
  */
 eos_result_t eos_nav_back(void)
 {
-    NAV_BUSY_CHECK();
+    eos_result_t ret = _eos_nav_sem_take();
+    if (ret != EOS_OK) {
+        return ret;
+    }
 
     if (!is_eos_nav_stack_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
     if (_is_eos_nav_stack_empty())
     {
         EOS_LOG_E("Already at root screen, cannot go back");
-        atomic_store(&eos_nav_busy, false);
+        _eos_nav_sem_give();
         return -EOS_ERR_STACK_EMPTY;
     }
 
@@ -335,6 +363,6 @@ eos_result_t eos_nav_back(void)
     eos_nav.top--; // 更新栈指针
     lv_screen_load(prev_scr);
 
-    atomic_store(&eos_nav_busy, false);
+    _eos_nav_sem_give();
     return EOS_OK;
 }

@@ -51,6 +51,7 @@ typedef enum
     EOS_ERR_FILE_ERROR,          /**< 操作失败：文件相关错误*/
     EOS_ERR_JSON_ERROR,          /**< 操作失败：JSON相关错误*/
     EOS_ERR_VALUE_MISMATCH,      /**< 操作失败：值不匹配*/
+    EOS_ERR_TIMEOUT,             /**< 操作失败：超时 */
     EOS_ERR_UNKNOWN,
 } eos_result_t;
 

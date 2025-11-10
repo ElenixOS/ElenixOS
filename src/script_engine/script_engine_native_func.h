@@ -29,4 +29,4 @@ void script_engine_register_natives();
 }
 #endif
 
-#endif // SCRIPT_ENGINE_NATIVE_FUNC_H
+#endif /* SCRIPT_ENGINE_NATIVE_FUNC_H */

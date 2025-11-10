@@ -21,7 +21,7 @@
 /* Macros and Definitions -------------------------------------*/
 #define NAV_STACK_SIZE 32
 #define NAV_HOME_SCREEN_INDEX 0
-#define NAV_SEMAPHORE_TIMEOUT 0  // 信号量获取超时时间(ms)
+#define NAV_SEMAPHORE_TIMEOUT 0 // 信号量获取超时时间(ms)
 
 /**
  * @brief 导航栈结构体
@@ -54,12 +54,14 @@ static void _eos_nav_sem_give(void);
  */
 static eos_result_t _eos_nav_sem_take(void)
 {
-    if (eos_nav.semaphore == NULL) {
+    if (eos_nav.semaphore == NULL)
+    {
         EOS_LOG_E("Nav semaphore not created");
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
-    if (!eos_sem_take(eos_nav.semaphore, NAV_SEMAPHORE_TIMEOUT)) {
+    if (!eos_sem_take(eos_nav.semaphore, NAV_SEMAPHORE_TIMEOUT))
+    {
         EOS_LOG_E("Take nav semaphore timeout");
         return -EOS_ERR_TIMEOUT;
     }
@@ -72,7 +74,8 @@ static eos_result_t _eos_nav_sem_take(void)
  */
 static void _eos_nav_sem_give(void)
 {
-    if (eos_nav.semaphore != NULL) {
+    if (eos_nav.semaphore != NULL)
+    {
         eos_sem_give(eos_nav.semaphore);
     }
 }
@@ -121,7 +124,8 @@ lv_obj_t *eos_nav_get_home_screen(void)
 eos_result_t eos_nav_clean_up(void)
 {
     eos_result_t ret = _eos_nav_sem_take();
-    if (ret != EOS_OK) {
+    if (ret != EOS_OK)
+    {
         return ret;
     }
 
@@ -158,7 +162,8 @@ eos_result_t eos_nav_clean_up(void)
     eos_nav.initialized = false;
 
     // 销毁信号量
-    if (eos_nav.semaphore != NULL) {
+    if (eos_nav.semaphore != NULL)
+    {
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
     }
@@ -178,7 +183,8 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 
     // 创建信号量
     eos_nav.semaphore = eos_sem_create(1, 1);
-    if (eos_nav.semaphore == NULL) {
+    if (eos_nav.semaphore == NULL)
+    {
         EOS_LOG_E("Create nav semaphore failed");
         return NULL;
     }
@@ -214,7 +220,8 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 lv_obj_t *eos_nav_scr_create(void)
 {
     eos_result_t ret = _eos_nav_sem_take();
-    if (ret != EOS_OK) {
+    if (ret != EOS_OK)
+    {
         return NULL;
     }
 
@@ -265,7 +272,8 @@ lv_obj_t *eos_nav_scr_create(void)
 eos_result_t eos_nav_back_clean(void)
 {
     eos_result_t ret = _eos_nav_sem_take();
-    if (ret != EOS_OK) {
+    if (ret != EOS_OK)
+    {
         return ret;
     }
 
@@ -286,11 +294,13 @@ eos_result_t eos_nav_back_clean(void)
     // 如果当前在home_screen（top==0），则清理整个栈
     if (eos_nav.top == NAV_HOME_SCREEN_INDEX)
     {
-        _eos_nav_sem_give();  // 先释放信号量，因为eos_nav_clean_up内部会获取
+        _eos_nav_sem_give(); // 先释放信号量，因为eos_nav_clean_up内部会获取
 
         // 停止脚本引擎
-        if ((script_engine_get_state() == SCRIPT_STATE_RUNNING ||
-            script_engine_get_state() == SCRIPT_STATE_SUSPEND ) && lv_screen_active() == eos_watchface_get_screen())
+        if (((script_engine_get_state() == SCRIPT_STATE_RUNNING ||
+              script_engine_get_state() == SCRIPT_STATE_SUSPEND) &&
+             lv_screen_active() == eos_watchface_get_screen()) ||
+            script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
         {
             script_engine_request_stop(); // 内部会自动调用栈清理函数
         }
@@ -336,7 +346,8 @@ eos_result_t eos_nav_back_clean(void)
 eos_result_t eos_nav_back(void)
 {
     eos_result_t ret = _eos_nav_sem_take();
-    if (ret != EOS_OK) {
+    if (ret != EOS_OK)
+    {
         return ret;
     }
 

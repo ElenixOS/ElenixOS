@@ -49,7 +49,6 @@
 /* Includes ---------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
-#include <stdatomic.h>
 #include <stdlib.h>
 
 #include "lvgl.h"
@@ -61,24 +60,122 @@
 
 #include "script_engine_native_func.h"
 #include "elena_os_port.h"
+#define EOS_LOG_TAG "ScriptEngine"
 #include "elena_os_log.h"
 #include "elena_os_misc.h"
 #include "elena_os_nav.h"
 #include "elena_os_icon.h"
 #include "elena_os_watchface.h"
+#include "elena_os_config.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_EOS_OBJ_KEY "eos"
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
+
+/**
+ * @brief 脚本引擎上下文结构体
+ */
+typedef struct
+{
+    script_state_t state;         /**< 当前状态 */
+    script_pkg_t *current_script; /**< 当前运行的脚本 */
+    jerry_value_t old_realm;      /**< 旧realm */
+    bool initialized;             /**< 引擎是否初始化 */
+} script_engine_context_t;
 /* Variables --------------------------------------------------*/
-static atomic_bool should_terminate = ATOMIC_VAR_INIT(false); /**< 请求终止脚本标志位 */
-static script_state_t script_state = SCRIPT_STATE_STOPPED;
-static bool is_terminated_by_req = false;
-static script_pkg_t *current_script_pkg = NULL; /**< 保存指针以便清理内存 */
-static bool script_engine_initialized = false;
 jerry_value_t script_engine_eos_obj; /**< 通过此对象访问到所有已注册的函数 */
-jerry_value_t old_realm;
+static script_engine_context_t engine_ctx = {
+    .state = SCRIPT_STATE_STOPPED,
+    .current_script = NULL,
+    .initialized = false};
 /* Function Implementations -----------------------------------*/
+
+#if EOS_COMPILE_MODE == DEUBG
+
+static char *_state_get_enum_str(script_state_t state)
+{
+    switch (state)
+    {
+    case SCRIPT_STATE_STOPPED:
+        return "SCRIPT_STATE_STOPPED";
+    case SCRIPT_STATE_RUNNING:
+        return "SCRIPT_STATE_RUNNING";
+    case SCRIPT_STATE_SUSPEND:
+        return "SCRIPT_STATE_SUSPEND";
+    case SCRIPT_STATE_STOPPING:
+        return "SCRIPT_STATE_STOPPING";
+    case SCRIPT_STATE_ERROR:
+        return "SCRIPT_STATE_ERROR";
+    default:
+        break;
+    }
+}
+
+#endif /* EOS_COMPILE_MODE */
+
+/**
+ * @brief 状态转换函数
+ */
+static script_engine_result_t _change_state(script_state_t new_state)
+{
+    // 状态转换验证
+    switch (engine_ctx.state)
+    {
+    case SCRIPT_STATE_STOPPED:
+        if (new_state != SCRIPT_STATE_RUNNING &&
+            new_state != SCRIPT_STATE_ERROR)
+        {
+            EOS_LOG_E("Invalid state transition from STOPPED to %d", new_state);
+            return -SE_ERR_INVALID_STATE;
+        }
+        break;
+
+    case SCRIPT_STATE_RUNNING:
+        if (new_state != SCRIPT_STATE_SUSPEND &&
+            new_state != SCRIPT_STATE_STOPPING &&
+            new_state != SCRIPT_STATE_ERROR)
+        {
+            EOS_LOG_E("Invalid state transition from RUNNING to %d", new_state);
+            return -SE_ERR_INVALID_STATE;
+        }
+        break;
+
+    case SCRIPT_STATE_SUSPEND:
+        if (new_state != SCRIPT_STATE_STOPPED &&
+            new_state != SCRIPT_STATE_RUNNING &&
+            new_state != SCRIPT_STATE_ERROR)
+        {
+            EOS_LOG_E("Invalid state transition from SUSPEND to %d", new_state);
+            return -SE_ERR_INVALID_STATE;
+        }
+        break;
+
+    case SCRIPT_STATE_STOPPING:
+        if (new_state != SCRIPT_STATE_STOPPED &&
+            new_state != SCRIPT_STATE_ERROR)
+        {
+            EOS_LOG_E("Invalid state transition from STOPPING to %d", new_state);
+            return -SE_ERR_INVALID_STATE;
+        }
+        break;
+
+    case SCRIPT_STATE_ERROR:
+        if (new_state != SCRIPT_STATE_STOPPED)
+        {
+            EOS_LOG_E("Invalid state transition from ERROR to %d", new_state);
+            return -SE_ERR_INVALID_STATE;
+        }
+        break;
+
+    default:
+        break;
+    }
+#if EOS_COMPILE_MODE == DEUBG
+    EOS_LOG_D("State change: %s -> %s", _state_get_enum_str(engine_ctx.state), _state_get_enum_str(new_state));
+#endif /* EOS_COMPILE_MODE */
+    engine_ctx.state = new_state;
+    return SE_OK;
+}
 
 static void _check_mem(void)
 {
@@ -94,11 +191,6 @@ static void _check_mem(void)
         EOS_LOG_I("Heap total sz: %d\nAllocated bytes: %d\nPeak allocated bytes: %d\n",
                   stats.size, stats.allocated_bytes, stats.peak_allocated_bytes);
     }
-}
-
-void script_engine_set_script_state(script_state_t state)
-{
-    script_state = state;
 }
 
 inline void script_engine_set_prop_number(jerry_value_t obj,
@@ -141,113 +233,11 @@ inline void script_engine_set_prop_string(jerry_value_t obj,
 }
 
 /**
- * @brief VM 终止运行回调
- */
-static jerry_value_t _vm_exec_stop_callback(void *user_p)
-{
-    (void)user_p; // 不使用参数
-    if (should_terminate)
-    {
-        atomic_store(&should_terminate, false);
-        is_terminated_by_req = true;
-        script_state = SCRIPT_STATE_STOPPED;
-        EOS_LOG_D("Script execution stopped by request.\n");
-        return jerry_string_sz("Script terminated by request");
-    }
-
-    return jerry_undefined();
-}
-/**
- * @brief 请求停止当前脚本运行
- */
-void _request_script_termination(void)
-{
-    atomic_store(&should_terminate, true);
-}
-
-script_state_t script_engine_get_state(void)
-{
-    return script_state;
-}
-
-char *script_engine_get_current_script_id(void)
-{
-    return current_script_pkg == NULL ? NULL : current_script_pkg->id;
-}
-
-char *script_engine_get_current_script_name(void)
-{
-    return current_script_pkg == NULL ? NULL : current_script_pkg->name;
-}
-
-script_pkg_type_t script_engine_get_current_script_type(void)
-{
-    return current_script_pkg == NULL ? SCRIPT_TYPE_UNKNOWN : current_script_pkg->type;
-}
-
-void _engine_cleanup()
-{
-    if (jerry_value_is_object(old_realm))
-    {
-        jerry_value_free(jerry_set_realm(old_realm));
-    }
-    jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
-}
-
-static script_engine_result_t _script_engine_cleanup_and_stop(void)
-{
-    // 删除根页面
-    script_pkg_type_t type = script_engine_get_current_script_type();
-    if (type == SCRIPT_TYPE_APPLICATION)
-    {
-        eos_result_t ret = eos_nav_clean_up();
-        if (ret != EOS_OK)
-        {
-            EOS_LOG_E("Navigation clean up failed!");
-            return SE_FAILED;
-        }
-    }
-
-    // 清理资源
-    _engine_cleanup();
-    script_state = SCRIPT_STATE_STOPPED;
-    eos_pkg_free(current_script_pkg);
-    current_script_pkg = NULL;
-    _check_mem();
-    EOS_LOG_I("Script terminated");
-
-    return SE_OK;
-}
-
-script_engine_result_t script_engine_request_stop(void)
-{
-    if (script_state == SCRIPT_STATE_RUNNING)
-    {
-        // 请求终止运行脚本
-        _request_script_termination();
-
-        // 等待停止
-        while (script_state != SCRIPT_STATE_STOPPED)
-        {
-            eos_delay(10);
-        }
-
-        return _script_engine_cleanup_and_stop();
-    }
-    else if (script_state == SCRIPT_STATE_SUSPEND)
-    {
-        EOS_LOG_D("SUSPEND REQUEST STOP");
-        return _script_engine_cleanup_and_stop();
-    }
-
-    return -SE_ERR_SCRIPT_NOT_RUNNING;
-}
-/**
  * @brief 解析js错误变量并打印错误原因
  */
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
-    printf("[%s] Error: ", tag);
+    printf("[ERROR][%s]", tag);
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_char_t str_buf_p[256];
 
@@ -352,149 +342,6 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     return SE_OK;
 }
 
-script_engine_result_t script_engine_clean_up(void)
-{
-    jerry_cleanup();
-    script_state = SCRIPT_STATE_STOPPED;
-}
-
-script_engine_result_t script_engine_init(void)
-{
-    if (!script_engine_initialized)
-    {
-        if (!jerry_feature_enabled(JERRY_FEATURE_VM_EXEC_STOP))
-        {
-            EOS_LOG_E("JerryScript feature JERRY_FEATURE_VM_EXEC_STOP is not enabled\n");
-            return -SE_ERR_JERRY_INIT_FAIL;
-        }
-
-        if (!jerry_feature_enabled(JERRY_FEATURE_REALM))
-        {
-            EOS_LOG_E("JerryScript feature JERRY_FEATURE_REALM is not enabled\n");
-            return -SE_ERR_JERRY_INIT_FAIL;
-        }
-
-        // 检查 LVGL 是否已初始化
-        if (!lv_is_initialized())
-        {
-            EOS_LOG_E("LVGL not initialized, please initialize it first.\n");
-            return -SE_ERR_NOT_INITIALIZED;
-        }
-
-        // 初始化 JerryScript VM
-        jerry_init(SCRIPT_INIT_FLAGS);
-
-        script_engine_eos_obj = jerry_object();
-
-        // 注册函数
-        script_engine_register_natives();
-
-        // 初始化 LVGL 绑定
-        lv_binding_init();
-
-        // 初始化图标
-        eos_icon_register();
-
-        script_engine_initialized = true;
-        EOS_LOG_I("Script engine init successful");
-        _check_mem();
-        return SE_OK;
-    }
-    else
-    {
-        EOS_LOG_E("Script engine already initialized.");
-        return SE_ERR_ALREADY_INITIALIZED;
-    }
-}
-
-script_engine_result_t script_engine_run(script_pkg_t *script_package)
-{
-    if (script_package == NULL || script_package->script_str == NULL)
-    {
-        return -SE_ERR_NULL_PACKAGE;
-    }
-
-    if (!script_engine_initialized)
-    {
-        EOS_LOG_E("Script engine not initialized!");
-        return -SE_ERR_NOT_INITIALIZED;
-    }
-
-    if (script_state == SCRIPT_STATE_RUNNING || script_state == SCRIPT_STATE_SUSPEND)
-    {
-        return -SE_ERR_ALREADY_RUNNING;
-    }
-
-    script_state = SCRIPT_STATE_RUNNING;
-    current_script_pkg = script_package;
-    atomic_store(&should_terminate, false);
-    is_terminated_by_req = false;
-
-    jerry_value_t new_realm = jerry_realm();
-    old_realm = jerry_set_realm(new_realm);
-
-    jerry_value_t key = jerry_string_sz(SCRIPT_EOS_OBJ_KEY);
-    jerry_value_free(jerry_object_set(new_realm, key, script_engine_eos_obj));
-    jerry_value_free(key);
-
-    // 初始化停止回调
-    jerry_halt_handler(16, _vm_exec_stop_callback, NULL);
-    jerry_log_set_level(JERRY_LOG_LEVEL_DEBUG);
-
-    // 设置全局 script_info 变量
-    jerry_value_t global = jerry_current_realm();
-    jerry_value_t script_info = _script_engine_create_info(script_package);
-
-    key = jerry_string_sz("script_info");
-    jerry_value_free(jerry_object_set(global, key, script_info));
-
-    jerry_value_free(key);
-    jerry_value_free(script_info);
-    jerry_value_free(global);
-
-    // 执行主 JS 脚本
-    jerry_value_t parsed_code = jerry_parse(
-        (const jerry_char_t *)script_package->script_str,
-        strlen(script_package->script_str),
-        JERRY_PARSE_NO_OPTS);
-    // 清理脚本字符串
-    eos_free_large((void *)script_package->script_str);
-    script_package->script_str = NULL;
-    if (!jerry_value_is_exception(parsed_code))
-    {
-        EOS_LOG_I("JerryScript run.");
-        jerry_value_t result = jerry_run(parsed_code);
-        // 检查是否执行成功
-        if (jerry_value_is_exception(result) && !is_terminated_by_req)
-        {
-            // 执行出错
-            _script_engine_exception_handler("Script Runtime", result);
-            jerry_value_free(parsed_code);
-            jerry_value_free(result);
-            _engine_cleanup();
-            script_state = SCRIPT_STATE_STOPPED;
-            return -SE_ERR_JERRY_EXCEPTION;
-        }
-        else
-        {
-            // 执行成功
-            jerry_value_free(parsed_code);
-            jerry_value_free(result);
-            script_state = SCRIPT_STATE_SUSPEND;
-            return SE_OK;
-        }
-    }
-    else
-    {
-        // 代码解析出错
-        _script_engine_exception_handler("Script Parse", parsed_code);
-        jerry_value_free(parsed_code);
-        _engine_cleanup();
-        script_state = SCRIPT_STATE_STOPPED;
-        return -SE_ERR_INVALID_JS;
-    }
-}
-
 void script_engine_register_functions(const script_engine_func_entry_t *entry, const size_t funcs_count)
 {
     for (size_t i = 0; i < funcs_count; ++i)
@@ -505,4 +352,320 @@ void script_engine_register_functions(const script_engine_func_entry_t *entry, c
         jerry_value_free(name);
         jerry_value_free(fn);
     }
+}
+
+/**
+ * @brief VM 终止运行回调
+ */
+static jerry_value_t _vm_exec_stop_callback(void *user_p)
+{
+    (void)user_p;
+
+    if (engine_ctx.state == SCRIPT_STATE_STOPPING)
+    {
+        EOS_LOG_D("Script execution stopped by request");
+        return jerry_string_sz("Script terminated by request");
+    }
+
+    // 非请求停止的情况，可能是错误
+    if (engine_ctx.state == SCRIPT_STATE_RUNNING)
+    {
+        EOS_LOG_W("Script stopped unexpectedly");
+        _change_state(SCRIPT_STATE_ERROR);
+    }
+
+    return jerry_undefined();
+}
+
+script_state_t script_engine_get_state(void)
+{
+    return engine_ctx.state;
+}
+
+char *script_engine_get_current_script_id(void)
+{
+    return engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+}
+
+char *script_engine_get_current_script_name(void)
+{
+    return engine_ctx.current_script ? engine_ctx.current_script->name : NULL;
+}
+
+script_pkg_type_t script_engine_get_current_script_type(void)
+{
+    return engine_ctx.current_script ? engine_ctx.current_script->type : SCRIPT_TYPE_UNKNOWN;
+}
+
+/**
+ * @brief 清理引擎资源
+ */
+static void _engine_cleanup(void)
+{
+    if (jerry_value_is_object(engine_ctx.old_realm))
+    {
+        jerry_value_free(jerry_set_realm(engine_ctx.old_realm));
+        engine_ctx.old_realm = jerry_undefined();
+    }
+
+    jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
+}
+
+/**
+ * @brief 停止并清理脚本
+ */
+static script_engine_result_t _script_engine_stop_and_cleanup(void)
+{
+    // 清理导航（如果是应用类型）
+    if (engine_ctx.current_script &&
+        engine_ctx.current_script->type == SCRIPT_TYPE_APPLICATION)
+    {
+        eos_result_t ret = eos_nav_clean_up();
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_E("Navigation clean up failed!");
+            _change_state(SCRIPT_STATE_ERROR);
+            return SE_FAILED;
+        }
+    }
+
+    // 清理资源
+    _engine_cleanup();
+
+    // 释放脚本包
+    if (engine_ctx.current_script)
+    {
+        eos_pkg_free(engine_ctx.current_script);
+        engine_ctx.current_script = NULL;
+    }
+
+    _change_state(SCRIPT_STATE_STOPPED);
+    _check_mem();
+    EOS_LOG_I("Script terminated successfully");
+
+    return SE_OK;
+}
+
+script_engine_result_t script_engine_request_stop(void)
+{
+    switch (engine_ctx.state)
+    {
+    case SCRIPT_STATE_RUNNING:
+        // 请求停止，等待状态转换
+        _change_state(SCRIPT_STATE_STOPPING);
+
+        // 等待脚本停止
+        for (int timeout = 0; timeout < 100; timeout++)
+        {
+            if (engine_ctx.state != SCRIPT_STATE_STOPPING)
+            {
+                break;
+            }
+            eos_delay(10);
+        }
+
+        // 如果还在STOPPING状态，强制清理
+        if (engine_ctx.state == SCRIPT_STATE_STOPPING)
+        {
+            EOS_LOG_W("Force stopping script due to timeout");
+            return _script_engine_stop_and_cleanup();
+        }
+
+        // 正常停止流程
+        if (engine_ctx.state == SCRIPT_STATE_STOPPED)
+        {
+            return SE_OK;
+        }
+        break;
+
+    case SCRIPT_STATE_SUSPEND:
+        EOS_LOG_D("Stopping from SUSPEND state");
+        return _script_engine_stop_and_cleanup();
+
+    case SCRIPT_STATE_ERROR:
+        EOS_LOG_D("Cleaning up from ERROR state");
+        return _script_engine_stop_and_cleanup();
+
+    default:
+        EOS_LOG_W("Cannot stop from current state: %d", engine_ctx.state);
+        return -SE_ERR_INVALID_STATE;
+    }
+
+    return SE_OK;
+}
+
+script_engine_result_t script_engine_init(void)
+{
+    if (engine_ctx.initialized)
+    {
+        EOS_LOG_E("Script engine already initialized");
+        return SE_ERR_ALREADY_INITIALIZED;
+    }
+
+    if (!jerry_feature_enabled(JERRY_FEATURE_VM_EXEC_STOP) ||
+        !jerry_feature_enabled(JERRY_FEATURE_REALM))
+    {
+        EOS_LOG_E("Required JerryScript features not enabled");
+        return -SE_ERR_JERRY_INIT_FAIL;
+    }
+
+    if (!lv_is_initialized())
+    {
+        EOS_LOG_E("LVGL not initialized");
+        return -SE_ERR_NOT_INITIALIZED;
+    }
+
+    // 初始化 JerryScript VM
+    jerry_init(SCRIPT_INIT_FLAGS);
+
+    // 创建EOS对象
+    script_engine_eos_obj = jerry_object();
+
+    // 注册函数和初始化
+    script_engine_register_natives();
+    lv_binding_init();
+    eos_icon_register();
+
+    engine_ctx.initialized = true;
+    EOS_LOG_I("Script engine initialized successfully");
+    _check_mem();
+
+    return SE_OK;
+}
+
+script_engine_result_t script_engine_run(script_pkg_t *script_package)
+{
+    if (!script_package || !script_package->script_str)
+    {
+        return -SE_ERR_NULL_PACKAGE;
+    }
+
+    if (!engine_ctx.initialized)
+    {
+        EOS_LOG_E("Script engine not initialized");
+        return -SE_ERR_NOT_INITIALIZED;
+    }
+
+    // 检查当前状态是否允许运行新脚本
+    if (engine_ctx.state != SCRIPT_STATE_STOPPED &&
+        engine_ctx.state != SCRIPT_STATE_ERROR)
+    {
+        EOS_LOG_E("Cannot run script in current state: %d", engine_ctx.state);
+        return -SE_ERR_INVALID_STATE;
+    }
+
+    // 设置当前脚本
+    engine_ctx.current_script = script_package;
+    _change_state(SCRIPT_STATE_RUNNING);
+
+    // 创建新realm
+    jerry_value_t new_realm = jerry_realm();
+    engine_ctx.old_realm = jerry_set_realm(new_realm);
+
+    // 设置EOS对象
+    jerry_value_t key = jerry_string_sz(SCRIPT_EOS_OBJ_KEY);
+    jerry_value_free(jerry_object_set(new_realm, key, script_engine_eos_obj));
+    jerry_value_free(key);
+
+    // 设置停止回调和日志
+    jerry_halt_handler(16, _vm_exec_stop_callback, NULL);
+    jerry_log_set_level(JERRY_LOG_LEVEL_DEBUG);
+
+    // 设置全局script_info变量
+    jerry_value_t global = jerry_current_realm();
+    jerry_value_t script_info = _script_engine_create_info(script_package);
+    key = jerry_string_sz("script_info");
+    jerry_value_free(jerry_object_set(global, key, script_info));
+    jerry_value_free(key);
+    jerry_value_free(script_info);
+    jerry_value_free(global);
+
+    // 执行脚本
+    jerry_value_t parsed_code = jerry_parse(
+        (const jerry_char_t *)script_package->script_str,
+        strlen(script_package->script_str),
+        JERRY_PARSE_NO_OPTS);
+
+    // 清理脚本字符串
+    eos_free_large((void *)script_package->script_str);
+    script_package->script_str = NULL;
+
+    script_engine_result_t result = SE_OK;
+
+    if (!jerry_value_is_exception(parsed_code))
+    {
+        EOS_LOG_I("Executing script");
+        jerry_value_t run_result = jerry_run(parsed_code);
+
+        if (jerry_value_is_exception(run_result))
+        {
+            if (engine_ctx.state == SCRIPT_STATE_STOPPING)
+            {
+                // 请求停止导致的异常，正常处理
+                EOS_LOG_D("Script stopped by request");
+                result = SE_OK;
+            }
+            else
+            {
+                // 执行出错
+                _script_engine_exception_handler("Script Runtime", run_result);
+                _change_state(SCRIPT_STATE_ERROR);
+                result = -SE_ERR_JERRY_EXCEPTION;
+            }
+        }
+        else
+        {
+            // 执行成功
+            if (engine_ctx.state == SCRIPT_STATE_RUNNING)
+            {
+                _change_state(SCRIPT_STATE_SUSPEND);
+            }
+            result = SE_OK;
+        }
+
+        jerry_value_free(run_result);
+    }
+    else
+    {
+        // 解析出错
+        _script_engine_exception_handler("Script Parse", parsed_code);
+        _change_state(SCRIPT_STATE_ERROR);
+        result = -SE_ERR_INVALID_JS;
+    }
+
+    jerry_value_free(parsed_code);
+
+    // 如果执行出错，清理资源
+    if (result != SE_OK && engine_ctx.state == SCRIPT_STATE_ERROR)
+    {
+        _engine_cleanup();
+        if (engine_ctx.current_script)
+        {
+            eos_pkg_free(engine_ctx.current_script);
+            engine_ctx.current_script = NULL;
+        }
+        _change_state(SCRIPT_STATE_STOPPED);
+    }
+
+    return result;
+}
+
+script_engine_result_t script_engine_clean_up(void)
+{
+    if (engine_ctx.state != SCRIPT_STATE_STOPPED)
+    {
+        script_engine_request_stop();
+    }
+
+    if (jerry_value_is_object(script_engine_eos_obj))
+    {
+        jerry_value_free(script_engine_eos_obj);
+        script_engine_eos_obj = jerry_undefined();
+    }
+
+    jerry_cleanup();
+    engine_ctx.initialized = false;
+    _change_state(SCRIPT_STATE_STOPPED);
+
+    return SE_OK;
 }

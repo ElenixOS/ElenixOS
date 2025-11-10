@@ -61,7 +61,7 @@
 #include "elena_os_sensor.h"
 #include "elena_os_async.h"
 /* Macros and Definitions -------------------------------------*/
-#define EOS_TEST_ENABLE 1
+#define EOS_TEST_ENABLE 0
 
 /* Variables --------------------------------------------------*/
 lv_group_t *encoder_group;

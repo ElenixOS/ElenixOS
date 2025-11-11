@@ -168,7 +168,7 @@ eos_result_t eos_nav_clean_up(void)
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
     }
-    eos_scene_exit_nav();
+    eos_scene_back();
     EOS_LOG_D("Nav stack completely cleared.");
     return EOS_OK;
 }
@@ -207,7 +207,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     eos_nav.initialized = true;
 
     lv_obj_add_style(home_screen, eos_theme_get_screen_style(), 0);
-    eos_scene_entry_nav();
+    eos_scene_switch(EOS_SCENE_NAVIGATION);
 
     EOS_LOG_D("Launcher screen = %p", eos_nav.launcher_screen);
     EOS_LOG_D("Home screen = %p", home_screen);

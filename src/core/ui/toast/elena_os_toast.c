@@ -97,6 +97,10 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     lv_txt_get_size(&size, message, lv_obj_get_style_text_font(label, 0), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     lv_coord_t text_width = LV_MIN(size.x, _LABEL_MAX_WIDTH);
 
+    lv_obj_add_flag(icon, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_add_flag(mask, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_add_flag(label, LV_OBJ_FLAG_EVENT_BUBBLE);
+
     lv_obj_set_width(label, text_width);
     lv_label_set_text(label, message);
 

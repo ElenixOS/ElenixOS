@@ -31,6 +31,7 @@
 #include "elena_os_slide_widget.h"
 #include "elena_os_font.h"
 #include "elena_os_sensor.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
@@ -329,17 +330,17 @@ static void _test_image()
 
 static void _test_app_list()
 {
-    eos_app_list_create();
+    eos_scene_switch(EOS_SCENE_APP_LIST);
 }
 
 static void _test_watchface_list()
 {
-    eos_watchface_list_create();
+    eos_scene_switch(EOS_SCENE_WATCHFACE_LIST);
 }
 
 static void _toast_clicked_cb(lv_event_t *e)
 {
-    eos_app_list_create();
+    eos_scene_switch(EOS_SCENE_APP_LIST);
 }
 
 static void _test_toast()

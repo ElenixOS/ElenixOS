@@ -27,6 +27,8 @@ extern "C" {
 #define EOS_COMPILE_MODE DEBUG
 #endif
 
+#define EOS_SYSTEM_MODE TEST_MODE
+
 /************************** 传感器配置 **************************/
 
 #define EOS_SENSOR_CFG_INST_MAX     1                   /**< 传感器实例最大值，同一类型的传感器允许存在的最大值，一般设置为`1`即可 */

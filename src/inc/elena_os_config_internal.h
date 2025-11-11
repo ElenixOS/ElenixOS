@@ -21,6 +21,9 @@ extern "C" {
 #define DEBUG               0
 #define RELEASE             1
 
+#define NORMAL_MODE         0
+#define TEST_MODE           1
+
 #define EOS_FONT_C_SCALE    0
 #define EOS_FONT_C_MULTI    1
 #define EOS_FONT_TTF        2

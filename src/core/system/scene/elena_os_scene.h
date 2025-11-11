@@ -24,6 +24,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include "elena_os_config.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -34,6 +35,9 @@ extern "C" {
 typedef enum
 {
     EOS_SCENE_UNKNOWN = 0,
+#if EOS_SYSTEM_MODE == TEST_MODE
+    EOS_SCENE_TEST,
+#endif /* EOS_SYSTEM_MODE */
     EOS_SCENE_WATCHFACE,
     EOS_SCENE_APP_LIST,
     EOS_SCENE_WATCHFACE_LIST,
@@ -66,17 +70,18 @@ void eos_scene_init(
     eos_scene_entry_t watchface_list_entry);
 /**
  * @brief 按照内部设定好的顺序自动切换场景
- * @note 导航栈进入和退出时需要特殊函数管理
  */
-void eos_scene_change(void);
+void eos_scene_auto_switch(void);
 /**
- * @brief 进入导航栈时调用此函数
+ * @brief 切入指定场景
+ * @param type 场景类型
  */
-void eos_scene_entry_nav(void);
+void eos_scene_switch(eos_scene_type_t type);
 /**
- * @brief 导航栈退出时调用此函数
+ * @brief 返回上一级场景
+ * @note 只能返回一级
  */
-void eos_scene_exit_nav(void);
+void eos_scene_back(void);
 #ifdef __cplusplus
 }
 #endif

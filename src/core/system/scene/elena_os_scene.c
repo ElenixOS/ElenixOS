@@ -14,12 +14,19 @@
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
 #include "elena_os_config.h"
+#if EOS_SYSTEM_MODE == TEST_MODE
+#include "elena_os_test.h"
+#endif /* EOS_SYSTEM_MODE */
 
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 
 /************************** 场景列表 **************************/
+#if EOS_SYSTEM_MODE == TEST_MODE
+static eos_scene_t test_scene = {
+    .type = EOS_SCENE_TEST};
+#endif /* EOS_SYSTEM_MODE */
 static eos_scene_t watchface_scene = {
     .type = EOS_SCENE_WATCHFACE};
 
@@ -68,25 +75,48 @@ static void _set_current_scene(eos_scene_t *scene)
 #endif /* EOS_COMPILE_MODE */
 }
 
-void eos_scene_entry_nav(void)
+void eos_scene_back(void)
 {
     EOS_CHECK_PTR_RETURN(current_scene);
-    // 避免导航栈死锁
-    if (current_scene->type == EOS_SCENE_NAVIGATION)
+    if (current_scene == last_scene)
         return;
-    // 进入导航栈后，保存上个场景
-    last_scene = current_scene;
-    _set_current_scene(&nav_scene);
-}
-
-void eos_scene_exit_nav(void)
-{
-    EOS_CHECK_PTR_RETURN(current_scene);
     // 返回上一个场景
     _set_current_scene(last_scene);
 }
 
-void eos_scene_change(void)
+void eos_scene_switch(eos_scene_type_t type)
+{
+    if (current_scene->type == type)
+        return;
+    last_scene = current_scene;
+    switch (type)
+    {
+    case EOS_SCENE_WATCHFACE:
+        _set_current_scene(&watchface_scene);
+        break;
+    case EOS_SCENE_APP_LIST:
+        _set_current_scene(&app_list_scene);
+        break;
+    case EOS_SCENE_WATCHFACE_LIST:
+        _set_current_scene(&watchface_list_scene);
+        break;
+#if EOS_SYSTEM_MODE == TEST_MODE
+    case EOS_SCENE_TEST:
+        _set_current_scene(&test_scene);
+        break;
+#endif /* EOS_SYSTEM_MODE */
+    case EOS_SCENE_NAVIGATION:
+        _set_current_scene(&nav_scene);
+        return;
+    case EOS_SCENE_UNKNOWN:
+    default:
+        EOS_LOG_E("Unknown scene");
+        return;
+    }
+    current_scene->entry();
+}
+
+void eos_scene_auto_switch(void)
 {
     EOS_CHECK_PTR_RETURN(current_scene);
     if (current_scene->exit)
@@ -105,6 +135,11 @@ void eos_scene_change(void)
         // 如果当前在表盘列表页面，切换场景会进入表盘
         _set_current_scene(&watchface_scene);
         break;
+#if EOS_SYSTEM_MODE == TEST_MODE
+    case EOS_SCENE_TEST:
+        _set_current_scene(&watchface_scene);
+        break;
+#endif /* EOS_SYSTEM_MODE */
     case EOS_SCENE_NAVIGATION:
         // 如果当前在导航页面，切换场景会返回上级页面
         _set_current_scene(&nav_scene);
@@ -128,6 +163,12 @@ void eos_scene_init(
     watchface_scene.exit = watchface_exit;
     app_list_scene.entry = app_list_entry;
     watchface_list_scene.entry = watchface_list_entry;
+#if EOS_SYSTEM_MODE == TEST_MODE
+    test_scene.entry = eos_test_start;
+    _set_current_scene(&test_scene);
+#else
     _set_current_scene(&watchface_scene);
+#endif /* EOS_SYSTEM_MODE */
+
     current_scene->entry();
 }

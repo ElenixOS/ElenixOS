@@ -62,7 +62,6 @@
 #include "elena_os_async.h"
 #include "elena_os_scene.h"
 /* Macros and Definitions -------------------------------------*/
-#define EOS_TEST_ENABLE 0
 
 /* Variables --------------------------------------------------*/
 lv_group_t *encoder_group;
@@ -89,7 +88,7 @@ static void _side_btn_async_cb(void *user_data)
     switch (state)
     {
     case EOS_SIDE_BTN_CLICKED:
-        eos_scene_change();
+        eos_scene_auto_switch();
     default:
         break;
     }
@@ -144,11 +143,7 @@ eos_result_t eos_run(void)
     eos_battery_service_start();
 
     /************************** 系统启动 **************************/
-#if EOS_TEST_ENABLE
-    eos_test_start();
-#else
     eos_scene_init(eos_watchface_create, eos_watchface_delete, eos_app_list_create, eos_watchface_list_create);
-#endif
     // 开始绘制
     while (1)
     {

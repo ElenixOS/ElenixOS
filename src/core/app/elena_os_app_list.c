@@ -27,6 +27,7 @@
 #include "script_engine_core.h"
 #include "elena_os_settings.h"
 #include "elena_os_flash_light.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -53,7 +54,6 @@ const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
 
 
 /* Function Implementations -----------------------------------*/
-void eos_app_list_create(void);
 static void _app_list_icon_clicked_cb(lv_event_t *e);
 static void _app_list_settings_cb(lv_event_t *e);
 static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
@@ -230,7 +230,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     if (ret != SE_OK)
     {
         eos_nav_clean_up();
-        eos_app_list_create();
+        eos_scene_switch(EOS_SCENE_APP_LIST);
         EOS_LOG_E("Script encounter a fatal error");
         // TODO: 错误处理
         // lv_obj_t *mbox = lv_msgbox_create(NULL);

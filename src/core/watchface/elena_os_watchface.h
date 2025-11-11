@@ -5,15 +5,15 @@
  * @date 2025-08-22
  * @details
  * 系统初始化时需要调用`eos_watchface_init()`加载系统中的表盘数据，以便获取表盘列表。
- * 
+ *
  * 系统启动后需要调用`eos_watchface_create()`加载表盘。
  * 当位于其他页面时，如果想返回表盘页面，
  * 尽量使用`eos_watchface_create_async()`异步加载表盘。
- * 
+ *
  * 当表盘页面初次加载时自动生成 Screen。
  * 当再次调用`eos_watchface_create()`就会删除已有的 Screen，
  * 创建新的 Screen，并在这个 Screen 上加载表盘。
- * 
+ *
  * @note
  * 可以通过
  * ```c
@@ -61,8 +61,8 @@ const char* eos_watchface_list_get_id(size_t index);
 /**
  * @brief 判断指定 id 字符串的代码是否存在于表盘列表中
  * @param watchface_id id 字符串
- * @return true 
- * @return false 
+ * @return true
+ * @return false
  */
 bool eos_watchface_list_contains(const char* watchface_id);
 /**
@@ -81,10 +81,6 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id);
  * @brief 创建表盘页面
  */
 void eos_watchface_create(void);
-/**
- * @brief 异步创建表盘页面
- */
-void eos_watchface_create_async(void);
 /**
  * @brief 初始化表盘系统
  * @return eos_result_t 初始化结果

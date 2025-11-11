@@ -27,6 +27,7 @@
 #include "elena_os_anim.h"
 #include "script_engine_core.h"
 #include "elena_os_sys.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -48,7 +49,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
     eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, watchface_id);
-    eos_watchface_create(); // 回到表盘页面
+    eos_scene_switch(EOS_SCENE_WATCHFACE);
 }
 
 void eos_watchface_list_create(void)

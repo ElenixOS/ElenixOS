@@ -1,0 +1,133 @@
+/**
+ * @file elena_os_scene.c
+ * @brief 场景系统
+ * @author Sab1e
+ * @date 2025-11-11
+ */
+
+#include "elena_os_scene.h"
+
+/* Includes ---------------------------------------------------*/
+#include <stdio.h>
+#include <stdlib.h>
+#define EOS_LOG_TAG "Scene"
+#include "elena_os_log.h"
+#include "elena_os_nav.h"
+#include "elena_os_config.h"
+
+/* Macros and Definitions -------------------------------------*/
+
+/* Variables --------------------------------------------------*/
+
+/************************** 场景列表 **************************/
+static eos_scene_t watchface_scene = {
+    .type = EOS_SCENE_WATCHFACE};
+
+static eos_scene_t app_list_scene = {
+    .type = EOS_SCENE_APP_LIST};
+
+static eos_scene_t watchface_list_scene = {
+    .type = EOS_SCENE_WATCHFACE_LIST};
+
+static eos_scene_t nav_scene = {
+    .type = EOS_SCENE_NAVIGATION};
+/************************** 局部变量 **************************/
+static eos_scene_t *current_scene = NULL;
+static eos_scene_t *last_scene = NULL;
+
+/* Function Implementations -----------------------------------*/
+
+#if EOS_COMPILE_MODE == DEUBG
+const char *eos_scene_type_t_to_string(eos_scene_type_t v)
+{
+    switch (v)
+    {
+    case EOS_SCENE_UNKNOWN:
+        return "EOS_SCENE_UNKNOWN";
+    case EOS_SCENE_WATCHFACE:
+        return "EOS_SCENE_WATCHFACE";
+    case EOS_SCENE_APP_LIST:
+        return "EOS_SCENE_APP_LIST";
+    case EOS_SCENE_WATCHFACE_LIST:
+        return "EOS_SCENE_WATCHFACE_LIST";
+    case EOS_SCENE_NAVIGATION:
+        return "EOS_SCENE_NAVIGATION";
+    default:
+        return "UNKNOWN";
+    }
+}
+#endif /* EOS_COMPILE_MODE */
+
+static void _set_current_scene(eos_scene_t *scene)
+{
+    current_scene = scene;
+#if EOS_COMPILE_MODE == DEUBG
+    EOS_LOG_I("Current scene: %s", eos_scene_type_t_to_string(current_scene->type));
+#else
+    EOS_LOG_I("Current scene: eos_scene_type_t[%d]", current_scene->type);
+#endif /* EOS_COMPILE_MODE */
+}
+
+void eos_scene_entry_nav(void)
+{
+    EOS_CHECK_PTR_RETURN(current_scene);
+    // 避免导航栈死锁
+    if (current_scene->type == EOS_SCENE_NAVIGATION)
+        return;
+    // 进入导航栈后，保存上个场景
+    last_scene = current_scene;
+    _set_current_scene(&nav_scene);
+}
+
+void eos_scene_exit_nav(void)
+{
+    EOS_CHECK_PTR_RETURN(current_scene);
+    // 返回上一个场景
+    _set_current_scene(last_scene);
+}
+
+void eos_scene_change(void)
+{
+    EOS_CHECK_PTR_RETURN(current_scene);
+    if (current_scene->exit)
+        current_scene->exit();
+    switch (current_scene->type)
+    {
+    case EOS_SCENE_WATCHFACE:
+        // 如果当前在表盘页面，切换场景会进入应用列表
+        _set_current_scene(&app_list_scene);
+        break;
+    case EOS_SCENE_APP_LIST:
+        // 如果当前在应用列表页面，切换场景会进入表盘
+        _set_current_scene(&watchface_scene);
+        break;
+    case EOS_SCENE_WATCHFACE_LIST:
+        // 如果当前在表盘列表页面，切换场景会进入表盘
+        _set_current_scene(&watchface_scene);
+        break;
+    case EOS_SCENE_NAVIGATION:
+        // 如果当前在导航页面，切换场景会返回上级页面
+        _set_current_scene(&nav_scene);
+        eos_nav_back_clean();
+        return;
+    case EOS_SCENE_UNKNOWN:
+    default:
+        EOS_LOG_E("Unknown scene");
+        return;
+    }
+    current_scene->entry();
+}
+
+void eos_scene_init(
+    eos_scene_entry_t watchface_entry,
+    eos_scene_exit_t watchface_exit,
+    eos_scene_entry_t app_list_entry,
+    eos_scene_entry_t watchface_list_entry)
+{
+    watchface_scene.entry = watchface_entry;
+    watchface_scene.exit = watchface_exit;
+    app_list_scene.entry = app_list_entry;
+    watchface_list_scene.entry = watchface_list_entry;
+    _set_current_scene(&watchface_scene);
+    current_scene->entry();
+}

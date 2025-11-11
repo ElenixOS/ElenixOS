@@ -416,19 +416,6 @@ static void _engine_cleanup(void)
  */
 static script_engine_result_t _script_engine_stop_and_cleanup(void)
 {
-    // 清理导航（如果是应用类型）
-    if (engine_ctx.current_script &&
-        engine_ctx.current_script->type == SCRIPT_TYPE_APPLICATION)
-    {
-        eos_result_t ret = eos_nav_clean_up();
-        if (ret != EOS_OK)
-        {
-            EOS_LOG_E("Navigation clean up failed!");
-            _change_state(SCRIPT_STATE_ERROR);
-            return SE_FAILED;
-        }
-    }
-
     // 清理资源
     _engine_cleanup();
 
@@ -448,6 +435,7 @@ static script_engine_result_t _script_engine_stop_and_cleanup(void)
 
 script_engine_result_t script_engine_request_stop(void)
 {
+    EOS_LOG_I("Request stop script");
     switch (engine_ctx.state)
     {
     case SCRIPT_STATE_RUNNING:

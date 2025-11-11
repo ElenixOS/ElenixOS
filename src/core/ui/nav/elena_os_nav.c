@@ -17,6 +17,7 @@
 #include "elena_os_app_list.h"
 #include "elena_os_watchface.h"
 #include "elena_os_port.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define NAV_STACK_SIZE 32
@@ -167,7 +168,7 @@ eos_result_t eos_nav_clean_up(void)
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
     }
-
+    eos_scene_exit_nav();
     EOS_LOG_D("Nav stack completely cleared.");
     return EOS_OK;
 }
@@ -206,6 +207,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     eos_nav.initialized = true;
 
     lv_obj_add_style(home_screen, eos_theme_get_screen_style(), 0);
+    eos_scene_entry_nav();
 
     EOS_LOG_D("Launcher screen = %p", eos_nav.launcher_screen);
     EOS_LOG_D("Home screen = %p", home_screen);
@@ -297,17 +299,14 @@ eos_result_t eos_nav_back_clean(void)
         _eos_nav_sem_give(); // 先释放信号量，因为eos_nav_clean_up内部会获取
 
         // 停止脚本引擎
-        if (((script_engine_get_state() == SCRIPT_STATE_RUNNING ||
-              script_engine_get_state() == SCRIPT_STATE_SUSPEND) &&
-             lv_screen_active() == eos_watchface_get_screen()) ||
-            script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
+        if (script_engine_get_state() == SCRIPT_STATE_RUNNING ||
+            script_engine_get_state() == SCRIPT_STATE_SUSPEND)
         {
-            script_engine_request_stop(); // 内部会自动调用栈清理函数
+            script_engine_request_stop();
         }
-        else
-        {
-            eos_nav_clean_up();
-        }
+
+        eos_nav_clean_up();
+
         EOS_LOG_D("Nav Exit");
         EOS_MEM("Mem check: eos_nav_back_clean");
         return EOS_OK;

@@ -22,6 +22,7 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* 配置开始 ----------------------------------------------------*/
+
 #ifndef EOS_COMPILE_MODE
 #define EOS_COMPILE_MODE DEBUG
 #endif

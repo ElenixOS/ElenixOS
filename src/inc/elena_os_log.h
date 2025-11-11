@@ -15,11 +15,11 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include "lvgl.h"
+#include "elena_os_config.h"
 #if defined(EOS_USE_MSH)
 #include "msh.h"
 #endif
-#include "lvgl.h"
-#include "elena_os_config.h"
 #include "elena_os_port.h"
 /* Public macros ----------------------------------------------*/
 

@@ -60,6 +60,7 @@
 #include "elena_os_log.h"
 #include "elena_os_sensor.h"
 #include "elena_os_async.h"
+#include "elena_os_scene.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_TEST_ENABLE 0
 
@@ -84,40 +85,19 @@ static lv_indev_t *_get_key_indev()
 
 static void _side_btn_async_cb(void *user_data)
 {
-    eos_side_btn_state_t *state = (eos_side_btn_state_t *)user_data;
-    EOS_CHECK_PTR_RETURN(state);
-    switch (*state)
+    eos_side_btn_state_t state = (eos_side_btn_state_t)(intptr_t)user_data;
+    switch (state)
     {
     case EOS_SIDE_BTN_CLICKED:
-        lv_obj_t *scr = lv_screen_active();
-        if (scr == eos_watchface_get_screen())
-        {
-            EOS_LOG_D("Current screen: watchface");
-            eos_watchface_delete();
-            eos_app_list_create();
-        }
-        else if (scr == eos_app_list_get_screen())
-        {
-            EOS_LOG_D("Current screen: app_list");
-            eos_watchface_create();
-        }
-        else
-        {
-            EOS_LOG_D("Side button: Nav Back");
-            eos_nav_back_clean();
-        }
+        eos_scene_change();
     default:
         break;
     }
-    eos_free(state);
 }
 
 void eos_side_btn_handler(eos_side_btn_state_t state)
 {
-    eos_side_btn_state_t *side_btn_state = eos_malloc(sizeof(eos_side_btn_state_t));
-    EOS_CHECK_PTR_RETURN(side_btn_state);
-    *side_btn_state = state;
-    eos_async_call(_side_btn_async_cb, (void *)side_btn_state);
+    eos_async_call(_side_btn_async_cb, (void *)(intptr_t)state);
 }
 
 eos_result_t eos_run(void)
@@ -167,7 +147,7 @@ eos_result_t eos_run(void)
 #if EOS_TEST_ENABLE
     eos_test_start();
 #else
-    eos_watchface_create(); // 加载表盘
+    eos_scene_init(eos_watchface_create, eos_watchface_delete, eos_app_list_create, eos_watchface_list_create);
 #endif
     // 开始绘制
     while (1)

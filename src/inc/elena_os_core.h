@@ -56,16 +56,16 @@ typedef enum
 } eos_result_t;
 
 /**
- * @brief 侧面按钮按下状态
+ * @brief 按钮按下状态
  */
 typedef enum
 {
-    EOS_SIDE_BTN_CLICKED,
-    EOS_SIDE_BTN_PRESSED,
-    EOS_SIDE_BTN_LONG_PRESSED,
-    EOS_SIDE_BTN_RELEASED,
-    EOS_SIDE_BTN_DOUBLE_CLICKED
-} eos_side_btn_state_t;
+    EOS_BUTTON_STATE_CLICKED,
+    EOS_BUTTON_STATE_PRESSED,
+    EOS_BUTTON_STATE_LONG_PRESSED,
+    EOS_BUTTON_STATE_RELEASED,
+    EOS_BUTTON_STATE_DOUBLE_CLICKED
+} eos_button_state_t;
 
 /**
  * @brief 时间结构体定义
@@ -93,11 +93,6 @@ eos_result_t eos_run(void);
  * @note 只会被显示一次，在系统正式启动完成前会一直显示。
  */
 void eos_logo_play(bool anim);
-/**
- * @brief 设置侧面按钮的状态
- * @param state 状态值
- */
-void eos_side_btn_handler(eos_side_btn_state_t state);
 #ifdef __cplusplus
 }
 #endif

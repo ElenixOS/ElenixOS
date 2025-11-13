@@ -84,22 +84,6 @@ static lv_indev_t *_get_key_indev()
     EOS_LOG_W("Not found input device: key");
 }
 
-static void _side_btn_async_cb(void *user_data)
-{
-    eos_side_btn_state_t state = (eos_side_btn_state_t)(intptr_t)user_data;
-    switch (state)
-    {
-    case EOS_SIDE_BTN_CLICKED:
-        eos_scene_auto_switch();
-    default:
-        break;
-    }
-}
-
-void eos_side_btn_handler(eos_side_btn_state_t state)
-{
-    eos_async_call(_side_btn_async_cb, (void *)(intptr_t)state);
-}
 
 void eos_logo_play(bool anim)
 {

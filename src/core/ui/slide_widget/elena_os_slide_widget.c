@@ -102,9 +102,13 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
 
 /************************** RELEASED **************************/
 
-static void _slide_widget_timer_cb(lv_timer_t *timer)
+static void _slide_widget_anim_completed_cb(lv_anim_t *a)
 {
-    eos_slide_widget_t *sw = lv_timer_get_user_data(timer);
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_anim_get_user_data(a);
+    EOS_CHECK_PTR_RETURN(sw);
+
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, sw);
+
     lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
     if (sw->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
@@ -117,18 +121,6 @@ static void _slide_widget_timer_cb(lv_timer_t *timer)
     sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
 
     eos_anim_blocker_hide();
-}
-
-static void _slide_widget_anim_completed_cb(lv_anim_t *a)
-{
-    eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_anim_get_user_data(a);
-    EOS_CHECK_PTR_RETURN(sw);
-
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, sw);
-
-    // 避免操作过快
-    lv_timer_t *t = lv_timer_create(_slide_widget_timer_cb, 50, sw);
-    lv_timer_set_repeat_count(t, 1); // 只触发一次
 }
 
 static void _moving_set_x(void *var, int32_t value)

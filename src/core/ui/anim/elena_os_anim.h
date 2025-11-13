@@ -191,6 +191,7 @@ void eos_anim_blocker_hide(void);
  * @param opa_start 初始透明度
  * @param opa_end 结束透明度
  * @param duration 持续时间
+ * @param auto_delete 是否自动删除控件
  * @return eos_anim_t* 创建成功则返回动画对象，否则为NULL
  */
 eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
@@ -199,10 +200,6 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
                                  uint32_t duration, bool auto_delete);
 /**
  * @brief 创建并立即播放透明度渐变动画
- * @param tar_obj 目标对象
- * @param opa_start 初始透明度
- * @param opa_end 结束透明度
- * @param duration 持续时间
  */
 void eos_anim_fade_start(lv_obj_t *tar_obj,
                          int32_t opa_start,

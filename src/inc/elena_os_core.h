@@ -88,6 +88,12 @@ typedef struct
  */
 eos_result_t eos_run(void);
 /**
+ * @brief 启动 ElenaOS Logo 页面
+ * @param anim 是否显示 Logo 渐变动画
+ * @note 只会被显示一次，在系统正式启动完成前会一直显示。
+ */
+void eos_logo_play(bool anim);
+/**
  * @brief 设置侧面按钮的状态
  * @param state 状态值
  */

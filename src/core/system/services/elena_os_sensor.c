@@ -55,7 +55,7 @@ void eos_sensor_report(eos_sensor_t *sensor)
 
 eos_sensor_t *eos_sensor_get(eos_sensor_type_t type)
 {
-    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_NUMBER)
+    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
 
     if (_sensor_count[type] == 0)
@@ -66,7 +66,7 @@ eos_sensor_t *eos_sensor_get(eos_sensor_type_t type)
 
 eos_sensor_t *eos_sensor_find(eos_sensor_type_t type, uint8_t index)
 {
-    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_NUMBER)
+    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
 
     if (index >= _sensor_count[type])
@@ -77,7 +77,7 @@ eos_sensor_t *eos_sensor_find(eos_sensor_type_t type, uint8_t index)
 
 eos_sensor_t *eos_sensor_register(eos_sensor_type_t type)
 {
-    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_NUMBER)
+    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
 
     if (_sensor_count[type] >= EOS_SENSOR_CFG_INST_MAX)
@@ -98,7 +98,7 @@ eos_sensor_t *eos_sensor_register(eos_sensor_type_t type)
 
 uint8_t eos_sensor_get_count(eos_sensor_type_t type)
 {
-    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_NUMBER)
+    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return 0;
 
     return _sensor_count[type];

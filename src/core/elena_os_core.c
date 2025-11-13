@@ -61,11 +61,13 @@
 #include "elena_os_sensor.h"
 #include "elena_os_async.h"
 #include "elena_os_scene.h"
+#include "elena_os_anim.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 lv_group_t *encoder_group;
-
+static bool is_logo_played = false;
+static lv_obj_t *logo = NULL;
 /* Function Implementations -----------------------------------*/
 
 static lv_indev_t *_get_key_indev()
@@ -99,8 +101,52 @@ void eos_side_btn_handler(eos_side_btn_state_t state)
     eos_async_call(_side_btn_async_cb, (void *)(intptr_t)state);
 }
 
+void eos_logo_play(bool anim)
+{
+    if (is_logo_played)
+        return;
+
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
+
+    // 创建全屏容器
+    logo = lv_obj_create(lv_screen_active());
+    lv_obj_set_style_bg_color(logo, EOS_COLOR_BLACK, 0);
+    lv_obj_set_size(logo, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_border_width(logo, 0, 0);
+    lv_obj_move_foreground(logo);
+
+    // 创建LOGO图片对象
+    lv_obj_t *logo_img = lv_image_create(logo);
+    eos_img_set_src(logo_img, EOS_IMG_LOGO);
+    lv_obj_center(logo_img);
+
+    if (anim)
+    {
+        const uint16_t duration_ms = 800;
+        const uint8_t timer_handler_delay = 20;
+        eos_anim_fade_start(logo_img, LV_OPA_TRANSP, LV_OPA_COVER, duration_ms, false);
+
+        uint16_t count = 0;
+        while (1)
+        {
+            lv_timer_handler();
+            eos_delay(timer_handler_delay);
+            count += timer_handler_delay;
+            if (count >= duration_ms + 100)
+                break;
+        }
+    }
+    else
+    {
+        lv_timer_handler();
+    }
+
+    is_logo_played = true;
+}
+
 eos_result_t eos_run(void)
 {
+    eos_logo_play(true);
     /************************** 系统组件初始化 **************************/
     eos_async_init();
     script_engine_init();
@@ -137,11 +183,9 @@ eos_result_t eos_run(void)
         }
     }
     eos_app_header_init();
-
-    /************************** 服务启动 **************************/
-
-    eos_battery_service_start();
-
+    eos_services_start();
+    if (logo)
+        lv_obj_delete(logo);
     /************************** 系统启动 **************************/
     eos_scene_init(eos_watchface_create, eos_watchface_delete, eos_app_list_create, eos_watchface_list_create);
     // 开始绘制

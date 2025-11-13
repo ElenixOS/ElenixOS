@@ -17,12 +17,13 @@
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_BLOCKER_VISIBLE 0
 /* Variables --------------------------------------------------*/
-static lv_obj_t *blocker;
+static lv_obj_t *blocker = NULL;
+static bool is_blocker_show = false;
 /* Function Implementations -----------------------------------*/
 
 void eos_anim_blocker_show(void)
 {
-    if (blocker)
+    if (is_blocker_show)
         return;
 
     blocker = lv_obj_create(lv_layer_top());
@@ -33,14 +34,19 @@ void eos_anim_blocker_show(void)
 #endif
     lv_obj_set_size(blocker, LV_PCT(100), LV_PCT(100));
     lv_obj_add_flag(blocker, LV_OBJ_FLAG_CLICKABLE); // 吸收点击
+    is_blocker_show = true;
 }
 
 void eos_anim_blocker_hide(void)
 {
-    if (!blocker)
-        return;
-    lv_obj_delete(blocker);
-    blocker = NULL;
+    if (is_blocker_show)
+    {
+        if (!(blocker && lv_obj_is_valid(blocker) && lv_obj_has_class(blocker, &lv_obj_class)))
+            return;
+        lv_obj_delete(blocker);
+        blocker = NULL;
+        is_blocker_show = false;
+    }
 }
 
 /**

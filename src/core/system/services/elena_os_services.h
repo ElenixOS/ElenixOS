@@ -90,9 +90,9 @@ uint8_t eos_battery_service_get_level(void);
 bool eos_battery_service_get_charging(void);
 
 /**
- * @brief 启动电池检测服务
+ * @brief 启动服务
  */
-void eos_battery_service_start(void);
+void eos_services_start(void);
 #ifdef __cplusplus
 }
 #endif

@@ -9,7 +9,8 @@
 #define ELENA_OS_CONFIG_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Includes ---------------------------------------------------*/
@@ -23,15 +24,34 @@ extern "C" {
 
 /* 配置开始 ----------------------------------------------------*/
 
+/**
+ * 选择编译模式
+ * 可用模式:
+ *  - DEBUG:        调试模式，启用所有初始化检查。
+ *  - RELEASE:      发布模式，关闭所有初始化检查。
+ */
 #ifndef EOS_COMPILE_MODE
 #define EOS_COMPILE_MODE DEBUG
 #endif
 
+/**
+ * 选择系统启动模式
+ * 可用模式:
+ *  - NORMAL_MODE:      正常模式，直接进入表盘
+ *  - TEST_MODE:        测试模式，进入测试页面
+ */
 #define EOS_SYSTEM_MODE TEST_MODE
+
+/************************** 模块 **************************/
+
+/**
+ * 启用虚拟显示器模块
+ */
+#define EOS_USE_VIRTUAL_DISPLAY 1
 
 /************************** 传感器配置 **************************/
 
-#define EOS_SENSOR_CFG_INST_MAX     1                   /**< 传感器实例最大值，同一类型的传感器允许存在的最大值，一般设置为`1`即可 */
+#define EOS_SENSOR_CFG_INST_MAX 1 /**< 传感器实例最大值，同一类型的传感器允许存在的最大值，一般设置为`1`即可 */
 
 /************************** 字体配置 **************************/
 
@@ -53,20 +73,20 @@ extern "C" {
  * - EOS_FONT_SIZE_MEDIUM
  * - EOS_FONT_SIZE_SMALL
  */
-#define EOS_FONT_CFG_LARGE_SIZE     30
-#define EOS_FONT_CFG_MEDIUM_SIZE    EOS_FONT_CFG_LARGE_SIZE - 4
-#define EOS_FONT_CFG_SMALL_SIZE     EOS_FONT_CFG_MEDIUM_SIZE - 4
+#define EOS_FONT_CFG_LARGE_SIZE 30
+#define EOS_FONT_CFG_MEDIUM_SIZE EOS_FONT_CFG_LARGE_SIZE - 4
+#define EOS_FONT_CFG_SMALL_SIZE EOS_FONT_CFG_MEDIUM_SIZE - 4
 
 #if EOS_FONT_TYPE == EOS_FONT_C_SCALE
 
-    #define EOS_FONT_C_NAME             source_han_sans_30  /**< 字体名称 */
-    #define EOS_FONT_C_SIZE             30                  /**< C 字体的大小 */
+#define EOS_FONT_C_NAME source_han_sans_30 /**< 字体名称 */
+#define EOS_FONT_C_SIZE 30                 /**< C 字体的大小 */
 
 #elif EOS_FONT_TYPE == EOS_FONT_C_MULTI
 
-    #define EOS_FONT_LARGE_NAME         source_han_sans_30
-    #define EOS_FONT_MEDIUM_NAME        source_han_sans_26
-    #define EOS_FONT_SMALL_NAME         source_han_sans_22
+#define EOS_FONT_LARGE_NAME source_han_sans_30
+#define EOS_FONT_MEDIUM_NAME source_han_sans_26
+#define EOS_FONT_SMALL_NAME source_han_sans_22
 
 #elif EOS_FONT_TYPE == EOS_FONT_TTF
 
@@ -80,13 +100,13 @@ extern "C" {
 
 #if EOS_FONT_TTF_TYPE == EOS_FONT_TTF_DATA
 
-    #define EOS_FONT_TTF_DATA_NAME  SourceHanSansSC_12M
-    #define EOS_FONT_TTF_DATA_SIZE  SourceHanSansSC_12M_size
+#define EOS_FONT_TTF_DATA_NAME SourceHanSansSC_12M
+#define EOS_FONT_TTF_DATA_SIZE SourceHanSansSC_12M_size
 
 #elif EOS_FONT_TTF_TYPE == EOS_FONT_TTF_FILE
 
-    #define LV_FS_STDIO_LETTER_STR "A"
-    #define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR":" EOS_SYS_RES_FONT_DIR "MiSans-Normal.ttf"
+#define LV_FS_STDIO_LETTER_STR "A"
+#define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR ":" EOS_SYS_RES_FONT_DIR "MiSans-Normal.ttf"
 
 #endif /* EOS_FONT_TTF_TYPE */
 
@@ -97,8 +117,8 @@ extern "C" {
 
 #if EOS_FONT_TTF_ENABLE_EXTENDED
 
-    #define EOS_FONT_TTF_KERNING     0      /**< 字距，单位：px */
-    #define EOS_FONT_TTF_CACHE_SIZE  256    /**< TTF 字体缓存大小 */
+#define EOS_FONT_TTF_KERNING 0      /**< 字距，单位：px */
+#define EOS_FONT_TTF_CACHE_SIZE 256 /**< TTF 字体缓存大小 */
 
 #endif /* EOS_FONT_TTF_ENABLE_EXTENDED */
 
@@ -106,23 +126,23 @@ extern "C" {
 
 /************************** 显示配置 **************************/
 
-#define EOS_DISPLAY_WIDTH   lv_display_get_horizontal_resolution(NULL)      /**< 显示器宽度 */
-#define EOS_DISPLAY_HEIGHT  lv_display_get_vertical_resolution(NULL)        /**< 显示器高度 */
+#define EOS_DISPLAY_WIDTH 390    /**< 绘制宽度 */
+#define EOS_DISPLAY_HEIGHT 450     /**< 绘制高度 */
 
-#define EOS_DISPLAY_RADIUS  80          /**< 显示器圆角半径 */
+#define EOS_DISPLAY_RADIUS 80 /**< 显示器圆角半径 */
 
-#define EOS_DISPLAY_BRIGHTNESS_MIN 5    /**< 亮度为0即关闭屏幕 */
+#define EOS_DISPLAY_BRIGHTNESS_MIN 5 /**< 亮度为0即关闭屏幕 */
 #define EOS_DISPLAY_BRIGHTNESS_MAX 100
 
 /************************** 系统文件目录配置 **************************/
 
 #ifndef EOS_SYS_ROOT_DIR
-    #define EOS_SYS_ROOT_DIR "/"     /**< 系统根目录 例如：`/user/elenaos/` */
-#endif /* EOS_SYS_ROOT_DIR */
+#define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
+#endif                       /* EOS_SYS_ROOT_DIR */
 
 /************************** 电量检测 **************************/
 
-#define EOS_BATTERY_DISPLAY_UPDATE_MS  5*60*1000      /**< 电池电量显示更新时间 */
+#define EOS_BATTERY_DISPLAY_UPDATE_MS 5 * 60 * 1000 /**< 电池电量显示更新时间 */
 
 /************************** 音量配置 **************************/
 
@@ -136,7 +156,7 @@ extern "C" {
 /************************** 日志 **************************/
 
 // 是否启用断言
-#define EOS_USE_ASSERT    1
+#define EOS_USE_ASSERT 1
 
 // 是否启用彩色日志
 #define EOS_LOG_USE_COLOR 0

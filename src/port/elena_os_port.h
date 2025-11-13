@@ -73,6 +73,12 @@ void eos_sem_give(eos_sem_t* sem);
  */
 void *eos_malloc(size_t size);
 /**
+ * @brief 分配一块连续内存并置 0
+ * @param size 内存大小，单位：字节
+ * @return void* 分配成功则返回内存地址，否则返回 NULL
+ */
+void *eos_malloc_zeroed(size_t size);
+/**
  * @brief 释放目标内存
  * @param ptr 目标内存指针
  */

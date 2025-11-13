@@ -70,6 +70,11 @@ typedef struct{
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 创建新的`screen`并设置默认style
+ * @return lv_obj_t*
+ */
+lv_obj_t *eos_screen_create(void);
+/**
  * @brief 创建列表，设置标准样式并添加占位符
  * @param parent 父对象
  * @return lv_obj_t* 列表对象

@@ -24,6 +24,7 @@
 #include "elena_os_watchface_list.h"
 #include "elena_os_theme.h"
 #include "elena_os_control_center.h"
+#include "elena_os_basic_widgets.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -285,7 +286,7 @@ void eos_watchface_create(void)
         lv_obj_delete(watchface_screen);
         watchface_screen = NULL;
     }
-    watchface_screen = lv_obj_create(NULL);
+    watchface_screen = eos_screen_create();
     lv_obj_add_style(watchface_screen, eos_theme_get_screen_style(), 0);
     lv_screen_load(watchface_screen);
     // JSON中获取表盘id

@@ -49,6 +49,7 @@ void _init_style_screen(void)
 {
     lv_style_init(&style_screen);
     lv_style_set_bg_color(&style_screen, SCREEN_BG_COLOR);
+    lv_style_set_size(&style_screen, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
 }
 
 void _init_style_label(void)

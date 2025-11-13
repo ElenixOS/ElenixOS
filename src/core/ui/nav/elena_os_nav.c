@@ -191,7 +191,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     }
 
     // 创建home_screen（脚本的根页面）
-    lv_obj_t *home_screen = lv_obj_create(NULL);
+    lv_obj_t *home_screen = eos_screen_create();
     if (!home_screen)
     {
         EOS_LOG_E("Create root screen failed.");
@@ -206,7 +206,6 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     eos_nav.top = NAV_HOME_SCREEN_INDEX;
     eos_nav.initialized = true;
 
-    lv_obj_add_style(home_screen, eos_theme_get_screen_style(), 0);
     eos_scene_switch(EOS_SCENE_NAVIGATION);
 
     EOS_LOG_D("Launcher screen = %p", eos_nav.launcher_screen);
@@ -241,14 +240,14 @@ lv_obj_t *eos_nav_scr_create(void)
         return NULL;
     }
 
-    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_t *scr = eos_screen_create();
     if (!scr)
     {
         EOS_LOG_E("Create screen failed.");
         _eos_nav_sem_give();
         return NULL;
     }
-    lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
+
     // 确保新屏幕与栈中已有屏幕地址不同
     for (int i = 0; i <= eos_nav.top; i++)
     {

@@ -15,6 +15,7 @@
 #include "elena_os_config.h"
 #include "elena_os_theme.h"
 #include "elena_os_port.h"
+#include "elena_os_basic_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define GESTURE_AREA_HEIGHT 50

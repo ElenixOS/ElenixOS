@@ -23,64 +23,82 @@
 
 /* Function Implementations -----------------------------------*/
 #if HAS_ATOMIC
-typedef struct eos_sem {
+typedef struct eos_sem
+{
     atomic_uint count;
     unsigned int max;
 } eos_sem_t;
 #else
-typedef struct eos_sem {
+typedef struct eos_sem
+{
     uint32_t count;
     uint32_t max;
 } eos_sem_t;
 #endif
 
-EOS_WEAK eos_sem_t* eos_sem_create(uint32_t initial_count, uint32_t max_count) {
+EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
+{
 #if HAS_ATOMIC
-    eos_sem_t* sem = (eos_sem_t*)malloc(sizeof(eos_sem_t));
-    if (!sem) return NULL;
+    eos_sem_t *sem = (eos_sem_t *)malloc(sizeof(eos_sem_t));
+    if (!sem)
+        return NULL;
     atomic_init(&sem->count, initial_count);
     sem->max = max_count;
     return sem;
 #else
-    eos_sem_t* sem = (eos_sem_t*)malloc(sizeof(eos_sem_t));
-    if (!sem) return NULL;
+    eos_sem_t *sem = (eos_sem_t *)malloc(sizeof(eos_sem_t));
+    if (!sem)
+        return NULL;
     sem->count = initial_count;
     sem->max = max_count;
     return sem;
 #endif
 }
 
-EOS_WEAK void eos_sem_destroy(eos_sem_t* sem) {
-    if (sem) free(sem);
+EOS_WEAK void eos_sem_destroy(eos_sem_t *sem)
+{
+    if (sem)
+        free(sem);
 }
 
-EOS_WEAK bool eos_sem_take(eos_sem_t* sem, uint32_t timeout_ms) {
+EOS_WEAK bool eos_sem_take(eos_sem_t *sem, uint32_t timeout_ms)
+{
     (void)timeout_ms;
 #if HAS_ATOMIC
     unsigned int c = atomic_load_explicit(&sem->count, memory_order_acquire);
-    if (c == 0) return false;
+    if (c == 0)
+        return false;
     return atomic_compare_exchange_strong(&sem->count, &c, c - 1);
 #else
-    if (sem->count == 0) return false;
+    if (sem->count == 0)
+        return false;
     sem->count--;
     return true;
 #endif
 }
 
-EOS_WEAK void eos_sem_give(eos_sem_t* sem) {
+EOS_WEAK void eos_sem_give(eos_sem_t *sem)
+{
 #if HAS_ATOMIC
     unsigned int c = atomic_load_explicit(&sem->count, memory_order_relaxed);
-    if (c < sem->max) {
+    if (c < sem->max)
+    {
         atomic_fetch_add_explicit(&sem->count, 1, memory_order_release);
     }
 #else
-    if (sem->count < sem->max) sem->count++;
+    if (sem->count < sem->max)
+        sem->count++;
 #endif
 }
 
 EOS_WEAK void *eos_malloc(size_t size)
 {
     return malloc(size);
+}
+
+EOS_WEAK void *eos_malloc_zeroed(size_t size)
+{
+    return calloc(1, size);
 }
 
 EOS_WEAK void eos_free(void *ptr)

@@ -297,7 +297,7 @@ void eos_app_list_create(void)
     {
         lv_obj_delete(app_list_screen);
     }
-    app_list_screen = lv_obj_create(NULL);
+    app_list_screen = eos_screen_create();
     // 创建新的页面用于绘制应用列表
     lv_screen_load(app_list_screen);
 

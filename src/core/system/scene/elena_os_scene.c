@@ -86,6 +86,7 @@ void eos_scene_back(void)
 
 void eos_scene_switch(eos_scene_type_t type)
 {
+    EOS_CHECK_PTR_RETURN(current_scene);
     if (current_scene->type == type)
         return;
     last_scene = current_scene;

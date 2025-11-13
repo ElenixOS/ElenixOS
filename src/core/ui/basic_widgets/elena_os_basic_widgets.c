@@ -57,6 +57,13 @@ typedef struct
 static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
 
+lv_obj_t *eos_screen_create(void)
+{
+    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
+    return scr;
+}
+
 /**
  * @brief 返回按钮的回调
  */

@@ -548,8 +548,9 @@ static void _msg_list_clear_all_btn_cb(lv_event_t *e)
 
 /************************** List相关函数 **************************/
 
-void eos_msg_list_delete(eos_msg_list_t *list)
+static void _msg_list_deleted_cb(lv_event_t *e)
 {
+    eos_msg_list_t *list = (eos_msg_list_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(list);
 
     // 清除所有消息项
@@ -571,15 +572,6 @@ void eos_msg_list_delete(eos_msg_list_t *list)
 
     // 释放列表结构体
     eos_free(list);
-}
-
-static void _msg_list_deleted_cb(lv_event_t *e)
-{
-    eos_msg_list_t *list = (eos_msg_list_t *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(list);
-
-    // 调用清理函数
-    eos_msg_list_delete(list);
 }
 
 eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)

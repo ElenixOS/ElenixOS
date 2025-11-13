@@ -58,7 +58,7 @@ void eos_watchface_list_create(void)
         lv_obj_delete(watchface_list_screen);
     }
     // 创建新的页面用于绘制应用列表
-    watchface_list_screen = lv_obj_create(NULL);
+    watchface_list_screen = eos_screen_create();
     lv_screen_load(watchface_list_screen);
     size_t watchface_list_size = eos_watchface_list_size();
 

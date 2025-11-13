@@ -13,9 +13,12 @@ extern "C" {
 #endif
 
 /* Includes ---------------------------------------------------*/
+#include "elena_os_config.h"
 #include "elena_os_core.h"
 #include "elena_os_sensor.h"
-
+#if EOS_USE_VIRTUAL_DISPLAY
+#include "elena_os_virtual_display.h"
+#endif /* EOS_USE_VIRTUAL_DISPLAY */
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/

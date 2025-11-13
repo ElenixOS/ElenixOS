@@ -18,6 +18,7 @@
 #include "elena_os_event.h"
 #include "elena_os_anim.h"
 #include "elena_os_port.h"
+#include "elena_os_basic_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_TOUCH_AREA 0 /**< 突出显示触摸区域 */

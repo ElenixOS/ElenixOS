@@ -25,6 +25,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_control_center.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_scene.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -269,8 +270,7 @@ void eos_watchface_delete(void)
 
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
-    eos_watchface_delete();
-    eos_watchface_list_create();
+    eos_scene_switch(EOS_SCENE_WATCHFACE_LIST);
 }
 
 lv_obj_t *eos_watchface_get_screen(void)

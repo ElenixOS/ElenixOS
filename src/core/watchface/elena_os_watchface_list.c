@@ -54,7 +54,8 @@ static void _watchface_list_btn_cb(lv_event_t *e)
 
 void eos_watchface_list_create(void)
 {
-    if(watchface_list_screen){
+    if (watchface_list_screen)
+    {
         lv_obj_delete(watchface_list_screen);
     }
     // 创建新的页面用于绘制应用列表
@@ -74,7 +75,7 @@ void eos_watchface_list_create(void)
                           LV_FLEX_ALIGN_START,   // 主轴(水平方向)居中
                           LV_FLEX_ALIGN_CENTER,  // 交叉轴(垂直方向)居中
                           LV_FLEX_ALIGN_CENTER); // 内容居中
-
+    lv_obj_set_scroll_snap_x(cont, LV_SCROLL_SNAP_CENTER);
     for (size_t i = 0; i < watchface_list_size; i++)
     {
         lv_obj_t *item = lv_obj_create(cont);
@@ -87,6 +88,7 @@ void eos_watchface_list_create(void)
         lv_obj_set_style_shadow_width(item, 0, 0);
         lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
         lv_obj_remove_flag(item, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_add_flag(item, LV_OBJ_FLAG_SNAPPABLE);
         lv_obj_set_flex_align(item,
                               LV_FLEX_ALIGN_START,   // 主轴(水平方向)居中
                               LV_FLEX_ALIGN_CENTER,  // 交叉轴(垂直方向)居中
@@ -98,7 +100,8 @@ void eos_watchface_list_create(void)
         EOS_LOG_D("WFPATH:%s", icon_path);
         if (!eos_is_file(icon_path))
         {
-            memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
+            EOS_LOG_W("Watchface snapshot not found!");
+            memcpy(icon_path, EOS_IMG_WATCHFACE, sizeof(EOS_IMG_WATCHFACE));
         }
 
         lv_obj_t *watchface_snapshot = lv_image_create(item);
@@ -108,7 +111,7 @@ void eos_watchface_list_create(void)
         lv_obj_center(watchface_snapshot);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
         lv_obj_add_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_add_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+        lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         eos_img_set_src(watchface_snapshot, icon_path);
         eos_img_set_size(watchface_snapshot, 268, 310);
         lv_obj_center(watchface_snapshot);
@@ -134,4 +137,5 @@ void eos_watchface_list_create(void)
         lv_obj_set_width(label, LV_SIZE_CONTENT);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     }
+    lv_obj_update_snap(cont, LV_ANIM_OFF);
 }

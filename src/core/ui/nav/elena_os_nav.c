@@ -18,6 +18,7 @@
 #include "elena_os_watchface.h"
 #include "elena_os_port.h"
 #include "elena_os_scene.h"
+#include "elena_os_event.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define NAV_STACK_SIZE 32
@@ -138,7 +139,7 @@ eos_result_t eos_nav_clean_up(void)
     }
 
     // 加载 launcher_screen
-    lv_screen_load(eos_nav.launcher_screen);
+    eos_screen_load(eos_nav.launcher_screen);
 
     // 从栈顶向下清理所有screen
     for (int i = NAV_STACK_SIZE - 1; i >= 0; i--)
@@ -170,6 +171,7 @@ eos_result_t eos_nav_clean_up(void)
     }
     eos_scene_back();
     EOS_LOG_D("Nav stack completely cleared.");
+    eos_event_broadcast(EOS_EVENT_NAV_CLEAN_UP, NULL);
     return EOS_OK;
 }
 
@@ -331,10 +333,11 @@ eos_result_t eos_nav_back_clean(void)
     }
 
     // 加载前一个屏幕
-    lv_screen_load(prev_scr);
+    eos_screen_load(prev_scr);
 
     EOS_MEM("Clear scr");
     _eos_nav_sem_give();
+    eos_event_broadcast(EOS_EVENT_NAV_PREV, NULL);
     return EOS_OK;
 }
 
@@ -370,7 +373,7 @@ eos_result_t eos_nav_back(void)
     }
 
     eos_nav.top--; // 更新栈指针
-    lv_screen_load(prev_scr);
+    eos_screen_load(prev_scr);
 
     _eos_nav_sem_give();
     return EOS_OK;

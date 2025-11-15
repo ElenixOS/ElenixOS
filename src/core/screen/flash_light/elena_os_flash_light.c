@@ -27,6 +27,7 @@
 #include "elena_os_display.h"
 #include "elena_os_app_list.h"
 #include "elena_os_lang.h"
+#include "elena_os_basic_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
@@ -196,7 +197,7 @@ void _flash_light_create(lv_obj_t *launcher_screen)
 {
     eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_t *scr = eos_nav_init(launcher_screen);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
     lv_obj_remove_style_all(scr);
     eos_card_pager_t *cp = eos_card_pager_create(scr, EOS_CARD_PAGER_DIR_HOR);
     lv_obj_t *page = eos_card_pager_create_page(cp);

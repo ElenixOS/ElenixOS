@@ -17,7 +17,10 @@
 #if EOS_SYSTEM_MODE == TEST_MODE
 #include "elena_os_test.h"
 #endif /* EOS_SYSTEM_MODE */
-
+#include "elena_os_control_center.h"
+#include "elena_os_msg_list.h"
+#include "elena_os_crown.h"
+#include "elena_os_event.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -68,6 +71,17 @@ const char *eos_scene_type_t_to_string(eos_scene_type_t v)
 static void _set_current_scene(eos_scene_t *scene)
 {
     current_scene = scene;
+    if (scene == &watchface_scene)
+    {
+        eos_control_center_show();
+        eos_msg_list_show();
+    }
+    else
+    {
+        eos_control_center_hide();
+        eos_msg_list_hide();
+    }
+
 #if EOS_COMPILE_MODE == DEUBG
     EOS_LOG_I("Current scene: %s", eos_scene_type_t_to_string(current_scene->type));
 #else
@@ -156,12 +170,18 @@ void eos_scene_auto_switch(void)
     current_scene->entry();
 }
 
+static void _screen_load_cb(lv_event_t *e)
+{
+    eos_crown_encoder_set_target_screen(lv_event_get_param(e));
+}
+
 void eos_scene_init(
     eos_scene_entry_t watchface_entry,
     eos_scene_exit_t watchface_exit,
     eos_scene_entry_t app_list_entry,
     eos_scene_entry_t watchface_list_entry)
 {
+    eos_event_add_global_cb(_screen_load_cb, EOS_EVENT_GLOBAL_SCREEN_LOADED, NULL);
     watchface_scene.entry = watchface_entry;
     watchface_scene.exit = watchface_exit;
     app_list_scene.entry = app_list_entry;

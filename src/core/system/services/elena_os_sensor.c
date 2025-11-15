@@ -83,9 +83,8 @@ eos_sensor_t *eos_sensor_register(eos_sensor_type_t type)
     if (_sensor_count[type] >= EOS_SENSOR_CFG_INST_MAX)
         return NULL;
 
-    eos_sensor_t *s = eos_malloc(sizeof(eos_sensor_t));
+    eos_sensor_t *s = eos_malloc_zeroed(sizeof(eos_sensor_t));
     EOS_CHECK_PTR_RETURN_VAL(s, NULL);
-    memset(s, 0, sizeof(eos_sensor_t));
 
     s->type = type;
     s->id = _sensor_count[type];

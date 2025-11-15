@@ -106,10 +106,8 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
 {
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_anim_get_user_data(a);
     EOS_CHECK_PTR_RETURN(sw);
-
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, sw);
-
     lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
+    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, sw);
     if (sw->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
         lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, sw);
@@ -255,6 +253,7 @@ void eos_slide_widget_reverse(eos_slide_widget_t *sw)
     tmp = sw->touch_obj_base;
     sw->touch_obj_base = sw->touch_obj_target;
     sw->touch_obj_target = tmp;
+    sw->reversed = sw->reversed ? false : true;
     EOS_LOG_D("Target path: %d -> %d  |  Touch path: %d -> %d", sw->base, sw->target, sw->touch_obj_base, sw->touch_obj_target);
 }
 
@@ -388,8 +387,9 @@ static void _slide_widget_init_common(eos_slide_widget_t *sw,
     lv_obj_add_event_cb(target_obj, _slide_widget_delete_cb, LV_EVENT_DELETE, sw);
 
     EOS_LOG_D("Slide widget created: [%p]\n"
-        "target path %d->%d\n"
-        "touch path %d->%d", sw, sw->base,sw->target,sw->touch_obj_base,sw->touch_obj_target);
+              "target path %d->%d\n"
+              "touch path %d->%d",
+              sw, sw->base, sw->target, sw->touch_obj_base, sw->touch_obj_target);
 }
 
 eos_slide_widget_t *eos_slide_widget_create_with_touch(
@@ -399,9 +399,8 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
     lv_coord_t target,
     eos_threshold_t threshold)
 {
-    eos_slide_widget_t *sw = eos_malloc(sizeof(eos_slide_widget_t));
+    eos_slide_widget_t *sw = eos_malloc_zeroed(sizeof(eos_slide_widget_t));
     EOS_CHECK_PTR_RETURN_VAL(sw && touch_obj && target_obj, NULL);
-    memset(sw, 0, sizeof(eos_slide_widget_t));
 
     _slide_widget_init_common(sw, touch_obj, target_obj, dir, target, threshold);
     return sw;
@@ -414,9 +413,8 @@ eos_slide_widget_t *eos_slide_widget_create(
     lv_coord_t target,
     eos_threshold_t threshold)
 {
-    eos_slide_widget_t *sw = eos_malloc(sizeof(eos_slide_widget_t));
+    eos_slide_widget_t *sw = eos_malloc_zeroed(sizeof(eos_slide_widget_t));
     EOS_CHECK_PTR_RETURN_VAL(sw && parent && target_obj, NULL);
-    memset(sw, 0, sizeof(eos_slide_widget_t));
 
     // 创建 Touch Object
     lv_obj_t *t = lv_obj_create(parent);

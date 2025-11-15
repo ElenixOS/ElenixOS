@@ -82,7 +82,7 @@ static void _settings_screen_bluetooth(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_BLUETOOTH);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *list = eos_list_create(scr);
 
@@ -139,7 +139,7 @@ static void _settings_screen_display(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_DISPLAY);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *list = eos_list_create(scr);
 
@@ -159,7 +159,7 @@ static void _settings_screen_notification(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_NOTIFICATION);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 }
 
 /************************** 声音与触感反馈 **************************/
@@ -226,7 +226,7 @@ static void _settings_screen_sound_and_haptics(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_SOUND_AND_HAPTICS);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *list = eos_list_create(scr);
 
@@ -305,7 +305,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     // 创建新的页面用于绘制应用详情页
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header(scr, pkg.name);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *list = lv_list_create(scr);
     lv_obj_set_size(list, lv_pct(100), lv_pct(100));
@@ -419,7 +419,7 @@ static void _settings_screen_apps(lv_event_t *e)
     // 创建新的页面用于绘制应用列表
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_APPS);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *app_list = lv_list_create(scr);
     lv_obj_set_size(app_list, lv_pct(100), lv_pct(100));
@@ -470,7 +470,7 @@ static void _settings_screen_language(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_GENERAL_LANGUAGE);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *roller = lv_roller_create(scr);
     lv_obj_set_size(roller, lv_pct(80), 200);
@@ -493,7 +493,7 @@ static void _settings_screen_general(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_GENERAL);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *list = eos_list_create(scr);
 
@@ -508,7 +508,7 @@ void eos_settings_create(void)
 {
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
 
     lv_obj_t *settings_list = eos_list_create(scr);
 

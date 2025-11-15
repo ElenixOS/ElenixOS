@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "elena_os_scene.h"
 #include "elena_os_async.h"
+#include "elena_os_control_center.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -24,7 +25,7 @@ static void _side_button_async_cb(void *user_data)
     switch (state)
     {
     case EOS_BUTTON_STATE_CLICKED:
-
+        eos_control_panel_slide_change();
     default:
         break;
     }

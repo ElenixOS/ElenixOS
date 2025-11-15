@@ -28,13 +28,16 @@ typedef enum
 {
     EOS_EVENT_BASE = LV_EVENT_LAST,
     EOS_EVENT_UNKNOWN = EOS_EVENT_BASE,
-    EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,  /**< 滑动超过阈值 */
-    EOS_EVENT_SLIDE_WIDGET_REVERTED,           /**< 滑动未超过阈值自动回弹 */
-    EOS_EVENT_SLIDE_WIDGET_MOVING,
-    EOS_EVENT_SLIDE_WIDGET_DONE,
-    EOS_EVENT_THEME_UPDATED,
-    EOS_EVENT_APP_DELETED,
-    EOS_EVENT_APP_INSTALLED,
+    EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,   /**< 滑动超过阈值 */
+    EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< 滑动未超过阈值自动回弹 */
+    EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< 滑动时（包括手动滑动以及动画执行）触发 */
+    EOS_EVENT_SLIDE_WIDGET_DONE,                /**< 滑动完成 */
+    EOS_EVENT_APP_UNINSTALLED,                  /**< 应用已卸载 */
+    EOS_EVENT_APP_INSTALLED,                    /**< 应用已安装 */
+    EOS_EVENT_GLOBAL_SCREEN_LOAD_START,         /**< 屏幕加载已开始，在调用`lv_screen_load()`后立即触发 */
+    EOS_EVENT_GLOBAL_SCREEN_LOADED,             /**< 屏幕加载已完成 */
+    EOS_EVENT_NAV_PREV,                         /**< 导航栈已经返回上级屏幕 */
+    EOS_EVENT_NAV_CLEAN_UP,                     /**< 导航栈已经清理完毕 */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
@@ -67,7 +70,7 @@ typedef enum
  *
  * `eos_event_add_cb(obj,cb,LV_EVENT_ALL,NULL);`
  *
- * `eos_event_add_cb(obj,cb,EOS_EVENT_THEME_UPDATED,NULL);`
+ * `eos_event_add_cb(obj,cb,EOS_EVENT_APP_INSTALLED,NULL);`
  *
  */
 void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data);
@@ -90,10 +93,30 @@ void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb)
  * @param param 事件参数
  */
 void eos_event_broadcast(lv_event_code_t event, void *param);
+
 /**
  * @brief 允许在外部主动清理（例如系统空闲时调用）
  */
 void eos_event_cleanup_now(void);
+
+/**
+ * @brief 添加全局回调
+ * @param cb 回调函数
+ * @param event 事件类型
+ * @param user_data 用户数据
+ */
+void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user_data);
+/**
+ * @brief 移除指定事件下的指定回调函数
+ * @param event 事件类型
+ * @param cb 回调函数
+ */
+void eos_event_remove_global_cb(lv_event_code_t event, lv_event_cb_t cb);
+/**
+ * @brief 移除指定全局回调函数的所有事件注册
+ * @param cb 回调函数
+ */
+void eos_event_remove_all_global_cbs(lv_event_cb_t cb);
 #ifdef __cplusplus
 }
 #endif

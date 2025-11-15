@@ -26,6 +26,7 @@
 #include "elena_os_config.h"
 #include "elena_os_anim.h"
 #include "elena_os_font.h"
+#include "elena_os_crown.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define APP_HEADER_HEIGHT 120
@@ -56,6 +57,13 @@ typedef struct
 /* Variables --------------------------------------------------*/
 static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
+
+void eos_screen_load(lv_obj_t *scr)
+{
+    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
+    lv_screen_load(scr);
+    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
+}
 
 lv_obj_t *eos_screen_create(void)
 {
@@ -268,9 +276,8 @@ void eos_screen_bind_header_str_id(lv_obj_t *scr, lang_string_id_t id)
 void eos_app_header_init(void)
 {
     EOS_LOG_D("Init eos_app_header");
-    app_header = eos_malloc(sizeof(eos_app_header_t));
+    app_header = eos_malloc_zeroed(sizeof(eos_app_header_t));
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
-    memset(app_header, 0, sizeof(eos_app_header_t));
 
     // 半透明容器
     app_header->container = lv_image_create(lv_layer_top());
@@ -578,9 +585,8 @@ void eos_list_slider_set_plus_label_scale(eos_list_slider_t *ls, uint16_t scale)
 
 eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
 {
-    eos_list_slider_t *list_slider = (eos_list_slider_t *)eos_malloc(sizeof(eos_list_slider_t));
+    eos_list_slider_t *list_slider = eos_malloc_zeroed(sizeof(eos_list_slider_t));
     EOS_CHECK_PTR_RETURN_VAL_FREE(list_slider, NULL, list_slider);
-    memset(list_slider, 0, sizeof(eos_list_slider_t));
 
     list_slider->minus_label_scale = 255;
     list_slider->plus_label_scale = 255;

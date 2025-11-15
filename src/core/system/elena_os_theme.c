@@ -13,6 +13,7 @@
 #include "elena_os_log.h"
 #include "lvgl_private.h"
 #include "elena_os_font.h"
+#include "elena_os_crown.h"
 /* Macros and Definitions -------------------------------------*/
 /************************** Text **************************/
 #define TEXT_COLOR EOS_COLOR_WHITE
@@ -136,6 +137,7 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_list_class))
     {
         lv_obj_add_style(obj, &style_list, 0);
+        eos_crown_encoder_set_target_obj(obj);  // 保证创建时可以设置滚动对象
     }
     else if (lv_obj_check_type(obj, &lv_switch_class))
     {

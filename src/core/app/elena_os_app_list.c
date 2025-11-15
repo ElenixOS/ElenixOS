@@ -199,8 +199,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
-    script_pkg_t *pkg = eos_malloc(sizeof(script_pkg_t));
-    memset((void *)pkg, 0, sizeof(script_pkg_t));
+    script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
     pkg->type = SCRIPT_TYPE_APPLICATION;
     if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
     {
@@ -225,7 +224,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     // 无需清理字符串，脚本运行结束后自动清理
     lv_obj_t *scr = eos_nav_init(app_list_screen);
     eos_screen_bind_header(scr, pkg->name);
-    lv_screen_load(scr);
+    eos_screen_load(scr);
     script_engine_result_t ret = script_engine_run(pkg);
     if (ret != SE_OK)
     {
@@ -299,7 +298,7 @@ void eos_app_list_create(void)
     }
     app_list_screen = eos_screen_create();
     // 创建新的页面用于绘制应用列表
-    lv_screen_load(app_list_screen);
+    eos_screen_load(app_list_screen);
 
     lv_obj_t *container = lv_list_create(app_list_screen);
     lv_obj_set_style_pad_all(container, 20, 0);

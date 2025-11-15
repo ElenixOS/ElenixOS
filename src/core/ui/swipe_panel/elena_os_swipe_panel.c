@@ -22,7 +22,7 @@
 #define TOUCH_BAR_MARGIN 20
 #define HANDLE_BAR_WIDTH 80
 #define HANDLE_BAR_HEIGHT 10
-#define SWIPE_ANIM_DURATION 150
+#define SWIPE_ANIM_DURATION 200
 
 #define DIR_UP_HIDE_TARGET_COORD EOS_DISPLAY_HEIGHT
 #define DIR_UP_SHOW_TARGET_COORD 0
@@ -241,8 +241,11 @@ static void _slide_widget_move_done_cb(lv_event_t *e)
 void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
+    if (sp->sw->reversed)
+    {
+        eos_slide_widget_reverse(sp->sw);
+    }
     lv_coord_t base, target;
-
     switch (sp->dir)
     {
     case EOS_SWIPE_DIR_UP:
@@ -273,12 +276,15 @@ void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
     {
         lv_obj_set_x(sp->sw->touch_obj, sp->sw->touch_obj_target);
     }
-    eos_slide_widget_reverse(sp->sw);
 }
 
 void eos_swipe_panel_slide_up(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
+    if (sp->sw->reversed)
+    {
+        eos_slide_widget_reverse(sp->sw);
+    }
     lv_coord_t base, target;
     switch (sp->dir)
     {
@@ -310,6 +316,20 @@ void eos_swipe_panel_slide_up(eos_swipe_panel_t *sp)
     {
         lv_obj_set_x(sp->sw->touch_obj, sp->sw->touch_obj_base);
     }
+}
+
+void eos_swipe_panel_hide(eos_swipe_panel_t *sp)
+{
+    EOS_CHECK_PTR_RETURN(sp);
+    lv_obj_add_flag(sp->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(sp->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
+}
+
+void eos_swipe_panel_show(eos_swipe_panel_t *sp)
+{
+    EOS_CHECK_PTR_RETURN(sp);
+    lv_obj_remove_flag(sp->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(sp->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
 }
 
 eos_swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)

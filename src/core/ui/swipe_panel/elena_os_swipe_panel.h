@@ -116,6 +116,14 @@ void eos_swipe_panel_pull_back(eos_swipe_panel_t *swipe_panel);
  * @param anim 是否启用动画
  */
 void eos_swipe_panel_move(eos_swipe_panel_t *swipe_panel, int32_t target, bool anim);
+/**
+ * @brief 显示滑动面板
+ */
+void eos_swipe_panel_show(eos_swipe_panel_t *sp);
+/**
+ * @brief 隐藏滑动面板
+ */
+void eos_swipe_panel_hide(eos_swipe_panel_t *sp);
 #ifdef __cplusplus
 }
 #endif

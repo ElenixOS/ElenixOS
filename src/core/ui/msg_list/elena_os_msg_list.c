@@ -50,6 +50,7 @@ typedef struct
 
 /* Variables --------------------------------------------------*/
 static bool detail_flag = false;
+static eos_msg_list_t *message_list_instance = NULL;
 /* Function Implementations -----------------------------------*/
 
 static void _msg_list_item_clicked_cb(lv_event_t *e);
@@ -253,10 +254,9 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
 
 eos_msg_list_item_t *eos_msg_list_item_create(eos_msg_list_t *list)
 {
-    eos_msg_list_item_t *item = eos_malloc(sizeof(eos_msg_list_item_t));
+    eos_msg_list_item_t *item = eos_malloc_zeroed(sizeof(eos_msg_list_item_t));
     EOS_CHECK_PTR_RETURN_VAL(list, NULL);
     EOS_CHECK_PTR_RETURN_VAL_FREE(item, NULL, item);
-    memset(item, 0, sizeof(eos_msg_list_item_t));
 
     item->msg_list = list;
     item->is_deleted = false;
@@ -577,10 +577,9 @@ static void _msg_list_deleted_cb(lv_event_t *e)
 eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-    eos_msg_list_t *list = eos_malloc(sizeof(eos_msg_list_t));
+    eos_msg_list_t *list = eos_malloc_zeroed(sizeof(eos_msg_list_t));
     EOS_CHECK_PTR_RETURN_VAL_FREE(list, NULL, list);
     detail_flag = false;
-    memset(list, 0, sizeof(eos_msg_list_t));
 
     list->swipe_panel = eos_swipe_panel_create(parent);
     EOS_CHECK_PTR_RETURN_VAL_FREE(list->swipe_panel, NULL, list);
@@ -626,4 +625,27 @@ eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     lv_obj_center(list->no_msg_label);
 
     return list;
+}
+
+void eos_msg_list_hide(void)
+{
+    EOS_CHECK_PTR_RETURN(message_list_instance);
+    eos_swipe_panel_hide(message_list_instance->swipe_panel);
+}
+
+void eos_msg_list_show(void)
+{
+    EOS_CHECK_PTR_RETURN(message_list_instance);
+    eos_swipe_panel_show(message_list_instance->swipe_panel);
+}
+
+eos_msg_list_t *eos_msg_list_get_instance(void)
+{
+    return message_list_instance;
+}
+
+void eos_msg_list_init(void)
+{
+    message_list_instance = eos_msg_list_create(lv_layer_sys());
+    eos_msg_list_hide();
 }

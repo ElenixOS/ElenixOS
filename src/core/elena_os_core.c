@@ -62,6 +62,7 @@
 #include "elena_os_async.h"
 #include "elena_os_scene.h"
 #include "elena_os_anim.h"
+#include "elena_os_control_center.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -168,6 +169,8 @@ eos_result_t eos_run(void)
     }
     eos_app_header_init();
     eos_services_start();
+    eos_msg_list_init();
+    eos_control_center_init();
     if (logo)
         lv_obj_delete(logo);
     /************************** 系统启动 **************************/

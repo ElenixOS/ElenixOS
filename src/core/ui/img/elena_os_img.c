@@ -139,14 +139,13 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     }
 
     // 动态分配图像描述符
-    lv_image_dsc_t *img_dsc = (lv_image_dsc_t *)eos_malloc(sizeof(lv_image_dsc_t));
+    lv_image_dsc_t *img_dsc = eos_malloc_zeroed(sizeof(lv_image_dsc_t));
     if (!img_dsc)
     {
         EOS_LOG_E("Failed to allocate image descriptor");
         eos_free_large(bin_data);
         return;
     }
-    memset(img_dsc, 0, sizeof(lv_image_dsc_t));
 
     memcpy(&img_dsc->header, bin_data, sizeof(lv_image_header_t));
 

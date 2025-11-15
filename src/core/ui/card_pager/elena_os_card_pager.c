@@ -216,9 +216,8 @@ lv_obj_t *eos_card_pager_create_page(eos_card_pager_t *cp)
 {
     EOS_CHECK_PTR_RETURN_VAL(cp, NULL);
 
-    eos_card_pager_node_t *node = eos_malloc(sizeof(eos_card_pager_node_t));
+    eos_card_pager_node_t *node = eos_malloc_zeroed(sizeof(eos_card_pager_node_t));
     EOS_CHECK_PTR_RETURN_VAL(node, NULL);
-    memset(node, 0, sizeof(eos_card_pager_node_t));
 
     lv_obj_t *page = lv_obj_create(cp->container);
     _page_init(page);
@@ -521,9 +520,8 @@ static void _container_delete_cb(lv_event_t *e)
 
 eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t dir)
 {
-    eos_card_pager_t *cp = eos_malloc(sizeof(eos_card_pager_t));
+    eos_card_pager_t *cp = eos_malloc_zeroed(sizeof(eos_card_pager_t));
     EOS_CHECK_PTR_RETURN_VAL(cp && parent, NULL);
-    memset(cp, 0, sizeof(eos_card_pager_t));
 
     cp->container = lv_obj_create(parent);
     lv_obj_remove_style_all(cp->container);

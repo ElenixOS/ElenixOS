@@ -26,6 +26,7 @@
 #include "elena_os_toast.h"
 #include "elena_os_lang.h"
 #include "elena_os_settings.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
@@ -34,9 +35,7 @@
 #define _SLIDER_DEFAULT_RADIUS 50
 #define _LIST_SCALE_THRESHOLD_Y ((float)EOS_DISPLAY_HEIGHT * 0.8)
 /* Variables --------------------------------------------------*/
-static int32_t _slider_symbol_label_center_x = 0;
-static int32_t _slider_symbol_label_center_y = 0;
-static lv_obj_t *mute_btn;
+static eos_control_center_t *control_center_instance = NULL;
 /* Function Implementations -----------------------------------*/
 
 /************************** 列表回调 **************************/
@@ -84,9 +83,9 @@ static void _list_scroll_cb(lv_event_t *e)
         }
 
         lv_coord_t diff = list_bottom - child_center;
-        const lv_coord_t range = list_h / 5; // 80%～100% 区间 = 20% 高度
-        const int16_t max_scale = 256;       // 原比例
-        const int16_t min_scale = 160;       // 最小比例（刚进入时）
+        const lv_coord_t range = list_h / 10;
+        const int16_t max_scale = 256; // 原比例
+        const int16_t min_scale = 180; // 最小比例（刚进入时）
 
         int16_t scale = min_scale + (diff * (max_scale - min_scale)) / range;
         if (scale > max_scale)
@@ -110,7 +109,7 @@ static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char 
 {
     lv_obj_t *btn = lv_button_create(parent);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
-    lv_obj_set_size(btn, 150, 100);
+    lv_obj_set_size(btn, 160, 100);
     lv_obj_set_style_radius(btn, 50, 0);
     lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN | LV_STATE_CHECKED);
@@ -318,6 +317,7 @@ static char *_control_center_volume_get_icon_by_value(uint8_t value)
 
 static void _control_center_volume_value_changed_cb(lv_event_t *e)
 {
+    eos_control_center_t *cc = (eos_control_center_t *)lv_event_get_user_data(e);
     lv_obj_t *slider = lv_event_get_target(e);
     lv_obj_t *label = (lv_obj_t *)lv_obj_get_user_data(slider);
     EOS_CHECK_PTR_RETURN(label);
@@ -325,9 +325,9 @@ static void _control_center_volume_value_changed_cb(lv_event_t *e)
     int16_t value = lv_slider_get_value(slider);
     eos_speaker_set_volume(value);
     lv_label_set_text(label, _control_center_volume_get_icon_by_value(value));
-    if (lv_obj_has_state(mute_btn, LV_STATE_CHECKED))
+    if (lv_obj_has_state(cc->mute_btn, LV_STATE_CHECKED))
     {
-        lv_obj_remove_state(mute_btn, LV_STATE_CHECKED);
+        lv_obj_remove_state(cc->mute_btn, LV_STATE_CHECKED);
         eos_settings_slient_mode_off();
     }
 }
@@ -340,6 +340,7 @@ static void _control_center_volume_slider_delete_cb(lv_event_t *e)
 
 static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
 {
+    eos_control_center_t *cc = (eos_control_center_t *)lv_event_get_user_data(e);
     uint8_t volume = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 50);
 
     lv_obj_t *slider = _control_center_slider_create(_control_center_volume_get_icon_by_value(volume));
@@ -349,7 +350,7 @@ static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
                         volume,
                         LV_ANIM_ON);
     lv_obj_add_event_cb(slider,
-                        _control_center_volume_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
+                        _control_center_volume_value_changed_cb, LV_EVENT_VALUE_CHANGED, cc);
     lv_obj_add_event_cb(slider, _control_center_volume_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
@@ -375,14 +376,19 @@ static void _control_center_mute_switch_btn_cb(lv_event_t *e)
 static void _control_center_settings_entry_cb(lv_event_t *e)
 {
     eos_settings_create();
+    eos_control_center_hide();
 }
+/************************** 控制中心 **************************/
 
-/************************** 创建控制中心 **************************/
-void eos_control_center_create(lv_obj_t *parent)
+eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
 {
+    eos_control_center_t *cc = eos_malloc_zeroed(sizeof(eos_control_center_t));
+    EOS_CHECK_PTR_RETURN_VAL(cc, NULL);
+
     eos_swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
     eos_swipe_panel_set_dir(swipe_panel, EOS_SWIPE_DIR_UP);
     eos_swipe_panel_show_handle_bar(swipe_panel);
+    cc->swipe_panel = swipe_panel;
 
     lv_obj_t *container = lv_list_create(swipe_panel->swipe_obj);
     lv_obj_set_size(container, LV_PCT(100), LV_PCT(88));
@@ -402,7 +408,9 @@ void eos_control_center_create(lv_obj_t *parent)
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(container, _list_scroll_cb, LV_EVENT_SCROLL, container);
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, container);
+    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_DONE, container);
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, container);
+    cc->container = container;
     lv_obj_t *btn;
     /************************** 蓝牙开关 **************************/
     btn = _control_center_create_switch_btn(container, RI_BLUETOOTH_FILL, EOS_COLOR_BLUE);
@@ -415,24 +423,80 @@ void eos_control_center_create(lv_obj_t *parent)
     {
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
+    cc->bl_btn = btn;
     /************************** 亮度调整滚动条 **************************/
     btn = _control_center_create_btn(container, RI_SUN_FILL);
     lv_obj_add_event_cb(btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    cc->brightness_btn = btn;
     /************************** 电量显示 **************************/
     btn = _control_center_create_battery(container);
+    cc->bat_btn = btn;
     /************************** 查找手机 **************************/
     btn = _control_center_create_btn(container, RI_PHONE_FIND_FILL);
     lv_obj_add_event_cb(btn, _control_center_phone_find_cb, LV_EVENT_CLICKED, 0);
+    cc->locate_phone_btn = btn;
     /************************** 静音 **************************/
-    mute_btn = _control_center_create_switch_btn(container, RI_NOTIFICATION_4_FILL, EOS_COLOR_ORANGE);
-    lv_obj_add_event_cb(mute_btn, _control_center_mute_switch_btn_cb, LV_EVENT_CLICKED, 0);
+    btn = _control_center_create_switch_btn(container, RI_NOTIFICATION_4_FILL, EOS_COLOR_ORANGE);
+    lv_obj_add_event_cb(btn, _control_center_mute_switch_btn_cb, LV_EVENT_CLICKED, 0);
+    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
+    {
+        lv_obj_add_state(btn, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_obj_remove_state(btn, LV_STATE_CHECKED);
+    }
+    cc->mute_btn = btn;
     /************************** 音量调整滚动条 **************************/
     btn = _control_center_create_btn(container, RI_VOLUME_UP_FILL);
-    lv_obj_add_event_cb(btn, _control_center_volume_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    lv_obj_add_event_cb(btn, _control_center_volume_btn_clicked_cb, LV_EVENT_CLICKED, cc);
+    cc->volume_btn = btn;
     /************************** 手电筒 **************************/
     btn = _control_center_create_btn(container, RI_FLASH_LIGHT);
     lv_obj_add_event_cb(btn, _control_center_flash_light_btn_clicked_cb, LV_EVENT_CLICKED, 0);
+    cc->flash_light_btn = btn;
     /************************** 设置入口 **************************/
     btn = _control_center_create_btn(container, RI_SETTINGS_4_FILL);
     lv_obj_add_event_cb(btn, _control_center_settings_entry_cb, LV_EVENT_CLICKED, 0);
+    cc->settings_btn = btn;
+    return cc;
+}
+
+void eos_control_panel_slide_change(void)
+{
+    EOS_CHECK_PTR_RETURN(control_center_instance);
+    if (lv_obj_get_y(control_center_instance->swipe_panel->swipe_obj) >= EOS_DISPLAY_HEIGHT)
+    {
+        eos_swipe_panel_slide_down(control_center_instance->swipe_panel);
+    }
+    else
+    {
+        eos_swipe_panel_slide_up(control_center_instance->swipe_panel);
+    }
+}
+
+void eos_control_center_show(void)
+{
+    EOS_CHECK_PTR_RETURN(control_center_instance);
+    lv_obj_remove_flag(control_center_instance->swipe_panel->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(control_center_instance->swipe_panel->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+}
+
+void eos_control_center_hide(void)
+{
+    EOS_CHECK_PTR_RETURN(control_center_instance);
+    lv_obj_add_flag(control_center_instance->swipe_panel->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
+    if (lv_obj_get_y(control_center_instance->swipe_panel->swipe_obj) < EOS_DISPLAY_HEIGHT)
+        lv_obj_add_flag(control_center_instance->swipe_panel->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+}
+
+eos_control_center_t *eos_control_center_get_instance(void)
+{
+    return control_center_instance;
+}
+
+void eos_control_center_init(void)
+{
+    control_center_instance = eos_control_center_create(lv_layer_sys());
+    eos_control_center_hide();
 }

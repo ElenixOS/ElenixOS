@@ -19,13 +19,33 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
-
+typedef int16_t eos_crown_encoder_diff_t;
 /* Public function prototypes --------------------------------*/
+/**
+ * @brief 设置编码器反向
+ * @param reverse true = 反向，false = 正向
+ */
+void eos_crown_encoder_set_reverse(bool reverse);
+/**
+ * @brief 设置编码器的滚动对象
+ * @param obj 目标滚动对象
+ */
+void eos_crown_encoder_set_target_obj(lv_obj_t *obj);
+/**
+ * @brief 根据`lv_screen`设置编码器的滚动对象，对象总是获取最先创建的对象(Firstly created)
+ * @param screen 目标 Screen
+ */
+void eos_crown_encoder_set_target_screen(lv_obj_t *screen);
 /**
  * @brief 上报表冠按钮的状态
  * @param state 状态值
  */
 void eos_crown_button_report(eos_button_state_t state);
+/**
+ * @brief 上报表冠编码器增量
+ * @param diff 增量
+ */
+void eos_crown_encoder_report(eos_crown_encoder_diff_t diff);
 #ifdef __cplusplus
 }
 #endif

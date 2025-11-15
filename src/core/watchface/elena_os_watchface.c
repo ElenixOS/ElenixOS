@@ -288,7 +288,7 @@ void eos_watchface_create(void)
     }
     watchface_screen = eos_screen_create();
     lv_obj_add_style(watchface_screen, eos_theme_get_screen_style(), 0);
-    lv_screen_load(watchface_screen);
+    eos_screen_load(watchface_screen);
     // JSON中获取表盘id
     EOS_LOG_D("Loading wf_id");
     const char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
@@ -298,8 +298,8 @@ void eos_watchface_create(void)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
              wf_id);
-    script_pkg_t *pkg = eos_malloc(sizeof(script_pkg_t));
-    memset((void *)pkg, 0, sizeof(script_pkg_t));
+    script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
+    EOS_CHECK_PTR_RETURN(pkg);
     pkg->type = SCRIPT_TYPE_WATCHFACE;
     EOS_LOG_D("script_engine_get_manifest");
     if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
@@ -322,16 +322,6 @@ void eos_watchface_create(void)
         return;
     }
     pkg->script_str = eos_read_file(script_path);
-
-    // 设置下拉面板
-    eos_msg_list_t *msg_list = eos_msg_list_create(watchface_screen);
-    if (!msg_list)
-    {
-        EOS_LOG_E("Create msg_list failed");
-        return;
-    }
-    // 设置上拉面板
-    eos_control_center_create(watchface_screen);
     // 设置长按回调 进入 watchface list 使用普通 nav 导航
     lv_obj_add_event_cb(watchface_screen, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // 正式运行表盘脚本（脚本禁止阻塞线程）

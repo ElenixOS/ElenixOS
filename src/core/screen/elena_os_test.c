@@ -32,6 +32,7 @@
 #include "elena_os_font.h"
 #include "elena_os_sensor.h"
 #include "elena_os_scene.h"
+#include "elena_os_crown.h"
 
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
@@ -121,7 +122,7 @@ lv_obj_t *_create_new_scr()
 {
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
     eos_screen_bind_header(scr, "ElenaOS Test");
-    lv_screen_load(scr);
+    eos_screen_load(scr);
     return scr;
 }
 
@@ -152,7 +153,7 @@ static void _test_msg_list_cb(lv_event_t *e)
 static void _test_msg_list()
 {
     _create_new_scr();
-    eos_msg_list_t *msg_list = eos_msg_list_create(lv_screen_active());
+    eos_msg_list_t *msg_list = eos_msg_list_get_instance();
     EOS_CHECK_PTR_RETURN(msg_list);
     lv_obj_t *btn = lv_button_create(lv_screen_active());
     lv_obj_center(btn);
@@ -610,6 +611,7 @@ void eos_test_start(void)
 
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
+    eos_crown_encoder_set_target_obj(test_list);
 
     lv_obj_t *btn;
     lv_obj_t *label = lv_list_add_text(test_list, RI_ELENA_WATCH " ElenaOS Test List");

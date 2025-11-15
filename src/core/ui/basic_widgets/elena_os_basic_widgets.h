@@ -70,6 +70,11 @@ typedef struct{
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 加载屏幕并广播全局加载事件
+ * @param scr 要加载的屏幕
+ */
+void eos_screen_load(lv_obj_t *scr);
+/**
  * @brief 创建新的`screen`并设置默认style
  * @return lv_obj_t*
  */

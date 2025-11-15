@@ -108,11 +108,22 @@ void eos_msg_list_item_icon_set_src(eos_msg_list_item_t *item, const char *src);
  */
 void eos_msg_list_delete(eos_msg_list_t *list);
 /**
- * @brief 创建消息列表
- * @param parent 消息列表的父级对象指针
- * @return eos_msg_list_t* 返回创建的消息列表指针（动态内存分配）
+ * @brief 获取消息列表实例
+ * @return eos_msg_list_t*
  */
-eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent);
+eos_msg_list_t *eos_msg_list_get_instance(void);
+/**
+ * @brief 初始化消息列表
+ */
+void eos_msg_list_init(void);
+/**
+ * @brief 显示消息列表
+ */
+void eos_msg_list_show(void);
+/**
+ * @brief 隐藏消息列表
+ */
+void eos_msg_list_hide(void);
 #ifdef __cplusplus
 }
 #endif

@@ -121,16 +121,17 @@ void eos_flash_light_show(void)
     _pressing_user_data_t *ud = eos_malloc(sizeof(_pressing_user_data_t));
     EOS_CHECK_PTR_RETURN(ud);
 
-    lv_obj_t *mask = lv_obj_create(lv_screen_active());
+    lv_obj_t *mask = lv_obj_create(lv_layer_sys());
     lv_obj_remove_style_all(mask);
     lv_obj_set_size(mask, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(mask, EOS_COLOR_BLACK, 0);
 
     ud->mask = mask;
 
-    eos_swipe_panel_t *sp = eos_swipe_panel_create(lv_screen_active());
+    eos_swipe_panel_t *sp = eos_swipe_panel_create(lv_layer_sys());
     eos_swipe_panel_set_dir(sp, EOS_SWIPE_DIR_UP);
     eos_swipe_panel_slide_down(sp);
+    eos_slide_widget_reverse(sp->sw);
     eos_swipe_panel_hide_handle_bar(sp);
     lv_obj_set_style_bg_opa(sp->swipe_obj, LV_OPA_TRANSP, 0);
 

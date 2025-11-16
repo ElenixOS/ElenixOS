@@ -122,17 +122,9 @@ void _init_style_roller(void)
 static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
 {
     LV_UNUSED(th);
-    if (lv_obj_check_type(obj, &lv_button_class))
-    {
-        // lv_obj_add_style(obj, &style_btn, 0);
-    }
-    else if (lv_obj_check_type(obj, &lv_label_class))
+    if (lv_obj_check_type(obj, &lv_label_class))
     {
         lv_obj_add_style(obj, &style_label, 0);
-#if EOS_FONT_TYPE == EOS_FONT_C_SCALE
-        eos_label_add_size_changed_cb(obj);
-        eos_label_set_font_size(obj, EOS_FONT_SIZE_MEDIUM);
-#endif
     }
     else if (lv_obj_check_type(obj, &lv_list_class))
     {

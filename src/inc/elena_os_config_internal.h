@@ -24,9 +24,8 @@ extern "C" {
 #define NORMAL_MODE         0
 #define TEST_MODE           1
 
-#define EOS_FONT_C_SCALE    0
-#define EOS_FONT_C_MULTI    1
-#define EOS_FONT_TTF        2
+#define EOS_FONT_C_MULTI    0
+#define EOS_FONT_TTF        1
 
 #define EOS_FONT_TTF_DATA   0
 #define EOS_FONT_TTF_FILE   1

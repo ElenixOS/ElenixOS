@@ -33,19 +33,13 @@ typedef enum
 } eos_font_size_t;
 
 /* Public function prototypes --------------------------------*/
+
 /**
  * @brief 字体系统初始化
  * @return lv_font_t* 创建成功则返回默认字体指针，否则返回NULL
  */
 lv_font_t * eos_font_init(void);
-#if EOS_FONT_TYPE == EOS_FONT_C_SCALE
-/**
- * @brief 添加字体大小调整回调，以便自动设置原点，否则字体大小变换时原点为标签左上角。
- * @param label `lv_label`
- * @note 只需要在`主题应用回调`中调用此函数即可
- */
-void eos_label_add_size_changed_cb(lv_obj_t *label);
-#endif /* EOS_FONT_TYPE */
+
 /**
  * @brief 设置标签对象的字体大小
  * @param label 目标标签

@@ -130,7 +130,7 @@ static void _control_center_slider_page_clicked_cb(lv_event_t *e)
 
 static lv_obj_t *_control_center_slider_create(const char *symbol)
 {
-    lv_obj_t *slider_page = lv_obj_create(eos_watchface_get_screen());
+    lv_obj_t *slider_page = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(slider_page);
     lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
     lv_obj_move_foreground(slider_page);

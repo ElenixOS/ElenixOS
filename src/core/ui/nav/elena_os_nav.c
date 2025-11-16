@@ -10,7 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-
+#define EOS_LOG_TAG "Navigation"
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_theme.h"

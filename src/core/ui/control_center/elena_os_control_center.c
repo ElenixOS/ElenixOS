@@ -37,6 +37,7 @@
 /* Variables --------------------------------------------------*/
 static eos_control_center_t *control_center_instance = NULL;
 /* Function Implementations -----------------------------------*/
+void eos_control_panel_slide_change(void);
 
 /************************** 列表回调 **************************/
 
@@ -376,7 +377,7 @@ static void _control_center_mute_switch_btn_cb(lv_event_t *e)
 static void _control_center_settings_entry_cb(lv_event_t *e)
 {
     eos_settings_create();
-    eos_control_center_hide();
+    eos_control_panel_slide_change();
 }
 /************************** 控制中心 **************************/
 
@@ -497,6 +498,6 @@ eos_control_center_t *eos_control_center_get_instance(void)
 
 void eos_control_center_init(void)
 {
-    control_center_instance = eos_control_center_create(lv_layer_sys());
+    control_center_instance = eos_control_center_create(lv_layer_top());
     eos_control_center_hide();
 }

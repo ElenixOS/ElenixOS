@@ -42,7 +42,7 @@ static eos_control_center_t *control_center_instance = NULL;
 void eos_control_panel_slide_change(void);
 
 /************************** 列表回调 **************************/
-
+#if EOS_ANIMATION_ENABLE
 static void _list_scroll_cb(lv_event_t *e)
 {
     lv_obj_t *list = lv_event_get_user_data(e);
@@ -99,7 +99,7 @@ static void _list_scroll_cb(lv_event_t *e)
         lv_obj_set_style_transform_scale(child, scale, 0);
     }
 }
-
+#endif /* EOS_ANIMATION_ENABLE */
 static void _slide_widget_reached_threshold_cb(lv_event_t *e)
 {
     lv_obj_t *container = (lv_obj_t *)lv_event_get_user_data(e);
@@ -409,9 +409,11 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
                           LV_FLEX_ALIGN_CENTER, // 交叉轴（垂直方向）居中
                           LV_FLEX_ALIGN_START);
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+#if EOS_ANIMATION_ENABLE
     lv_obj_add_event_cb(container, _list_scroll_cb, LV_EVENT_SCROLL, container);
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, container);
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_DONE, container);
+#endif /* EOS_ANIMATION_ENABLE */
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, container);
     cc->container = container;
     lv_obj_t *btn;

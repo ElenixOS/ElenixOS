@@ -42,6 +42,11 @@ extern "C"
  */
 #define EOS_SYSTEM_MODE NORMAL_MODE
 
+/**
+ * 选择是否启用动画
+ */
+#define EOS_ANIMATION_ENABLE 0
+
 /************************** 模块 **************************/
 
 /**

@@ -13,6 +13,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_config.h"
 #include "elena_os_swipe_panel.h"
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "FlashLight"
 #include "elena_os_log.h"
 #include "elena_os_event.h"

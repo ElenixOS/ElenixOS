@@ -15,6 +15,8 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "lvgl.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Image"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 /* Macros and Definitions -------------------------------------*/

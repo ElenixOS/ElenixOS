@@ -17,6 +17,8 @@
 #include <errno.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "App"
 #include "elena_os_log.h"
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_event.h"

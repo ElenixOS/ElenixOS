@@ -19,6 +19,8 @@
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Settings"
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"

@@ -10,6 +10,8 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "ThemeSystem"
 #include "elena_os_log.h"
 #include "lvgl_private.h"
 #include "elena_os_font.h"

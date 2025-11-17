@@ -10,6 +10,8 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "SwipePanel"
 #include "elena_os_log.h"
 #include "elena_os_event.h"
 #include "elena_os_config.h"

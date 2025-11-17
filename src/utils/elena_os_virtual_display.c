@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "VirtualDisplay"
 #include "elena_os_log.h"
 #include "elena_os_port.h"

@@ -21,6 +21,8 @@
 #include "elena_os_app.h"
 #include "elena_os_watchface.h"
 #include "elena_os_misc.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "ScriptEngineNativeFunc"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"

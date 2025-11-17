@@ -14,6 +14,7 @@
 #include "elena_os_img.h"
 #include "elena_os_config.h"
 #include "elena_os_anim.h"
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Toast"
 #include "elena_os_log.h"
 

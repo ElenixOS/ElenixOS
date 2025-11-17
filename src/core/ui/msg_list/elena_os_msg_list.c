@@ -13,6 +13,7 @@
 #include <string.h>
 #include "elena_os_lang.h"
 #include "elena_os_anim.h"
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "MessageList"
 #include "elena_os_log.h"
 #include "elena_os_img.h"

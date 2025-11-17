@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include "elena_os_scene.h"
 #include "elena_os_async.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Crown"
 #include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50

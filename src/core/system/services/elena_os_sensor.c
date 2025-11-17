@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sensor.c
- * @brief 传感器测试应用
+ * @brief 传感器
  * @author Sab1e
  * @date 2025-09-14
  */
@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lvgl.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Sensor"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_nav.h"

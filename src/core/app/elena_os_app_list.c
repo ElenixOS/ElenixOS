@@ -13,6 +13,8 @@
 #include "lvgl.h"
 #include "cJSON.h"
 #include "elena_os_nav.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "AppList"
 #include "elena_os_log.h"
 #include "elena_os_app.h"
 #include "elena_os_basic_widgets.h"

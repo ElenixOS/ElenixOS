@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Misc"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 /* Macros and Definitions -------------------------------------*/

@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "elena_os_event.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Language"
 #include "elena_os_log.h"
 #include "lvgl.h"
 #include "elena_os_sys.h"

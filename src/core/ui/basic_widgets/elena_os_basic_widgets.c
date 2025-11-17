@@ -14,6 +14,8 @@
 #include "lvgl.h"
 #include "elena_os_core.h"
 #include "elena_os_lang.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "BasicWidgets"
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
 #include "elena_os_img.h"

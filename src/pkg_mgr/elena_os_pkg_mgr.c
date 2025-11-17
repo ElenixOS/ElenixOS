@@ -16,6 +16,8 @@
 #include <string.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "PackageManager"
 #include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_PKG_HEADER_LENGTH EOS_PKG_TABLE_OFFSET

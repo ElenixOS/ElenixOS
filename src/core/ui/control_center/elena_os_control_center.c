@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_swipe_panel.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "ControlCenter"
 #include "elena_os_log.h"
 #include "elena_os_theme.h"
 #include "elena_os_sys.h"

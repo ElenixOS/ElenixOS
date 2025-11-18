@@ -47,6 +47,11 @@ extern "C"
  */
 #define EOS_ANIMATION_ENABLE 0
 
+/**
+ * 选择是否将图标的字符串构建入 JerryScript
+ */
+#define EOS_ICON_STR_BUILD_IN 0
+
 /************************** 模块 **************************/
 
 /**
@@ -137,7 +142,7 @@ extern "C"
 
 #ifndef EOS_SYS_ROOT_DIR
 #define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
-#endif                       /* EOS_SYS_ROOT_DIR */
+#endif /* EOS_SYS_ROOT_DIR */
 
 /************************** 电量检测 **************************/
 

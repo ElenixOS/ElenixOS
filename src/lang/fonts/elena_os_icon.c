@@ -21,6 +21,7 @@ extern jerry_value_t script_engine_eos_obj;
  */
 void eos_icon_register(void)
 {
+#if EOS_ICON_STR_BUILD_IN
     struct {
         const char *name;
         const char *value;
@@ -8995,5 +8996,5 @@ void eos_icon_register(void)
         jerry_value_free(key);
         jerry_value_free(val);
     }
-
+#endif /* EOS_ICON_STR_BUILD_IN */
 }

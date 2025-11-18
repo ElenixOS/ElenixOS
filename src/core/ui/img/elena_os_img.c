@@ -15,7 +15,6 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "lvgl.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Image"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
@@ -32,27 +31,15 @@
  */
 static void _img_delete_event_cb(lv_event_t *e)
 {
-    EOS_LOG_D("Try delete image");
-    lv_obj_t *img_obj = lv_event_get_target(e);
-    EOS_CHECK_PTR_RETURN(img_obj);
+    lv_image_dsc_t *img_dsc = lv_event_get_user_data(e);
+    if (!img_dsc) return;
 
-    // 从事件中获取用户数据
-    img_user_data_t *user_data = (img_user_data_t *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(user_data);
+    uint8_t *bin_data = (uint8_t *)img_dsc->data - sizeof(lv_image_header_t);
 
-    if (user_data->bin_data)
-    {
-        eos_free_large(user_data->bin_data);
-        user_data->bin_data = NULL;
-    }
-    if (user_data->img_dsc)
-    {
-        eos_free(user_data->img_dsc);
-        user_data->img_dsc = NULL;
-    }
-    eos_free(user_data);
-    EOS_LOG_D("Image deleted.");
+    eos_free_large(bin_data);
+    eos_free(img_dsc);
 }
+
 
 void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h)
 {
@@ -85,12 +72,15 @@ void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h)
 
 void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
 {
+    // 路径为空则不设置源
+    if (!bin_path)
+        return;
     EOS_CHECK_PTR_RETURN(img_obj);
 
     EOS_LOG_I("Load image bin: %s", bin_path);
 
     // 清除回调
-    lv_obj_remove_event_cb_with_user_data(img_obj, _img_delete_event_cb, NULL);
+    lv_obj_remove_event_cb(img_obj, _img_delete_event_cb);
 
     // 避免数据泄漏
     lv_image_set_src(img_obj, NULL);
@@ -163,21 +153,9 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     img_dsc->data_size = file_size - sizeof(lv_image_header_t);
     img_dsc->data = (const uint8_t *)bin_data + sizeof(lv_image_header_t);
 
-    // 创建用户数据结构
-    img_user_data_t *user_data = (img_user_data_t *)eos_malloc(sizeof(img_user_data_t));
-    if (!user_data)
-    {
-        EOS_LOG_E("Failed to allocate user data");
-        eos_free_large(bin_data);
-        eos_free(img_dsc);
-        return;
-    }
-    user_data->bin_data = bin_data;
-    user_data->img_dsc = img_dsc;
-
     // 设置图像源
     lv_image_set_src(img_obj, img_dsc);
     // 添加删除事件回调，并将用户数据附加到回调
-    lv_obj_add_event_cb(img_obj, _img_delete_event_cb, LV_EVENT_DELETE, user_data);
+    lv_obj_add_event_cb(img_obj, _img_delete_event_cb, LV_EVENT_DELETE, img_dsc);
     EOS_LOG_D("Image Set OK");
 }

@@ -27,15 +27,6 @@ extern "C" {
 #define EOS_IMG_LOGO EOS_SYS_RES_IMG_DIR "logo.bin"
 /* Public typedefs --------------------------------------------*/
 
-/**
- * @brief 用户数据结构体
- *
- * 用于清理内存和动态分配的 img
- */
-typedef struct {
-    void *bin_data;             // 指向存储 bin 文件数据的指针
-    lv_image_dsc_t *img_dsc;    // 指向图片描述符的指针
-} img_user_data_t;
 /* Public function prototypes --------------------------------*/
 
 /**

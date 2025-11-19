@@ -56,7 +56,7 @@ int eos_fs_mkdir_if_not_exist(const char *path);
 int eos_create_file_if_not_exist(const char *path, const char *default_content);
 
 /**
- * @brief 读取整个文件内容到动态分配的缓冲区
+ * @brief 读取整个文件内容到动态分配的缓冲区（只能读取文本文件）
  * @param path 文件路径
  * @return char* 返回动态分配的缓冲区；失败返回 NULL
  * @warning 使用完数据后必须使用`eos_free`释放内存

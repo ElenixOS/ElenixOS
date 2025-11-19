@@ -197,7 +197,7 @@ char *eos_fs_read_file(const char *path)
 {
     eos_file_t *fp = eos_fs_open_read(path);
     // 获取文件大小
-    size_t file_size = 0;
+    uint32_t file_size = 0;
     eos_fs_size(fp, &file_size);
 
     if (file_size <= 0)

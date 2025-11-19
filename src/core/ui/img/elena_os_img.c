@@ -90,7 +90,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     EOS_CHECK_PTR_RETURN(fp);
 
     // 获取文件大小
-    size_t file_size = 0;
+    uint32_t file_size = 0;
     eos_fs_size(fp, &file_size);
 
     if (file_size <= 0)

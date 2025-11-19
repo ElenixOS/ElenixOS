@@ -39,6 +39,7 @@
 #include "elena_os_icon.h"
 #include "elena_os_display.h"
 #include "elena_os_toast.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -146,9 +147,9 @@ static void _settings_screen_display(lv_event_t *e)
     lv_obj_t *list = eos_list_create(scr);
 
     eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_DISPLAY_BRIGHTNESS]);
-    lv_label_set_text(ls->minus_label,RI_SUN_LINE);
-    lv_label_set_text(ls->plus_label,RI_SUN_FILL);
-    eos_list_slider_set_minus_label_scale(ls,200);
+    lv_label_set_text(ls->minus_label, RI_SUN_LINE);
+    lv_label_set_text(ls->plus_label, RI_SUN_FILL);
+    eos_list_slider_set_minus_label_scale(ls, 200);
     lv_slider_set_value(ls->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50), LV_ANIM_ON);
     lv_slider_set_range(ls->slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_add_event_cb(ls->slider, _brightness_slider_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -237,8 +238,8 @@ static void _settings_screen_sound_and_haptics(lv_event_t *e)
     lv_obj_add_event_cb(bt_sw, _mute_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME]);
-    lv_label_set_text(ls->minus_label,RI_VOLUME_DOWN_FILL);
-    lv_label_set_text(ls->plus_label,RI_VOLUME_UP_FILL);
+    lv_label_set_text(ls->minus_label, RI_VOLUME_DOWN_FILL);
+    lv_label_set_text(ls->plus_label, RI_VOLUME_UP_FILL);
 
     lv_slider_set_value(ls->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 50), LV_ANIM_ON);
     lv_slider_set_range(ls->slider, EOS_SPEAKER_VOLUME_MIN, EOS_SPEAKER_VOLUME_MAX);
@@ -264,11 +265,13 @@ static void _uninstall_btn_cb(lv_event_t *e)
 
 static void _clear_data_btn_cb(lv_event_t *e)
 {
+    lv_obj_t *btn = lv_event_get_target(e);
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    eos_rm_recursive(data_path);
+    eos_fs_rm_recursive(data_path);
+    lv_obj_add_state(btn, LV_STATE_DISABLED);
 }
 
 /**
@@ -351,7 +354,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     }
 
     lv_obj_t *clear_data_btn = lv_button_create(list);
-    lv_obj_set_size(clear_data_btn, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_set_size(clear_data_btn, lv_pct(100), EOS_THEME_BUTTON_HEIGHT);
     lv_obj_set_style_margin_bottom(clear_data_btn, 20, 0);
     lv_obj_set_style_bg_color(clear_data_btn, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_set_style_radius(clear_data_btn, LV_RADIUS_CIRCLE, 0);
@@ -362,8 +365,15 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     lv_obj_set_style_text_color(clear_data_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
     lv_obj_center(clear_data_btn_label);
 
+    char data_path[PATH_MAX];
+    snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
+    if (!eos_is_dir(data_path))
+    {
+        lv_obj_add_state(clear_data_btn, LV_STATE_DISABLED);
+    }
+
     lv_obj_t *uninstall_btn = lv_button_create(list);
-    lv_obj_set_size(uninstall_btn, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_set_size(uninstall_btn, lv_pct(100), EOS_THEME_BUTTON_HEIGHT);
     lv_obj_set_style_bg_color(uninstall_btn, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_set_style_radius(uninstall_btn, LV_RADIUS_CIRCLE, 0);
 

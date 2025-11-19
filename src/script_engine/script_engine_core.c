@@ -67,6 +67,7 @@
 #include "elena_os_icon.h"
 #include "elena_os_watchface.h"
 #include "elena_os_config.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_EOS_OBJ_KEY "eos"
@@ -287,7 +288,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
         return -SE_ERR_NULL_PACKAGE;
     }
 
-    char *manifest_json = eos_read_file(manifest_path);
+    char *manifest_json = eos_fs_read_file(manifest_path);
     if (!manifest_json)
     {
         EOS_LOG_E("Read manifest.json failed");
@@ -295,7 +296,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     }
 
     cJSON *root = cJSON_Parse(manifest_json);
-    eos_free_large(manifest_json);
+    eos_free(manifest_json);
     if (!root)
     {
         EOS_LOG_E("parse error: %s\n", cJSON_GetErrorPtr());
@@ -575,7 +576,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
         JERRY_PARSE_NO_OPTS);
 
     // 清理脚本字符串
-    eos_free_large((void *)script_package->script_str);
+    eos_free((void *)script_package->script_str);
     script_package->script_str = NULL;
 
     script_engine_result_t result = SE_OK;

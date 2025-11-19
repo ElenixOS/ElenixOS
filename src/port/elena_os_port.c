@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "elena_os_log.h"
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 #include <stdatomic.h>
 #define HAS_ATOMIC 1
@@ -23,17 +24,17 @@
 
 /* Function Implementations -----------------------------------*/
 #if HAS_ATOMIC
-typedef struct eos_sem
+struct eos_sem_t
 {
     atomic_uint count;
     unsigned int max;
-} eos_sem_t;
+};
 #else
-typedef struct eos_sem
+struct eos_sem_t
 {
     uint32_t count;
     uint32_t max;
-} eos_sem_t;
+};
 #endif
 
 EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
@@ -89,31 +90,6 @@ EOS_WEAK void eos_sem_give(eos_sem_t *sem)
     if (sem->count < sem->max)
         sem->count++;
 #endif
-}
-
-EOS_WEAK void *eos_malloc(size_t size)
-{
-    return malloc(size);
-}
-
-EOS_WEAK void *eos_malloc_zeroed(size_t size)
-{
-    return calloc(1, size);
-}
-
-EOS_WEAK void eos_free(void *ptr)
-{
-    free(ptr);
-}
-
-EOS_WEAK void *eos_malloc_large(size_t size)
-{
-    return malloc(size);
-}
-
-EOS_WEAK void eos_free_large(void *ptr)
-{
-    free(ptr);
 }
 
 EOS_WEAK void eos_delay(uint32_t ms)

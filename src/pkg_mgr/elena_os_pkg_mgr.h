@@ -23,11 +23,10 @@ extern "C"
 /* Public macros ----------------------------------------------*/
 #define EOS_PKG_APP_MAGIC           "EAPK"
 #define EOS_PKG_WATCHFACE_MAGIC     "EWPK"
-#define EOS_PKG_READ_BLOCK          512
-#define EOS_PKG_NAME_LEN_MAX        256     // 最后一个字节强制为"\0"，因此名称长度最大255字节
-#define EOS_PKG_ID_LEN_MAX          256     // 同上
-#define EOS_PKG_VERSION_LEN_MAX     256     // 同上
-
+#define EOS_PKG_READ_BLOCK          512     /*< 数据读取时的分块大小 */
+#define EOS_PKG_NAME_LEN_MAX        256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
+#define EOS_PKG_ID_LEN_MAX          256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
+#define EOS_PKG_VERSION_LEN_MAX     256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
 
 #define EOS_PKG_MAGIC_OFFSET        0
 #define EOS_PKG_NAME_OFFSET         EOS_PKG_MAGIC_OFFSET + 4
@@ -53,6 +52,7 @@ typedef struct
 
 /**
  * @brief 没有使用此结构体，但是 eos_pkg_mgr_unpack 是按照此结构体解析的
+ * 此结构体用于定义单个文件/目录的信息结构
  ***********************************
     typedef struct
     {
@@ -65,6 +65,7 @@ typedef struct
  ************************************/
 
 /* Public function prototypes --------------------------------*/
+
 /**
  * @brief 读取文件包头
  * @param pkg_path 软件包路径
@@ -72,6 +73,7 @@ typedef struct
  * @return eos_result_t 执行结果
  */
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header);
+
 /**
  * @brief 解包 EAPK/EWPK 文件（例如：app.eapk, watchface.ewpk）
  * @param pkg_path 包文件路径

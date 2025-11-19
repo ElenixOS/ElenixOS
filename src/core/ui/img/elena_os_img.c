@@ -32,14 +32,14 @@
 static void _img_delete_event_cb(lv_event_t *e)
 {
     lv_image_dsc_t *img_dsc = lv_event_get_user_data(e);
-    if (!img_dsc) return;
+    if (!img_dsc)
+        return;
 
     uint8_t *bin_data = (uint8_t *)img_dsc->data - sizeof(lv_image_header_t);
 
-    eos_free_large(bin_data);
+    eos_free(bin_data);
     eos_free(img_dsc);
 }
-
 
 void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h)
 {
@@ -86,47 +86,37 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     lv_image_set_src(img_obj, NULL);
 
     // 打开新图像文件
-    int fd = open(bin_path, O_RDONLY);
-    if (fd == -1)
-    {
-        EOS_LOG_E("Failed to open file: %s", bin_path);
-        return;
-    }
+    eos_file_t *fp = eos_fs_open_read(bin_path);
+    EOS_CHECK_PTR_RETURN(fp);
 
     // 获取文件大小
-    struct stat file_stat;
-    if (fstat(fd, &file_stat) == -1)
-    {
-        EOS_LOG_E("Failed to get file size");
-        close(fd);
-        return;
-    }
-    off_t file_size = file_stat.st_size;
+    size_t file_size = 0;
+    eos_fs_size(fp, &file_size);
 
     if (file_size <= 0)
     {
         EOS_LOG_E("Invalid file size");
-        close(fd);
+        eos_fs_close(fp);
         return;
     }
 
     // 分配内存
-    void *bin_data = eos_malloc_large(file_size);
+    void *bin_data = eos_malloc(file_size);
     if (!bin_data)
     {
         EOS_LOG_E("Failed to allocate memory for image");
-        close(fd);
+        eos_fs_close(fp);
         return;
     }
 
     // 读取文件内容到内存
-    ssize_t bytes_read = read(fd, bin_data, file_size);
-    close(fd); // 读取完成后立即关闭文件描述符
+    ssize_t bytes_read = eos_fs_read(fp, bin_data, file_size);
+    eos_fs_close(fp); // 读取完成后立即关闭文件描述符
 
     if (bytes_read != file_size)
     {
         EOS_LOG_E("Failed to read complete file (read %zd of %ld bytes)", bytes_read, file_size);
-        eos_free_large(bin_data);
+        eos_free(bin_data);
         return;
     }
 
@@ -135,7 +125,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     if (!img_dsc)
     {
         EOS_LOG_E("Failed to allocate image descriptor");
-        eos_free_large(bin_data);
+        eos_free(bin_data);
         return;
     }
 
@@ -145,7 +135,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     {
         EOS_LOG_E("Invalid image magic");
         eos_free(img_dsc);
-        eos_free_large(bin_data);
+        eos_free(bin_data);
         return;
     }
 

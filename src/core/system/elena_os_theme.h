@@ -38,6 +38,8 @@ extern "C" {
 #define EOS_THEME_SECONDARY_COLOR   EOS_COLOR_DARK_GREY_2
 #define EOS_THEME_DANGEROS_COLOR    EOS_COLOR_RED
 
+#define EOS_THEME_BUTTON_HEIGHT 100
+
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

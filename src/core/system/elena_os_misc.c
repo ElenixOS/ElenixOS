@@ -10,7 +10,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Misc"
 #include "elena_os_log.h"
@@ -20,159 +19,6 @@
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-bool eos_is_dir(const char *path)
-{
-    struct stat st;
-    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
-    {
-        return true; // 存在且是目录
-    }
-    return false;
-}
-
-bool eos_is_file(const char *path)
-{
-    struct stat st;
-    if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
-    {
-        return true; // 存在且是普通文件
-    }
-    return false;
-}
-
-eos_result_t eos_mkdir_if_not_exist(const char *path, mode_t mode)
-{
-    if (!eos_is_dir(path))
-    {
-        if (mkdir(path, mode) == 0)
-        {
-            EOS_LOG_I("Created dir: %s\n", path);
-        }
-        else
-        {
-            if (errno != EEXIST)
-            {
-                EOS_LOG_E("Create new directory failed!\nError code: %d\n", errno);
-                return -EOS_ERR_FILE_ERROR;
-            }
-        }
-    }
-    return EOS_OK;
-}
-
-eos_result_t eos_create_file_if_not_exist(const char *path, const char *default_content)
-{
-    if (!eos_is_file(path))
-    {
-        int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (fd == -EOS_ERR_FILE_ERROR)
-        {
-            EOS_LOG_E("open %s failed, errno=%d", path, errno);
-            return -EOS_ERR_FILE_ERROR;
-        }
-
-        if (default_content)
-        {
-            ssize_t len = strlen(default_content);
-            ssize_t written = write(fd, default_content, len);
-            if (written != len)
-            {
-                EOS_LOG_E("write %s failed, written=%zd, errno=%d", path, written, errno);
-                close(fd);
-                return -EOS_ERR_FILE_ERROR;
-            }
-        }
-
-        close(fd);
-        EOS_LOG_I("Created file: %s", path);
-    }
-    return EOS_OK;
-}
-
-eos_result_t eos_create_dir_recursive(const char *path)
-{
-    char tmp[256];
-    char *p = NULL;
-    size_t len;
-
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-
-    for (p = tmp + 1; *p; p++)
-    {
-        if (*p == '/')
-        {
-            *p = 0;
-            mkdir(tmp, 0755); // POSIX 创建目录
-            *p = '/';
-        }
-    }
-    mkdir(tmp, 0755); // 创建最后一级目录
-    return EOS_OK;
-}
-
-eos_result_t eos_rm_recursive(const char *path)
-{
-    struct stat st;
-    if (stat(path, &st) != 0)
-    {
-        // 文件不存在则忽略
-        if (errno == -ENOENT)
-        {
-            EOS_LOG_W("Path dose not exist: %s, ignored.\n", path, errno);
-            return EOS_OK;
-        }
-        EOS_LOG_E("stat failed: %s, errno=%d\n", path, errno);
-        return -EOS_ERR_FILE_ERROR;
-    }
-
-    if (S_ISDIR(st.st_mode))
-    {
-        DIR *dir = opendir(path);
-        if (!dir)
-        {
-            EOS_LOG_E("opendir failed: %s, errno=%d\n", path, errno);
-            return -EOS_ERR_FILE_ERROR;
-        }
-
-        struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL)
-        {
-            // 忽略 “.” 和 “..”
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-                continue;
-
-            char full_path[256];
-            snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
-
-            if (eos_rm_recursive(full_path) != EOS_OK)
-            {
-                closedir(dir);
-                return -EOS_ERR_FILE_ERROR;
-            }
-        }
-        closedir(dir);
-
-        // 删除空目录
-        if (rmdir(path) != 0)
-        {
-            EOS_LOG_E("rmdir failed: %s, errno=%d\n", path, errno);
-            return -EOS_ERR_FILE_ERROR;
-        }
-    }
-    else
-    {
-        // 删除文件
-        if (unlink(path) != 0)
-        {
-            EOS_LOG_E("unlink failed: %s, errno=%d\n", path, errno);
-            return -EOS_ERR_FILE_ERROR;
-        }
-    }
-    return EOS_OK;
-}
 
 bool eos_is_valid_filename(const char *name)
 {
@@ -200,30 +46,6 @@ bool eos_is_valid_filename(const char *name)
         }
     }
     return true; // 合法
-}
-
-char *eos_read_file(const char *filename)
-{
-    FILE *fp = fopen(filename, "rb");
-    if (!fp)
-    {
-        perror("fopen");
-        return NULL;
-    }
-    fseek(fp, 0, SEEK_END);
-    long size = ftell(fp);
-    rewind(fp);
-
-    char *data = (char *)eos_malloc_large(size + 1);
-    if (!data)
-    {
-        fclose(fp);
-        return NULL;
-    }
-    fread(data, 1, size, fp);
-    data[size] = '\0'; // 记得结尾加0
-    fclose(fp);
-    return data;
 }
 
 const char *eos_strdup(const char *s)

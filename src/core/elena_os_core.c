@@ -46,6 +46,7 @@
 #include "elena_os_scene.h"
 #include "elena_os_anim.h"
 #include "elena_os_control_center.h"
+#include "elena_os_fs.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -67,7 +68,6 @@ static lv_indev_t *_get_key_indev()
     }
     EOS_LOG_W("Not found input device: key");
 }
-
 
 void eos_logo_play(bool anim)
 {

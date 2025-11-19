@@ -5,6 +5,8 @@
  * @date 2025-09-13
  */
 
+#if 1 /* 启用配置 */
+
 #ifndef ELENA_OS_CONFIG_H
 #define ELENA_OS_CONFIG_H
 
@@ -58,6 +60,17 @@ extern "C"
  * 启用虚拟显示器模块
  */
 #define EOS_USE_VIRTUAL_DISPLAY 1
+
+/************************** 内存配置 **************************/
+
+/**
+ * 选择内存分配策略
+ * 可用选项:
+ *  - EOS_MEM_STDLIB:       使用标准库的内存分配函数
+ *  - EOS_MEM_CUSTOM:       使用自定义的分配函数（覆盖弱定义的eos_malloc等函数即可）
+ *  - EOS_MEM_AUTO:         使用多级自动分配，参见`elena_os_mem_auto.c`
+ */
+#define EOS_MEM_ALLOC_STRATEGY EOS_MEM_STDLIB
 
 /************************** 传感器配置 **************************/
 
@@ -144,6 +157,20 @@ extern "C"
 #define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
 #endif /* EOS_SYS_ROOT_DIR */
 
+/**
+ * 选择文件系统类型
+ * 可选选项:
+ *  - EOS_FS_POSIX
+ *  - EOS_FS_FATFS
+ *  - EOS_FS_LITTLEFS
+ *  - EOS_FS_CUSTOM
+ */
+#define EOS_FS_TYPE EOS_FS_POSIX
+
+#if EOS_FS_TYPE == EOS_FS_CUSTOM
+    #define EOS_FS_FILE_TYPE void       /**< 文件指针的数据类型 */
+    #define EOS_FS_DIR_TYPE void       /**< 文件指针的数据类型 */
+#endif /* EOS_FS_TYPE */
 /************************** 电量检测 **************************/
 
 #define EOS_BATTERY_DISPLAY_UPDATE_MS 5 * 60 * 1000 /**< 电池电量显示更新时间 */
@@ -172,3 +199,5 @@ extern "C"
 #endif
 
 #endif /* ELENA_OS_CONFIG_H */
+
+#endif /* 启用配置 */

@@ -1,5 +1,4 @@
-﻿
-/**
+﻿/**
  * @file script_engine_native_func.c
  * @brief 原生函数实现及注册
  * @author Sab1e
@@ -26,6 +25,7 @@
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_fs.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -62,16 +62,27 @@ static bool config_write_to_file(cJSON *root)
         return false;
     }
     EOS_LOG_D("Writing file: %s", config_file_path);
-    FILE *fp = fopen(config_file_path, "w");
+
+    eos_file_t *fp = eos_fs_open_write(config_file_path);
     if (!fp)
     {
         EOS_LOG_E("Open file failed");
         eos_free(json_str);
         return false;
     }
-    fputs(json_str, fp);
-    fclose(fp);
+
+    size_t json_len = strlen(json_str);
+    int written = eos_fs_write(fp, json_str, json_len);
+    eos_fs_close(fp);
+
     eos_free(json_str);
+
+    if (written < 0 || (size_t)written != json_len)
+    {
+        EOS_LOG_E("Write file failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -95,26 +106,39 @@ static cJSON *config_load_from_file(void)
         return NULL;
     }
     EOS_LOG_D("Load from file: %s", config_file_path);
+
     if (!eos_is_file(config_file_path))
     {
         return cJSON_CreateObject();
     }
 
-    FILE *fp = fopen(config_file_path, "rb");
+    eos_file_t *fp = eos_fs_open_read(config_file_path);
     if (!fp)
     {
         EOS_LOG_E("Open file failed");
         return cJSON_CreateObject();
     }
 
-    fseek(fp, 0, SEEK_END);
-    long size = ftell(fp);
-    rewind(fp);
+    uint32_t size = 0;
+    if (eos_fs_size(fp, &size) < 0)
+    {
+        EOS_LOG_E("Get file size failed");
+        eos_fs_close(fp);
+        return cJSON_CreateObject();
+    }
 
     char *data = (char *)eos_malloc(size + 1);
-    fread(data, 1, size, fp);
+    int read_bytes = eos_fs_read(fp, data, size);
+    eos_fs_close(fp);
+
+    if (read_bytes < 0 || (uint32_t)read_bytes != size)
+    {
+        EOS_LOG_E("Read file failed");
+        eos_free(data);
+        return cJSON_CreateObject();
+    }
+
     data[size] = '\0';
-    fclose(fp);
 
     cJSON *root = cJSON_Parse(data);
     eos_free(data);

@@ -30,6 +30,15 @@ extern "C" {
 #define EOS_FONT_TTF_DATA   0
 #define EOS_FONT_TTF_FILE   1
 
+#define EOS_FS_POSIX        0
+#define EOS_FS_FATFS        1
+#define EOS_FS_LITTLEFS     2
+#define EOS_FS_CUSTOM       3
+
+#define EOS_MEM_STDLIB      0
+#define EOS_MEM_CUSTOM      1
+#define EOS_MEM_AUTO        2
+
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

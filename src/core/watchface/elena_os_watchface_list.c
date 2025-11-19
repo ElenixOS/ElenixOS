@@ -30,6 +30,7 @@
 #include "script_engine_core.h"
 #include "elena_os_sys.h"
 #include "elena_os_scene.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
 

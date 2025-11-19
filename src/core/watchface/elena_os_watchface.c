@@ -10,11 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
 #include <string.h>
-#include <errno.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
 #define EOS_LOG_DISABLE
@@ -28,6 +24,7 @@
 #include "elena_os_control_center.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_scene.h"
+#include "elena_os_fs.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -86,7 +83,7 @@ void _eos_watchface_list_add(eos_watchface_list_t *list, const char *id)
     if (list->size == list->capacity)
     {
         list->capacity *= 2;
-        list->data = realloc(list->data, list->capacity * sizeof(char *));
+        list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
     }
     list->data[list->size] = eos_strdup(id); // 复制字符串
     list->size++;
@@ -178,35 +175,16 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     if (eos_is_dir(path))
     {
         // 如果存在则删除
-        eos_rm_recursive(path);
+        eos_fs_rm_recursive(path);
     }
     // 创建应用名称的文件夹
-    if (mkdir(path, 0755) == 0)
+    if (eos_fs_mkdir(path) == 0)
     {
         EOS_LOG_I("Created dir: %s\n", path);
     }
     else
     {
-        if (errno != EEXIST)
-        {
-            EOS_LOG_E("mkdir");
-            return -EOS_ERR_FILE_ERROR;
-        }
-    }
-    if (!eos_is_dir(data_path))
-    {
-        if (mkdir(data_path, 0755) == 0)
-        {
-            EOS_LOG_I("Created dir: %s\n", data_path);
-        }
-        else
-        {
-            if (errno != EEXIST)
-            {
-                EOS_LOG_E("mkdir");
-                return -EOS_ERR_FILE_ERROR;
-            }
-        }
+        return -EOS_ERR_FILE_ERROR;
     }
     // 安装应用程序
     script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;
@@ -214,9 +192,10 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     if (ret != EOS_OK)
     {
         EOS_LOG_E("Watchface unpack failed. Code: %d", ret);
-        eos_rm_recursive(path);
+        eos_fs_rm_recursive(path);
         return EOS_FAILED;
     }
+    eos_fs_mkdir_if_not_exist(data_path);
     _eos_watchface_list_refresh();
     EOS_LOG_D("Watchface installed successfully: %s", header.pkg_name);
     return EOS_OK;
@@ -235,7 +214,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
         return EOS_FAILED;
     }
 
-    eos_result_t ret = eos_rm_recursive(path);
+    eos_result_t ret = eos_fs_rm_recursive(path);
 
     if (ret != EOS_OK)
     {
@@ -246,7 +225,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     // 清理应用数据
     if (eos_is_dir(data_path))
     {
-        ret = eos_rm_recursive(path);
+        ret = eos_fs_rm_recursive(path);
     }
 
     if (ret != EOS_OK)
@@ -323,7 +302,7 @@ void eos_watchface_create(void)
         EOS_LOG_E("Can't find script: %s", script_path);
         return;
     }
-    pkg->script_str = eos_read_file(script_path);
+    pkg->script_str = eos_fs_read_file(script_path);
     // 设置长按回调 进入 watchface list 使用普通 nav 导航
     lv_obj_add_event_cb(watchface_screen, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // 正式运行表盘脚本（脚本禁止阻塞线程）

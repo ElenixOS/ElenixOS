@@ -10,11 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
 #include <string.h>
-#include <errno.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
 #define EOS_LOG_DISABLE
@@ -25,6 +21,7 @@
 #include "script_engine_core.h"
 #include "cJSON.h"
 #include "elena_os_app_list.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
@@ -70,15 +67,15 @@ static eos_result_t _eos_app_order_save(void)
         return EOS_FAILED;
     }
 
-    FILE *fp = fopen(EOS_APP_LIST_APP_ORDER_PATH, "w");
+    eos_file_t *fp = eos_fs_open_write(EOS_APP_LIST_APP_ORDER_PATH);
     if (!fp)
     {
         eos_free(json_str);
         return EOS_FAILED;
     }
 
-    fputs(json_str, fp);
-    fclose(fp);
+    eos_fs_puts(json_str, fp);
+    eos_fs_close(fp);
     eos_free(json_str);
 
     return EOS_OK;
@@ -108,14 +105,14 @@ static eos_result_t _eos_app_order_load(void)
         return _eos_app_order_save();
     }
 
-    char *json_str = eos_read_file(EOS_APP_LIST_APP_ORDER_PATH);
+    char *json_str = eos_fs_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     if (!json_str)
     {
         return EOS_FAILED;
     }
 
     app_order_json = cJSON_Parse(json_str);
-    eos_free_large(json_str);
+    eos_free(json_str);
 
     if (!app_order_json)
     {
@@ -328,7 +325,7 @@ void _eos_app_list_add(eos_app_list_t *list, const char *id)
     if (list->size == list->capacity)
     {
         list->capacity *= 2;
-        list->data = realloc(list->data, list->capacity * sizeof(char *));
+        list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
     }
     list->data[list->size] = eos_strdup(id); // 复制字符串
     list->size++;
@@ -440,35 +437,16 @@ eos_result_t eos_app_install(const char *eapk_path)
     if (eos_is_dir(path))
     {
         // 如果存在则删除
-        eos_rm_recursive(path);
+        eos_fs_rm_recursive(path);
     }
     // 创建应用名称的文件夹
-    if (mkdir(path, 0755) == 0)
+    if (eos_fs_mkdir(path) == 0)
     {
         EOS_LOG_I("Created dir: %s\n", path);
     }
     else
     {
-        if (errno != EEXIST)
-        {
-            EOS_LOG_E("mkdir");
-            return -EOS_ERR_FILE_ERROR;
-        }
-    }
-    if (!eos_is_dir(data_path))
-    {
-        if (mkdir(data_path, 0755) == 0)
-        {
-            EOS_LOG_I("Created dir: %s\n", data_path);
-        }
-        else
-        {
-            if (errno != EEXIST)
-            {
-                EOS_LOG_E("mkdir");
-                return -EOS_ERR_FILE_ERROR;
-            }
-        }
+        EOS_LOG_E("Failed mkdir: %s\n", path);
     }
     // 安装应用程序
     script_pkg_type_t type = SCRIPT_TYPE_APPLICATION;
@@ -476,9 +454,10 @@ eos_result_t eos_app_install(const char *eapk_path)
     if (ret != EOS_OK)
     {
         EOS_LOG_E("App unpack failed. Code: %d", ret);
-        eos_rm_recursive(path);
+        eos_fs_rm_recursive(path);
         return EOS_FAILED;
     }
+    eos_fs_mkdir_if_not_exist(data_path);
     // 添加到顺序列表
     _eos_app_order_add(header.pkg_id);
     _eos_app_list_refresh();
@@ -508,7 +487,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
         return EOS_FAILED;
     }
 
-    eos_result_t ret = eos_rm_recursive(path);
+    eos_result_t ret = eos_fs_rm_recursive(path);
 
     if (ret != EOS_OK)
     {
@@ -519,7 +498,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
     // 清理应用数据
     if (eos_is_dir(data_path))
     {
-        ret = eos_rm_recursive(data_path);
+        ret = eos_fs_rm_recursive(data_path);
     }
 
     if (ret != EOS_OK)

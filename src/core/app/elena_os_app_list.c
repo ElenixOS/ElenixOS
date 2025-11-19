@@ -30,6 +30,7 @@
 #include "elena_os_settings.h"
 #include "elena_os_flash_light.h"
 #include "elena_os_scene.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -90,9 +91,9 @@ static void _app_list_refresh(lv_obj_t *container)
 {
     lv_obj_clean(container);
     // 加载应用顺序
-    char *json_str = eos_read_file(EOS_APP_LIST_APP_ORDER_PATH);
+    char *json_str = eos_fs_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
-    eos_free_large(json_str);
+    eos_free(json_str);
     // 按JSON顺序添加其他应用
     if (app_order)
     {
@@ -222,7 +223,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         return;
     }
 
-    pkg->script_str = eos_read_file(script_path);
+    pkg->script_str = eos_fs_read_file(script_path);
     // 无需清理字符串，脚本运行结束后自动清理
     lv_obj_t *scr = eos_nav_init(app_list_screen);
     eos_screen_bind_header(scr, pkg->name);

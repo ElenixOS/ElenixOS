@@ -18,6 +18,8 @@ extern "C" {
 #include <stddef.h>
 #include "elena_os_core.h"
 #include "elena_os_sensor.h"
+#include "elena_os_fs_port.h"
+#include "elena_os_mem_port.h"
 /* Public macros ----------------------------------------------*/
 /**
  * @brief 函数弱定义宏
@@ -41,7 +43,7 @@ extern "C" {
 #define EOS_TIMEOUT_INFINITE UINT32_MAX
 
 /* Public typedefs --------------------------------------------*/
-typedef struct eos_sem eos_sem_t;   /**< 信号量 */
+typedef struct eos_sem_t eos_sem_t;   /**< 信号量 */
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -66,35 +68,6 @@ bool eos_sem_take(eos_sem_t* sem, uint32_t timeout_ms);
  * @brief 释放信号量
  */
 void eos_sem_give(eos_sem_t* sem);
-/**
- * @brief 内存分配函数
- * @param size 内存大小，单位：字节
- * @return void* 分配成功则返回内存地址，否则返回 NULL
- */
-void *eos_malloc(size_t size);
-/**
- * @brief 分配一块连续内存并置 0
- * @param size 内存大小，单位：字节
- * @return void* 分配成功则返回内存地址，否则返回 NULL
- */
-void *eos_malloc_zeroed(size_t size);
-/**
- * @brief 释放目标内存
- * @param ptr 目标内存指针
- */
-void eos_free(void *ptr);
-/**
- * @brief 内存分配函数
- * @param size 内存大小，单位：字节
- * @return void* 分配成功则返回内存地址，否则返回 NULL
- * @note 主要用于图片内存分配
- */
-void *eos_malloc_large(size_t size);
-/**
- * @brief 释放目标内存
- * @param ptr 目标指针
- */
-void eos_free_large(void *ptr);
 /**
  * @brief 延时指定时间（非阻塞）
  * @param ms 毫秒数

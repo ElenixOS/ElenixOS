@@ -39,7 +39,7 @@ bool eos_is_valid_filename(const char *name);
  * @return const char* 创建成功则返回新分配的字符串指针
  *
  * 内存分配失败则返回 NULL
- * @note 使用`eos_malloc(str)`释放复制的字符串
+ * @note 使用`eos_free(str)`释放复制的字符串
  */
 const char *eos_strdup(const char *s);
 /**

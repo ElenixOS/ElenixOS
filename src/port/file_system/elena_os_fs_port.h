@@ -136,9 +136,45 @@ int eos_fs_exists(const char *path);
  */
 int eos_fs_type(const char *path);
 
+/**
+ * @brief 打开目录
+ * @param path 目录路径
+ * @return eos_dir_t* 打开成功则返回目录指针，否则返回 NULL
+ */
 eos_dir_t *eos_fs_opendir(const char *path);
+
+/**
+ * @brief 读取目录中的下一个文件名
+ *
+ * 该函数从指定的目录流中读取下一个文件或子目录的名称。
+ * 每次调用返回目录中的下一个条目，直到目录结束。
+ *
+ * @param dir 指向已打开的目录流的指针（通过 eos_fs_opendir 打开）
+ * @param name 用于存放读取到的文件名的缓冲区
+ * @param max_len name 缓冲区的最大长度（包括结尾的 '\0'）
+ *
+ * @return int
+ * @retval 0 读取成功，name 中存放了文件名
+ * @retval -1 读取失败（如 dir 为 NULL 或目录读取结束）
+ *
+ * @note 如果文件名长度超过 max_len-1，则会被截断，并保证以 '\0' 结尾
+ * @note 该函数仅返回文件名，不包含路径
+ */
 int eos_fs_readdir(eos_dir_t *dir, char *name, size_t max_len);
+
+/**
+ * @brief 关闭文件目录
+ * @param dir 目标文件目录指针
+ */
 void eos_fs_closedir(eos_dir_t *dir);
+
+/**
+ * @brief 移动文件或重命名
+ * @param old_path
+ * @param new_path
+ * @return int 成功返回 0，失败返回 -1
+ */
+int eos_fs_mv(const char *old_path, const char *new_path);
 #ifdef __cplusplus
 }
 #endif

@@ -32,6 +32,7 @@
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_sensor.h"
 #include "elena_os_fs.h"
+#include "elena_os_afw.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
@@ -85,7 +86,7 @@ static inline int eos_sys_save_config(cJSON *root)
     }
 
     size_t json_len = strlen(new_json);
-    int ret = eos_fs_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
+    int ret = eos_afw_add_task(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
 
     cJSON_free(new_json);
 

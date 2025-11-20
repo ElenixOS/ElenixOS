@@ -171,6 +171,11 @@ extern "C"
     #define EOS_FS_FILE_TYPE void       /**< 文件指针的数据类型 */
     #define EOS_FS_DIR_TYPE void       /**< 文件指针的数据类型 */
 #endif /* EOS_FS_TYPE */
+
+#define EOS_AFW_TASK_MAX 8                  /**< 异步文件写入器最大任务数量，超过数量时任务会被丢弃 */
+#define EOS_AFW_FILE_BLOCK_SIZE 64          /**< 异步文件写入器每次写入文件块大小，单位：字节 */
+#define EOS_AFW_SCHEDULE_INTERVAL 30        /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
+
 /************************** 电量检测 **************************/
 
 #define EOS_BATTERY_DISPLAY_UPDATE_MS 5 * 60 * 1000 /**< 电池电量显示更新时间 */

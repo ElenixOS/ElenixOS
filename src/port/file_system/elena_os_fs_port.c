@@ -139,3 +139,12 @@ void eos_fs_closedir(eos_dir_t *dir) {
         closedir(dir);
     }
 }
+
+int eos_fs_mv(const char *old_path, const char *new_path)
+{
+    if (rename(old_path, new_path) != 0) {
+        perror("rename failed");
+        return -1;
+    }
+    return 0;
+}

@@ -47,6 +47,7 @@
 #include "elena_os_anim.h"
 #include "elena_os_control_center.h"
 #include "elena_os_fs.h"
+#include "elena_os_afw.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -162,6 +163,7 @@ eos_result_t eos_run(void)
     while (1)
     {
         eos_async_handler();
+        eos_afw_handler();
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);
     }

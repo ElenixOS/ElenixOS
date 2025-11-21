@@ -165,9 +165,20 @@ void eos_afw_handler(void)
             break;
         case EOS_AFW_TASK_STATE_RENAME_FILE:
             EOS_LOG_I("Write done");
+
+            if (afw.current_fp)
+            {
+                eos_fs_close(afw.current_fp);
+                afw.current_fp = NULL;
+            }
+
+            EOS_LOG_D("Remove old file: %s", afw.current_task->path);
             eos_fs_remove(afw.current_task->path);
+
+            EOS_LOG_D("Rename file: %s -> %s", afw.tmp_path, afw.current_task->path);
             eos_fs_mv(afw.tmp_path, afw.current_task->path);
-            afw.current_task->state = EOS_AFW_TASK_STATE_DONE;
+
+            afw.caurrent_task->state = EOS_AFW_TASK_STATE_DONE;
             _reset_afw();
             break;
         case EOS_AFW_TASK_STATE_ERROR:
@@ -192,9 +203,15 @@ bool eos_afw_add_task(const char *path, void *data, size_t data_size)
     EOS_CHECK_PTR_RETURN_VAL(t, false);
 
     t->state = EOS_AFW_TASK_STATE_WAITING;
-    t->data = eos_strdup(data);
+    t->data = eos_malloc(data_size);
+    if (!t->data)
+    {
+        eos_free(t);
+        return false;
+    }
+    memcpy(t->data, data, data_size);
     t->path = eos_strdup(path);
-    if (!t->data || !t->path)
+    if (!t->path)
     {
         eos_free(t->data);
         eos_free(t->path);

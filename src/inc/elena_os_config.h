@@ -173,8 +173,8 @@ extern "C"
 #endif /* EOS_FS_TYPE */
 
 #define EOS_AFW_TASK_MAX 8                  /**< 异步文件写入器最大任务数量，超过数量时任务会被丢弃 */
-#define EOS_AFW_FILE_BLOCK_SIZE 64          /**< 异步文件写入器每次写入文件块大小，单位：字节 */
-#define EOS_AFW_SCHEDULE_INTERVAL 30        /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
+#define EOS_AFW_FILE_BLOCK_SIZE 8          /**< 异步文件写入器每次写入文件块大小，单位：字节 */
+#define EOS_AFW_SCHEDULE_INTERVAL 60        /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
 
 /************************** 电量检测 **************************/
 

@@ -208,7 +208,7 @@ char *eos_fs_read_file(const char *path)
     }
 
     // 分配内存
-    char *buf = eos_malloc(file_size);
+    char *buf = eos_malloc(file_size + 1);
     if (!buf)
     {
         EOS_LOG_E("Failed to allocate memory for file");

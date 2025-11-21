@@ -331,9 +331,19 @@ void eos_sys_init()
     eos_fs_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
 
     // 如果系统文件不存在则创建
-    if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
+    eos_file_t *fp = eos_fs_open_read(EOS_SYS_CONFIG_FILE_PATH);
+    uint32_t size = 0;
+    eos_fs_size(fp, &size);
+    eos_fs_close(fp);
+
+    if ((!eos_is_file(EOS_SYS_CONFIG_FILE_PATH)) || size == 0)
     {
-        _create_default_cfg_json(EOS_SYS_CONFIG_FILE_PATH);
+        eos_fs_remove(EOS_SYS_CONFIG_FILE_PATH);
+        if (_create_default_cfg_json(EOS_SYS_CONFIG_FILE_PATH) != EOS_OK)
+        {
+            EOS_LOG_E("Create default config json failed");
+            EOS_ASSERT(0);
+        }
     }
 
     /************************** 加载系统设置 **************************/

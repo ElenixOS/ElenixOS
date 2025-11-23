@@ -56,6 +56,13 @@ typedef enum {
     EOS_FS_TYPE_FILE = 1,
     EOS_FS_TYPE_DIR = 2
 } eos_fs_type_t;
+
+typedef struct
+{
+    eos_file_t file;
+    void *data;
+    size_t size;
+} eos_async_write_task_t;
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -74,43 +81,43 @@ eos_file_t eos_fs_open_write(const char *path);
 
 /**
  * @brief 从文件中读取数据
- * @param fp 文件句柄
+ * @param file 文件句柄
  * @param buf 数据缓冲区
  * @param len 要读取的字节数
  * @return int 实际读取的字节数，出错返回 -1
  */
-int eos_fs_read(eos_file_t fp, void *buf, size_t len);
+int eos_fs_read(eos_file_t file, void *buf, size_t len);
 
 /**
  * @brief 向文件中写入数据
- * @param fp 文件句柄
+ * @param file 文件句柄
  * @param buf 数据缓冲区
  * @param len 要写入的字节数
  * @return int 实际写入的字节数，出错返回 -1
  */
-int eos_fs_write(eos_file_t fp, const void *buf, size_t len);
+int eos_fs_write(eos_file_t file, const void *buf, size_t len);
 
 /**
  * @brief 文件指针定位
- * @param fp 文件句柄
+ * @param file 文件句柄
  * @param pos 文件偏移位置（从文件头开始）
  * @return int 成功返回 0，失败返回 -1
  */
-int eos_fs_seek(eos_file_t fp, uint32_t pos);
+int eos_fs_seek(eos_file_t file, uint32_t pos);
 
 /**
  * @brief 获取文件大小
- * @param fp 文件句柄
+ * @param file 文件句柄
  * @param size 输出文件大小（单位字节）
  * @return int 成功返回 0，失败返回 -1
  */
-int eos_fs_size(eos_file_t fp, uint32_t *size);
+int eos_fs_size(eos_file_t file, uint32_t *size);
 
 /**
  * @brief 关闭文件
- * @param fp 文件句柄
+ * @param file 文件句柄
  */
-void eos_fs_close(eos_file_t fp);
+void eos_fs_close(eos_file_t file);
 
 /**
  * @brief 创建目录（单级）
@@ -187,7 +194,20 @@ void eos_fs_closedir(eos_dir_t dir);
  */
 int eos_fs_mv(const char *old_path, const char *new_path);
 
-int eos_fs_sync(eos_file_t fp);
+/**
+ * @brief 同步文件数据
+ * @param file 文件
+ * @return int
+ */
+int eos_fs_sync(eos_file_t file);
+
+/**
+ * @brief 异步写入整个文件
+ * @param file 文件
+ * @return int 成功返回 0，失败返回 -1
+ * @note 必须创建一个线程写入文件，否中会阻塞 UI
+ */
+int eos_fs_async_write(eos_file_t file, void *data, size_t data_size);
 #ifdef __cplusplus
 }
 #endif

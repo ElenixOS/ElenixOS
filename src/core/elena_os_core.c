@@ -117,6 +117,7 @@ eos_result_t eos_run(void)
 {
     eos_logo_play(true);
     /************************** 系统组件初始化 **************************/
+    eos_afw_init();
     eos_dispatcher_init();
     script_engine_init();
     eos_sys_init();

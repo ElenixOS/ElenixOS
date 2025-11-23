@@ -39,6 +39,11 @@ void eos_afw_handler(void);
  * @note 目标文件会被直接覆盖
  */
 bool eos_afw_add_task(const char *path, void *data, size_t data_size);
+
+/**
+ * @brief 初始化异步文件写入器
+ */
+void eos_afw_init(void);
 #ifdef __cplusplus
 }
 #endif

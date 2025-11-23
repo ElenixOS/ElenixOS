@@ -18,7 +18,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <pthread.h>
 #include "elena_os_port.h"
+#include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -182,6 +184,67 @@ int eos_fs_mv(const char *old_path, const char *new_path)
 int eos_fs_sync(eos_file_t fp)
 {
     return fflush(fp);
+}
+
+static void _async_write_thread_entry(void *arg)
+{
+    eos_async_write_task_t *task = (eos_async_write_task_t *)arg;
+
+    if (!task || !task->file)
+        goto cleanup;
+
+    ssize_t written = eos_fs_write(task->file, task->data, task->size);
+    if (written != (ssize_t)task->size)
+    {
+        EOS_LOG_E("async write failed (%zd/%zu)", written, task->size);
+    }
+
+    eos_fs_close(task->file);
+
+cleanup:
+    if (task)
+    {
+        if (task->data)
+            eos_free(task->data);
+        eos_free(task);
+    }
+
+    /* RT-Thread 和 POSIX 的线程退出函数不一样，所以在线程实现里处理 */
+}
+
+int eos_fs_async_write(eos_file_t file, void *data, size_t data_size)
+{
+    if (!file || !data || data_size == 0)
+        return -1;
+
+    eos_async_write_task_t *task = eos_malloc(sizeof(eos_async_write_task_t));
+    if (!task)
+        return -1;
+
+    void *data_copy = eos_malloc(data_size);
+    if (!data_copy)
+    {
+        eos_free(task);
+        return -1;
+    }
+    memcpy(data_copy, data, data_size);
+
+    task->file = file;
+    task->data = data_copy;
+    task->size = data_size;
+
+    pthread_t tid;
+    int ret = pthread_create(&tid, NULL, (void *(*)(void *))_async_write_thread_entry, task);
+    if (ret != 0)
+    {
+        eos_free(data_copy);
+        eos_free(task);
+        return -1;
+    }
+
+    pthread_detach(tid);  /* 保证线程自动回收，不阻塞 */
+
+    return 0;  /* 成功 */
 }
 
 #endif /* EOS_FS_TYPE */

@@ -16,6 +16,7 @@
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_misc.h"
+#include "elena_os_cqueue.h"
 /* Macros and Definitions -------------------------------------*/
 
 typedef enum
@@ -29,6 +30,7 @@ typedef enum
     EOS_AFW_TASK_STATE_WAITING,       /**< 任务已经创建，等待执行 */
     EOS_AFW_TASK_STATE_CREATE_FILE,   /**< 任务正在创建临时文件 */
     EOS_AFW_TASK_STATE_WRITING_BLOCK, /**< 任务正在写入块 */
+    EOS_AFW_TASK_STATE_WRITING_WHOLE, /**< 任务正在一次性写入整个文件 */
     EOS_AFW_TASK_STATE_RENAME_FILE,   /**< 任务正在重命名临时文件 */
     EOS_AFW_TASK_STATE_DONE,          /**< 任务写入完成 */
     EOS_AFW_TASK_STATE_ERROR,         /**< 任务运行时出现错误 */
@@ -46,7 +48,7 @@ typedef struct
 typedef struct
 {
     eos_afw_state_t state;
-    eos_afw_task_t *task_list[EOS_AFW_TASK_MAX];
+    eos_cqueue_t *cq;
     eos_afw_task_t *current_task;
     eos_file_t current_fp;
     uint32_t current_offset;
@@ -77,14 +79,6 @@ void _reset_afw(void)
 
     if (old_task)
     {
-        for (int i = 0; i < EOS_AFW_TASK_MAX; i++)
-        {
-            if (afw.task_list[i] == old_task)
-            {
-                afw.task_list[i] = NULL;
-                break;
-            }
-        }
         if (old_task->data)
             eos_free(old_task->data);
         if (old_task->path)
@@ -96,27 +90,24 @@ void _reset_afw(void)
 
 void eos_afw_handler(void)
 {
+#if EOS_AFW_WRITE_MODE == EOS_AFW_WRITE_BLOCK
     // 间隔指定的周期后开始写入一次文件
     static uint32_t count = 0;
     count++;
     if (count < EOS_AFW_SCHEDULE_INTERVAL)
         return;
     count = 0;
+#endif /* EOS_AFW_WRITE_MODE */
     // 开始执行写入任务
 
     // 查找空闲任务并启动
     if (afw.todo_task > 0 && afw.state == EOS_AFW_STATE_IDLE)
     {
-        // 查找空闲任务
-        for (int i = 0; i < EOS_AFW_TASK_MAX; i++)
+        afw.current_task = eos_cqueue_dequeue(afw.cq);
+        if (afw.current_task && afw.current_task->state == EOS_AFW_TASK_STATE_WAITING)
         {
-            if (afw.task_list[i] && afw.task_list[i]->state == EOS_AFW_TASK_STATE_WAITING)
-            {
-                afw.current_task = afw.task_list[i];
-                afw.current_task->state = EOS_AFW_TASK_STATE_CREATE_FILE;
-                afw.state = EOS_AFW_STATE_RUNNING;
-                break;
-            }
+            afw.current_task->state = EOS_AFW_TASK_STATE_CREATE_FILE;
+            afw.state = EOS_AFW_STATE_RUNNING;
         }
     }
     if (afw.state == EOS_AFW_STATE_RUNNING)
@@ -132,11 +123,19 @@ void eos_afw_handler(void)
                 afw.current_task->state = EOS_AFW_TASK_STATE_ERROR;
                 break;
             }
+
+#if (EOS_AFW_WRITE_MODE == EOS_AFW_WRITE_WHOLE)
+            afw.current_task->state = EOS_AFW_TASK_STATE_WRITING_WHOLE;
+#else
             afw.current_task->state = EOS_AFW_TASK_STATE_WRITING_BLOCK;
             afw.current_offset = 0;
+#endif
+
             EOS_LOG_I("Created temp file: %s", afw.tmp_path);
             break;
+#if EOS_AFW_WRITE_MODE == EOS_AFW_WRITE_BLOCK
         case EOS_AFW_TASK_STATE_WRITING_BLOCK:
+        {
             size_t remain = afw.current_task->data_size - afw.current_offset;
             size_t write_size = remain > EOS_AFW_FILE_BLOCK_SIZE ? EOS_AFW_FILE_BLOCK_SIZE : remain;
 
@@ -162,7 +161,25 @@ void eos_afw_handler(void)
                 afw.current_task->state = EOS_AFW_TASK_STATE_RENAME_FILE;
             }
             EOS_LOG_I("Progress %uB/%uB", afw.current_offset, afw.current_task->data_size);
-            break;
+        }
+        break;
+#else
+        case EOS_AFW_TASK_STATE_WRITING_WHOLE:
+        {
+            int ret = eos_fs_async_write(afw.current_fp, afw.current_task->data, afw.current_task->data_size);
+
+            if (ret != 0)
+            {
+                EOS_LOG_E("Write whole file failed, ret: %d", ret);
+                afw.current_task->state = EOS_AFW_TASK_STATE_ERROR;
+                break;
+            }
+
+            EOS_LOG_I("Write whole file success: %uB", afw.current_task->data_size);
+            afw.current_task->state = EOS_AFW_TASK_STATE_RENAME_FILE;
+        }
+        break;
+#endif /* EOS_AFW_WRITE_MODE */
         case EOS_AFW_TASK_STATE_RENAME_FILE:
             EOS_LOG_I("Write done");
 
@@ -214,23 +231,24 @@ bool eos_afw_add_task(const char *path, void *data, size_t data_size)
     if (!t->path)
     {
         eos_free(t->data);
-        eos_free(t->path);
         eos_free(t);
         return false;
     }
     t->data_size = data_size;
     // 查找空闲位
-    for (int i = 0; i < EOS_AFW_TASK_MAX; i++)
+    if (eos_cqueue_enqueue(afw.cq, t))
     {
-        if (afw.task_list[i] == NULL)
-        {
-            afw.task_list[i] = t;
-            afw.todo_task++;
-            EOS_LOG_I("Added AFW task: %s", path);
-            return true;
-        }
+        afw.todo_task++;
+        EOS_LOG_I("AFW task enqueued");
+        return true;
     }
-    EOS_LOG_W("AFW task list full, task not accepted");
+    EOS_LOG_W("AFW task enqueue failed");
+    eos_free(t->data);
     eos_free(t);
     return false;
+}
+
+void eos_afw_init(void)
+{
+    afw.cq = eos_cqueue_create(4);
 }

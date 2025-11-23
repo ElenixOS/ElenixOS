@@ -40,6 +40,9 @@ extern "C" {
 #define EOS_MEM_CUSTOM      1
 #define EOS_MEM_AUTO        2
 
+#define EOS_AFW_WRITE_WHOLE    0  /**< 一次性写入整个文件 */
+#define EOS_AFW_WRITE_BLOCK    1  /**< 分块写入文件 */
+
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

@@ -19,10 +19,6 @@
 #define HAS_ATOMIC 0
 #endif
 /* Macros and Definitions -------------------------------------*/
-
-/* Variables --------------------------------------------------*/
-
-/* Function Implementations -----------------------------------*/
 #if HAS_ATOMIC
 struct eos_sem_t
 {
@@ -36,7 +32,9 @@ struct eos_sem_t
     uint32_t max;
 };
 #endif
+/* Variables --------------------------------------------------*/
 
+/* Function Implementations -----------------------------------*/
 EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
 {
 #if HAS_ATOMIC

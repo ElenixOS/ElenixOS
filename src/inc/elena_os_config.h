@@ -71,7 +71,7 @@ extern "C"
  *  - EOS_MEM_AUTO:         使用多级自动分配，参见`elena_os_mem_auto.c`
  */
 #ifndef EOS_MEM_ALLOC_STRATEGY
-    #define EOS_MEM_ALLOC_STRATEGY EOS_MEM_AUTO
+    #define EOS_MEM_ALLOC_STRATEGY EOS_MEM_STDLIB
 #endif /* EOS_MEM_ALLOC_STRATEGY */
 
 /************************** 传感器配置 **************************/
@@ -189,9 +189,19 @@ extern "C"
     #define EOS_DIR_INVALID NULL            /**< 无效的目录 */
 #endif /* EOS_FS_TYPE */
 
-#define EOS_AFW_TASK_MAX 8                      /**< 异步文件写入器最大任务数量，超过数量时任务会被丢弃 */
-#define EOS_AFW_FILE_BLOCK_SIZE 4096            /**< 异步文件写入器每次写入文件块大小，单位：字节 */
-#define EOS_AFW_SCHEDULE_INTERVAL 60            /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
+
+/**
+ * 选择异步文件写入模式
+ * 可用选项:
+ *  - EOS_AFW_WRITE_BLOCK:  间隔若干时间后写入一个块
+ *  - EOS_AFW_WRITE_WHOLE:  一次写入一整块
+ */
+#define EOS_AFW_WRITE_MODE EOS_AFW_WRITE_WHOLE
+
+#if EOS_AFW_WRITE_MODE == EOS_AFW_WRITE_BLOCK
+    #define EOS_AFW_FILE_BLOCK_SIZE 4096      /**< 异步文件写入器每次写入文件块大小，单位：字节 */
+    #define EOS_AFW_SCHEDULE_INTERVAL 0       /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
+#endif /* EOS_AFW_WRITE_MODE */
 
 /************************** 电量检测 **************************/
 

@@ -48,7 +48,7 @@ typedef struct
     eos_afw_state_t state;
     eos_afw_task_t *task_list[EOS_AFW_TASK_MAX];
     eos_afw_task_t *current_task;
-    eos_file_t *current_fp;
+    eos_file_t current_fp;
     uint32_t current_offset;
     uint32_t todo_task;
     char tmp_path[PATH_MAX];
@@ -178,7 +178,7 @@ void eos_afw_handler(void)
             EOS_LOG_D("Rename file: %s -> %s", afw.tmp_path, afw.current_task->path);
             eos_fs_mv(afw.tmp_path, afw.current_task->path);
 
-            afw.caurrent_task->state = EOS_AFW_TASK_STATE_DONE;
+            afw.current_task->state = EOS_AFW_TASK_STATE_DONE;
             _reset_afw();
             break;
         case EOS_AFW_TASK_STATE_ERROR:

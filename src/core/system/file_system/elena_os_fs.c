@@ -28,9 +28,9 @@ bool eos_is_file(const char *path)
     return (eos_fs_type(path) == EOS_FS_TYPE_FILE) ? true : false;
 }
 
-int eos_fs_puts(const char *s, eos_file_t *fp)
+int eos_fs_puts(const char *s, eos_file_t fp)
 {
-    if (!fp || !s)
+    if (fp == EOS_FILE_INVALID || !s)
         return -1;
     return eos_fs_write(fp, s, strlen(s));
 }
@@ -49,8 +49,9 @@ int eos_create_file_if_not_exist(const char *path, const char *default_content)
     EOS_CHECK_PTR_RETURN_VAL(path && default_content, -1);
     if (eos_fs_type(path) == EOS_FS_TYPE_NOT_EXIST)
     {
-        eos_file_t *fp = eos_fs_open_write(path);
-        EOS_CHECK_PTR_RETURN_VAL(fp, -1);
+        eos_file_t fp = eos_fs_open_write(path);
+        if (fp == EOS_FILE_INVALID)
+            return -1;
 
         ssize_t len = strlen(default_content);
         ssize_t written = eos_fs_write(fp, default_content, len);
@@ -183,8 +184,9 @@ int eos_fs_mkdir_recursive(const char *path)
 
 int eos_fs_write_file(const char *path, const void *data, size_t data_size)
 {
-    eos_file_t *fp = eos_fs_open_write(path);
-    EOS_CHECK_PTR_RETURN_VAL(fp, -1);
+    eos_file_t fp = eos_fs_open_write(path);
+    if (fp == EOS_FILE_INVALID)
+        return -1;
 
     ssize_t written = eos_fs_write(fp, data, data_size);
 
@@ -195,7 +197,13 @@ int eos_fs_write_file(const char *path, const void *data, size_t data_size)
 
 char *eos_fs_read_file(const char *path)
 {
-    eos_file_t *fp = eos_fs_open_read(path);
+    eos_file_t fp = eos_fs_open_read(path);
+    if (fp == EOS_FILE_INVALID)
+    {
+        EOS_LOG_E("Failed to open file");
+        return NULL;
+    }
+
     // 获取文件大小
     uint32_t file_size = 0;
     eos_fs_size(fp, &file_size);
@@ -258,7 +266,7 @@ int eos_fs_rm_recursive(const char *path)
     case EOS_FS_TYPE_DIR:
     {
         // 如果是目录，需要递归删除其中的内容
-        eos_dir_t *dir = eos_fs_opendir(path);
+        eos_dir_t dir = eos_fs_opendir(path);
         if (!dir)
         {
             return -1; // 打开目录失败

@@ -1,6 +1,6 @@
 /**
- * @file elena_os_async.c
- * @brief 异步调度器
+ * @file elena_os_dispatcher.c
+ * @brief 任务调度器
  * @author Sab1e
  * @date 2025-11-10
  * @details
@@ -9,11 +9,11 @@
  *
  * ## 简述
  *
- * ElenaOS 异步调度器提供一个轻量级的任务队列，用于在非实时上下文中延迟执行回调函数。
+ * ElenaOS 任务调度器提供一个轻量级的任务队列，用于在非实时上下文中延迟执行回调函数。
  *
  * 特性：
- * - 异步调用（`eos_async_call`）将回调推入队列；
- * - 队列处理（`eos_async_handler`）依次执行所有待处理回调；
+ * - 调用（`eos_dispatcher_call`）将回调推入队列；
+ * - 队列处理（`eos_dispatch_tick`）依次执行所有待处理回调；
  * - 内部使用信号量保护队列，保证线程安全；
  * - 可配置动态队列大小，支持扩容；
  *
@@ -25,12 +25,12 @@
  *
  * ## 注意
  *
- * `eos_async_call()`与`lv_call_async()`不同，`lv_call_async()`只支持 GUI 线程调用，
- * 而`eos_async_call()`支持任意线程调用，切勿在非 GUI 线程调用任何 LVGL 函数。
+ * `eos_dispatcher_call()`与`lv_call_async()`不同，`lv_call_async()`只支持 GUI 线程调用，
+ * 而`eos_dispatcher_call()`支持任意线程调用，切勿在非 GUI 线程调用任何 LVGL 函数。
  *
  */
 
-#include "elena_os_async.h"
+#include "elena_os_dispatcher.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -40,11 +40,11 @@
 /* Macros and Definitions -------------------------------------*/
 typedef struct
 {
-    eos_async_cb_t cb;
+    eos_dispatcher_cb_t cb;
     void *user_data;
-} eos_async_item_t;
+} eos_dispatcher_item_t;
 /* Variables --------------------------------------------------*/
-static eos_async_item_t *s_queue = NULL;
+static eos_dispatcher_item_t *s_queue = NULL;
 static volatile int s_head = 0;
 static volatile int s_tail = 0;
 static int s_capacity = 0;
@@ -54,7 +54,7 @@ static bool async_initialized = false;
 #endif /* EOS_COMPILE_MODE */
 /* Function Implementations -----------------------------------*/
 
-void eos_async_init(void)
+void eos_dispatcher_init(void)
 {
 #if EOS_COMPILE_MODE == DEUBG
     if (async_initialized)
@@ -63,7 +63,7 @@ void eos_async_init(void)
     sem = eos_sem_create(1, 1);
 
     s_capacity = 8; // 初始容量
-    s_queue = (eos_async_item_t *)malloc(sizeof(eos_async_item_t) * s_capacity);
+    s_queue = (eos_dispatcher_item_t *)malloc(sizeof(eos_dispatcher_item_t) * s_capacity);
     if (!s_queue)
     {
         // 内存分配失败
@@ -79,7 +79,7 @@ void eos_async_init(void)
 static int _queue_expand(void)
 {
     int new_capacity = s_capacity * 2;
-    eos_async_item_t *new_queue = (eos_async_item_t *)malloc(sizeof(eos_async_item_t) * new_capacity);
+    eos_dispatcher_item_t *new_queue = (eos_dispatcher_item_t *)malloc(sizeof(eos_dispatcher_item_t) * new_capacity);
     if (!new_queue)
         return -1;
 
@@ -98,7 +98,7 @@ static int _queue_expand(void)
     return 0;
 }
 
-void eos_async_call(eos_async_cb_t cb, void *user_data)
+void eos_dispatcher_call(eos_dispatcher_cb_t cb, void *user_data)
 {
 #if EOS_COMPILE_MODE == DEUBG
     if(!async_initialized)return;
@@ -127,7 +127,7 @@ void eos_async_call(eos_async_cb_t cb, void *user_data)
     eos_sem_give(sem);
 }
 
-void eos_async_handler(void)
+void eos_dispatch_tick(void)
 {
 #if EOS_COMPILE_MODE == DEUBG
     if(!async_initialized)return;
@@ -136,7 +136,7 @@ void eos_async_handler(void)
 
     while (s_head != s_tail)
     {
-        eos_async_item_t item = s_queue[s_head];
+        eos_dispatcher_item_t item = s_queue[s_head];
         s_head = (s_head + 1) % s_capacity;
 
         eos_sem_give(sem);

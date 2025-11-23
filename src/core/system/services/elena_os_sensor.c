@@ -20,7 +20,7 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
 #include "elena_os_config.h"
-#include "elena_os_async.h"
+#include "elena_os_dispatcher.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -52,7 +52,7 @@ static void _async_report_sensor_data(void *user_data)
 
 void eos_sensor_report(eos_sensor_t *sensor)
 {
-    eos_async_call(_async_report_sensor_data, sensor);
+    eos_dispatcher_call(_async_report_sensor_data, sensor);
 }
 
 eos_sensor_t *eos_sensor_get(eos_sensor_type_t type)

@@ -70,7 +70,9 @@ extern "C"
  *  - EOS_MEM_CUSTOM:       使用自定义的分配函数（覆盖弱定义的eos_malloc等函数即可）
  *  - EOS_MEM_AUTO:         使用多级自动分配，参见`elena_os_mem_auto.c`
  */
-#define EOS_MEM_ALLOC_STRATEGY EOS_MEM_STDLIB
+#ifndef EOS_MEM_ALLOC_STRATEGY
+    #define EOS_MEM_ALLOC_STRATEGY EOS_MEM_AUTO
+#endif /* EOS_MEM_ALLOC_STRATEGY */
 
 /************************** 传感器配置 **************************/
 
@@ -101,9 +103,21 @@ extern "C"
 
 #if EOS_FONT_TYPE == EOS_FONT_C_MULTI
 
+#define EOS_ENABLE_CHINESE_FONT 0
+
+#if EOS_ENABLE_CHINESE_FONT
+
 #define EOS_FONT_LARGE_NAME source_han_sans_30
 #define EOS_FONT_MEDIUM_NAME source_han_sans_26
 #define EOS_FONT_SMALL_NAME source_han_sans_22
+
+#else
+
+#define EOS_FONT_LARGE_NAME lv_font_montserrat_30
+#define EOS_FONT_MEDIUM_NAME lv_font_montserrat_30
+#define EOS_FONT_SMALL_NAME lv_font_montserrat_30
+
+#endif
 
 #elif EOS_FONT_TYPE == EOS_FONT_TTF
 
@@ -163,18 +177,21 @@ extern "C"
  *  - EOS_FS_POSIX
  *  - EOS_FS_FATFS
  *  - EOS_FS_LITTLEFS
+ *  - EOS_FS_RTTHREAD
  *  - EOS_FS_CUSTOM
  */
 #define EOS_FS_TYPE EOS_FS_POSIX
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM
-    #define EOS_FS_FILE_TYPE void       /**< 文件指针的数据类型 */
-    #define EOS_FS_DIR_TYPE void       /**< 文件指针的数据类型 */
+    #define EOS_FS_FILE_TYPE void*          /**< 文件的数据类型 */
+    #define EOS_FS_DIR_TYPE void*           /**< 目录的数据类型 */
+    #define EOS_FILE_INVALID NULL           /**< 无效的文件 */
+    #define EOS_DIR_INVALID NULL            /**< 无效的目录 */
 #endif /* EOS_FS_TYPE */
 
-#define EOS_AFW_TASK_MAX 8                  /**< 异步文件写入器最大任务数量，超过数量时任务会被丢弃 */
-#define EOS_AFW_FILE_BLOCK_SIZE 8          /**< 异步文件写入器每次写入文件块大小，单位：字节 */
-#define EOS_AFW_SCHEDULE_INTERVAL 60        /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
+#define EOS_AFW_TASK_MAX 8                      /**< 异步文件写入器最大任务数量，超过数量时任务会被丢弃 */
+#define EOS_AFW_FILE_BLOCK_SIZE 4096            /**< 异步文件写入器每次写入文件块大小，单位：字节 */
+#define EOS_AFW_SCHEDULE_INTERVAL 60            /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
 
 /************************** 电量检测 **************************/
 

@@ -331,7 +331,7 @@ void eos_sys_init()
     eos_fs_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
 
     // 如果系统文件不存在则创建
-    eos_file_t *fp = eos_fs_open_read(EOS_SYS_CONFIG_FILE_PATH);
+    eos_file_t fp = eos_fs_open_read(EOS_SYS_CONFIG_FILE_PATH);
     uint32_t size = 0;
     eos_fs_size(fp, &size);
     eos_fs_close(fp);

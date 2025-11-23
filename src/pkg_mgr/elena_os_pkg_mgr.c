@@ -27,8 +27,8 @@
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
 {
     // 打开包文件
-    eos_file_t *fp = eos_fs_open_read(pkg_path);
-    if (!fp)
+    eos_file_t fp = eos_fs_open_read(pkg_path);
+    if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Failed to open package file: %s", pkg_path);
         return -EOS_ERR_FILE_ERROR;
@@ -108,8 +108,8 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
 eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, const script_pkg_type_t pkg_type)
 {
     // 打开包文件
-    eos_file_t *fp = eos_fs_open_read(pkg_path);
-    if (!fp)
+    eos_file_t fp = eos_fs_open_read(pkg_path);
+    if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Failed to open package file");
         return -EOS_ERR_FILE_ERROR;
@@ -286,8 +286,8 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             }
 
             // 创建文件并写入数据
-            eos_file_t *out_fp = eos_fs_open_write(full_path);
-            if (!out_fp)
+            eos_file_t out_fp = eos_fs_open_write(full_path);
+            if (fp == EOS_FILE_INVALID)
             {
                 eos_free(name);
                 eos_fs_close(fp);

@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_scene.h"
-#include "elena_os_async.h"
+#include "elena_os_dispatcher.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "elena_os_log.h"
@@ -70,10 +70,10 @@ void eos_crown_encoder_set_reverse(bool reverse)
 
 void eos_crown_encoder_report(eos_crown_encoder_diff_t diff)
 {
-    eos_async_call(_crown_encoder_async_cb, (void *)(intptr_t)diff);
+    eos_dispatcher_call(_crown_encoder_async_cb, (void *)(intptr_t)diff);
 }
 
 void eos_crown_button_report(eos_button_state_t state)
 {
-    eos_async_call(_crown_button_async_cb, (void *)(intptr_t)state);
+    eos_dispatcher_call(_crown_button_async_cb, (void *)(intptr_t)state);
 }

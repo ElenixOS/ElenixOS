@@ -13,8 +13,6 @@ extern "C" {
 #endif
 
 /* Includes ---------------------------------------------------*/
-#include <stdint.h>
-#include <stdbool.h>
 #include "elena_os_config.h"
 /* Public macros ----------------------------------------------*/
 #if EOS_FS_TYPE == EOS_FS_POSIX
@@ -22,18 +20,31 @@ extern "C" {
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
-typedef FILE eos_file_t;
-typedef DIR eos_dir_t;
+typedef FILE* eos_file_t;
+typedef DIR* eos_dir_t;
+#define EOS_FILE_INVALID NULL
+#define EOS_DIR_INVALID NULL
 
 #elif EOS_FS_TYPE == EOS_FS_FATFS
 #include "ff.h"
-typedef FIL eos_file_t;
-typedef FF_DIR eos_dir_t;
+typedef FIL* eos_file_t;
+typedef FF_DIR* eos_dir_t;
+#define EOS_FILE_INVALID NULL
+#define EOS_DIR_INVALID NULL
 
 #elif EOS_FS_TYPE == EOS_FS_LITTLEFS
 #include "lfs.h"
-typedef lfs_file_t eos_file_t;
-typedef lfs_dir_t eos_dir_t;
+typedef lfs_file_t* eos_file_t;
+typedef lfs_dir_t* eos_dir_t;
+#define EOS_FILE_INVALID NULL
+#define EOS_DIR_INVALID NULL
+
+#elif EOS_FS_TYPE == EOS_FS_RTTHREAD
+#include <dfs_posix.h>
+typedef int eos_file_t;
+typedef DIR* eos_dir_t;
+#define EOS_FILE_INVALID (-1)
+#define EOS_DIR_INVALID NULL
 
 #elif EOS_FS_TYPE == EOS_FS_CUSTOM
 typedef EOS_FS_FILE_TYPE eos_file_t;
@@ -52,14 +63,14 @@ typedef enum {
  * @param path 文件路径
  * @return void* 文件句柄，失败返回 NULL
  */
-eos_file_t *eos_fs_open_read(const char *path);
+eos_file_t eos_fs_open_read(const char *path);
 
 /**
  * @brief 打开一个文件，只写模式，如果文件不存在会创建
  * @param path 文件路径
  * @return void* 文件句柄，失败返回 NULL
  */
-eos_file_t *eos_fs_open_write(const char *path);
+eos_file_t eos_fs_open_write(const char *path);
 
 /**
  * @brief 从文件中读取数据
@@ -68,7 +79,7 @@ eos_file_t *eos_fs_open_write(const char *path);
  * @param len 要读取的字节数
  * @return int 实际读取的字节数，出错返回 -1
  */
-int eos_fs_read(eos_file_t *fp, void *buf, size_t len);
+int eos_fs_read(eos_file_t fp, void *buf, size_t len);
 
 /**
  * @brief 向文件中写入数据
@@ -77,7 +88,7 @@ int eos_fs_read(eos_file_t *fp, void *buf, size_t len);
  * @param len 要写入的字节数
  * @return int 实际写入的字节数，出错返回 -1
  */
-int eos_fs_write(eos_file_t *fp, const void *buf, size_t len);
+int eos_fs_write(eos_file_t fp, const void *buf, size_t len);
 
 /**
  * @brief 文件指针定位
@@ -85,7 +96,7 @@ int eos_fs_write(eos_file_t *fp, const void *buf, size_t len);
  * @param pos 文件偏移位置（从文件头开始）
  * @return int 成功返回 0，失败返回 -1
  */
-int eos_fs_seek(eos_file_t *fp, uint32_t pos);
+int eos_fs_seek(eos_file_t fp, uint32_t pos);
 
 /**
  * @brief 获取文件大小
@@ -93,13 +104,13 @@ int eos_fs_seek(eos_file_t *fp, uint32_t pos);
  * @param size 输出文件大小（单位字节）
  * @return int 成功返回 0，失败返回 -1
  */
-int eos_fs_size(eos_file_t *fp, uint32_t *size);
+int eos_fs_size(eos_file_t fp, uint32_t *size);
 
 /**
  * @brief 关闭文件
  * @param fp 文件句柄
  */
-void eos_fs_close(eos_file_t *fp);
+void eos_fs_close(eos_file_t fp);
 
 /**
  * @brief 创建目录（单级）
@@ -141,7 +152,7 @@ int eos_fs_type(const char *path);
  * @param path 目录路径
  * @return eos_dir_t* 打开成功则返回目录指针，否则返回 NULL
  */
-eos_dir_t *eos_fs_opendir(const char *path);
+eos_dir_t eos_fs_opendir(const char *path);
 
 /**
  * @brief 读取目录中的下一个文件名
@@ -160,13 +171,13 @@ eos_dir_t *eos_fs_opendir(const char *path);
  * @note 如果文件名长度超过 max_len-1，则会被截断，并保证以 '\0' 结尾
  * @note 该函数仅返回文件名，不包含路径
  */
-int eos_fs_readdir(eos_dir_t *dir, char *name, size_t max_len);
+int eos_fs_readdir(eos_dir_t dir, char *name, size_t max_len);
 
 /**
  * @brief 关闭文件目录
  * @param dir 目标文件目录指针
  */
-void eos_fs_closedir(eos_dir_t *dir);
+void eos_fs_closedir(eos_dir_t dir);
 
 /**
  * @brief 移动文件或重命名
@@ -175,6 +186,8 @@ void eos_fs_closedir(eos_dir_t *dir);
  * @return int 成功返回 0，失败返回 -1
  */
 int eos_fs_mv(const char *old_path, const char *new_path);
+
+int eos_fs_sync(eos_file_t fp);
 #ifdef __cplusplus
 }
 #endif

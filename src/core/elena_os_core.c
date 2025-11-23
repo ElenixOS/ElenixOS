@@ -42,7 +42,7 @@
 #define EOS_LOG_TAG "Core"
 #include "elena_os_log.h"
 #include "elena_os_sensor.h"
-#include "elena_os_async.h"
+#include "elena_os_dispatcher.h"
 #include "elena_os_scene.h"
 #include "elena_os_anim.h"
 #include "elena_os_control_center.h"
@@ -117,7 +117,7 @@ eos_result_t eos_run(void)
 {
     eos_logo_play(true);
     /************************** 系统组件初始化 **************************/
-    eos_async_init();
+    eos_dispatcher_init();
     script_engine_init();
     eos_sys_init();
     lv_font_t *default_font = eos_font_init();
@@ -162,7 +162,7 @@ eos_result_t eos_run(void)
     // 开始绘制
     while (1)
     {
-        eos_async_handler();
+        eos_dispatch_tick();
         eos_afw_handler();
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);

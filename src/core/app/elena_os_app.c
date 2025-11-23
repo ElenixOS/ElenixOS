@@ -67,8 +67,8 @@ static eos_result_t _eos_app_order_save(void)
         return EOS_FAILED;
     }
 
-    eos_file_t *fp = eos_fs_open_write(EOS_APP_LIST_APP_ORDER_PATH);
-    if (!fp)
+    eos_file_t fp = eos_fs_open_write(EOS_APP_LIST_APP_ORDER_PATH);
+    if (fp == EOS_FILE_INVALID)
     {
         eos_free(json_str);
         return EOS_FAILED;

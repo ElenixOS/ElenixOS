@@ -33,7 +33,8 @@ extern "C" {
 #define EOS_FS_POSIX        0
 #define EOS_FS_FATFS        1
 #define EOS_FS_LITTLEFS     2
-#define EOS_FS_CUSTOM       3
+#define EOS_FS_RTTHREAD     3
+#define EOS_FS_CUSTOM       4
 
 #define EOS_MEM_STDLIB      0
 #define EOS_MEM_CUSTOM      1

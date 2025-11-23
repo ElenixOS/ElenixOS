@@ -86,8 +86,12 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     lv_image_set_src(img_obj, NULL);
 
     // 打开新图像文件
-    eos_file_t *fp = eos_fs_open_read(bin_path);
-    EOS_CHECK_PTR_RETURN(fp);
+    eos_file_t fp = eos_fs_open_read(bin_path);
+    if (fp == EOS_FILE_INVALID)
+    {
+        EOS_LOG_E("Failed to open file");
+        return;
+    }
 
     // 获取文件大小
     uint32_t file_size = 0;

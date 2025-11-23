@@ -38,7 +38,7 @@ bool eos_is_file(const char *path);
  * @param fp 文件指针（eos_fs_open_write 或 eos_fs_open_readwrite 打开）
  * @return int 写入的字节数，或错误码（负值）
  */
-int eos_fs_puts(const char *s, eos_file_t *fp);
+int eos_fs_puts(const char *s, eos_file_t fp);
 
 /**
  * @brief 判断目录是否存在，不存在则创建

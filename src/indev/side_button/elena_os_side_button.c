@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_scene.h"
-#include "elena_os_async.h"
+#include "elena_os_dispatcher.h"
 #include "elena_os_control_center.h"
 /* Macros and Definitions -------------------------------------*/
 
@@ -33,5 +33,5 @@ static void _side_button_async_cb(void *user_data)
 
 void eos_side_button_report(eos_button_state_t state)
 {
-    eos_async_call(_side_button_async_cb, (void *)(intptr_t)state);
+    eos_dispatcher_call(_side_button_async_cb, (void *)(intptr_t)state);
 }

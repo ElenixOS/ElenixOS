@@ -63,8 +63,8 @@ static bool config_write_to_file(cJSON *root)
     }
     EOS_LOG_D("Writing file: %s", config_file_path);
 
-    eos_file_t *fp = eos_fs_open_write(config_file_path);
-    if (!fp)
+    eos_file_t fp = eos_fs_open_write(config_file_path);
+    if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Open file failed");
         eos_free(json_str);
@@ -112,8 +112,8 @@ static cJSON *config_load_from_file(void)
         return cJSON_CreateObject();
     }
 
-    eos_file_t *fp = eos_fs_open_read(config_file_path);
-    if (!fp)
+    eos_file_t fp = eos_fs_open_read(config_file_path);
+    if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Open file failed");
         return cJSON_CreateObject();

@@ -172,7 +172,7 @@ extern "C"
 #endif /* EOS_SYS_ROOT_DIR */
 
 /**
- * 选择文件系统类型
+ * 选择文件系统接口类型
  * 可选选项:
  *  - EOS_FS_POSIX
  *  - EOS_FS_FATFS
@@ -180,7 +180,7 @@ extern "C"
  *  - EOS_FS_RTTHREAD
  *  - EOS_FS_CUSTOM
  */
-#define EOS_FS_TYPE EOS_FS_POSIX
+#define EOS_FS_TYPE EOS_FS_RTTHREAD
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM
     #define EOS_FS_FILE_TYPE void*          /**< 文件的数据类型 */

@@ -348,40 +348,41 @@ void _eos_app_list_free(eos_app_list_t *list)
  */
 eos_result_t _eos_app_list_get_installed(void)
 {
-    DIR *dir;
-    struct dirent *entry;
+    eos_dir_t dir;
+    char name_buf[256];
 
     // 打开应用程序安装目录
-    dir = opendir(EOS_APP_INSTALLED_DIR);
-    if (!dir)
+    dir = eos_fs_opendir(EOS_APP_INSTALLED_DIR);
+    if (dir == NULL)
     {
-        EOS_LOG_E("Failed to open app directory: %s", EOS_APP_INSTALLED_DIR);
+        EOS_LOG_E("Failed to open app dir: %s", EOS_APP_INSTALLED_DIR);
         return EOS_FAILED;
     }
 
     // 遍历目录中的所有条目
-    while ((entry = readdir(dir)) != NULL)
+    while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
     {
         // 跳过 "." 和 ".." 目录
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
         {
             continue;
         }
 
         // 构建完整路径
         char full_path[PATH_MAX];
-        snprintf(full_path, sizeof(full_path), EOS_APP_INSTALLED_DIR "%s", entry->d_name);
+        snprintf(full_path, sizeof(full_path),
+                 EOS_APP_INSTALLED_DIR "%s", name_buf);
 
         // 检查是否为目录
-        if (eos_is_dir(full_path))
+        if (eos_fs_type(full_path) == EOS_FS_TYPE_DIR)
         {
-            EOS_LOG_D("Found installed app: %s", entry->d_name);
-            // 添加到应用程序列表
-            _eos_app_list_add(&app_list, entry->d_name);
+            EOS_LOG_D("Found installed app: %s", name_buf);
+            _eos_app_list_add(&app_list, name_buf);
         }
     }
 
-    closedir(dir);
+    eos_fs_closedir(dir);
+
     EOS_LOG_I("Loaded %zu installed apps", app_list.size);
     return EOS_OK;
 }

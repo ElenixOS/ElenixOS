@@ -12,8 +12,7 @@
 #include "elena_os_fs_port.h"
 
 /* Includes ---------------------------------------------------*/
-#include <rtthread.h>
-#include <dfs_posix.h>
+#include <string.h>
 #include "elena_os_log.h"
 
 /* Macros and Definitions -------------------------------------*/

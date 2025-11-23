@@ -67,7 +67,7 @@ void _reset_afw(void)
     if (afw.current_fp)
     {
         eos_fs_close(afw.current_fp);
-        afw.current_fp = NULL;
+        afw.current_fp = EOS_FILE_INVALID;
     }
 
     afw.tmp_path[0] = '\0';
@@ -186,7 +186,7 @@ void eos_afw_handler(void)
             if (afw.current_fp)
             {
                 eos_fs_close(afw.current_fp);
-                afw.current_fp = NULL;
+                afw.current_fp = EOS_FILE_INVALID;
             }
 
             EOS_LOG_D("Remove old file: %s", afw.current_task->path);

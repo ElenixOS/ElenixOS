@@ -40,7 +40,10 @@ typedef lfs_dir_t* eos_dir_t;
 #define EOS_DIR_INVALID NULL
 
 #elif EOS_FS_TYPE == EOS_FS_RTTHREAD
-#include <dfs_posix.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 typedef int eos_file_t;
 typedef DIR* eos_dir_t;
 #define EOS_FILE_INVALID (-1)

@@ -16,10 +16,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
 #include "elena_os_core.h"
 #include "script_engine_core.h"
 /* Public macros ----------------------------------------------*/

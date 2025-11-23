@@ -100,11 +100,11 @@ void _eos_watchface_list_free(eos_watchface_list_t *list)
 
 eos_result_t _eos_watchface_list_get_installed()
 {
-    DIR *dir;
-    struct dirent *entry;
+    eos_dir_t dir;
+    char name_buf[256];
 
     // 打开应用程序安装目录
-    dir = opendir(EOS_WATCHFACE_INSTALLED_DIR);
+    dir = eos_fs_opendir(EOS_WATCHFACE_INSTALLED_DIR);
     if (!dir)
     {
         EOS_LOG_E("Failed to open watchface directory: %s", EOS_WATCHFACE_INSTALLED_DIR);
@@ -112,28 +112,28 @@ eos_result_t _eos_watchface_list_get_installed()
     }
 
     // 遍历目录中的所有条目
-    while ((entry = readdir(dir)) != NULL)
+    while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
     {
         // 跳过 "." 和 ".." 目录
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
         {
             continue;
         }
 
         // 构建完整路径
         char full_path[PATH_MAX];
-        snprintf(full_path, sizeof(full_path), EOS_WATCHFACE_INSTALLED_DIR "%s", entry->d_name);
+        snprintf(full_path, sizeof(full_path), EOS_WATCHFACE_INSTALLED_DIR "%s", name_buf);
 
         // 检查是否为目录
         if (eos_is_dir(full_path))
         {
-            EOS_LOG_D("Found installed watchface: %s", entry->d_name);
+            EOS_LOG_D("Found installed watchface: %s", name_buf);
             // 添加到应用程序列表
-            _eos_watchface_list_add(&watchface_list, entry->d_name);
+            _eos_watchface_list_add(&watchface_list, name_buf);
         }
     }
 
-    closedir(dir);
+    eos_fs_closedir(dir);
     EOS_LOG_I("Loaded %zu installed watchfaces", watchface_list.size);
     return EOS_OK;
 }

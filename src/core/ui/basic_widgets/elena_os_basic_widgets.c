@@ -38,6 +38,15 @@
 
 #define APP_HEADER_TITLE_WIDTH 240
 
+#define _LIST_SWITCH_WIDTH 38
+#define _LIST_SWITCH_HEIGHT 65
+
+#define _LIST_CONTAINER_PAD_ALL 24
+#define _LIST_LABEL_MARGIN_VER 8
+
+#define _LIST_HEAD_PLACEHOLDER_HEIGHT 110
+#define _LIST_TAIL_PLACEHOLDER_HEIGHT 60
+
 typedef enum
 {
     APP_HEADER_TITLE_TYPE_STRING,
@@ -86,18 +95,28 @@ static void _back_btn_cb(lv_event_t *e)
     }
 }
 
+static void _list_child_created_cb(lv_event_t *e)
+{
+    lv_obj_t *list = lv_event_get_target(e);
+    lv_obj_t *bottom_ph = (lv_obj_t *)lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(bottom_ph && list);
+    lv_obj_move_to_index(bottom_ph, -1);
+}
+
 lv_obj_t *eos_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
     lv_obj_t *list = lv_list_create(parent);
     lv_obj_set_size(list, lv_pct(100), lv_pct(100));
     lv_obj_set_style_pad_ver(list, 0, 0);
-    lv_obj_set_style_pad_hor(list, 20, 0);
+    lv_obj_set_style_pad_hor(list, 10, 0);
     lv_obj_center(list);
     lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
 
     // 占位符
-    eos_list_add_placeholder(list, EOS_LIST_PLACEHOLDER_HEIGHT);
+    eos_list_add_placeholder(list, _LIST_HEAD_PLACEHOLDER_HEIGHT);
+    lv_obj_t *bottom_ph = eos_list_add_placeholder(list, _LIST_TAIL_PLACEHOLDER_HEIGHT);
+    lv_obj_add_event_cb(list, _list_child_created_cb, LV_EVENT_CHILD_CREATED, bottom_ph);
     return list;
 }
 
@@ -287,6 +306,7 @@ void eos_app_header_init(void)
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_move_background(app_header->container);
     eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
+    lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_coord_t header_h = APP_HEADER_HEIGHT;
     lv_coord_t header_w = lv_obj_get_width(app_header->container);
@@ -331,8 +351,8 @@ lv_obj_t *_list_btn_container_create(lv_obj_t *list)
     lv_obj_set_scroll_dir(btn, LV_DIR_NONE); // 禁止滚动
     lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_set_style_border_width(btn, 0, 0);
-    lv_obj_set_style_pad_all(btn, 18, 0);
-    lv_obj_set_style_margin_bottom(btn, 20, 0);
+    lv_obj_set_style_pad_all(btn, _LIST_CONTAINER_PAD_ALL, 0);
+    lv_obj_set_style_margin_bottom(btn, 10, 0);
     lv_obj_set_style_align(btn, LV_ALIGN_CENTER, 0);
     lv_obj_set_style_radius(btn, EOS_LIST_OBJ_RADIUS, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
@@ -461,26 +481,54 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     return btn;
 }
 
-lv_obj_t *eos_list_add_container(lv_obj_t *list)
+static void _list_container_common_style(lv_obj_t *container)
 {
-    lv_obj_t *container = lv_obj_create(list);
     lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(container, LV_DIR_NONE); // 禁止滚动
     lv_obj_set_style_bg_color(container, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_set_style_border_width(container, 0, 0);
-    lv_obj_set_style_pad_all(container, 18, 0);
+    lv_obj_set_style_pad_all(container, _LIST_CONTAINER_PAD_ALL, 0);
     lv_obj_set_style_margin_bottom(container, 20, 0);
     lv_obj_set_style_align(container, LV_ALIGN_CENTER, 0);
     lv_obj_set_style_radius(container, EOS_LIST_OBJ_RADIUS, 0);
     lv_obj_set_style_shadow_width(container, 0, 0);
     lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+}
+
+lv_obj_t *eos_list_add_container(lv_obj_t *list)
+{
+    lv_obj_t *container = lv_obj_create(list);
+    _list_container_common_style(container);
     return container;
+}
+
+lv_obj_t *eos_list_add_button_container(lv_obj_t *list)
+{
+    lv_obj_t *container = lv_button_create(list);
+    _list_container_common_style(container);
+    return container;
+}
+
+static void _list_switch_container_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *sw = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(sw);
+
+    if (lv_obj_has_state(sw, LV_STATE_CHECKED))
+    {
+        lv_obj_remove_state(sw, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_obj_add_state(sw, LV_STATE_CHECKED);
+    }
+    lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
 lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
 {
     // 创建容器
-    lv_obj_t *container = eos_list_add_container(list);
+    lv_obj_t *container = eos_list_add_button_container(list);
     lv_obj_set_size(container, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW); // 水平排布
     lv_obj_set_flex_align(container,
@@ -490,20 +538,47 @@ lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
 
     // 文字
     lv_obj_t *label = lv_label_create(container);
-    lv_obj_set_style_margin_left(label, 18, 0);
     lv_label_set_text(label, txt);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
 
     // 开关
     lv_obj_t *sw = lv_switch_create(container);
-    lv_obj_set_style_margin_right(sw, 18, 0);
-    lv_obj_set_height(sw, lv_pct(100));
+    lv_obj_set_height(sw, _LIST_SWITCH_WIDTH);
     lv_obj_update_layout(sw);
-    int32_t w = lv_obj_get_height(sw) * 2;
-    lv_obj_set_width(sw, w);
+    lv_obj_set_width(sw, _LIST_SWITCH_HEIGHT);
+    lv_obj_add_event_cb(container, _list_switch_container_clicked_cb, LV_EVENT_CLICKED, sw);
 
     return sw;
+}
+
+static void _list_label_common_style(lv_obj_t *label)
+{
+    eos_label_set_font_size(label, EOS_FONT_SIZE_SMALL);
+    lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
+    lv_obj_set_size(label, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_hor(label, _LIST_CONTAINER_PAD_ALL, 0);
+    lv_obj_set_style_margin_ver(label, _LIST_LABEL_MARGIN_VER, 0);
+}
+
+lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt)
+{
+    lv_obj_t *label = lv_label_create(list);
+    _list_label_common_style(label);
+    lv_label_set_text(label, txt);
+    lv_obj_set_style_text_color(label, EOS_COLOR_WHITE, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    return label;
+}
+
+lv_obj_t *eos_list_add_note(lv_obj_t *list, const char *txt)
+{
+    lv_obj_t *label = lv_label_create(list);
+    _list_label_common_style(label);
+    lv_label_set_text(label, txt);
+    lv_obj_set_style_text_color(label, EOS_COLOR_GREY_1, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    return label;
 }
 
 lv_obj_t *_split_line_create(lv_obj_t *parent)
@@ -532,11 +607,7 @@ lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title)
     lv_obj_set_flex_flow(outer_container, LV_FLEX_FLOW_COLUMN);     // 垂直布局
 
     // 添加左上角标签
-    lv_obj_t *txt_label = lv_label_create(outer_container);
-    lv_label_set_text(txt_label, title);
-    lv_obj_set_style_text_align(txt_label, LV_TEXT_ALIGN_LEFT, 0);
-    lv_obj_align(txt_label, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_obj_set_style_margin_bottom(txt_label, 10, 0);
+    lv_obj_t *txt_label = eos_list_add_title(outer_container, title);
 
     // 创建内层容器（水平居中）
     lv_obj_t *inner_container = eos_list_add_container(outer_container);

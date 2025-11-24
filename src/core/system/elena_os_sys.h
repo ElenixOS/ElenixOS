@@ -36,6 +36,9 @@ extern "C" {
 #define EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER "display_brightness"
 #define EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER "speaker_volume"
 #define EOS_SYS_CFG_KEY_MUTE_BOOL "mute"
+#define EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER "sleep_timeout_sec"
+#define EOS_SYS_CFG_KEY_AOD_MODE_BOOL "aod_mode"
+#define EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL "wake_on_raise"
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

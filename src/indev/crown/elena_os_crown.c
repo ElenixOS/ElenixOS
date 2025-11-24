@@ -15,6 +15,7 @@
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "elena_os_log.h"
+#include "elena_os_pm.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 /* Variables --------------------------------------------------*/
@@ -23,6 +24,12 @@ static int8_t encoder_reverse = -1;
 /* Function Implementations -----------------------------------*/
 static void _crown_button_async_cb(void *user_data)
 {
+    if (eos_pm_get_state() == EOS_PM_SLEEP)
+    {
+        eos_pm_wake_up();
+        return;
+    }
+    eos_pm_reset_timer();
     eos_button_state_t state = (eos_button_state_t)(intptr_t)user_data;
     switch (state)
     {

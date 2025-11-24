@@ -309,3 +309,21 @@ EOS_WEAK void eos_speaker_set_volume(uint8_t volume)
     LV_UNUSED(volume);
     return;
 }
+
+EOS_WEAK void eos_sys_sleep(void)
+{
+    eos_display_set_brightness(0);
+    return;
+}
+
+EOS_WEAK void eos_sys_aod(void)
+{
+    eos_display_set_brightness(20);
+    return;
+}
+
+EOS_WEAK void eos_sys_wake(void)
+{
+    eos_display_set_brightness(100);
+    return;
+}

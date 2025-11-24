@@ -126,6 +126,40 @@ void eos_locate_phone(void);
  * @param volume 音量
  */
 void eos_speaker_set_volume(uint8_t volume);
+/**
+ * @brief 系统进入休眠模式（低功耗状态）
+ *
+ * 此函数内需要完成：
+ *
+ * - 停止触摸
+ *
+ * - 关闭屏幕
+ *
+ * - 关闭其他外设
+ *
+ * - CPU 降频、进入低功耗
+ */
+void eos_sys_sleep(void);
+/**
+ * @brief 系统进入屏幕常亮模式
+ *
+ * 此函数内需要完成：
+ *
+ * - 停止触摸
+ *
+ * - 关闭其他外设
+ *
+ * - CPU 降频、进入低功耗
+ */
+void eos_sys_aod(void);
+/**
+ * @brief 系统退出休眠模式
+ *
+ * 此函数内需要完成：
+ *
+ * - 唤醒`eos_sys_sleep()`关闭的外设，关闭低功耗模式
+ */
+void eos_sys_wake(void);
 #ifdef __cplusplus
 }
 #endif

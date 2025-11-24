@@ -40,7 +40,10 @@ typedef lfs_dir_t* eos_dir_t;
 #define EOS_DIR_INVALID NULL
 
 #elif EOS_FS_TYPE == EOS_FS_RTTHREAD
-#include <dfs_posix.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 typedef int eos_file_t;
 typedef DIR* eos_dir_t;
 #define EOS_FILE_INVALID (-1)
@@ -201,13 +204,6 @@ int eos_fs_mv(const char *old_path, const char *new_path);
  */
 int eos_fs_sync(eos_file_t file);
 
-/**
- * @brief 异步写入整个文件
- * @param file 文件
- * @return int 成功返回 0，失败返回 -1
- * @note 必须创建一个线程写入文件，否中会阻塞 UI
- */
-int eos_fs_async_write(eos_file_t file, void *data, size_t data_size);
 #ifdef __cplusplus
 }
 #endif

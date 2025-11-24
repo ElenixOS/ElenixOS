@@ -12,8 +12,7 @@
 #include "elena_os_fs_port.h"
 
 /* Includes ---------------------------------------------------*/
-#include <rtthread.h>
-#include <dfs_posix.h>
+#include <string.h>
 #include "elena_os_log.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -166,72 +165,6 @@ int eos_fs_sync(eos_file_t fp)
     if (fp < 0)
         return -1;
     return fsync(fp);
-}
-
-static void _async_write_thread_entry(void *arg)
-{
-    eos_async_write_task_t *task = (eos_async_write_task_t *)arg;
-
-    if (!task || !task->file)
-        goto cleanup;
-
-    ssize_t written = eos_fs_write(task->file, task->data, task->size);
-    if (written != (ssize_t)task->size)
-    {
-        EOS_LOG_E("async write failed (%zd/%zu)", written, task->size);
-    }
-
-    eos_fs_close(task->file);
-
-cleanup:
-    if (task)
-    {
-        if (task->data)
-            eos_free(task->data);
-        eos_free(task);
-    }
-}
-
-
-int eos_fs_async_write(eos_file_t file, void *data, size_t data_size)
-{
-    if (!file || !data || data_size == 0)
-        return -1;
-
-    eos_async_write_task_t *task = eos_malloc(sizeof(eos_async_write_task_t));
-    if (!task)
-        return -1;
-
-    void *data_copy = eos_malloc(data_size);
-    if (!data_copy)
-    {
-        eos_free(task);
-        return -1;
-    }
-    memcpy(data_copy, data, data_size);
-
-    task->file = file;
-    task->data = data_copy;
-    task->size = data_size;
-
-    rt_thread_t tid = rt_thread_create(
-        "fs_async",
-        _async_write_thread_entry,
-        task,
-        2048,          /* 栈大小 */
-        RT_THREAD_PRIORITY_MAX / 2, /* 中等优先级 */
-        10             /* 时间片 */
-    );
-
-    if (tid == RT_NULL)
-    {
-        eos_free(data_copy);
-        eos_free(task);
-        return -1;
-    }
-
-    rt_thread_startup(tid);
-    return 0;   /* 成功创建异步线程 */
 }
 
 #endif /* EOS_FS_TYPE */

@@ -40,6 +40,7 @@
 #include "elena_os_display.h"
 #include "elena_os_toast.h"
 #include "elena_os_fs.h"
+#include "elena_os_pm.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -94,6 +95,7 @@ static void _settings_screen_bluetooth(lv_event_t *e)
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 }
 /************************** 显示设置 **************************/
+
 static void _brightness_slider_value_changed_cb(lv_event_t *e)
 {
     lv_obj_t *sl = lv_event_get_target(e);
@@ -138,6 +140,34 @@ static void _brightness_slider_plus_cb(lv_event_t *e)
     eos_display_set_brightness_smooth(prev, val, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
+static void _aod_mode_switch_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    EOS_CHECK_PTR_RETURN(obj);
+    if (lv_obj_has_state(obj, LV_STATE_CHECKED))
+    {
+        eos_pm_set_aod_mode(true);
+    }
+    else
+    {
+        eos_pm_set_aod_mode(false);
+    }
+}
+
+static void _wake_on_raise_switch_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    EOS_CHECK_PTR_RETURN(obj);
+    if (lv_obj_has_state(obj, LV_STATE_CHECKED))
+    {
+        eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
+    }
+    else
+    {
+        eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, false);
+    }
+}
+
 static void _settings_screen_display(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
@@ -156,6 +186,22 @@ static void _settings_screen_display(lv_event_t *e)
     lv_obj_add_event_cb(ls->slider, _brightness_slider_released_cb, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(ls->minus_btn, _brightness_slider_minus_cb, LV_EVENT_CLICKED, ls->slider);
     lv_obj_add_event_cb(ls->plus_btn, _brightness_slider_plus_cb, LV_EVENT_CLICKED, ls->slider);
+
+    eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
+
+    lv_obj_t *sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_DISPLAY_AOD]);
+    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_AOD_MODE_BOOL, false));
+    lv_obj_add_event_cb(sw, _aod_mode_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    eos_list_add_note(list,"Elena Watch可以始终显示时间。");
+    eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
+
+    eos_list_add_title(list, current_lang[STR_ID_SETTINGS_WAKE]);
+    sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_WAKE_ON_RAISE]);
+    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true));
+    lv_obj_add_event_cb(sw, _wake_on_raise_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // TODO: 用于选择亮屏时间的Radio Group
+
 }
 /************************** 通知 **************************/
 static void _settings_screen_notification(lv_event_t *e)
@@ -312,14 +358,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     eos_screen_bind_header(scr, pkg.name);
     eos_screen_load(scr);
 
-    lv_obj_t *list = lv_list_create(scr);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_hor(list, 20, 0);
-    lv_obj_set_style_pad_ver(list, 0, 0);
-    lv_obj_center(list);
-    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
-
-    eos_list_add_placeholder(list, EOS_LIST_PLACEHOLDER_HEIGHT);
+    lv_obj_t *list = eos_list_create(scr);
 
     lv_obj_t *container = eos_list_add_container(list);
     lv_obj_set_size(container, lv_pct(100), LV_SIZE_CONTENT);
@@ -382,8 +421,6 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     lv_obj_add_event_cb(uninstall_btn, _uninstall_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
     lv_obj_set_style_text_color(uninstall_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
     lv_obj_center(uninstall_btn_label);
-
-    eos_list_add_placeholder(list, 50);
 }
 
 static void _app_btn_create(lv_obj_t *parent, const char *app_id)
@@ -433,14 +470,8 @@ static void _settings_screen_apps(lv_event_t *e)
     eos_screen_bind_header_str_id(scr, STR_ID_SETTINGS_APPS);
     eos_screen_load(scr);
 
-    lv_obj_t *app_list = lv_list_create(scr);
-    lv_obj_set_size(app_list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_hor(app_list, 20, 0);
-    lv_obj_set_style_pad_ver(app_list, 0, 0);
-    lv_obj_center(app_list);
-    lv_obj_set_scrollbar_mode(app_list, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_t *app_list = eos_list_create(scr);
     eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
-    eos_list_add_placeholder(app_list, EOS_LIST_PLACEHOLDER_HEIGHT);
 
     size_t app_list_size = eos_app_list_size();
     for (size_t i = 0; i < app_list_size; i++)
@@ -543,6 +574,4 @@ void eos_settings_create(void)
     // 其他设置
     btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
     lv_obj_add_event_cb(btn, _settings_screen_general, LV_EVENT_CLICKED, NULL);
-
-    eos_list_add_placeholder(settings_list, 50);
 }

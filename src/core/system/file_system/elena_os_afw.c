@@ -166,7 +166,7 @@ void eos_afw_handler(void)
 #else
         case EOS_AFW_TASK_STATE_WRITING_WHOLE:
         {
-            int ret = eos_fs_async_write(afw.current_fp, afw.current_task->data, afw.current_task->data_size);
+            int ret = eos_fs_write(afw.current_fp, afw.current_task->data, afw.current_task->data_size);
 
             if (ret != 0)
             {

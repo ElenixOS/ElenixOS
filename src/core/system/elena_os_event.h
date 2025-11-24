@@ -38,6 +38,9 @@ typedef enum
     EOS_EVENT_GLOBAL_SCREEN_LOADED,             /**< 屏幕加载已完成 */
     EOS_EVENT_NAV_PREV,                         /**< 导航栈已经返回上级屏幕 */
     EOS_EVENT_NAV_CLEAN_UP,                     /**< 导航栈已经清理完毕 */
+    EOS_EVENT_SYSTEM_SLEEP,                     /**< 系统进入睡眠模式 */
+    EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< 系统已唤醒 */
+    EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< 屏幕常亮模式已启动 */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */

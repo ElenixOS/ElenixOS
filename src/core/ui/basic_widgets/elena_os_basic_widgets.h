@@ -42,7 +42,7 @@ extern "C" {
 
 #define EOS_LIST_CONTAINER_HEIGHT 100
 #define EOS_LIST_OBJ_RADIUS 25
-#define EOS_LIST_PLACEHOLDER_HEIGHT 110
+#define EOS_LIST_SECTION_PLACEHOLDER_HEIGHT 30
 
 /* Public typedefs --------------------------------------------*/
 /**
@@ -190,6 +190,18 @@ lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height);
  * 创建失败则返回 NULL
  */
 lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt);
+/**
+ * @brief 向列表内添加标题文字
+ * @param txt 文字内容
+ * @return lv_obj_t* 创建成功则返回label对象，否则返回 NULL
+ */
+lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt);
+/**
+ * @brief 向列表内添加提示文字
+ * @param txt 文字内容
+ * @return lv_obj_t* 创建成功则返回label对象，否则返回 NULL
+ */
+lv_obj_t *eos_list_add_note(lv_obj_t *list, const char *txt);
 /**
  * @brief 向列表中添加圆形图标的按钮
  *

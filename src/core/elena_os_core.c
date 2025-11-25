@@ -47,7 +47,6 @@
 #include "elena_os_anim.h"
 #include "elena_os_control_center.h"
 #include "elena_os_fs.h"
-#include "elena_os_afw.h"
 #include "elena_os_pm.h"
 #include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
@@ -119,8 +118,9 @@ eos_result_t eos_run(void)
 {
     eos_logo_play(true);
     /************************** 系统组件初始化 **************************/
+#if EOS_DFW_ENABLE
     eos_dfw_init();
-    eos_afw_init();
+#endif /* EOS_DFW_ENABLE */
     eos_dispatcher_init();
     script_engine_init();
     eos_sys_init();
@@ -168,7 +168,6 @@ eos_result_t eos_run(void)
     while (1)
     {
         eos_dispatch_tick();
-        eos_afw_handler();
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);
     }

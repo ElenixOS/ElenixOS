@@ -32,7 +32,6 @@
 #include "elena_os_pkg_mgr.h"
 #include "elena_os_sensor.h"
 #include "elena_os_fs.h"
-#include "elena_os_afw.h"
 #include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_SYS_DEFAULT_LANG_STR "English"
@@ -52,8 +51,12 @@ static inline cJSON *eos_sys_load_config(int *err_code)
         EOS_LOG_E("Config file does not exist");
         return NULL;
     }
-
+#if EOS_DFW_ENABLE
     char *file_content = eos_dfw_read(EOS_SYS_CONFIG_FILE_PATH);
+#else
+    char *file_content = eos_fs_read_file(EOS_SYS_CONFIG_FILE_PATH);
+#endif /* EOS_DFW_ENABLE */
+
     if (!file_content)
     {
         EOS_LOG_E("Failed to read config file");
@@ -87,7 +90,20 @@ static inline int eos_sys_save_config(cJSON *root)
     }
 
     size_t json_len = strlen(new_json);
+#if EOS_DFW_ENABLE
     int ret = eos_dfw_write(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
+#else
+    int ret;
+    int written = eos_fs_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
+    if (written <= 0 || written != json_len)
+    {
+        ret = -1;
+    }
+    else
+    {
+        ret = 0;
+    }
+#endif /* EOS_DFW_ENABLE */
 
     cJSON_free(new_json);
 

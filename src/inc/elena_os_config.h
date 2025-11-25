@@ -103,7 +103,7 @@ extern "C"
 
 #if EOS_FONT_TYPE == EOS_FONT_C_MULTI
 
-#define EOS_ENABLE_CHINESE_FONT 1
+#define EOS_ENABLE_CHINESE_FONT 0
 
 #if EOS_ENABLE_CHINESE_FONT
 
@@ -130,15 +130,11 @@ extern "C"
 #define EOS_FONT_TTF_TYPE EOS_FONT_TTF_FILE
 
 #if EOS_FONT_TTF_TYPE == EOS_FONT_TTF_DATA
-
-#define EOS_FONT_TTF_DATA_NAME SourceHanSansSC_12M
-#define EOS_FONT_TTF_DATA_SIZE SourceHanSansSC_12M_size
-
+    #define EOS_FONT_TTF_DATA_NAME SourceHanSansSC_12M
+    #define EOS_FONT_TTF_DATA_SIZE SourceHanSansSC_12M_size
 #elif EOS_FONT_TTF_TYPE == EOS_FONT_TTF_FILE
-
-#define LV_FS_STDIO_LETTER_STR "A"
-#define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR ":" EOS_SYS_RES_FONT_DIR "MiSans-Normal.ttf"
-
+    #define LV_FS_STDIO_LETTER_STR "A"
+    #define EOS_FONT_TTF_FILE_PATH LV_FS_STDIO_LETTER_STR ":" EOS_SYS_RES_FONT_DIR "MiSans-Normal.ttf"
 #endif /* EOS_FONT_TTF_TYPE */
 
 /**
@@ -147,10 +143,8 @@ extern "C"
 #define EOS_FONT_TTF_ENABLE_EXTENDED 0
 
 #if EOS_FONT_TTF_ENABLE_EXTENDED
-
-#define EOS_FONT_TTF_KERNING 0      /**< 字距，单位：px */
-#define EOS_FONT_TTF_CACHE_SIZE 256 /**< TTF 字体缓存大小 */
-
+    #define EOS_FONT_TTF_KERNING 0      /**< 字距，单位：px */
+    #define EOS_FONT_TTF_CACHE_SIZE 256 /**< TTF 字体缓存大小 */
 #endif /* EOS_FONT_TTF_ENABLE_EXTENDED */
 
 #endif /* EOS_FONT_TYPE */
@@ -168,7 +162,7 @@ extern "C"
 /************************** 系统文件目录配置 **************************/
 
 #ifndef EOS_SYS_ROOT_DIR
-#define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
+    #define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
 #endif /* EOS_SYS_ROOT_DIR */
 
 /**
@@ -180,7 +174,9 @@ extern "C"
  *  - EOS_FS_RTTHREAD
  *  - EOS_FS_CUSTOM
  */
-#define EOS_FS_TYPE EOS_FS_POSIX
+#ifndef EOS_FS_TYPE
+    #define EOS_FS_TYPE EOS_FS_RTTHREAD
+#endif /* EOS_FS_TYPE */
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM
     #define EOS_FS_FILE_TYPE void*          /**< 文件的数据类型 */
@@ -189,19 +185,7 @@ extern "C"
     #define EOS_DIR_INVALID NULL            /**< 无效的目录 */
 #endif /* EOS_FS_TYPE */
 
-
-/**
- * 选择异步文件写入模式
- * 可用选项:
- *  - EOS_AFW_WRITE_BLOCK:  间隔若干时间后写入一个块
- *  - EOS_AFW_WRITE_WHOLE:  一次写入一整块
- */
-#define EOS_AFW_WRITE_MODE EOS_AFW_WRITE_WHOLE
-
-#if EOS_AFW_WRITE_MODE == EOS_AFW_WRITE_BLOCK
-    #define EOS_AFW_FILE_BLOCK_SIZE 4096      /**< 异步文件写入器每次写入文件块大小，单位：字节 */
-    #define EOS_AFW_SCHEDULE_INTERVAL 0       /**< 间隔`EOS_AFW_SCHEDULE_INTERVAL`次`eos_afw_handler`调用后执行一次文件块写入 */
-#endif /* EOS_AFW_WRITE_MODE */
+#define EOS_DFW_ENABLE 0        /**< 是否启用延后文件写入器 */
 
 /************************** 电量检测 **************************/
 

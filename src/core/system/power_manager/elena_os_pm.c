@@ -69,8 +69,10 @@ static void _pm_set_state(eos_pm_state_t state)
         lv_timer_pause(t);
         // 广播进入睡眠模式
         eos_event_broadcast(EOS_EVENT_SYSTEM_SLEEP, NULL);
-        // AFW 写入文件
+#if EOS_DFW_ENABLE
+        // DFW 写入文件
         eos_dfw_sync();
+#endif /* EOS_DFW_ENABLE */
         // 进入睡眠模式
         if (t)
             eos_sys_sleep();

@@ -70,7 +70,11 @@ static bool config_write_to_file(cJSON *root)
     EOS_LOG_D("Writing file: %s", config_file_path);
 
     size_t json_len = strlen(json_str);
+#if EOS_DFW_ENABLE
     bool ret = eos_dfw_write(config_file_path, json_str, json_len);
+#else
+    bool ret = eos_fs_write_file(config_file_path, json_str, json_len) > 0 ? true : false;
+#endif /* EOS_DFW_ENABLE */
     eos_free(json_str);
 
     if (!ret)
@@ -110,9 +114,11 @@ static cJSON *config_load_from_file(void)
     {
         return cJSON_CreateObject();
     }
-
+#if EOS_DFW_ENABLE
     char *data = eos_dfw_read(config_file_path);
-
+#else
+    char *data = eos_fs_read_file(config_file_path);
+#endif /* EOS_DFW_ENABLE */
     if (!data)
     {
         EOS_LOG_E("Read file failed");
@@ -381,8 +387,8 @@ static jerry_value_t js_config_set_str(const jerry_call_info_t *call_info_p,
 
 // 设置布尔
 static jerry_value_t js_config_set_bool(const jerry_call_info_t *call_info_p,
-                                           const jerry_value_t args[],
-                                           const jerry_length_t argc)
+                                        const jerry_value_t args[],
+                                        const jerry_length_t argc)
 {
     if (argc < 2 || !jerry_value_is_string(args[0]) || !jerry_value_is_boolean(args[1]))
     {
@@ -503,8 +509,8 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
 
 // 获取布尔
 static jerry_value_t js_config_get_bool(const jerry_call_info_t *call_info_p,
-                                           const jerry_value_t args[],
-                                           const jerry_length_t argc)
+                                        const jerry_value_t args[],
+                                        const jerry_length_t argc)
 {
     if (argc < 1 || !jerry_value_is_string(args[0]))
     {

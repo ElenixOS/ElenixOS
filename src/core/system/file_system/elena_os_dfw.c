@@ -5,6 +5,10 @@
  * @date 2025-11-25
  */
 
+#include "elena_os_config.h"
+
+#if EOS_DFW_ENABLE
+
 #include "elena_os_dfw.h"
 
 /* Includes ---------------------------------------------------*/
@@ -126,3 +130,5 @@ void eos_dfw_init(void)
 {
     cq = eos_cqueue_create(4);
 }
+
+#endif /* EOS_DFW_ENABLE */

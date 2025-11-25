@@ -8,6 +8,10 @@
 #ifndef ELENA_OS_DFW_H
 #define ELENA_OS_DFW_H
 
+#include "elena_os_config.h"
+
+#if EOS_DFW_ENABLE
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,5 +63,7 @@ void eos_dfw_init(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* EOS_DFW_ENABLE */
 
 #endif /* ELENA_OS_DFW_H */

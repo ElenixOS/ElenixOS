@@ -3,26 +3,6 @@
  * @brief 基本控件
  * @author Sab1e
  * @date 2025-08-17
- * @details
- *
- * # Basic Widgets
- * ## 应用头（AppHeader）
- * ### 简介
- * 应用头上方显示应用信息、当前时间以及返回按钮的控件。
- * ### 使用方法
- *
- * 系统启动时使用`eos_app_header_init()`来初始化应用头，只能初始化一次。
- *
- * 可以直接使用`eos_screen_bind_header()`或`eos_screen_bind_header_str_id()`将当前的 Screen 绑定以显示应用头。
- *
- * NOTE: 以`_str_id`结尾的函数即输入 ID 以便适配多语言系统。
- *
- * 后续如果想修改应用头的标题，则需要使用`eos_app_header_set_title()`或`eos_app_header_set_title_str_id()`来设置新的标题。
- *
- * 当被绑定的 Screen 删除时，会自动清理资源（字符串）。
- *
- * NOTE: 应用头标题字符串会自动复制传入的字符串，以防止源字符串被清除。
- *
  */
 
 #ifndef ELENA_OS_BASIC_WIDGETS_H
@@ -43,22 +23,16 @@ extern "C" {
 #define EOS_LIST_CONTAINER_HEIGHT 100
 #define EOS_LIST_OBJ_RADIUS 25
 #define EOS_LIST_SECTION_PLACEHOLDER_HEIGHT 30
+#define EOS_LIST_CONTAINER_PAD_ALL 24
+#define EOS_ITEM_RADIUS 20
 
 /* Public typedefs --------------------------------------------*/
-/**
- * @brief 应用内上方的头部结构体定义
- */
-typedef struct{
-    lv_obj_t *container;
-    lv_obj_t *clock_label;
-    lv_obj_t *title_label;
-    lv_obj_t *back_btn;
-    lv_timer_t *clock_timer;
-}eos_app_header_t;
+
 /**
  * @brief 列表内的滑块定义
  */
-typedef struct{
+typedef struct
+{
     lv_obj_t *slider;
     lv_obj_t *plus_btn;
     lv_obj_t *minus_btn;
@@ -66,7 +40,7 @@ typedef struct{
     lv_obj_t *minus_label;
     uint16_t plus_label_scale;
     uint16_t minus_label_scale;
-}eos_list_slider_t;
+} eos_list_slider_t;
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -107,9 +81,9 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text);
  *
  * 创建失败则返回 NULL
  */
-lv_obj_t * eos_list_add_button(lv_obj_t * list, const void * icon, const char * txt);
+lv_obj_t *eos_list_add_button(lv_obj_t *list, const void *icon, const char *txt);
 /**
- * @brief 向列表中传入一个入口按钮
+ * @brief 向列表中添加一个入口按钮
  *
  * 例如：
  * (Bluetooth   >)
@@ -122,7 +96,7 @@ lv_obj_t * eos_list_add_button(lv_obj_t * list, const void * icon, const char * 
  */
 lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt);
 /**
- * @brief 向列表中传入一个入口按钮
+ * @brief 向列表中添加一个入口按钮
  *
  * 例如：
  * (Bluetooth   >)
@@ -134,50 +108,6 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt);
  * 创建失败则返回 NULL
  */
 lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param title 标题字符串
- */
-void eos_app_header_set_title(lv_obj_t *scr, const char *title);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param id 多语言的字符串 ID
- */
-void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id);
-/**
- * @brief 隐藏应用头
- */
-void eos_app_header_hide(void);
-/**
- * @brief 显示应用头
- */
-void eos_app_header_show(void);
-/**
- * @brief 初始化应用头
- *
- * 应用头将被放置在 lv_layer_top() 层中
- *
- * 隐藏应用头请使用`eos_app_header_hide`
- *
- * 显示应用头请使用`eos_app_header_show`
- *
- * @warning 应用头只能初始化一次
- */
-void eos_app_header_init(void);
-/**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param title 标题 字符串（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_screen_bind_header(lv_obj_t *scr, const char *title);
-/**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param id 标题 ID（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_screen_bind_header_str_id(lv_obj_t *scr, lang_string_id_t id);
 /**
  * @brief 向列表中添加指定像素高度的占位符
  * @param list 目标列表
@@ -207,7 +137,7 @@ lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt);
  * @param txt 文字内容
  * @return lv_obj_t* 创建成功则返回label对象，否则返回 NULL
  */
-lv_obj_t *eos_list_add_note(lv_obj_t *list, const char *txt);
+lv_obj_t *eos_list_add_comment(lv_obj_t *list, const char *txt);
 /**
  * @brief 向列表中添加圆形图标的按钮
  *
@@ -276,10 +206,10 @@ lv_obj_t *eos_list_add_container(lv_obj_t *list);
  * @return lv_obj_t* 返回行对象，方便进一步操作
  */
 lv_obj_t *eos_row_create(lv_obj_t *parent,
-                         const char *left_text,
-                         const char *right_text,
-                         const char *left_img_path,
-                         int icon_w, int icon_h);
+                            const char *left_text,
+                            const char *right_text,
+                            const char *left_img_path,
+                            int icon_w, int icon_h);
 /**
  * @brief 创建一个带有标题的容器（标题位于容器外部）
  * @param list 目标列表

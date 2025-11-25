@@ -26,6 +26,7 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_fs.h"
 #include "elena_os_dfw.h"
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/

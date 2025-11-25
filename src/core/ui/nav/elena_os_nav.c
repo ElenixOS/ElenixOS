@@ -43,7 +43,7 @@ static eos_nav_stack_t eos_nav = {.top = -1, .initialized = false, .semaphore = 
 
 /* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);
-bool is_eos_nav_stack_initialized(void);
+bool eos_nav_get_initialized(void);
 static bool _is_eos_nav_stack_full(void);
 static bool _is_eos_nav_stack_empty(void);
 eos_result_t eos_nav_back_clean(void);
@@ -86,7 +86,7 @@ static void _eos_nav_sem_give(void)
 /**
  * @brief 检查导航栈是否已初始化
  */
-bool is_eos_nav_stack_initialized(void)
+bool eos_nav_get_initialized(void)
 {
     return eos_nav.initialized;
 }
@@ -132,7 +132,7 @@ eos_result_t eos_nav_clean_up(void)
         return ret;
     }
 
-    if (!is_eos_nav_stack_initialized())
+    if (!eos_nav_get_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
         _eos_nav_sem_give();
@@ -180,7 +180,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 {
     EOS_CHECK_PTR_RETURN_VAL(launcher_screen, NULL);
 
-    if (is_eos_nav_stack_initialized())
+    if (eos_nav_get_initialized())
     {
         eos_nav_clean_up();
     }
@@ -229,7 +229,7 @@ lv_obj_t *eos_nav_scr_create(void)
         return NULL;
     }
 
-    if (!is_eos_nav_stack_initialized())
+    if (!eos_nav_get_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
         _eos_nav_sem_give();
@@ -281,7 +281,7 @@ eos_result_t eos_nav_back_clean(void)
         return ret;
     }
 
-    if (!is_eos_nav_stack_initialized())
+    if (!eos_nav_get_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
         _eos_nav_sem_give();
@@ -353,7 +353,7 @@ eos_result_t eos_nav_back(void)
         return ret;
     }
 
-    if (!is_eos_nav_stack_initialized())
+    if (!eos_nav_get_initialized())
     {
         EOS_LOG_E("Nav stack not initialized");
         _eos_nav_sem_give();

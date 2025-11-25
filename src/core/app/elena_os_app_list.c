@@ -31,6 +31,7 @@
 #include "elena_os_flash_light.h"
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
+#include "elena_os_app_header.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -226,7 +227,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     pkg->script_str = eos_fs_read_file(script_path);
     // 无需清理字符串，脚本运行结束后自动清理
     lv_obj_t *scr = eos_nav_init(app_list_screen);
-    eos_screen_bind_header(scr, pkg->name);
+    eos_app_header_bind_screen(scr, pkg->name);
     eos_screen_load(scr);
     script_engine_result_t ret = script_engine_run(pkg);
     if (ret != SE_OK)

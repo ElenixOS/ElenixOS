@@ -71,6 +71,12 @@ eos_result_t eos_nav_back(void);
  * @return lv_obj_t* 根页面对象
  */
 lv_obj_t *eos_nav_get_home_screen(void);
+/**
+ * @brief 判断导航栈是否已经初始化
+ * @return true 已初始化
+ * @return false 未初始化
+ */
+bool eos_nav_get_initialized(void);
 
 #ifdef __cplusplus
 }

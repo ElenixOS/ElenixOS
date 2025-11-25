@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "PowerManager"
 #include "elena_os_log.h"
 #include "elena_os_sys.h"
@@ -20,7 +21,7 @@
 #include "elena_os_dispatcher.h"
 #include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
-#define DEBUG_DISABLE_TIMER 0       /**< [调试]是否关闭定时器 */
+#define DEBUG_DISABLE_TIMER 1       /**< [调试]是否关闭定时器 */
 #define _DEFAULT_TIMEOUT_SEC 15
 /* Variables --------------------------------------------------*/
 static lv_timer_t *t; /**< 睡眠定时器，达到时间后启动睡眠模式 */

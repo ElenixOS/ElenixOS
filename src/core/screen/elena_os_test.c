@@ -35,7 +35,7 @@
 #include "elena_os_sensor.h"
 #include "elena_os_scene.h"
 #include "elena_os_crown.h"
-
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
 #ifdef TEST_USE_ZH_FONT
@@ -123,7 +123,7 @@ static const symbol_t lv_symbols[] = {
 lv_obj_t *_create_new_scr()
 {
     lv_obj_t *scr = eos_nav_init(lv_screen_active());
-    eos_screen_bind_header(scr, "ElenaOS Test");
+    eos_app_header_bind_screen(scr, "ElenaOS Test");
     eos_screen_load(scr);
     return scr;
 }

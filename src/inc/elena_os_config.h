@@ -175,7 +175,7 @@ extern "C"
  *  - EOS_FS_CUSTOM
  */
 #ifndef EOS_FS_TYPE
-    #define EOS_FS_TYPE EOS_FS_RTTHREAD
+    #define EOS_FS_TYPE EOS_FS_POSIX
 #endif /* EOS_FS_TYPE */
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM

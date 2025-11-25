@@ -40,8 +40,7 @@
 
 /* Function Implementations -----------------------------------*/
 
-/* Helper: load/save config JSON using eos_fs_* APIs */
-static inline cJSON *eos_sys_load_config(int *err_code)
+static cJSON *eos_sys_load_config(int *err_code)
 {
     if (err_code)
         *err_code = -EOS_ERR_FILE_ERROR;
@@ -77,7 +76,7 @@ static inline cJSON *eos_sys_load_config(int *err_code)
     return root;
 }
 
-static inline int eos_sys_save_config(cJSON *root)
+static int eos_sys_save_config(cJSON *root)
 {
     if (!root)
         return -EOS_ERR_JSON_ERROR;
@@ -112,11 +111,10 @@ static inline int eos_sys_save_config(cJSON *root)
         EOS_LOG_E("Write json failed, error: %d", ret);
         return -EOS_ERR_FILE_ERROR;
     }
+    eos_event_broadcast(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
 
     return EOS_OK;
 }
-
-/* Refactored config functions using helpers */
 
 eos_result_t eos_sys_cfg_set_bool(const char *key, bool value)
 {

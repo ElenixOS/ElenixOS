@@ -5,7 +5,7 @@
 ## GUI
 - [x] 字体大小问题
 - [x] 表冠滚动功能
-- [ ] 同步 ControlCenter 状态
+- [x] 同步 ControlCenter 状态
 - [ ] 错误码规范化管理
 - [ ] 页面管理
   - [x] 修复Control Center的设置页面bug

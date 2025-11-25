@@ -500,8 +500,36 @@ eos_control_center_t *eos_control_center_get_instance(void)
     return control_center_instance;
 }
 
+static void _system_config_update_event_cb(lv_event_t *e)
+{
+    EOS_CHECK_PTR_RETURN(control_center_instance);
+
+    // 更新蓝牙开关状态
+    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
+    {
+        lv_obj_add_state(control_center_instance->bl_btn, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_obj_remove_state(control_center_instance->bl_btn, LV_STATE_CHECKED);
+    }
+
+    // 更新静音开关状态
+    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
+    {
+        lv_obj_add_state(control_center_instance->mute_btn, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_obj_remove_state(control_center_instance->mute_btn, LV_STATE_CHECKED);
+    }
+
+    EOS_LOG_D("Switch buttons updated");
+}
+
 void eos_control_center_init(void)
 {
     control_center_instance = eos_control_center_create(lv_layer_top());
     eos_control_center_hide();
+    eos_event_add_global_cb(_system_config_update_event_cb, EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
 }

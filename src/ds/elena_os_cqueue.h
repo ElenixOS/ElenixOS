@@ -47,6 +47,20 @@ void *eos_cqueue_dequeue(eos_cqueue_t *cq);
  * @brief 销毁循环队列
  */
 void eos_cqueue_destroy(eos_cqueue_t *cq);
+/**
+ * @brief 获取循环队列大小
+ * @param cq 循环队列指针
+ * @return size_t 队列内元素总数，队列指针无效则返回 0
+ */
+size_t eos_cqueue_get_size(eos_cqueue_t *cq);
+/**
+ * @brief 从循环队列中按索引读取元素
+ * @param cq 循环队列指针
+ * @param index 索引（0对应head）
+ * @return 队列中元素指针，索引越界返回NULL
+ */
+void *eos_cqueue_peek(eos_cqueue_t *cq, size_t index);
+
 #ifdef __cplusplus
 }
 #endif

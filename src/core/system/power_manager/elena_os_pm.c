@@ -18,8 +18,9 @@
 #include "elena_os_config.h"
 #include "elena_os_touch.h"
 #include "elena_os_dispatcher.h"
+#include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
-#define DEBUG_DISABLE_TIMER 1       /**< [调试]是否关闭定时器 */
+#define DEBUG_DISABLE_TIMER 0       /**< [调试]是否关闭定时器 */
 #define _DEFAULT_TIMEOUT_SEC 15
 /* Variables --------------------------------------------------*/
 static lv_timer_t *t; /**< 睡眠定时器，达到时间后启动睡眠模式 */
@@ -69,7 +70,7 @@ static void _pm_set_state(eos_pm_state_t state)
         // 广播进入睡眠模式
         eos_event_broadcast(EOS_EVENT_SYSTEM_SLEEP, NULL);
         // AFW 写入文件
-        // TODO
+        eos_dfw_sync();
         // 进入睡眠模式
         if (t)
             eos_sys_sleep();

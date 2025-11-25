@@ -107,8 +107,8 @@ static void lv_event_handler(lv_event_t *e)
 /**
  * @brief 注册 LVGL 事件处理函数
  * @param args[0] lv_obj_t 对象
- * @param args[1] LVGL 事件类型（整数）
- * @param args[2] JavaScript 函数作为事件处理器
+ * @param args[1] JavaScript 函数作为事件处理器
+ * @param args[2] LVGL 事件类型（整数）
  * @param args[3] （可选）JS用户数据
  * @return 封装的事件描述符对象
  */
@@ -117,7 +117,7 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
                                                const jerry_length_t arg_cnt)
 {
     if (arg_cnt < 3 || !jerry_value_is_object(args[0]) ||
-        !jerry_value_is_number(args[1]) || !jerry_value_is_function(args[2]))
+        !jerry_value_is_function(args[1]) || !jerry_value_is_number(args[2]))
     {
         return throw_error("Invalid arguments");
     }
@@ -132,11 +132,12 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
     lv_obj_t *obj = (lv_obj_t *)(uintptr_t)jerry_value_as_number(ptr_val);
     jerry_value_free(ptr_val);
 
-    int event = (int)jerry_value_as_number(args[1]);
+    int event = (int)jerry_value_as_number(args[2]);
 
     // 创建JS回调数据
     lv_event_js_data_t *data = eos_malloc(sizeof(lv_event_js_data_t));
-    data->js_cb = jerry_value_copy(args[2]); // 增加引用计数
+    data->js_cb = jerry_value_copy(args[1]);
+
     data->js_user_data = (arg_cnt >= 4 && !jerry_value_is_undefined(args[3]))
                              ? jerry_value_copy(args[3])
                              : jerry_undefined();
@@ -804,8 +805,8 @@ static void register_lvgl_fonts(void)
 /********************************** 绑定注册 **********************************/
 
 const LVBindingJerryscriptFuncEntry_t lvgl_binding_special_funcs[] = {
-    {"register_lv_event_handler", register_lv_event_handler},
-    {"unregister_lv_event_handler", unregister_lv_event_handler},
+    {"lv_obj_add_event_cb", register_lv_event_handler},
+    {"lv_obj_remove_event_cb", unregister_lv_event_handler},
     {"lv_style_init", js_lv_style_init},
     {"lv_style_delete", js_lv_style_delete},
     {"lv_timer_create", js_lv_timer_create},

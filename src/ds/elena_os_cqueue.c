@@ -15,8 +15,8 @@
 #include "elena_os_port.h"
 /* Macros and Definitions -------------------------------------*/
 #define _SHRINK_ENABLE 1
-#define _SHRINK_THRESHOLD (4)   /**< 低于capacity的`_SHRINK_THRESHOLD`时自动收缩 */
-#define _SHRINK_PROPORTION  (2)  /**< 收缩比例，`收缩后的大小 = capacity / _SHRINK_PROPORTION` */
+#define _SHRINK_THRESHOLD (4)  /**< 低于capacity的`_SHRINK_THRESHOLD`时自动收缩 */
+#define _SHRINK_PROPORTION (2) /**< 收缩比例，`收缩后的大小 = capacity / _SHRINK_PROPORTION` */
 
 struct eos_cqueue_t
 {
@@ -136,4 +136,22 @@ void eos_cqueue_destroy(eos_cqueue_t *cq)
     EOS_CHECK_PTR_RETURN(cq);
     eos_free(cq->buffer);
     eos_free(cq);
+}
+
+size_t eos_cqueue_get_size(eos_cqueue_t *cq)
+{
+    EOS_CHECK_PTR_RETURN_VAL(cq, 0);
+    return cq->size;
+}
+
+void *eos_cqueue_peek(eos_cqueue_t *cq, size_t index)
+{
+    EOS_CHECK_PTR_RETURN_VAL(cq, NULL);
+
+    if (index >= cq->size)
+        return NULL; // 越界
+
+    // 计算真实在 buffer 中的位置
+    size_t real_pos = (cq->head + index) % cq->capacity;
+    return cq->buffer[real_pos];
 }

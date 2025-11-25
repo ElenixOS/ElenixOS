@@ -180,7 +180,7 @@ extern "C"
  *  - EOS_FS_RTTHREAD
  *  - EOS_FS_CUSTOM
  */
-#define EOS_FS_TYPE EOS_FS_RTTHREAD
+#define EOS_FS_TYPE EOS_FS_POSIX
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM
     #define EOS_FS_FILE_TYPE void*          /**< 文件的数据类型 */

@@ -49,6 +49,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_afw.h"
 #include "elena_os_pm.h"
+#include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -118,6 +119,7 @@ eos_result_t eos_run(void)
 {
     eos_logo_play(true);
     /************************** 系统组件初始化 **************************/
+    eos_dfw_init();
     eos_afw_init();
     eos_dispatcher_init();
     script_engine_init();

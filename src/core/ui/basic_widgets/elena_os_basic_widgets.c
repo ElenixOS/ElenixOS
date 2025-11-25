@@ -103,6 +103,15 @@ static void _list_child_created_cb(lv_event_t *e)
     lv_obj_move_to_index(bottom_ph, -1);
 }
 
+void eos_switch_set_state(lv_obj_t *sw, bool checked)
+{
+    if (checked)
+    {
+        lv_obj_set_state(sw, LV_STATE_CHECKED, checked);
+        lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+    }
+}
+
 lv_obj_t *eos_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);

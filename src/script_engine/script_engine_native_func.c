@@ -20,12 +20,12 @@
 #include "elena_os_app.h"
 #include "elena_os_watchface.h"
 #include "elena_os_misc.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "ScriptEngineNativeFunc"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_fs.h"
+#include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -48,11 +48,17 @@ static bool config_write_to_file(cJSON *root)
     char config_file_path[PATH_MAX];
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
+        snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s",
+                 script_engine_get_current_script_id());
+        eos_fs_mkdir_if_not_exist(config_file_path);
         snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s/config.json",
                  script_engine_get_current_script_id());
     }
     else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
+        snprintf(config_file_path, sizeof(config_file_path), EOS_WATCHFACE_DATA_DIR "%s",
+                 script_engine_get_current_script_id());
+        eos_fs_mkdir_if_not_exist(config_file_path);
         snprintf(config_file_path, sizeof(config_file_path), EOS_WATCHFACE_DATA_DIR "%s/config.json",
                  script_engine_get_current_script_id());
     }
@@ -63,21 +69,11 @@ static bool config_write_to_file(cJSON *root)
     }
     EOS_LOG_D("Writing file: %s", config_file_path);
 
-    eos_file_t fp = eos_fs_open_write(config_file_path);
-    if (fp == EOS_FILE_INVALID)
-    {
-        EOS_LOG_E("Open file failed");
-        eos_free(json_str);
-        return false;
-    }
-
     size_t json_len = strlen(json_str);
-    int written = eos_fs_write(fp, json_str, json_len);
-    eos_fs_close(fp);
-
+    bool ret = eos_dfw_write(config_file_path, json_str, json_len);
     eos_free(json_str);
 
-    if (written < 0 || (size_t)written != json_len)
+    if (!ret)
     {
         EOS_LOG_E("Write file failed");
         return false;
@@ -90,13 +86,16 @@ static bool config_write_to_file(cJSON *root)
 static cJSON *config_load_from_file(void)
 {
     char config_file_path[PATH_MAX];
+
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
+        eos_fs_mkdir_if_not_exist(EOS_APP_DATA_DIR);
         snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s/config.json",
                  script_engine_get_current_script_id());
     }
     else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
+        eos_fs_mkdir_if_not_exist(EOS_WATCHFACE_DATA_DIR);
         snprintf(config_file_path, sizeof(config_file_path), EOS_WATCHFACE_DATA_DIR "%s/config.json",
                  script_engine_get_current_script_id());
     }
@@ -112,33 +111,13 @@ static cJSON *config_load_from_file(void)
         return cJSON_CreateObject();
     }
 
-    eos_file_t fp = eos_fs_open_read(config_file_path);
-    if (fp == EOS_FILE_INVALID)
-    {
-        EOS_LOG_E("Open file failed");
-        return cJSON_CreateObject();
-    }
+    char *data = eos_dfw_read(config_file_path);
 
-    uint32_t size = 0;
-    if (eos_fs_size(fp, &size) < 0)
-    {
-        EOS_LOG_E("Get file size failed");
-        eos_fs_close(fp);
-        return cJSON_CreateObject();
-    }
-
-    char *data = (char *)eos_malloc(size + 1);
-    int read_bytes = eos_fs_read(fp, data, size);
-    eos_fs_close(fp);
-
-    if (read_bytes < 0 || (uint32_t)read_bytes != size)
+    if (!data)
     {
         EOS_LOG_E("Read file failed");
-        eos_free(data);
         return cJSON_CreateObject();
     }
-
-    data[size] = '\0';
 
     cJSON *root = cJSON_Parse(data);
     eos_free(data);
@@ -246,7 +225,7 @@ static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
 /**
  * @brief 在导航栈上返回上一级
  * @param void 无参数
- * @return boolean 是否返回成功
+ * @return bool 是否返回成功
  */
 static jerry_value_t js_eos_nav_back(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args[],
@@ -274,8 +253,8 @@ static jerry_value_t js_eos_nav_back(const jerry_call_info_t *call_info_p,
 }
 
 static jerry_value_t js_lv_image_set_src(const jerry_call_info_t *call_info_p,
-                                       const jerry_value_t args[],
-                                       const jerry_length_t argc)
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
 {
     // 参数数量检查
     if (argc < 2)
@@ -401,13 +380,13 @@ static jerry_value_t js_config_set_str(const jerry_call_info_t *call_info_p,
 }
 
 // 设置布尔
-static jerry_value_t js_config_set_boolean(const jerry_call_info_t *call_info_p,
+static jerry_value_t js_config_set_bool(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args[],
                                            const jerry_length_t argc)
 {
     if (argc < 2 || !jerry_value_is_string(args[0]) || !jerry_value_is_boolean(args[1]))
     {
-        return throw_error("Usage: config_set_boolean(key, bool)");
+        return throw_error("Usage: config_set_bool(key, bool)");
     }
 
     // key
@@ -523,13 +502,13 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
 }
 
 // 获取布尔
-static jerry_value_t js_config_get_boolean(const jerry_call_info_t *call_info_p,
+static jerry_value_t js_config_get_bool(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args[],
                                            const jerry_length_t argc)
 {
     if (argc < 1 || !jerry_value_is_string(args[0]))
     {
-        return throw_error("Usage: config_get_boolean(key)");
+        return throw_error("Usage: config_get_bool(key)");
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
@@ -720,16 +699,19 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
                                                  const jerry_length_t argc)
 {
     // 参数数量检查
-    if (argc < 2) {
+    if (argc < 2)
+    {
         return throw_error("eos_app_header_set_title: Insufficient arguments");
     }
 
     // 解析参数: scr (lv_obj_t*)
     // 对象类型参数，支持null
-    void* arg_obj = NULL;
-    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0])) {
+    void *arg_obj = NULL;
+    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0]))
+    {
         jerry_value_t js_arg_obj = args[0];
-        if (!jerry_value_is_object(js_arg_obj)) {
+        if (!jerry_value_is_object(js_arg_obj))
+        {
             return throw_error("Argument 0 must be an object or null");
         }
 
@@ -737,27 +719,30 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
         jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
         jerry_value_free(arg_obj_ptr_prop);
 
-        if (!jerry_value_is_number(arg_obj_ptr_val)) {
+        if (!jerry_value_is_number(arg_obj_ptr_val))
+        {
             jerry_value_free(arg_obj_ptr_val);
             return throw_error("Invalid __ptr property");
         }
 
         uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
         jerry_value_free(arg_obj_ptr_val);
-        arg_obj = (void*)arg_obj_ptr;
+        arg_obj = (void *)arg_obj_ptr;
     }
 
     // 解析参数: text (const char*)
 
-    char* arg_text_str = NULL;
-    const char* arg_text = NULL;
-    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
-        if (!jerry_value_is_string(args[1])) {
+    char *arg_text_str = NULL;
+    const char *arg_text = NULL;
+    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1]))
+    {
+        if (!jerry_value_is_string(args[1]))
+        {
             return throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_text_str = (char*)eos_malloc(arg_text_len + 1);
-        jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_text_str, arg_text_len);
+        arg_text_str = (char *)eos_malloc(arg_text_len + 1);
+        jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_text_str, arg_text_len);
         arg_text_str[arg_text_len] = '\0';
         arg_text = arg_text_str;
     }
@@ -766,7 +751,8 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
     eos_app_header_set_title(arg_obj, arg_text);
 
     // 释放临时字符串内存
-    if (arg_text_str) eos_free(arg_text_str);
+    if (arg_text_str)
+        eos_free(arg_text_str);
 
     return jerry_undefined();
 }
@@ -811,14 +797,14 @@ const script_engine_func_entry_t script_engine_native_funcs[] = {
      .handler = js_lv_image_set_src},
     {.name = "config_set_str",
      .handler = js_config_set_str},
-    {.name = "config_set_boolean",
-     .handler = js_config_set_boolean},
+    {.name = "config_set_bool",
+     .handler = js_config_set_bool},
     {.name = "config_set_number",
      .handler = js_config_set_number},
     {.name = "config_get_str",
      .handler = js_config_get_str},
-    {.name = "config_get_boolean",
-     .handler = js_config_get_boolean},
+    {.name = "config_get_bool",
+     .handler = js_config_get_bool},
     {.name = "config_get_number",
      .handler = js_config_get_number},
     {.name = "eos_time_get",

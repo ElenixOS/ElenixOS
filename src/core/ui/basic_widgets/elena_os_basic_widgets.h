@@ -80,6 +80,12 @@ void eos_screen_load(lv_obj_t *scr);
  */
 lv_obj_t *eos_screen_create(void);
 /**
+ * @brief 设置开关状态（带有动画）
+ * @param sw 目标开关对象
+ * @param checked true = 开启，false = 关闭
+ */
+void eos_switch_set_state(lv_obj_t *sw, bool checked);
+/**
  * @brief 创建列表，设置标准样式并添加占位符
  * @param parent 父对象
  * @return lv_obj_t* 列表对象

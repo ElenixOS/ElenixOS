@@ -33,6 +33,7 @@
 #include "elena_os_sensor.h"
 #include "elena_os_fs.h"
 #include "elena_os_afw.h"
+#include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
@@ -52,7 +53,7 @@ static inline cJSON *eos_sys_load_config(int *err_code)
         return NULL;
     }
 
-    char *file_content = eos_fs_read_file(EOS_SYS_CONFIG_FILE_PATH);
+    char *file_content = eos_dfw_read(EOS_SYS_CONFIG_FILE_PATH);
     if (!file_content)
     {
         EOS_LOG_E("Failed to read config file");
@@ -86,7 +87,7 @@ static inline int eos_sys_save_config(cJSON *root)
     }
 
     size_t json_len = strlen(new_json);
-    int ret = eos_afw_add_task(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
+    int ret = eos_dfw_write(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
 
     cJSON_free(new_json);
 

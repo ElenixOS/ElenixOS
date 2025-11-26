@@ -40,6 +40,8 @@
 #define _LIST_HEAD_PLACEHOLDER_HEIGHT 110
 #define _LIST_TAIL_PLACEHOLDER_HEIGHT 60
 
+#define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * 4
+
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
@@ -236,13 +238,11 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
     lv_obj_t *btn = _list_btn_container_create(list);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
-    lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_text(label, txt);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     // 文字
     label = lv_label_create(btn);
-    lv_obj_set_style_margin_right(label, 14, 0);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
 }
@@ -254,12 +254,10 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     // 文字
     lv_obj_t *label = lv_label_create(btn);
     eos_label_set_text_id(label, id);
-    lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     // 文字
     label = lv_label_create(btn);
-    lv_obj_set_style_margin_right(label, 14, 0);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
 }
@@ -562,4 +560,170 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
     }
 
     return row;
+}
+
+static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
+{
+    lv_image_dsc_t *dsc = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(dsc);
+    if (dsc->data)
+    {
+        eos_free(dsc->data);
+        dsc->data = NULL;
+    }
+    eos_free(dsc);
+    EOS_LOG_I("Rounded corner buffer cleared");
+}
+
+void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
+                                  lv_coord_t radius, lv_color_t color)
+{
+    EOS_CHECK_PTR_RETURN(obj);
+
+    // 获取对象尺寸
+    lv_obj_update_layout(obj);
+    lv_coord_t obj_w = lv_obj_get_width(obj);
+    lv_coord_t obj_h = lv_obj_get_height(obj);
+
+    // 检查有效尺寸
+    if (obj_w <= 0 || obj_h <= 0)
+    {
+        EOS_LOG_E("Invalid object size: %dx%d", obj_w, obj_h);
+        return;
+    }
+
+    // 限制半径
+    lv_coord_t max_r = LV_MIN(obj_w, obj_h) / 2;
+    radius = LV_MIN(radius, max_r);
+
+    // 如果半径为0，使用无圆角的快速路径
+    if (radius == 0)
+    {
+        EOS_LOG_W("Invalid object radius: %d", radius);
+        lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+        lv_obj_set_style_radius(obj, 0, 0);
+        lv_obj_set_style_bg_color(obj, color, 0);
+        lv_obj_set_style_shadow_width(obj, 0, 0);
+        lv_obj_set_style_bg_image_src(obj, NULL, 0);
+        return;
+    }
+
+    // 分配内存
+    static const uint32_t cf_bytes = 4; // ARGB8888
+    const uint32_t canvas_buf_size = (uint32_t)obj_w * obj_h * cf_bytes;
+
+    if (canvas_buf_size > _MAX_CANVAS_SIZE)
+    {
+        EOS_LOG_E("Canvas buffer too large: %u bytes", canvas_buf_size);
+        return;
+    }
+
+    uint8_t *canvas_buf = eos_malloc_zeroed(canvas_buf_size);
+    if (!canvas_buf)
+    {
+        EOS_LOG_E("Failed to allocate canvas buffer: %u bytes", canvas_buf_size);
+        return;
+    }
+
+    // 创建并配置画布
+    lv_obj_t *canvas = lv_canvas_create(lv_screen_active());
+    EOS_CHECK_PTR_RETURN_FREE(canvas, canvas_buf);
+
+    lv_obj_remove_style_all(canvas);
+    lv_canvas_set_buffer(canvas, canvas_buf, obj_w, obj_h, LV_COLOR_FORMAT_ARGB8888);
+
+    // 绘制逻辑
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    // 绘制主圆角矩形
+    lv_draw_rect_dsc_t rect_main;
+    lv_draw_rect_dsc_init(&rect_main);
+    rect_main.radius = radius;
+    rect_main.bg_opa = LV_OPA_COVER;
+    rect_main.bg_color = color;
+
+    lv_area_t coords = {0, 0, obj_w - 1, obj_h - 1};
+    lv_draw_rect(&layer, &rect_main, &coords);
+
+    // 覆盖不需要圆角的角落
+    if (radius > 0)
+    {
+        lv_draw_rect_dsc_t corner_rect_dsc;
+        lv_draw_rect_dsc_init(&corner_rect_dsc);
+        corner_rect_dsc.bg_opa = LV_OPA_COVER;
+        corner_rect_dsc.bg_color = color;
+        corner_rect_dsc.radius = 0;
+
+        const lv_area_t corners_areas[] = {
+            {0, 0, radius, radius},                                 // 左上
+            {obj_w - radius, 0, obj_w - 1, radius},                 // 右上
+            {obj_w - radius, obj_h - radius, obj_w - 1, obj_h - 1}, // 右下
+            {0, obj_h - radius, radius, obj_h - 1}                  // 左下
+        };
+
+        const eos_corner_round_t corner_flags[] = {
+            EOS_ROUND_TOP_LEFT, EOS_ROUND_TOP_RIGHT,
+            EOS_ROUND_BOTTOM_RIGHT, EOS_ROUND_BOTTOM_LEFT};
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (!(corners & corner_flags[i]))
+            {
+                lv_draw_rect(&layer, &corner_rect_dsc, &corners_areas[i]);
+            }
+        }
+    }
+
+    // 完成绘制
+    lv_canvas_finish_layer(canvas, &layer);
+    lv_obj_delete(canvas);
+
+    // 创建图像描述符
+    lv_image_dsc_t *dsc = eos_malloc_zeroed(sizeof(lv_image_dsc_t));
+    EOS_CHECK_PTR_RETURN_FREE(dsc, canvas_buf);
+
+    *dsc = (lv_image_dsc_t){
+        .header = {
+            .magic = LV_IMAGE_HEADER_MAGIC,
+            .cf = LV_COLOR_FORMAT_ARGB8888,
+            .flags = 0,
+            .w = obj_w,
+            .h = obj_h,
+            .stride = obj_w * cf_bytes},
+        .data = canvas_buf,
+        .data_size = canvas_buf_size};
+
+    // 设置样式
+    lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_shadow_width(obj, 0, 0);
+    lv_obj_set_style_radius(obj, 0, 0);
+
+    // 移除旧的事件回调（如果存在）
+    lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);
+
+    // 添加新的事件回调
+    if (
+        (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
+                             LV_EVENT_DELETE, dsc) == NULL) ||
+        (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
+                             EOS_EVENT_ROUNDED_CORNER_DELETE, dsc) == NULL))
+    {
+        eos_free(dsc);
+        eos_free(canvas_buf);
+        return;
+    }
+
+    lv_obj_set_style_bg_image_src(obj, dsc, 0);
+}
+
+void eos_obj_remove_corner_radius_bg(lv_obj_t *obj)
+{
+    EOS_CHECK_PTR_RETURN(obj);
+    lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
+    lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_image_src(obj, NULL, 0);
+    lv_obj_set_style_radius(obj, 0, 0);
+    lv_obj_set_style_shadow_width(obj, 0, 0);
 }

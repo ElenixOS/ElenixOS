@@ -42,6 +42,7 @@ typedef enum
     EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< 系统已唤醒 */
     EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< 屏幕常亮模式已启动 */
     EOS_EVENT_SYSTEM_CONFIG_UPDATE,             /**< 配置文件已更新 */
+    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< 删除圆角，参见`eos_obj_set_corner_radius_bg()` */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */

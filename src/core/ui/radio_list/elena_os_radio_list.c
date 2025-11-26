@@ -71,8 +71,6 @@ void eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     lv_obj_set_style_radius(item, 0, 0);
     lv_obj_set_style_pad_hor(item, EOS_LIST_CONTAINER_PAD_ALL, 0);
 
-    // TODO: 按下时圆角问题
-
     lv_obj_update_layout(item);
     lv_obj_set_style_transform_pivot_x(item, lv_obj_get_width(item) / 2, 0);
     lv_obj_set_style_transform_pivot_y(item, lv_obj_get_height(item) / 2, 0);
@@ -91,22 +89,33 @@ void eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     if (rl->item_number == 0)
     {
         _radio_item_check(rl, label);
+        eos_obj_set_corner_radius_bg(item,
+            EOS_ROUND_TOP_LEFT | EOS_ROUND_TOP_RIGHT,
+            EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
     }
     else
     {
+        if(rl->item_number>1){
+            // 已经有两个对象，需要删除第二个对象的圆角
+            eos_obj_remove_corner_radius_bg(rl->last_item);
+        }
+        eos_obj_set_corner_radius_bg(item,
+            EOS_ROUND_BOTTOM_LEFT | EOS_ROUND_BOTTOM_RIGHT,
+            EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
         lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
     }
 
     lv_obj_set_user_data(item, (void *)(intptr_t)rl->item_number);
     lv_obj_add_event_cb(item, _radio_item_clicked_cb, LV_EVENT_CLICKED, rl);
 
+    rl->last_item = item;
     rl->item_number++;
 }
 
 void eos_radio_list_set_subtitle(eos_radio_list_t *rl, const char *subtitle)
 {
     EOS_CHECK_PTR_RETURN(rl && subtitle && rl->subtitle_label);
-    lv_label_set_text(rl->comment_label, subtitle);
+    lv_label_set_text(rl->subtitle_label, subtitle);
 }
 
 void eos_radio_list_set_comment(eos_radio_list_t *rl, const char *comment)
@@ -152,7 +161,7 @@ eos_radio_list_t *eos_radio_list_create(const char *title)
     lv_obj_remove_style_all(con);
     lv_obj_set_size(con, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(con, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_radius(con, EOS_ITEM_RADIUS, 0);
+    lv_obj_set_style_radius(con, 0, 0);
     lv_obj_set_style_pad_all(con, 0, 0);
     lv_obj_set_style_clip_corner(con, true, 0);
     lv_obj_set_flex_flow(con, LV_FLEX_FLOW_COLUMN);

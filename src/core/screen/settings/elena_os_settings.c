@@ -43,6 +43,7 @@
 #include "elena_os_pm.h"
 #include "elena_os_app_header.h"
 #include "elena_os_radio_list.h"
+#include "elena_os_lang.h"
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
 /* Variables --------------------------------------------------*/
@@ -173,15 +174,32 @@ static void _radio_list_selection_changed_cb(lv_event_t *e)
 {
     uint32_t index = (uint32_t)lv_event_get_param(e);
     EOS_LOG_I("Select: %d", index);
+    uint32_t wake_duration = 15;
+    if (index == 0)
+    {
+        wake_duration = 15;
+    }
+    else
+    {
+        wake_duration = 70;
+    }
+    eos_pm_set_sleep_timeout(wake_duration);
+    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, wake_duration);
 }
 
 static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
 {
     eos_radio_list_t *rl = eos_radio_list_create(current_lang[STR_ID_SETTINGS_WAKE_DURATION]);
-    eos_radio_list_add_item(rl, "Option 1");
-    eos_radio_list_add_item(rl, "Option 2");
-    eos_radio_list_add_item(rl, "Option 3");
+    char str[32];
+    snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 15);
+    eos_radio_list_add_item(rl, str);
+    snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 70);
+    eos_radio_list_add_item(rl, str);
     eos_radio_list_add_event_cb(rl, _radio_list_selection_changed_cb, NULL);
+    eos_radio_list_set_subtitle(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP]);
+    eos_radio_list_set_comment(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT]);
+    // TODO: 设置默认选项
+    // TODO: Slider圆角
 }
 
 static void _settings_screen_display(lv_event_t *e)

@@ -41,6 +41,18 @@ typedef struct
     uint16_t plus_label_scale;
     uint16_t minus_label_scale;
 } eos_list_slider_t;
+
+/**
+ * @brief 设置指定圆角位置，搭配`eos_obj_set_corner_radius_bg()`使用
+ */
+typedef enum
+{
+    EOS_ROUND_TOP_LEFT = 0x1 << 0,     /**< 左上角圆角 */
+    EOS_ROUND_TOP_RIGHT = 0x1 << 1,    /**< 右上角圆角 */
+    EOS_ROUND_BOTTOM_RIGHT = 0x1 << 2, /**< 右下角圆角 */
+    EOS_ROUND_BOTTOM_LEFT = 0x1 << 3,  /**< 左下角圆角 */
+} eos_corner_round_t;
+
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -219,6 +231,18 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
  * 创建失败则返回 NULL
  */
 lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title);
+/**
+ * @brief 给对象设置指定圆角的背景
+ * @param obj 对象
+ * @param corners 指定圆角，示例：`EOS_ROUND_TOP_LEFT | EOS_ROUND_BOTTOM_LEFT`
+ * @param radius 圆角半径
+ * @param color 背景色
+ */
+void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners, lv_coord_t radius, lv_color_t color);
+/**
+ * @brief 删除一个对象的圆角背景
+ */
+void eos_obj_remove_corner_radius_bg(lv_obj_t *obj);
 #ifdef __cplusplus
 }
 #endif

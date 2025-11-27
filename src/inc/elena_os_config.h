@@ -42,7 +42,7 @@ extern "C"
  *  - NORMAL_MODE:      正常模式，直接进入表盘
  *  - TEST_MODE:        测试模式，进入测试页面
  */
-#define EOS_SYSTEM_MODE NORMAL_MODE
+#define EOS_SYSTEM_MODE TEST_MODE
 
 /**
  * 选择是否启用动画
@@ -204,6 +204,7 @@ extern "C"
 
 // 是否启用断言
 #define EOS_USE_ASSERT 1
+#define EOS_ASSERT_HANDLER while(1);
 
 // 是否启用彩色日志
 #define EOS_LOG_USE_COLOR 0

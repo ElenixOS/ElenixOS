@@ -14,7 +14,7 @@
 #include "lvgl.h"
 #include "elena_os_core.h"
 #include "elena_os_lang.h"
-#define EOS_LOG_DISABLE
+// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "BasicWidgets"
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
@@ -116,7 +116,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     lv_obj_t *btn_label = lv_label_create(btn);
     if (show_text)
     {
-        lv_label_set_text_fmt(btn_label, RI_ARROW_LEFT_S_LINE_LARGE "%s", current_lang[STR_ID_BASE_ITEM_BACK]);
+        lv_label_set_text_fmt(btn_label, "%s", current_lang[STR_ID_BASE_ITEM_BACK]);
     }
     else
     {
@@ -124,6 +124,8 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     }
     lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
     lv_obj_align(btn_label, LV_ALIGN_CENTER, -2, 0);
+    lv_obj_set_size(btn, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_center(btn_label);
 
     return btn;
 }

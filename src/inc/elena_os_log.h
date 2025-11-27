@@ -129,7 +129,7 @@ do                                \
     do { \
         if (!(expr)) { \
             EOS_LOG_E("Assertion failed: %s", #expr); \
-            while(1); \
+            EOS_ASSERT_HANDLER \
         } \
     } while(0)
 #else

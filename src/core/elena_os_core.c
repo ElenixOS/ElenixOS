@@ -115,7 +115,7 @@ void eos_logo_play(bool anim)
     is_logo_played = true;
 }
 
-eos_result_t eos_run(void)
+void eos_run(void)
 {
     eos_logo_play(true);
     /************************** 系统组件初始化 **************************/

@@ -17,6 +17,7 @@
 #define _SHRINK_ENABLE 1
 #define _SHRINK_THRESHOLD (4)  /**< 低于capacity的`_SHRINK_THRESHOLD`时自动收缩 */
 #define _SHRINK_PROPORTION (2) /**< 收缩比例，`收缩后的大小 = capacity / _SHRINK_PROPORTION` */
+#define _CAPACITY_GROWTH 2 /**< 容量增长因子 */
 
 struct eos_cqueue_t
 {
@@ -53,7 +54,7 @@ eos_cqueue_t *eos_cqueue_create(size_t init_capacity)
 
 static bool _cqueue_expand(eos_cqueue_t *cq)
 {
-    size_t new_capacity = cq->capacity * 2;
+    size_t new_capacity = cq->capacity * _CAPACITY_GROWTH;
     void **new_buffer = eos_malloc_zeroed(new_capacity * sizeof(void *));
     EOS_CHECK_PTR_RETURN_VAL(new_buffer, false);
 

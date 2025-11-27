@@ -84,9 +84,8 @@ typedef struct
 
 /**
  * @brief ElenaOS 入口函数
- * @return eos_result_t 返回运行结果
  */
-eos_result_t eos_run(void);
+void eos_run(void);
 /**
  * @brief 启动 ElenaOS Logo 页面
  * @param anim 是否显示 Logo 渐变动画

@@ -44,6 +44,7 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 
+void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering);
 /**
  * @brief 应用头设置标题名称
  * @param scr Screen 对象

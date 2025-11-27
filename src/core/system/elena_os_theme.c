@@ -53,7 +53,9 @@ static lv_font_t *global_font = NULL;
 static void _debounce_timer_cb(lv_timer_t *t)
 {
     lv_obj_t *btn = lv_timer_get_user_data(t);
-    lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+    // 防止按钮删除自身时按钮无效
+    if (btn && lv_obj_is_valid(btn) && lv_obj_has_class(btn, &lv_obj_class))
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
 }
 
 static void _object_clicked_cb(lv_event_t *e)
@@ -150,6 +152,9 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_button_class))
     {
         lv_obj_add_event_cb(obj, _object_clicked_cb, LV_EVENT_CLICKED, NULL);
+        lv_obj_set_style_margin_bottom(obj, 20, 0);
+        lv_obj_set_style_bg_color(obj, EOS_THEME_SECONDARY_COLOR, 0);
+        lv_obj_set_style_radius(obj, LV_RADIUS_CIRCLE, 0);
     }
     /************************** LABEL **************************/
     else if (lv_obj_check_type(obj, &lv_list_class))

@@ -366,7 +366,10 @@ static void _clear_data_btn_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    eos_fs_rm_recursive(data_path);
+    if(eos_fs_rm_recursive(data_path)!=0){
+        EOS_LOG_E("Remove data failed");
+        return;
+    }
     lv_obj_add_state(btn, LV_STATE_DISABLED);
 }
 

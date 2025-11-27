@@ -16,7 +16,6 @@
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Test"
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
@@ -164,12 +163,61 @@ static void _test_msg_list()
     lv_obj_add_event_cb(btn, _test_msg_list_cb, LV_EVENT_CLICKED, msg_list);
 }
 
+static void _nav_init_global_cb(lv_event_t *e)
+{
+    (*(int32_t *)lv_event_get_user_data(e)) = 0;
+}
+
+static void _back_prev_global_cb(lv_event_t *e)
+{
+    (*(int32_t *)lv_event_get_user_data(e))--;
+}
+
 static void _test_nav_cb_1(lv_event_t *e)
 {
-    _create_new_scr();
+    static int32_t nav_counter = 0;
+    static bool cb_reg = false;
+    if (!cb_reg)
+    {
+        eos_event_add_global_cb(_nav_init_global_cb, EOS_EVENT_NAVIGATION_INIT, &nav_counter);
+        eos_event_add_global_cb(_back_prev_global_cb, EOS_EVENT_NAVIGATION_BACK_PREV, &nav_counter);
+        cb_reg = true;
+    }
 
-    lv_obj_t *back_btn = eos_back_btn_create(lv_screen_active(), true);
-    lv_obj_center(back_btn);
+    lv_obj_t *scr;
+    if (!eos_nav_get_initialized())
+    {
+        scr = eos_nav_init(lv_screen_active());
+    }
+    else
+    {
+        scr = eos_nav_scr_create();
+    }
+    char title_str[64];
+    snprintf(title_str, sizeof(title_str), "Screen %d", nav_counter);
+    EOS_LOG_D("%s", title_str);
+    eos_app_header_bind_screen(scr, title_str);
+    eos_screen_load(scr);
+
+    lv_obj_t *new_scr_btn = lv_button_create(scr);
+    lv_obj_t *label = lv_label_create(new_scr_btn);
+    lv_label_set_text(label, "Create new scr");
+    lv_obj_center(label);
+    lv_obj_add_event_cb(new_scr_btn, _test_nav_cb_1, LV_EVENT_CLICKED, NULL);
+
+#if 0
+    uint32_t w = 250, h = 80;
+    lv_obj_set_size(new_scr_btn, w, h);
+    int32_t x = rand() % (EOS_DISPLAY_WIDTH - w);
+    int32_t y = rand() % (EOS_DISPLAY_HEIGHT - h);
+    if (y < 130)
+        y += 130;
+    lv_obj_set_pos(new_scr_btn, x, y);
+#else
+    lv_obj_center(new_scr_btn);
+#endif
+
+    nav_counter++;
 }
 
 static void _test_font()
@@ -571,7 +619,6 @@ static void _sensor_meas_cb(lv_event_t *e)
 
 static void _timer_cb(lv_timer_t *t)
 {
-
 }
 
 static void _test_sensor()

@@ -127,8 +127,10 @@ static void _sleep_timer_cb(lv_timer_t *t)
 
 void eos_pm_set_sleep_timeout(uint32_t sec)
 {
-    if (t)
+    if (t){
         lv_timer_set_period(t, sec * 1000);
+        lv_timer_reset(t);
+    }
 }
 
 void eos_pm_wake_up(void)

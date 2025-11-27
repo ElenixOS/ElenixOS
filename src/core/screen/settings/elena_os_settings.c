@@ -67,6 +67,15 @@ void eos_settings_slient_mode_off(void)
     eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false);
 }
 
+/************************** 辅助函数 **************************/
+
+lv_obj_t *_auto_get_config_switch_create(lv_obj_t *list, const char *txt, const char *config_key, bool default_val)
+{
+    lv_obj_t *sw = eos_list_add_switch(list, txt);
+    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(config_key, default_val));
+    return sw;
+}
+
 /************************** 蓝牙 **************************/
 static void _bluetooth_enable_switch_cb(lv_event_t *e)
 {
@@ -92,8 +101,8 @@ static void _settings_screen_bluetooth(lv_event_t *e)
 
     lv_obj_t *list = eos_list_create(scr);
 
-    lv_obj_t *bt_sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_BLUETOOTH_ENABLE]);
-    lv_obj_set_state(bt_sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false));
+    lv_obj_t *bt_sw = _auto_get_config_switch_create(
+        list, current_lang[STR_ID_SETTINGS_BLUETOOTH_ENABLE], EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 }
 /************************** 显示设置 **************************/
@@ -162,18 +171,17 @@ static void _wake_on_raise_switch_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(obj);
     if (lv_obj_has_state(obj, LV_STATE_CHECKED))
     {
-        eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
+        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
     }
     else
     {
-        eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, false);
+        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, false);
     }
 }
 
 static void _radio_list_selection_changed_cb(lv_event_t *e)
 {
     uint32_t index = (uint32_t)lv_event_get_param(e);
-    EOS_LOG_I("Select: %d", index);
     uint32_t wake_duration = 15;
     if (index == 0)
     {
@@ -192,14 +200,21 @@ static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
     eos_radio_list_t *rl = eos_radio_list_create(current_lang[STR_ID_SETTINGS_WAKE_DURATION]);
     char str[32];
     snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 15);
-    eos_radio_list_add_item(rl, str);
+    uint32_t timeout_15_item_index = eos_radio_list_add_item(rl, str);
     snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 70);
-    eos_radio_list_add_item(rl, str);
+    uint32_t timeout_70_item_index = eos_radio_list_add_item(rl, str);
     eos_radio_list_add_event_cb(rl, _radio_list_selection_changed_cb, NULL);
     eos_radio_list_set_subtitle(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP]);
     eos_radio_list_set_comment(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT]);
-    // TODO: 设置默认选项
-    // TODO: Slider圆角
+    uint32_t timeout = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, 15);
+    if (timeout == 15)
+    {
+        eos_radio_list_check(rl, timeout_15_item_index);
+    }
+    else
+    {
+        eos_radio_list_check(rl, timeout_70_item_index);
+    }
 }
 
 static void _settings_screen_display(lv_event_t *e)
@@ -223,15 +238,15 @@ static void _settings_screen_display(lv_event_t *e)
 
     eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
 
-    lv_obj_t *sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_DISPLAY_AOD]);
-    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_AOD_MODE_BOOL, false));
+    lv_obj_t *sw = _auto_get_config_switch_create(
+        list, current_lang[STR_ID_SETTINGS_DISPLAY_AOD], EOS_SYS_CFG_KEY_AOD_MODE_BOOL, false);
     lv_obj_add_event_cb(sw, _aod_mode_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    eos_list_add_comment(list, "Elena Watch可以始终显示时间。");
+    eos_list_add_comment(list, current_lang[STR_ID_SETTINGS_DISPLAY_AOD_COMMENT]);
     eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
 
     eos_list_add_title(list, current_lang[STR_ID_SETTINGS_WAKE]);
-    sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_WAKE_ON_RAISE]);
-    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true));
+    sw = _auto_get_config_switch_create(
+        list, current_lang[STR_ID_SETTINGS_WAKE_ON_RAISE], EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
     lv_obj_add_event_cb(sw, _wake_on_raise_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     // TODO: 用于选择亮屏时间的Radio Group
@@ -314,8 +329,8 @@ static void _settings_screen_sound_and_haptics(lv_event_t *e)
 
     lv_obj_t *list = eos_list_create(scr);
 
-    lv_obj_t *bt_sw = eos_list_add_switch(list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE]);
-    lv_obj_set_state(bt_sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false));
+    lv_obj_t *bt_sw = _auto_get_config_switch_create(
+        list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE], EOS_SYS_CFG_KEY_MUTE_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _mute_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME]);

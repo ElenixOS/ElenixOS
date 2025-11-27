@@ -18,8 +18,12 @@ extern "C" {
 #include "lvgl.h"
 /* Public macros ----------------------------------------------*/
 
+#define EOS_INVALID_RADIO_INDEX UINT32_MAX      /**< 无效索引值 */
+
 /* Public typedefs --------------------------------------------*/
+
 typedef struct eos_radio_list_t eos_radio_list_t;
+
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -35,8 +39,9 @@ typedef struct eos_radio_list_t eos_radio_list_t;
  * ```
  * @param rl 单选列表指针
  * @param txt 选项文字符串
+ * @return uint32_t 创建成功则返回单选项的索引值，否则返回`EOS_INVALID_RADIO_INDEX`
  */
-void eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt);
+uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt);
 
 /**
  * @brief 向单选列表的头部添加子标题
@@ -63,6 +68,12 @@ void eos_radio_list_add_event_cb(eos_radio_list_t *rl, lv_event_cb_t event_cb, v
  * @return eos_radio_list_t* 创建成功则返回单选列表指针，否则返回 NULL
  */
 eos_radio_list_t *eos_radio_list_create(const char *title);
+
+/**
+ * @brief 给指定索引的单选项打勾✅
+ * @param index 目标单选项的索引值
+ */
+void eos_radio_list_check(eos_radio_list_t *rl, uint32_t index);
 
 #ifdef __cplusplus
 }

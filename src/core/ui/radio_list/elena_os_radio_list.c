@@ -22,6 +22,9 @@
 /* Macros and Definitions -------------------------------------*/
 #define _RADIO_ITEM_HEIGHT 100
 #define _RADIO_ITEM_PRESSED_SCALE 240
+
+#define _RADIO_ITEM_TITLE_LABEL_INDEX 0
+#define _RADIO_ITEM_CHECK_LABEL_INDEX 1
 struct eos_radio_list_t
 {
     lv_obj_t *screen;
@@ -55,15 +58,25 @@ static void _radio_item_clicked_cb(lv_event_t *e)
     uint32_t index = (uint32_t)lv_obj_get_user_data(obj);
     eos_radio_list_t *rl = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(rl);
-    lv_obj_t *label = lv_obj_get_child(obj, 1);
+    lv_obj_t *label = lv_obj_get_child(obj, _RADIO_ITEM_CHECK_LABEL_INDEX);
     EOS_CHECK_PTR_RETURN(label);
     _radio_item_check(rl, label);
     lv_obj_send_event(rl->radio_item_container, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)index);
 }
 
-void eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
+void eos_radio_list_check(eos_radio_list_t *rl, uint32_t index)
 {
-    EOS_CHECK_PTR_RETURN(rl && txt && rl->radio_item_container);
+    EOS_CHECK_PTR_RETURN(rl);
+    lv_obj_t *item = lv_obj_get_child(rl->radio_item_container, index);
+    EOS_CHECK_PTR_RETURN(item);
+    lv_obj_t *check_label = lv_obj_get_child(item, _RADIO_ITEM_CHECK_LABEL_INDEX);
+    EOS_CHECK_PTR_RETURN(check_label);
+    _radio_item_check(rl, check_label);
+}
+
+uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
+{
+    EOS_CHECK_PTR_RETURN_VAL(rl && txt && rl->radio_item_container, EOS_INVALID_RADIO_INDEX);
     lv_obj_t *item = lv_button_create(rl->radio_item_container);
     lv_obj_set_size(item, lv_pct(100), _RADIO_ITEM_HEIGHT);
     lv_obj_set_style_bg_color(item, EOS_COLOR_DARK_GREY_2, 0);
@@ -77,39 +90,47 @@ void eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     lv_obj_set_style_transform_scale(item, LV_SCALE_NONE, LV_STATE_DEFAULT);
     lv_obj_set_style_transform_scale(item, _RADIO_ITEM_PRESSED_SCALE, LV_STATE_PRESSED);
 
-    lv_obj_t *label = lv_label_create(item);
-    lv_label_set_text(label, txt);
-    lv_obj_align(label, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_t *title_label = lv_label_create(item);
+    lv_label_set_text(title_label, txt);
+    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, 0, 0);
 
     // 注意：如果要添加或删除item内的对象，需要修改`_radio_item_clicked_cb`中label的索引值
-    label = lv_label_create(item);
-    lv_label_set_text(label, RI_CHECK_FILL);
-    lv_obj_set_style_text_color(label, EOS_COLOR_GREEN, 0);
-    lv_obj_align(label, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_t *check_label = lv_label_create(item);
+    lv_label_set_text(check_label, RI_CHECK_FILL);
+    lv_obj_set_style_text_color(check_label, EOS_COLOR_GREEN, 0);
+    lv_obj_align(check_label, LV_ALIGN_RIGHT_MID, 0, 0);
     if (rl->item_number == 0)
     {
-        _radio_item_check(rl, label);
+        _radio_item_check(rl, check_label);
         eos_obj_set_corner_radius_bg(item,
-            EOS_ROUND_TOP_LEFT | EOS_ROUND_TOP_RIGHT,
-            EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
+                                     EOS_ROUND_TOP_LEFT | EOS_ROUND_TOP_RIGHT,
+                                     EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
     }
     else
     {
-        if(rl->item_number>1){
+        if (rl->item_number > 1)
+        {
             // 已经有两个对象，需要删除第二个对象的圆角
             eos_obj_remove_corner_radius_bg(rl->last_item);
         }
         eos_obj_set_corner_radius_bg(item,
-            EOS_ROUND_BOTTOM_LEFT | EOS_ROUND_BOTTOM_RIGHT,
-            EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
-        lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+                                     EOS_ROUND_BOTTOM_LEFT | EOS_ROUND_BOTTOM_RIGHT,
+                                     EOS_ITEM_RADIUS, EOS_COLOR_DARK_GREY_2);
+        lv_obj_add_flag(check_label, LV_OBJ_FLAG_HIDDEN);
     }
+
+    // 设置label顺序以便能够找到check_label
+    lv_obj_move_to_index(title_label, _RADIO_ITEM_TITLE_LABEL_INDEX);
+    lv_obj_move_to_index(check_label, _RADIO_ITEM_CHECK_LABEL_INDEX);
 
     lv_obj_set_user_data(item, (void *)(intptr_t)rl->item_number);
     lv_obj_add_event_cb(item, _radio_item_clicked_cb, LV_EVENT_CLICKED, rl);
 
     rl->last_item = item;
+    uint32_t item_index = rl->item_number;
     rl->item_number++;
+
+    return item_index;
 }
 
 void eos_radio_list_set_subtitle(eos_radio_list_t *rl, const char *subtitle)

@@ -31,6 +31,7 @@
 #define SLIDER_BG_COLOR lv_color_hex(0x262737)
 
 /* Variables --------------------------------------------------*/
+static lv_style_t style_button;
 static lv_style_t style_screen;
 static lv_style_t style_label;
 static lv_style_t style_list;
@@ -66,6 +67,13 @@ static void _object_clicked_cb(lv_event_t *e)
     lv_timer_set_repeat_count(t, 1);
 }
 /************************** 初始化样式 **************************/
+
+void _init_style_button(void)
+{
+    lv_style_init(&style_button);
+    lv_style_set_bg_color(&style_button, EOS_THEME_SECONDARY_COLOR);
+    lv_style_set_radius(&style_button, LV_RADIUS_CIRCLE);
+}
 
 void _init_style_screen(void)
 {
@@ -152,9 +160,7 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_button_class))
     {
         lv_obj_add_event_cb(obj, _object_clicked_cb, LV_EVENT_CLICKED, NULL);
-        lv_obj_set_style_margin_bottom(obj, 20, 0);
-        lv_obj_set_style_bg_color(obj, EOS_THEME_SECONDARY_COLOR, 0);
-        lv_obj_set_style_radius(obj, LV_RADIUS_CIRCLE, 0);
+        lv_obj_add_style(obj, &style_button, 0);
     }
     /************************** LABEL **************************/
     else if (lv_obj_check_type(obj, &lv_list_class))
@@ -201,6 +207,7 @@ void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font
 {
     global_font = font;
 
+    _init_style_button();
     _init_style_screen();
     _init_style_label();
     _init_style_list();

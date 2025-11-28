@@ -44,7 +44,7 @@ typedef enum
     EOS_EVENT_NAVIGATION_INIT,                  /**< 导航栈已初始化 */
     EOS_EVENT_NAVIGATION_ENTER_NEW,             /**< 导航栈进入了新的 Screen */
     EOS_EVENT_NAVIGATION_BACK_PREV,             /**< 导航栈返回了上一个 Screen */
-    EOS_EVENT_NAVIGATION_CLEAN_UP,                  /**< 导航栈已退出（彻底清理） */
+    EOS_EVENT_NAVIGATION_CLEAN_UP,              /**< 导航栈已退出（彻底清理） */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */

@@ -83,6 +83,7 @@ uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     lv_obj_set_style_bg_opa(item, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(item, 0, 0);
     lv_obj_set_style_pad_hor(item, EOS_LIST_CONTAINER_PAD_ALL, 0);
+    lv_obj_set_style_margin_all(item, 0, 0);
 
     lv_obj_update_layout(item);
     lv_obj_set_style_transform_pivot_x(item, lv_obj_get_width(item) / 2, 0);

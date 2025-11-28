@@ -44,6 +44,7 @@
 #include "elena_os_app_header.h"
 #include "elena_os_radio_list.h"
 #include "elena_os_lang.h"
+#include "elena_os_anim_effects.h"
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
 /* Variables --------------------------------------------------*/

@@ -37,12 +37,15 @@ typedef struct
     lv_obj_t *launcher_screen;
     int32_t top;                // 栈顶索引
     int32_t capacity;           // 当前栈容量
-    bool initialized;
+    eos_nav_state_t state;      // 当前状态机状态
+    bool state_completed;       // 当前状态是否完成
     eos_sem_t *semaphore;
 } eos_nav_stack_t;
 
 /* Variables --------------------------------------------------*/
-static eos_nav_stack_t eos_nav = {.stack = NULL, .top = -1, .capacity = 0, .initialized = false, .semaphore = NULL};
+static eos_nav_stack_t eos_nav = {.stack = NULL, .top = -1, .capacity = 0,
+                                  .state = EOS_NAV_STATE_UNINITIALIZED,
+                                  .state_completed = true, .semaphore = NULL};
 
 /* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);
@@ -54,6 +57,24 @@ static eos_result_t _eos_nav_clear_stack(void);
 static eos_result_t _eos_nav_sem_take(void);
 static void _eos_nav_sem_give(void);
 static eos_result_t _eos_nav_stack_expand(void);
+
+/**
+ * @brief 设置导航状态
+ */
+static void _eos_nav_set_state(eos_nav_state_t new_state, bool completed)
+{
+    eos_nav.state = new_state;
+    eos_nav.state_completed = completed;
+    EOS_LOG_D("Nav state changed to %d, completed: %d", new_state, completed);
+}
+
+/**
+ * @brief 检查导航栈是否已初始化
+ */
+bool eos_nav_get_initialized(void)
+{
+    return eos_nav.state != EOS_NAV_STATE_UNINITIALIZED;
+}
 
 /**
  * @brief 扩展栈容量
@@ -115,14 +136,6 @@ static void _eos_nav_sem_give(void)
 }
 
 /**
- * @brief 检查导航栈是否已初始化
- */
-bool eos_nav_get_initialized(void)
-{
-    return eos_nav.initialized;
-}
-
-/**
  * @brief 检查导航栈是否已满
  */
 static bool _is_eos_nav_stack_full(void)
@@ -170,6 +183,9 @@ eos_result_t eos_nav_clean_up(void)
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
+    // 设置清理状态
+    _eos_nav_set_state(EOS_NAV_STATE_CLEANING_UP, false);
+
     // 加载 launcher_screen
     eos_screen_load(eos_nav.launcher_screen);
 
@@ -201,7 +217,6 @@ eos_result_t eos_nav_clean_up(void)
     eos_nav.launcher_screen = NULL;
     eos_nav.top = -1;
     eos_nav.capacity = 0;
-    eos_nav.initialized = false;
 
     // 销毁信号量
     if (eos_nav.semaphore != NULL)
@@ -209,6 +224,10 @@ eos_result_t eos_nav_clean_up(void)
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
     }
+
+    // 设置最终状态
+    _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
+
     eos_scene_back();
     EOS_LOG_D("Nav stack completely cleared.");
     eos_event_broadcast(EOS_EVENT_NAVIGATION_CLEAN_UP, NULL);
@@ -224,11 +243,15 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
         eos_nav_clean_up();
     }
 
+    // 设置初始化状态
+    _eos_nav_set_state(EOS_NAV_STATE_INITIALIZING, false);
+
     // 创建信号量
     eos_nav.semaphore = eos_sem_create(1, 1);
     if (eos_nav.semaphore == NULL)
     {
         EOS_LOG_E("Create nav semaphore failed");
+        _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
         return NULL;
     }
 
@@ -239,6 +262,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
         EOS_LOG_E("Create root screen failed.");
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
+        _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
         return NULL;
     }
 
@@ -249,6 +273,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
         lv_obj_delete(home_screen);
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
+        _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
         return NULL;
     }
 
@@ -261,7 +286,10 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     eos_nav.stack[NAV_HOME_SCREEN_INDEX] = home_screen;
     eos_nav.top = NAV_HOME_SCREEN_INDEX;
     eos_nav.capacity = NAV_INITIAL_CAPACITY;
-    eos_nav.initialized = true;
+
+    // 设置初始化完成状态
+    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+
     // eos_app_header_set_title_anim(launcher_screen, home_screen, true);
 
     eos_scene_switch(EOS_SCENE_NAVIGATION);
@@ -292,12 +320,16 @@ lv_obj_t *eos_nav_scr_create(void)
         return NULL;
     }
 
+    // 设置进入新屏幕状态
+    _eos_nav_set_state(EOS_NAV_STATE_ENTER_NEXT_SCREEN, false);
+
     // 检查是否需要扩展栈容量
     if (_is_eos_nav_stack_full())
     {
         ret = _eos_nav_stack_expand();
         if (ret != EOS_OK) {
             EOS_LOG_E("Failed to expand nav stack");
+            _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
             _eos_nav_sem_give();
             return NULL;
         }
@@ -307,6 +339,7 @@ lv_obj_t *eos_nav_scr_create(void)
     if (!scr)
     {
         EOS_LOG_E("Create screen failed.");
+        _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
         _eos_nav_sem_give();
         return NULL;
     }
@@ -318,6 +351,7 @@ lv_obj_t *eos_nav_scr_create(void)
         {
             EOS_LOG_E("New screen address conflicts with existing screen!");
             lv_obj_delete(scr);
+            _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
             _eos_nav_sem_give();
             return NULL;
         }
@@ -326,6 +360,10 @@ lv_obj_t *eos_nav_scr_create(void)
     eos_app_header_set_title_anim(eos_nav.stack[eos_nav.top], scr, true);
     EOS_LOG_D("NAV PUSH: new screen at %p", scr);
     eos_nav.stack[++eos_nav.top] = scr;
+
+    // 设置状态完成
+    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+
     EOS_MEM("Create new scr");
     _eos_nav_sem_give();
     eos_event_broadcast(EOS_EVENT_NAVIGATION_ENTER_NEW, NULL);
@@ -350,9 +388,13 @@ eos_result_t eos_nav_back_clean(void)
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
+    // 设置返回状态
+    _eos_nav_set_state(EOS_NAV_STATE_BACK_PREV_SCREEN, false);
+
     if (_is_eos_nav_stack_empty())
     {
         EOS_LOG_E("Nav stack empty (cannot back from root screen)");
+        _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
         _eos_nav_sem_give();
         return -EOS_ERR_STACK_EMPTY;
     }
@@ -400,6 +442,9 @@ eos_result_t eos_nav_back_clean(void)
     // 加载前一个屏幕
     eos_screen_load(prev_scr);
 
+    // 设置状态完成
+    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+
     EOS_MEM("Clear scr");
     _eos_nav_sem_give();
     eos_event_broadcast(EOS_EVENT_NAVIGATION_BACK_PREV, NULL);
@@ -424,9 +469,13 @@ eos_result_t eos_nav_back(void)
         return -EOS_ERR_NOT_INITIALIZED;
     }
 
+    // 设置返回状态
+    _eos_nav_set_state(EOS_NAV_STATE_BACK_PREV_SCREEN, false);
+
     if (_is_eos_nav_stack_empty())
     {
         EOS_LOG_E("Already at root screen, cannot go back");
+        _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
         _eos_nav_sem_give();
         return -EOS_ERR_STACK_EMPTY;
     }
@@ -442,7 +491,26 @@ eos_result_t eos_nav_back(void)
     eos_nav.top--; // 更新栈指针
     eos_screen_load(prev_scr);
 
+    // 设置状态完成
+    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+
     _eos_nav_sem_give();
     eos_event_broadcast(EOS_EVENT_NAVIGATION_BACK_PREV, NULL);
     return EOS_OK;
+}
+
+/**
+ * @brief 获取当前导航状态
+ */
+eos_nav_state_t eos_nav_get_state(void)
+{
+    return eos_nav.state;
+}
+
+/**
+ * @brief 检查当前状态是否完成
+ */
+bool eos_nav_is_state_completed(void)
+{
+    return eos_nav.state_completed;
 }

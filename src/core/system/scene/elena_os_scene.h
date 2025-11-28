@@ -56,6 +56,11 @@ typedef struct
 
 
 /* Public function prototypes --------------------------------*/
+
+/**
+ * @brief 获取当前的场景类型
+ */
+eos_scene_type_t eos_scene_get_current_type(void);
 /**
  * @brief 初始化场景系统
  * @param watchface_entry 表盘入口函数

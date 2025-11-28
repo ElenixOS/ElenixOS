@@ -125,6 +125,11 @@ struct eos_anim_t
         {
             bool layered;   /**< 是否随子对象调整透明度 */
         } fade;
+        struct
+        {
+            bool disable_x;   /**< 是否随子对象调整透明度 */
+            bool disable_y;   /**< 是否随子对象调整透明度 */
+        } move;
         // 此处可以添加其他动画类型的结构
     } cfg;
 };

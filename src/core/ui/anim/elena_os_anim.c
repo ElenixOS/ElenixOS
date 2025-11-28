@@ -70,14 +70,14 @@ static void _set_height_cb(lv_anim_t *var, int32_t v)
  */
 static void _set_x_cb(lv_anim_t *var, int32_t v)
 {
-    lv_obj_set_x(var->var, v);
+    lv_obj_set_style_translate_x(var->var, v, 0);
 }
 /**
  * @brief 动画播放时设置 Y 位置的回调
  */
 static void _set_y_cb(lv_anim_t *var, int32_t v)
 {
-    lv_obj_set_y(var->var, v);
+    lv_obj_set_style_translate_y(var->var, v, 0);
 }
 /**
  * @brief 动画播放时设置变换缩放的回调
@@ -283,10 +283,24 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     }
 
     // 初始化 X 动画
-    _init_x_anim(&anim->anim.move.a_x, tar_obj, start_x, end_x, duration, anim);
+    if (start_x == end_x)
+    {
+        anim->cfg.move.disable_x = true;
+    }
+    else
+    {
+        _init_x_anim(&anim->anim.move.a_x, tar_obj, start_x, end_x, duration, anim);
+    }
 
     // 初始化 Y 动画
-    _init_y_anim(&anim->anim.move.a_y, tar_obj, start_y, end_y, duration, anim);
+    if (start_y == end_y)
+    {
+        anim->cfg.move.disable_y = true;
+    }
+    else
+    {
+        _init_y_anim(&anim->anim.move.a_y, tar_obj, start_y, end_y, duration, anim);
+    }
 
     return anim;
 }
@@ -356,8 +370,10 @@ bool eos_anim_start(eos_anim_t *anim)
         lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.fade.a_opa);
         break;
     case EOS_ANIM_MOVE:
-        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_x);
-        lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_y);
+        if (!anim->cfg.move.disable_x)
+            lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_x);
+        if (!anim->cfg.move.disable_y)
+            lv_anim_timeline_add(anim->anim_timeline, 0, &anim->anim.move.a_y);
         break;
     case EOS_ANIM_TRANSFORM_SCALE:
         lv_anim_start(&anim->anim.transform_scale.a_scale);

@@ -26,6 +26,7 @@
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
 #define _HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
+// TODO: 计算出剩余时间，而不是固定一分钟
 
 #define _HEADER_MARGIN_RIGHT 30
 
@@ -132,9 +133,9 @@ void _play_title_changed_anim(void)
     lv_obj_t *back_btn = app_header->back_btn;
     lv_obj_t *parent = lv_obj_get_parent(l);
 
-    int32_t title_start_x = _TITLE_LABEL_X_OFFSET;
+    int32_t title_start_x = 0;
     int32_t title_end_x;
-    int32_t back_btn_start_x = _BACK_BTN_MARGIN_LEFT;
+    int32_t back_btn_start_x = 0;
     int32_t back_btn_end_x;
 
     // 确定移动方向
@@ -152,7 +153,7 @@ void _play_title_changed_anim(void)
     }
 
     // 原始按钮从默认位置移动到目标位置
-    eos_anim_move_start(l, title_start_x, _TITLE_LABEL_Y_OFFSET, title_end_x, _TITLE_LABEL_Y_OFFSET, _ANIM_DURATION, false);
+    eos_anim_move_start(l, title_start_x, 0, title_end_x, 0, _ANIM_DURATION, false);
     eos_anim_fade_start(l, LV_OPA_COVER, LV_OPA_TRANSP, _ANIM_DURATION + 1, false);
 
     // 原始 back_btn 从默认位置移动到目标位置
@@ -172,8 +173,8 @@ void _play_title_changed_anim(void)
     _set_back_btn_style(new_back_btn);
 
     // 新按钮的起始和结束位置
-    int32_t new_title_start_x, new_title_end_x = _TITLE_LABEL_X_OFFSET;
-    int32_t new_back_btn_start_x, new_back_btn_end_x = _BACK_BTN_MARGIN_LEFT;
+    int32_t new_title_start_x, new_title_end_x = 0;
+    int32_t new_back_btn_start_x, new_back_btn_end_x = 0;
 
     if (app_header->is_anim_entering)
     {
@@ -188,12 +189,8 @@ void _play_title_changed_anim(void)
         new_back_btn_start_x = new_back_btn_end_x - _ANIM_BACK_BTN_MOVE_DISTANCE;
     }
 
-    // 设置新按钮的初始位置（动画开始前的位置）
-    lv_obj_set_pos(new_l, new_title_start_x, _TITLE_LABEL_Y_OFFSET);
-    lv_obj_set_pos(new_back_btn, new_back_btn_start_x, lv_obj_get_y(new_back_btn));
-
     // 从起始位置移动到默认位置
-    eos_anim_move_start(new_l, new_title_start_x, _TITLE_LABEL_Y_OFFSET, new_title_end_x, _TITLE_LABEL_Y_OFFSET, _ANIM_DURATION, false);
+    eos_anim_move_start(new_l, new_title_start_x, 0, new_title_end_x, 0, _ANIM_DURATION, false);
     eos_anim_fade_start(new_l, LV_OPA_TRANSP, LV_OPA_COVER, _ANIM_DURATION, false);
 
     // 从起始位置移动到默认位置
@@ -361,7 +358,7 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
-    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
 

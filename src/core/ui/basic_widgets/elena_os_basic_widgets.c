@@ -29,6 +29,8 @@
 #include "elena_os_anim.h"
 #include "elena_os_font.h"
 #include "elena_os_crown.h"
+#include "elena_os_anim_effects.h"
+#include "elena_os_scene.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -40,17 +42,45 @@
 #define _LIST_HEAD_PLACEHOLDER_HEIGHT 110
 #define _LIST_TAIL_PLACEHOLDER_HEIGHT 60
 
+#define _LIST_CONTAINER_MARGIN_BOTTOM 8
+
+#define _LIST_CONTAINER_ANIM_DURATION 200
+
 #define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * 4
 
 /* Variables --------------------------------------------------*/
-
+static bool screen_use_anim_list = false;
+static bool screen_mark_back_anim_list = false;
 /* Function Implementations -----------------------------------*/
+
+void eos_screen_load_set_anim_list(void)
+{
+    EOS_LOG_D("Next use anim");
+    screen_use_anim_list = true;
+}
 
 void eos_screen_load(lv_obj_t *scr)
 {
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
-    lv_screen_load(scr);
+    if (screen_use_anim_list)
+    {
+        EOS_LOG_D("Play Anim");
+        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OVER_LEFT, 200, 0, false);
+        screen_use_anim_list = false;
+        // TODO: 返回时的页面切换动画如何实现
+    }
+    else
+    {
+        EOS_LOG_D("Normal Load");
+        lv_screen_load(scr);
+    }
+
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
+}
+
+static void _list_button_screen_loader_cb(lv_event_t *e)
+{
+    eos_screen_load_set_anim_list();
 }
 
 lv_obj_t *eos_screen_create(void)
@@ -60,9 +90,6 @@ lv_obj_t *eos_screen_create(void)
     return scr;
 }
 
-/**
- * @brief 返回按钮的回调
- */
 static void _back_btn_cb(lv_event_t *e)
 {
     EOS_LOG_D("NAV back");
@@ -70,40 +97,6 @@ static void _back_btn_cb(lv_event_t *e)
     {
         EOS_LOG_E("BACK ERR");
     }
-}
-
-static void _list_child_created_cb(lv_event_t *e)
-{
-    lv_obj_t *list = lv_event_get_target(e);
-    lv_obj_t *bottom_ph = (lv_obj_t *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(bottom_ph && list);
-    lv_obj_move_to_index(bottom_ph, -1);
-}
-
-void eos_switch_set_state(lv_obj_t *sw, bool checked)
-{
-    if (checked)
-    {
-        lv_obj_set_state(sw, LV_STATE_CHECKED, checked);
-        lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
-    }
-}
-
-lv_obj_t *eos_list_create(lv_obj_t *parent)
-{
-    EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-    lv_obj_t *list = lv_list_create(parent);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_ver(list, 0, 0);
-    lv_obj_set_style_pad_hor(list, 10, 0);
-    lv_obj_center(list);
-    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
-
-    // 占位符
-    eos_list_add_placeholder(list, _LIST_HEAD_PLACEHOLDER_HEIGHT);
-    lv_obj_t *bottom_ph = eos_list_add_placeholder(list, _LIST_TAIL_PLACEHOLDER_HEIGHT);
-    lv_obj_add_event_cb(list, _list_child_created_cb, LV_EVENT_CHILD_CREATED, bottom_ph);
-    return list;
 }
 
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
@@ -130,25 +123,67 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     return btn;
 }
 
+void eos_switch_set_state(lv_obj_t *sw, bool checked)
+{
+    if (checked)
+    {
+        lv_obj_set_state(sw, LV_STATE_CHECKED, checked);
+        lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+    }
+}
+
+/************************** 列表相关 **************************/
+
+lv_obj_t *eos_list_create(lv_obj_t *parent)
+{
+    EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
+    lv_obj_t *list = lv_list_create(parent);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_pad_ver(list, 0, 0);
+    lv_obj_set_style_pad_hor(list, 10, 0);
+    lv_obj_center(list);
+    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_pad_top(list, _LIST_HEAD_PLACEHOLDER_HEIGHT, 0);
+    lv_obj_set_style_pad_bottom(list, _LIST_TAIL_PLACEHOLDER_HEIGHT, 0);
+    lv_obj_set_flex_align(list, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    return list;
+}
+
+static void _list_button_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *btn = lv_event_get_target(e);
+    lv_obj_t *list = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(btn && list);
+    eos_anim_list_bind(lv_screen_active(), list, btn);
+}
+
+static void _list_container_common_style(lv_obj_t *container)
+{
+    lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(container, LV_DIR_NONE); // 禁止滚动
+    lv_obj_set_style_bg_color(container, EOS_THEME_SECONDARY_COLOR, 0);
+    lv_obj_set_style_border_width(container, 0, 0);
+    lv_obj_set_style_pad_all(container, EOS_LIST_CONTAINER_PAD_ALL, 0);
+    lv_obj_set_style_margin_bottom(container, _LIST_CONTAINER_MARGIN_BOTTOM, 0);
+    lv_obj_set_style_align(container, LV_ALIGN_CENTER, 0);
+    lv_obj_set_style_radius(container, EOS_LIST_OBJ_RADIUS, 0);
+    lv_obj_set_style_shadow_width(container, 0, 0);
+    lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+}
+
 lv_obj_t *_list_btn_container_create(lv_obj_t *list)
 {
     lv_obj_t *btn = lv_button_create(list);
     lv_obj_set_size(btn, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
-    lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scroll_dir(btn, LV_DIR_NONE); // 禁止滚动
-    lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_set_style_border_width(btn, 0, 0);
-    lv_obj_set_style_pad_all(btn, EOS_LIST_CONTAINER_PAD_ALL, 0);
-    lv_obj_set_style_margin_bottom(btn, 10, 0);
-    lv_obj_set_style_align(btn, LV_ALIGN_CENTER, 0);
-    lv_obj_set_style_radius(btn, EOS_LIST_OBJ_RADIUS, 0);
-    lv_obj_set_style_shadow_width(btn, 0, 0);
+    _list_container_common_style(btn);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // 水平排布
     lv_obj_set_flex_align(btn,
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
+    lv_obj_add_event_cb(btn, _list_button_clicked_cb, LV_EVENT_CLICKED, list);
+    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -205,6 +240,7 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     lv_obj_set_style_margin_right(label, 36, 0);
+    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -231,6 +267,7 @@ lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circ
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     lv_obj_set_style_margin_right(label, 36, 0);
+    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -246,6 +283,7 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
     // 文字
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
+    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -261,33 +299,13 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     // 文字
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
+    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
-}
-
-static void _list_container_common_style(lv_obj_t *container)
-{
-    lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scroll_dir(container, LV_DIR_NONE); // 禁止滚动
-    lv_obj_set_style_bg_color(container, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_set_style_border_width(container, 0, 0);
-    lv_obj_set_style_pad_all(container, EOS_LIST_CONTAINER_PAD_ALL, 0);
-    lv_obj_set_style_margin_bottom(container, 20, 0);
-    lv_obj_set_style_align(container, LV_ALIGN_CENTER, 0);
-    lv_obj_set_style_radius(container, EOS_LIST_OBJ_RADIUS, 0);
-    lv_obj_set_style_shadow_width(container, 0, 0);
-    lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 }
 
 lv_obj_t *eos_list_add_container(lv_obj_t *list)
 {
     lv_obj_t *container = lv_obj_create(list);
-    _list_container_common_style(container);
-    return container;
-}
-
-lv_obj_t *eos_list_add_button_container(lv_obj_t *list)
-{
-    lv_obj_t *container = lv_button_create(list);
     _list_container_common_style(container);
     return container;
 }
@@ -311,7 +329,7 @@ static void _list_switch_container_clicked_cb(lv_event_t *e)
 lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
 {
     // 创建容器
-    lv_obj_t *container = eos_list_add_button_container(list);
+    lv_obj_t *container = _list_btn_container_create(list);
     lv_obj_set_size(container, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW); // 水平排布
     lv_obj_set_flex_align(container,
@@ -563,6 +581,8 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
 
     return row;
 }
+
+/************************** 任意圆角 **************************/
 
 static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
 {

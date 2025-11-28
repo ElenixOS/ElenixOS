@@ -39,6 +39,18 @@ extern "C" {
 
 /* Public typedefs --------------------------------------------*/
 
+/**
+ * @brief 导航状态机状态枚举
+ */
+typedef enum {
+    EOS_NAV_STATE_UNINITIALIZED = 0,    // 未初始化状态
+    EOS_NAV_STATE_INITIALIZING,         // 初始化中状态
+    EOS_NAV_STATE_CLEANING_UP,          // 清理中状态
+    EOS_NAV_STATE_ENTER_NEXT_SCREEN,    // 进入新的 Screen
+    EOS_NAV_STATE_BACK_PREV_SCREEN,     // 返回上一个 Screen
+    EOS_NAV_STATE_IDLE,                 // 空闲状态
+} eos_nav_state_t;
+
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -77,6 +89,16 @@ lv_obj_t *eos_nav_get_home_screen(void);
  * @return false 未初始化
  */
 bool eos_nav_get_initialized(void);
+
+/**
+ * @brief 获取当前导航状态
+ */
+eos_nav_state_t eos_nav_get_state(void);
+
+/**
+ * @brief 检查当前状态是否完成
+ */
+bool eos_nav_is_state_completed(void);
 
 #ifdef __cplusplus
 }

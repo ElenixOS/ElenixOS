@@ -54,6 +54,19 @@ extern "C"
  */
 #define EOS_ICON_STR_BUILD_IN 0
 
+/**
+ * 选择系统监控类型
+ * 可用模式:
+ *  - EOS_SYSMON_DISABLE
+ *  - EOS_SYSMON_USE_INTERNAL
+ *  - EOS_SYSMON_USE_CUSTOM
+ */
+#define EOS_SYSMON_TYPE EOS_SYSMON_USE_INTERNAL
+
+#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_CUSTOM
+    #define EOS_SYSMON_HANDLER my_sysmon_handler();
+#endif /* EOS_SYSMON_TYPE */
+
 /************************** 模块 **************************/
 
 /**

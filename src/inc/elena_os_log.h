@@ -17,8 +17,8 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_config.h"
-#if defined(EOS_USE_MSH)
-#include "msh.h"
+#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_INTERNAL
+#include "elena_os_sysmon.h"
 #endif
 #include "elena_os_port.h"
 /* Public macros ----------------------------------------------*/
@@ -74,18 +74,23 @@ extern "C" {
 #endif /* EOS_LOG_DISABLE */
 /************************** 内存检查 **************************/
 
-
-#if defined(EOS_USE_MSH)
-#define EOS_MEM(tag)              \
-do                                \
-{                                 \
-    printf("[MEM] %s\n", tag);    \
-    msh_exec("list_mem", 8);      \
-    msh_exec("list_memheap", 12); \
-} while (0)
+#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_INTERNAL
+    #define EOS_MEM(tag)                            \
+    do                                              \
+    {                                               \
+        EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
+        eos_sysmon_print();                         \
+    } while (0)
+#elif EOS_SYSMON_TYPE == EOS_SYSMON_USE_CUSTOM
+    #define EOS_MEM(tag)                            \
+    do                                              \
+    {                                               \
+        EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
+        EOS_SYSMON_HANDLER                          \
+    } while (0)
 #else
     #define EOS_MEM(tag)
-#endif /* defined(EOS_USE_MSH) */
+#endif /* EOS_SYSMON_TYPE */
 
 /************************** 指针检查 **************************/
 #define EOS_CHECK_PTR_RETURN(ptr) \

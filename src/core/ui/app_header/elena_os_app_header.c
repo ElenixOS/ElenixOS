@@ -19,10 +19,10 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_misc.h"
 #include "elena_os_anim.h"
+#include "elena_os_nav.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "AppHeader"
 #include "elena_os_log.h"
-#include "elena_os_nav.h"
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
 #define _HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
@@ -281,6 +281,8 @@ static void _screen_delete_cb(lv_event_t *e)
     lv_obj_t *scr = lv_event_get_target(e);
     EOS_CHECK_PTR_RETURN(scr);
     EOS_LOG_D("screen deleted");
+    if (eos_nav_get_state() != EOS_NAV_STATE_CLEANING_UP)
+        return;
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
     EOS_CHECK_PTR_RETURN(t);
     if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
@@ -341,7 +343,7 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
-    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
 

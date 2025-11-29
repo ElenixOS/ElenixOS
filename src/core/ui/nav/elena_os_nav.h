@@ -61,7 +61,7 @@ typedef enum {
  */
 lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen);
 /**
- * @brief 创建新页面并压入导航栈
+ * @brief 创建新页面并压入导航栈，立即加载页面
  * @return lv_obj_t* 创建成功则返回 scr 指针，失败则返回 NULL
  */
 lv_obj_t *eos_nav_scr_create(void);

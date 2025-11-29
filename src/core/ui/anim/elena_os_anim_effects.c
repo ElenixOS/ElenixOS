@@ -18,8 +18,9 @@
 #include "elena_os_event.h"
 #include "elena_os_nav.h"
 #include "elena_os_anim.h"
+#include "elena_os_basic_widgets.h"
 /* Macros and Definitions -------------------------------------*/
-#define _ANIM_LIST_DURATION 200
+#define _ANIM_LIST_DURATION EOS_SCREEN_SWITCH_DURATION
 
 typedef enum
 {
@@ -79,7 +80,9 @@ static void _play_anim_list(lv_obj_t *list, lv_obj_t *selected_obj, bool is_anim
 
 static void _anim_list_screen_load_start_cb(lv_event_t *e)
 {
-    EOS_LOG_D("Screen load start");
+    EOS_LOG_D("Screen load start | State: %d", eos_nav_get_state());
+    if (eos_nav_get_state() != EOS_NAV_STATE_BACK_PREV_SCREEN)
+        return;
     eos_anim_list_data_t *d = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(d);
     // 触发离开动画
@@ -88,7 +91,9 @@ static void _anim_list_screen_load_start_cb(lv_event_t *e)
 
 static void _anim_list_screen_unloaded_cb(lv_event_t *e)
 {
-    EOS_LOG_D("Screen unload start");
+    EOS_LOG_D("Screen unload start | State: %d", eos_nav_get_state());
+    if (eos_nav_get_state() != EOS_NAV_STATE_ENTER_NEXT_SCREEN)
+        return;
     eos_anim_list_data_t *d = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(d);
     // 触发进入动画
@@ -102,6 +107,7 @@ static void _anim_list_screen_delete_cb(lv_event_t *e)
     eos_anim_list_data_t *d = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(d);
     eos_free(d);
+    EOS_LOG_D("Screen freed");
 }
 
 void eos_anim_list_bind(lv_obj_t *screen, lv_obj_t *list, lv_obj_t *selected_obj)

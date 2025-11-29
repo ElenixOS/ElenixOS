@@ -173,7 +173,7 @@ eos_radio_list_t *eos_radio_list_create(const char *title)
     }
     EOS_CHECK_PTR_RETURN_VAL(rl->screen, NULL);
     eos_app_header_bind_screen(rl->screen, title);
-    lv_screen_load(rl->screen);
+    eos_screen_load(rl->screen);
 
     lv_obj_t *list = eos_list_create(rl->screen);
 

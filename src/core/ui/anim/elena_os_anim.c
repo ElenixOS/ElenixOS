@@ -94,7 +94,7 @@ static void _free_anim_later(lv_timer_t *t)
         lv_anim_timeline_delete(anim->anim_timeline);
 
     if (anim->auto_delete_obj)
-        lv_obj_delete(anim->tar_obj);
+        lv_obj_delete_async(anim->tar_obj);
 
     eos_free(anim);
     lv_timer_delete(t);

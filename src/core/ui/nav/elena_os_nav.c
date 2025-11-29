@@ -10,7 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
+// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Navigation"
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
@@ -23,8 +23,8 @@
 #include "elena_os_app_header.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define NAV_INITIAL_CAPACITY 16  // 初始容量
-#define NAV_CAPACITY_GROWTH 2    // 容量增长因子
+#define NAV_INITIAL_CAPACITY 16 // 初始容量
+#define NAV_CAPACITY_GROWTH 2   // 容量增长因子
 #define NAV_HOME_SCREEN_INDEX 0
 #define NAV_SEMAPHORE_TIMEOUT 0 // 信号量获取超时时间(ms)
 
@@ -33,19 +33,17 @@
  */
 typedef struct
 {
-    lv_obj_t **stack;           // 动态分配的页面指针数组
+    lv_obj_t **stack; // 动态分配的页面指针数组
     lv_obj_t *launcher_screen;
-    int32_t top;                // 栈顶索引
-    int32_t capacity;           // 当前栈容量
-    eos_nav_state_t state;      // 当前状态机状态
-    bool state_completed;       // 当前状态是否完成
+    int32_t top;           // 栈顶索引
+    int32_t capacity;      // 当前栈容量
+    eos_nav_state_t state; // 当前状态机状态
+    bool state_completed;  // 当前状态是否完成
     eos_sem_t *semaphore;
 } eos_nav_stack_t;
 
 /* Variables --------------------------------------------------*/
-static eos_nav_stack_t eos_nav = {.stack = NULL, .top = -1, .capacity = 0,
-                                  .state = EOS_NAV_STATE_UNINITIALIZED,
-                                  .state_completed = true, .semaphore = NULL};
+static eos_nav_stack_t eos_nav = {.stack = NULL, .top = -1, .capacity = 0, .state = EOS_NAV_STATE_UNINITIALIZED, .state_completed = true, .semaphore = NULL};
 
 /* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);
@@ -82,18 +80,21 @@ bool eos_nav_get_initialized(void)
 static eos_result_t _eos_nav_stack_expand(void)
 {
     int32_t new_capacity = eos_nav.capacity * NAV_CAPACITY_GROWTH;
-    if (new_capacity < NAV_INITIAL_CAPACITY) {
+    if (new_capacity < NAV_INITIAL_CAPACITY)
+    {
         new_capacity = NAV_INITIAL_CAPACITY;
     }
 
     lv_obj_t **new_stack = eos_realloc(eos_nav.stack, new_capacity * sizeof(lv_obj_t *));
-    if (new_stack == NULL) {
+    if (new_stack == NULL)
+    {
         EOS_LOG_E("Failed to expand nav stack to capacity %d", new_capacity);
         return -EOS_ERR_MEM;
     }
 
     // 初始化新分配的内存
-    for (int32_t i = eos_nav.capacity; i < new_capacity; i++) {
+    for (int32_t i = eos_nav.capacity; i < new_capacity; i++)
+    {
         new_stack[i] = NULL;
     }
 
@@ -209,7 +210,8 @@ eos_result_t eos_nav_clean_up(void)
     }
 
     // 释放栈内存
-    if (eos_nav.stack != NULL) {
+    if (eos_nav.stack != NULL)
+    {
         eos_free(eos_nav.stack);
         eos_nav.stack = NULL;
     }
@@ -268,7 +270,8 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
 
     // 初始化动态栈
     eos_nav.stack = eos_malloc(NAV_INITIAL_CAPACITY * sizeof(lv_obj_t *));
-    if (eos_nav.stack == NULL) {
+    if (eos_nav.stack == NULL)
+    {
         EOS_LOG_E("Failed to allocate nav stack");
         lv_obj_delete(home_screen);
         eos_sem_destroy(eos_nav.semaphore);
@@ -278,7 +281,8 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     }
 
     // 初始化栈内存
-    for (int32_t i = 0; i < NAV_INITIAL_CAPACITY; i++) {
+    for (int32_t i = 0; i < NAV_INITIAL_CAPACITY; i++)
+    {
         eos_nav.stack[i] = NULL;
     }
 
@@ -327,7 +331,8 @@ lv_obj_t *eos_nav_scr_create(void)
     if (_is_eos_nav_stack_full())
     {
         ret = _eos_nav_stack_expand();
-        if (ret != EOS_OK) {
+        if (ret != EOS_OK)
+        {
             EOS_LOG_E("Failed to expand nav stack");
             _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
             _eos_nav_sem_give();
@@ -361,13 +366,28 @@ lv_obj_t *eos_nav_scr_create(void)
     EOS_LOG_D("NAV PUSH: new screen at %p", scr);
     eos_nav.stack[++eos_nav.top] = scr;
 
-    // 设置状态完成
-    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+    _eos_nav_set_state(EOS_NAV_STATE_ENTER_NEXT_SCREEN, true);
 
     EOS_MEM("Create new scr");
     _eos_nav_sem_give();
     eos_event_broadcast(EOS_EVENT_NAVIGATION_ENTER_NEW, NULL);
     return scr;
+}
+
+static void _prev_screen_loaded_event_cb(lv_event_t *e)
+{
+    lv_obj_t *prev_scr = lv_event_get_target(e);
+    lv_obj_t *scr_to_del = lv_event_get_user_data(e);
+    if (scr_to_del && lv_obj_is_valid(scr_to_del) && lv_obj_has_class(scr_to_del, &lv_obj_class))
+    {
+        lv_obj_delete_async(scr_to_del);
+        EOS_LOG_D("Deleted screen at %p", scr_to_del);
+        if (prev_scr && lv_obj_is_valid(prev_scr))
+        {
+            uint32_t removed_count = lv_obj_remove_event_cb_with_user_data(prev_scr, _prev_screen_loaded_event_cb, scr_to_del);
+            EOS_LOG_D("Deleted callbacks: %d", removed_count);
+        }
+    }
 }
 
 /**
@@ -435,15 +455,14 @@ eos_result_t eos_nav_back_clean(void)
     // 删除页面
     if (scr_to_del)
     {
-        lv_obj_delete(scr_to_del);
-        EOS_LOG_D("Deleted screen at %p", scr_to_del);
+        lv_obj_add_event_cb(prev_scr, _prev_screen_loaded_event_cb, LV_EVENT_SCREEN_LOADED, scr_to_del);
     }
 
     // 加载前一个屏幕
     eos_screen_load(prev_scr);
 
     // 设置状态完成
-    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+    _eos_nav_set_state(EOS_NAV_STATE_BACK_PREV_SCREEN, true);
 
     EOS_MEM("Clear scr");
     _eos_nav_sem_give();
@@ -492,7 +511,7 @@ eos_result_t eos_nav_back(void)
     eos_screen_load(prev_scr);
 
     // 设置状态完成
-    _eos_nav_set_state(EOS_NAV_STATE_IDLE, true);
+    _eos_nav_set_state(EOS_NAV_STATE_BACK_PREV_SCREEN, true);
 
     _eos_nav_sem_give();
     eos_event_broadcast(EOS_EVENT_NAVIGATION_BACK_PREV, NULL);

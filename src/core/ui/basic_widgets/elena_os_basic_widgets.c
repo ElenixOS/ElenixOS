@@ -31,6 +31,7 @@
 #include "elena_os_crown.h"
 #include "elena_os_anim_effects.h"
 #include "elena_os_scene.h"
+#include "lvgl_private.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -44,43 +45,34 @@
 
 #define _LIST_CONTAINER_MARGIN_BOTTOM 8
 
-#define _LIST_CONTAINER_ANIM_DURATION 200
-
 #define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * 4
 
 /* Variables --------------------------------------------------*/
-static bool screen_use_anim_list = false;
-static bool screen_mark_back_anim_list = false;
-/* Function Implementations -----------------------------------*/
 
-void eos_screen_load_set_anim_list(void)
-{
-    EOS_LOG_D("Next use anim");
-    screen_use_anim_list = true;
-}
+/* Function Implementations -----------------------------------*/
 
 void eos_screen_load(lv_obj_t *scr)
 {
+    EOS_MEM("SCREEN");
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
-    if (screen_use_anim_list)
+    if (eos_nav_get_state() == EOS_NAV_STATE_ENTER_NEXT_SCREEN && eos_nav_is_state_completed())
     {
-        EOS_LOG_D("Play Anim");
-        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OVER_LEFT, 200, 0, false);
-        screen_use_anim_list = false;
-        // TODO: 返回时的页面切换动画如何实现
+        EOS_LOG_D("Play ENTER_NEXT anim");
+        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OVER_LEFT, EOS_SCREEN_SWITCH_DURATION, 0, false);
+    }
+    else if (eos_nav_get_state() == EOS_NAV_STATE_BACK_PREV_SCREEN)
+    {
+        EOS_LOG_D("Play BACK_PREV anim");
+        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, EOS_SCREEN_SWITCH_DURATION, 0, false);
     }
     else
     {
         EOS_LOG_D("Normal Load");
+        // lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_OUT, EOS_SCREEN_SWITCH_DURATION, 0, false);
         lv_screen_load(scr);
     }
 
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
-}
-
-static void _list_button_screen_loader_cb(lv_event_t *e)
-{
-    eos_screen_load_set_anim_list();
 }
 
 lv_obj_t *eos_screen_create(void)
@@ -183,7 +175,6 @@ lv_obj_t *_list_btn_container_create(lv_obj_t *list)
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
     lv_obj_add_event_cb(btn, _list_button_clicked_cb, LV_EVENT_CLICKED, list);
-    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -240,7 +231,6 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     lv_obj_set_style_margin_right(label, 36, 0);
-    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -267,7 +257,6 @@ lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circ
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
     lv_obj_set_style_margin_right(label, 36, 0);
-    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -283,7 +272,6 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
     // 文字
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
-    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -299,7 +287,6 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
     // 文字
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
-    lv_obj_add_event_cb(btn, _list_button_screen_loader_cb, LV_EVENT_CLICKED, list);
     return btn;
 }
 
@@ -368,7 +355,6 @@ lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt)
     _list_label_common_style(label);
     lv_label_set_text(label, txt);
     lv_obj_set_style_text_color(label, EOS_COLOR_WHITE, 0);
-    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     return label;
 }
 

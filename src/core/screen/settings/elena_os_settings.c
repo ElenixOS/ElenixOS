@@ -11,17 +11,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
+// #define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "Settings"
+#include "elena_os_log.h"
 #include "lvgl.h"
 #include "cJSON.h"
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
-#define EOS_LOG_DISABLE
-#define EOS_LOG_TAG "Settings"
-#include "elena_os_log.h"
 #include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
@@ -367,7 +364,8 @@ static void _clear_data_btn_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    if(eos_fs_rm_recursive(data_path)!=0){
+    if (eos_fs_rm_recursive(data_path) != 0)
+    {
         EOS_LOG_E("Remove data failed");
         return;
     }

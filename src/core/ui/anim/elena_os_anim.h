@@ -91,8 +91,8 @@ struct eos_anim_t
 {
     lv_anim_timeline_t *anim_timeline; /**< 动画的时间线指针 */
     eos_anim type;                     /**< 动画类型 */
-    uint8_t anim_count;                /**< 该类型总的动画数量 */
-    uint8_t anim_completed_count;      /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
+    uint32_t anim_count;                /**< 该类型总的动画数量 */
+    uint32_t anim_completed_count;      /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
     eos_anim_cb_t user_cb;             /**< 用户设定的回调函数 */
     lv_obj_t *tar_obj;
     bool auto_delete_obj;              /**< 动画播放完成时自动删除被绑定对象 */

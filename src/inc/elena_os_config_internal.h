@@ -42,7 +42,7 @@ extern "C" {
 
 #define EOS_SYSMON_DISABLE          0
 #define EOS_SYSMON_USE_INTERNAL     1
-#define EOS_SYSMON_CUSTOM           2
+#define EOS_SYSMON_USE_CUSTOM           2
 
 /* Public typedefs --------------------------------------------*/
 

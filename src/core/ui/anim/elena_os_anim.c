@@ -10,7 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
+// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Animation"
 #include "elena_os_log.h"
 #include "elena_os_theme.h"
@@ -22,6 +22,29 @@
 static lv_obj_t *blocker = NULL;
 static bool is_blocker_show = false;
 /* Function Implementations -----------------------------------*/
+
+void eos_anim_del(eos_anim_t *anim)
+{
+    if (!anim)
+        return;
+
+    if (anim->anim_timeline)
+    {
+        EOS_LOG_D("Timeline freed: [%p]", anim->anim_timeline);
+        lv_anim_timeline_delete(anim->anim_timeline);
+        anim->anim_timeline = NULL;
+    }
+
+    if (anim->auto_delete_obj && anim->tar_obj && lv_obj_is_valid(anim->tar_obj))
+    {
+        EOS_LOG_D("Target obj freed [%p]", anim->tar_obj);
+        lv_obj_delete_async(anim->tar_obj);
+        anim->tar_obj = NULL;
+    }
+
+    eos_free(anim);
+    EOS_LOG_D("Anim freed");
+}
 
 void eos_anim_blocker_show(void)
 {
@@ -89,22 +112,14 @@ static void _set_scale_cb(void *var, int32_t v)
 static void _free_anim_later(lv_timer_t *t)
 {
     eos_anim_t *anim = lv_timer_get_user_data(t);
-
-    if (anim->anim_timeline)
-        lv_anim_timeline_delete(anim->anim_timeline);
-
-    if (anim->auto_delete_obj)
-        lv_obj_delete_async(anim->tar_obj);
-
-    eos_free(anim);
-    lv_timer_delete(t);
+    eos_anim_del(anim);
 }
 /**
  * @brief 动画播放完毕回调，回调用户函数，自动清理资源
  */
 static void _eos_anim_ready_cb(lv_anim_t *a)
 {
-    eos_anim_t *anim = (eos_anim_t *)lv_anim_get_user_data(a);
+    eos_anim_t *anim = lv_anim_get_user_data(a);
     anim->anim_completed_count++;
 
     if (anim->anim_completed_count == anim->anim_count)
@@ -117,7 +132,6 @@ static void _eos_anim_ready_cb(lv_anim_t *a)
         lv_timer_t *t = lv_timer_create(_free_anim_later, 10, anim);
         lv_timer_set_repeat_count(t, 1);
     }
-    EOS_LOG_I("Anim deleted");
     eos_anim_blocker_hide();
 }
 /**
@@ -204,18 +218,6 @@ static void _init_scale_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 
-void eos_anim_del(eos_anim_t *anim)
-{
-    if (!anim)
-        return;
-
-    if (anim->anim_timeline)
-    {
-        lv_anim_timeline_delete(anim->anim_timeline);
-    }
-    eos_free(anim);
-}
-
 eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
                                   int32_t w_start, int32_t w_end,
                                   int32_t h_start, int32_t h_end,
@@ -230,7 +232,7 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
 
     // 基础初始化
     anim->type = EOS_ANIM_SCALE;
-    anim->anim_count = 2;
+    anim->anim_count = 0;
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
@@ -245,9 +247,13 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
 
     // 初始化宽度动画
     _init_width_anim(&anim->anim.scale.a_width, tar_obj, w_start, w_end, duration, anim);
+    anim->anim_count++;
 
     // 初始化高度动画
     _init_height_anim(&anim->anim.scale.a_height, tar_obj, h_start, h_end, duration, anim);
+    anim->anim_count++;
+
+    EOS_LOG_I("Scale anim created: anim[%p] obj[%p]", anim, anim->tar_obj);
 
     return anim;
 }
@@ -264,12 +270,13 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
         return NULL;
 
     eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
+    EOS_LOG_D("MOVE alloc size(%d) ptr[%p]", sizeof(eos_anim_t), anim);
     if (!anim)
         return NULL;
 
     // 基础初始化
     anim->type = EOS_ANIM_MOVE;
-    anim->anim_count = 2;
+    anim->anim_count = 0;
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
@@ -290,6 +297,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     else
     {
         _init_x_anim(&anim->anim.move.a_x, tar_obj, start_x, end_x, duration, anim);
+        anim->anim_count++;
     }
 
     // 初始化 Y 动画
@@ -300,7 +308,17 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     else
     {
         _init_y_anim(&anim->anim.move.a_y, tar_obj, start_y, end_y, duration, anim);
+        anim->anim_count++;
     }
+
+    if (anim->anim_count == 0)
+    {
+        lv_anim_timeline_delete(anim->anim_timeline);
+        eos_free(anim);
+        return NULL;
+    }
+
+    EOS_LOG_I("Move anim created: anim[%p] obj[%p]", anim, anim->tar_obj);
 
     return anim;
 }
@@ -318,7 +336,7 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
 
     // 基础初始化
     anim->type = EOS_ANIM_TRANSFORM_SCALE;
-    anim->anim_count = 1;
+    anim->anim_count = 0;
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
@@ -333,6 +351,9 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
 
     // 初始化变换缩放动画
     _init_scale_anim(&anim->anim.transform_scale.a_scale, tar_obj, scale_start, scale_end, duration, anim);
+    anim->anim_count++;
+
+    EOS_LOG_I("Transform Scale anim created: anim[%p] obj[%p]", anim, anim->tar_obj);
 
     return anim;
 }
@@ -348,6 +369,7 @@ void eos_anim_move_start(lv_obj_t *tar_obj,
 
     if (!eos_anim_start(anim))
     {
+        EOS_LOG_D("Delete anim: %p", anim);
         eos_anim_del(anim);
     }
 }
@@ -513,11 +535,12 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
         return NULL;
 
     eos_anim_t *anim = eos_malloc(sizeof(eos_anim_t));
+    EOS_LOG_D("FADE alloc size(%d) ptr[%p]", sizeof(eos_anim_t), anim);
     if (!anim)
         return NULL;
 
     anim->type = EOS_ANIM_FADE;
-    anim->anim_count = 1;
+    anim->anim_count = 0;
     anim->anim_completed_count = 0;
     anim->user_cb = NULL;
     anim->user_data = NULL;
@@ -531,7 +554,11 @@ eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
         return NULL;
     }
     _init_opa_anim(&anim->anim.fade.a_opa, tar_obj, opa_start, opa_end, duration, anim);
+    anim->anim_count++;
     lv_anim_set_user_data(&anim->anim.fade.a_opa, anim);
+
+    EOS_LOG_I("Fade anim created: anim[%p] obj[%p]", anim, anim->tar_obj);
+
     return anim;
 }
 

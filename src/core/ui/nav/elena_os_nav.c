@@ -43,7 +43,14 @@ typedef struct
 } eos_nav_stack_t;
 
 /* Variables --------------------------------------------------*/
-static eos_nav_stack_t eos_nav = {.stack = NULL, .top = -1, .capacity = 0, .state = EOS_NAV_STATE_UNINITIALIZED, .state_completed = true, .semaphore = NULL};
+static eos_nav_stack_t eos_nav =
+    {
+        .stack = NULL,
+        .top = -1,
+        .capacity = 0,
+        .state = EOS_NAV_STATE_UNINITIALIZED,
+        .state_completed = true,
+        .semaphore = NULL};
 
 /* Function Implementations -----------------------------------*/
 static lv_obj_t *_eos_nav_peek_prev(void);

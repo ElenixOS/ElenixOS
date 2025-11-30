@@ -10,6 +10,9 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+// #define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "AppHeader"
+#include "elena_os_log.h"
 #include "elena_os_core.h"
 #include "elena_os_port.h"
 #include "elena_os_lang.h"
@@ -20,9 +23,6 @@
 #include "elena_os_misc.h"
 #include "elena_os_anim.h"
 #include "elena_os_nav.h"
-#define EOS_LOG_DISABLE
-#define EOS_LOG_TAG "AppHeader"
-#include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
 #define _HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
@@ -82,6 +82,14 @@ static eos_app_header_t *app_header = NULL;
 static char *_get_title_str(eos_app_header_title_t *t)
 {
     return (t->type == APP_HEADER_TITLE_TYPE_ID) ? current_lang[t->data.id] : t->data.string;
+}
+
+static void _free_header_title_data(eos_app_header_title_t *t) {
+    if (!t) return;
+    if (t->type == APP_HEADER_TITLE_TYPE_STRING && t->data.string) {
+        eos_free((void*)t->data.string);
+        t->data.string = NULL;
+    }
 }
 
 static void _app_header_lang_changed_cb(lv_event_t *e);
@@ -154,11 +162,11 @@ void _play_title_changed_anim(void)
 
     // 原始按钮从默认位置移动到目标位置
     eos_anim_move_start(l, title_start_x, 0, title_end_x, 0, _ANIM_DURATION, false);
-    eos_anim_fade_start(l, LV_OPA_COVER, LV_OPA_TRANSP, _ANIM_DURATION + 1, false);
+    eos_anim_fade_start(l, LV_OPA_COVER, LV_OPA_TRANSP, _ANIM_DURATION + 1, true);
 
     // 原始 back_btn 从默认位置移动到目标位置
     eos_anim_move_start(back_btn, back_btn_start_x, 0, back_btn_end_x, 0, _ANIM_DURATION, false);
-    eos_anim_fade_start(back_btn, LV_OPA_COVER, LV_OPA_TRANSP, _ANIM_DURATION, true); // 淡出后自动删除
+    eos_anim_fade_start(back_btn, LV_OPA_COVER, LV_OPA_TRANSP, _ANIM_DURATION + 1, true); // 淡出后自动删除
 
     // 创建新的 title_label 和 back_btn
     lv_obj_t *new_l = lv_label_create(parent);
@@ -256,15 +264,12 @@ static void _screen_loaded_cb(lv_event_t *e)
     if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
     {
         EOS_LOG_D("Set String title: %s", t->data.string);
-
         _play_title_changed_anim();
-        eos_app_header_show();
     }
     else if (t->type == APP_HEADER_TITLE_TYPE_ID && t->data.id < STR_ID_MAX_NUMBER)
     {
         EOS_LOG_D("Set ID title: %s", current_lang[t->data.id]);
         _play_title_changed_anim();
-        eos_app_header_show();
     }
     else
     {
@@ -281,15 +286,13 @@ static void _screen_delete_cb(lv_event_t *e)
     lv_obj_t *scr = lv_event_get_target(e);
     EOS_CHECK_PTR_RETURN(scr);
     EOS_LOG_D("screen deleted");
-    if (eos_nav_get_state() != EOS_NAV_STATE_CLEANING_UP)
-        return;
     eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
     EOS_CHECK_PTR_RETURN(t);
     if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
         eos_free(t->data.string);
     lv_obj_set_user_data(scr, NULL);
-    eos_app_header_hide();
     eos_event_remove_cb(scr, LV_EVENT_REFRESH, _app_header_lang_changed_cb);
+    EOS_LOG_D("Freed t: [%p]", t);
     eos_free(t);
 }
 
@@ -334,8 +337,17 @@ void eos_app_header_show(void)
 void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
 {
     EOS_CHECK_PTR_RETURN(scr);
+
+    eos_app_header_title_t *old_t = lv_obj_get_user_data(scr);
+    if (old_t)
+    {
+        _free_header_title_data(old_t); // 释放内部字符串
+        eos_free(old_t);                // 释放结构体
+        lv_obj_set_user_data(scr, NULL);
+    }
     eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
     EOS_CHECK_PTR_RETURN(t);
+    EOS_LOG_D("Created t: [%p]", t);
     t->type = APP_HEADER_TITLE_TYPE_STRING;
     t->data.string = eos_strdup(title);
     lv_obj_set_user_data(scr, (void *)t);
@@ -351,8 +363,16 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
 {
     EOS_CHECK_PTR_RETURN(scr);
 
+    eos_app_header_title_t *old_t = lv_obj_get_user_data(scr);
+    if (old_t)
+    {
+        _free_header_title_data(old_t); // 释放内部字符串
+        eos_free(old_t);                // 释放结构体
+        lv_obj_set_user_data(scr, NULL);
+    }
     eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
     EOS_CHECK_PTR_RETURN(t);
+    EOS_LOG_D("Created t: [%p]", t);
     t->type = APP_HEADER_TITLE_TYPE_ID;
     t->data.id = id;
     lv_obj_set_user_data(scr, (void *)t);

@@ -114,23 +114,12 @@ void eos_anim_list_bind(lv_obj_t *screen, lv_obj_t *list, lv_obj_t *selected_obj
 {
     EOS_CHECK_PTR_RETURN(list && selected_obj);
     eos_anim_list_data_t *d = eos_malloc(sizeof(eos_anim_list_data_t));
+    EOS_CHECK_PTR_RETURN(d);
     d->list = list;
     d->selected_obj = selected_obj;
 
-    lv_event_dsc_t *dsc = lv_obj_get_event_dsc(screen, 0);
-    if (dsc)
-    {
-        eos_anim_list_data_t *old_d = lv_event_dsc_get_user_data(dsc);
-        if (old_d)
-        {
-            eos_free(old_d);
-            EOS_LOG_D("Old data free");
-        }
-    }
-
     lv_obj_remove_event_cb(screen, _anim_list_screen_load_start_cb);
     lv_obj_remove_event_cb(screen, _anim_list_screen_unloaded_cb);
-    lv_obj_remove_event_cb(screen, _anim_list_screen_delete_cb);
 
     lv_obj_add_event_cb(screen, _anim_list_screen_load_start_cb, LV_EVENT_SCREEN_LOAD_START, d);
     lv_obj_add_event_cb(screen, _anim_list_screen_unloaded_cb, LV_EVENT_SCREEN_UNLOAD_START, d);

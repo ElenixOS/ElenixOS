@@ -22,6 +22,7 @@
 #include "elena_os_msg_list.h"
 #include "elena_os_crown.h"
 #include "elena_os_event.h"
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -71,6 +72,15 @@ const char *eos_scene_type_t_to_string(eos_scene_type_t v)
 
 static void _set_current_scene(eos_scene_t *scene)
 {
+    if (scene->type == EOS_SCENE_NAVIGATION)
+    {
+        eos_app_header_show();
+    }
+    else if (current_scene && current_scene->type == EOS_SCENE_NAVIGATION)
+    {
+        eos_app_header_hide();
+    }
+
     current_scene = scene;
     if (scene == &watchface_scene)
     {

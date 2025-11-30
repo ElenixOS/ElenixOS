@@ -22,6 +22,7 @@
 #include "elena_os_slide_widget.h"
 #include "elena_os_event.h"
 #include "elena_os_port.h"
+#include "elena_os_anim.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBUG_LAYOUT 0
 
@@ -55,26 +56,6 @@ static eos_msg_list_t *message_list_instance = NULL;
 /* Function Implementations -----------------------------------*/
 
 static void _msg_list_item_clicked_cb(lv_event_t *e);
-
-/************************** 对象移动动画回调 **************************/
-
-/**
- * @brief 水平偏移量的动画回调
- */
-static void _set_translate_x_cb(void *var, int32_t value)
-{
-    EOS_CHECK_PTR_RETURN(var);
-    lv_obj_set_style_translate_x((lv_obj_t *)var, value, 0);
-}
-
-/**
- * @brief 垂直偏移量的动画回调
- */
-static void _set_translate_y_cb(void *var, int32_t value)
-{
-    EOS_CHECK_PTR_RETURN(var);
-    lv_obj_set_style_translate_y((lv_obj_t *)var, value, 0);
-}
 
 /************************** 删除 Item 回调 **************************/
 
@@ -175,11 +156,8 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
     // 如果已经打开一个详情页，就不能再打开了，即便按钮继续按下。
     detail_flag = true;
 
-    // 获取当前屏幕
-    lv_obj_t *scr = lv_screen_active();
-
     // 创建详情页面容器
-    lv_obj_t *detail_container = lv_obj_create(scr);
+    lv_obj_t *detail_container = lv_obj_create(lv_layer_top());
     lv_obj_center(detail_container);
     lv_obj_set_style_bg_color(detail_container, EOS_COLOR_BLACK, 0);
     lv_obj_set_flex_flow(detail_container, LV_FLEX_FLOW_COLUMN);
@@ -509,15 +487,12 @@ static void _trigger_msg_anims(eos_msg_list_t *list)
         if (item)
         {
             // 创建动画
-            lv_anim_t anim;
-            lv_anim_init(&anim);
-            lv_anim_set_var(&anim, item->container);
-            lv_anim_set_values(&anim, lv_obj_get_x(item->container), EOS_DISPLAY_WIDTH);
-            lv_anim_set_time(&anim, 120);
-            lv_anim_set_exec_cb(&anim, _set_translate_x_cb);
-            lv_anim_set_user_data(&anim, list);
-            lv_anim_set_completed_cb(&anim, _msg_list_item_anim_end_cb);
-            lv_anim_start(&anim);
+            eos_lite_anim_fade_layered_start(item->container, LV_OPA_COVER, LV_OPA_TRANSP, 300, NULL, NULL);
+            eos_lite_anim_move_hor_start(
+                item->container,
+                lv_obj_get_x(item->container), EOS_DISPLAY_WIDTH,
+                300, _msg_list_item_anim_end_cb, list);
+
 
             list->animating_count++;
             anim_index++;

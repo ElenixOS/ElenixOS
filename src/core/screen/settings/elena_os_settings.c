@@ -42,6 +42,8 @@
 #include "elena_os_radio_list.h"
 #include "elena_os_lang.h"
 #include "elena_os_anim_effects.h"
+#include "elena_os_screen_mgr.h"
+
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
 /* Variables --------------------------------------------------*/
@@ -601,7 +603,7 @@ static void _settings_screen_general(lv_event_t *e)
 /************************** 系统设置程序入口 **************************/
 void eos_settings_create(void)
 {
-    lv_obj_t *scr = eos_nav_init(lv_screen_active());
+    lv_obj_t *scr = eos_nav_init(eos_screen_active());
     eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS);
     eos_screen_load(scr);
 

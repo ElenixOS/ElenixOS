@@ -13,7 +13,6 @@
 #include <string.h>
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Watchface"
 #include "elena_os_log.h"
 #include "elena_os_pkg_mgr.h"
@@ -25,6 +24,7 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
+#include "elena_os_screen_mgr.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -238,15 +238,21 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     return EOS_OK;
 }
 
-void eos_watchface_delete(void)
+static void _screen_unloaded_event_cb(lv_event_t *e)
 {
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
         EOS_LOG_D("Request Stop");
         script_engine_request_stop();
+        EOS_LOG_D("[MY_DEBUG_TAG]Delete scr[%p]", watchface_screen);
         lv_obj_delete(watchface_screen);
         watchface_screen = NULL;
     }
+}
+
+void eos_watchface_delete(void)
+{
+    lv_obj_add_event_cb(watchface_screen, _screen_unloaded_event_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
 }
 
 static void _watchface_long_pressed_cb(lv_event_t *e)

@@ -487,12 +487,11 @@ static void _trigger_msg_anims(eos_msg_list_t *list)
         if (item)
         {
             // 创建动画
-            eos_lite_anim_fade_layered_start(item->container, LV_OPA_COVER, LV_OPA_TRANSP, 300, NULL, NULL);
+            eos_lite_anim_fade_layered_start(item->container, LV_OPA_COVER, LV_OPA_TRANSP, 300, 0, NULL, NULL);
             eos_lite_anim_move_hor_start(
                 item->container,
                 lv_obj_get_x(item->container), EOS_DISPLAY_WIDTH,
-                300, _msg_list_item_anim_end_cb, list);
-
+                300, 0, _msg_list_item_anim_end_cb, list);
 
             list->animating_count++;
             anim_index++;

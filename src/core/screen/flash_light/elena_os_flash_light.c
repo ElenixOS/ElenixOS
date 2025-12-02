@@ -29,6 +29,8 @@
 #include "elena_os_app_list.h"
 #include "elena_os_lang.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
@@ -50,7 +52,7 @@ static inline void _flash_light_delete(_pressing_user_data_t *ud)
 {
     EOS_CHECK_PTR_RETURN(ud);
 
-    lv_obj_remove_event_cb(lv_screen_active(), _screen_delete_cb);
+    lv_obj_remove_event_cb(eos_screen_active(), _screen_delete_cb);
 
     if (ud->sp)
         eos_swipe_panel_delete(ud->sp);
@@ -182,7 +184,7 @@ void eos_flash_light_show(void)
                         _flash_light_clicked_cb,
                         LV_EVENT_CLICKED,
                         ud);
-    lv_obj_add_event_cb(lv_screen_active(),
+    lv_obj_add_event_cb(eos_screen_active(),
                         _screen_delete_cb,
                         LV_EVENT_DELETE,
                         ud);
@@ -209,6 +211,7 @@ void _flash_light_create(lv_obj_t *launcher_screen)
     eos_card_pager_move_node(cp, 0, 1);
     eos_card_pager_move_page(cp, 1);
     lv_obj_add_event_cb(scr, _flash_light_screen_delete_cb, LV_EVENT_DELETE, NULL);
+    eos_app_header_hide();
 }
 
 void eos_flash_light_create(void)

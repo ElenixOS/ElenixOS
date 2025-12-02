@@ -17,7 +17,7 @@
  * @note
  * 可以通过
  * ```c
- * lv_screen_active() == eos_watchface_get_screen()
+ * eos_screen_active() == eos_watchface_get_screen()
  * ```
  * 判断当前是否位于表盘页面
  */

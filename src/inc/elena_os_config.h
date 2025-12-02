@@ -42,7 +42,7 @@ extern "C"
  *  - NORMAL_MODE:      正常模式，直接进入表盘
  *  - TEST_MODE:        测试模式，进入测试页面
  */
-#define EOS_SYSTEM_MODE TEST_MODE
+#define EOS_SYSTEM_MODE NORMAL_MODE
 
 /**
  * 选择是否启用动画

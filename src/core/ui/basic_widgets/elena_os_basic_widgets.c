@@ -32,6 +32,9 @@
 #include "elena_os_anim_effects.h"
 #include "elena_os_scene.h"
 #include "lvgl_private.h"
+#include "elena_os_app_header.h"
+#include "elena_os_app_list.h"
+#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -45,42 +48,11 @@
 
 #define _LIST_CONTAINER_MARGIN_BOTTOM 8
 
-#define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * 4
+#define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * lv_color_format_get_size(LV_COLOR_FORMAT_ARGB8888)
 
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-
-void eos_screen_load(lv_obj_t *scr)
-{
-    EOS_MEM("SCREEN");
-    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
-    if (eos_nav_get_state() == EOS_NAV_STATE_ENTER_NEXT_SCREEN && eos_nav_is_state_completed())
-    {
-        EOS_LOG_D("Play ENTER_NEXT anim");
-        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OVER_LEFT, EOS_SCREEN_SWITCH_DURATION, 0, false);
-    }
-    else if (eos_nav_get_state() == EOS_NAV_STATE_BACK_PREV_SCREEN)
-    {
-        EOS_LOG_D("Play BACK_PREV anim");
-        lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, EOS_SCREEN_SWITCH_DURATION, 0, false);
-    }
-    else
-    {
-        EOS_LOG_D("Normal Load");
-        // lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_OUT, EOS_SCREEN_SWITCH_DURATION, 0, false);
-        lv_screen_load(scr);
-    }
-
-    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
-}
-
-lv_obj_t *eos_screen_create(void)
-{
-    lv_obj_t *scr = lv_obj_create(NULL);
-    lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
-    return scr;
-}
 
 static void _back_btn_cb(lv_event_t *e)
 {
@@ -146,7 +118,7 @@ static void _list_button_clicked_cb(lv_event_t *e)
     lv_obj_t *btn = lv_event_get_target(e);
     lv_obj_t *list = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(btn && list);
-    eos_anim_list_bind(lv_screen_active(), list, btn);
+    eos_anim_list_bind(eos_screen_active(), list, btn);
 }
 
 static void _list_container_common_style(lv_obj_t *container)
@@ -634,7 +606,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     }
 
     // 创建并配置画布
-    lv_obj_t *canvas = lv_canvas_create(lv_screen_active());
+    lv_obj_t *canvas = lv_canvas_create(eos_screen_active());
     EOS_CHECK_PTR_RETURN_FREE(canvas, canvas_buf);
 
     lv_obj_remove_style_all(canvas);

@@ -31,11 +31,11 @@
 #include "elena_os_sys.h"
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
+#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
-extern lv_group_t *encoder_group;
 static lv_obj_t *watchface_list_screen = NULL;
 /* Function Implementations -----------------------------------*/
 
@@ -120,10 +120,6 @@ void eos_watchface_list_create(void)
         lv_obj_center(watchface_snapshot);
         lv_obj_add_event_cb(watchface_snapshot, _watchface_list_btn_cb, LV_EVENT_CLICKED, (void *)eos_watchface_list_get_id(i));
         lv_obj_set_style_clip_corner(watchface_snapshot, false, 0);
-        if (encoder_group)
-        {
-            lv_group_add_obj(encoder_group, watchface_snapshot);
-        }
         // 显示名称
         char manifest_path[PATH_MAX];
         snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,

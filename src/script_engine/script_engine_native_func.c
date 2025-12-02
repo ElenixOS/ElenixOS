@@ -27,6 +27,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_dfw.h"
 #include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -780,6 +781,31 @@ static jerry_value_t js_eos_app_header_show(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+static jerry_value_t js_eos_screen_active(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args[],
+                                          const jerry_length_t argc)
+{
+    // 调用底层函数
+    lv_obj_t *ret_value = eos_screen_active();
+
+    // 处理返回值
+    jerry_value_t js_result;
+    // 包装为LVGL对象
+    js_result = jerry_object();
+    jerry_value_t ptr_key = jerry_string_sz("__ptr");
+    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
+    jerry_value_t cls_key = jerry_string_sz("__class");
+    jerry_value_t cls = jerry_string_sz("lv_obj");
+    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
+    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
+    jerry_value_free(ptr_key);
+    jerry_value_free(ptr);
+    jerry_value_free(cls_key);
+    jerry_value_free(cls);
+
+    return js_result;
+}
+
 /********************************** 注册原生函数 **********************************/
 
 /**
@@ -818,6 +844,8 @@ const script_engine_func_entry_t script_engine_native_funcs[] = {
      .handler = js_eos_time_get},
     {.name = "lv_tiny_ttf_create_file",
      .handler = js_lv_tiny_ttf_create_file},
+    {.name = "eos_screen_active",
+     .handler = js_eos_screen_active},
 
 };
 

@@ -35,6 +35,8 @@
 #include "elena_os_scene.h"
 #include "elena_os_crown.h"
 #include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
+
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
 #ifdef TEST_USE_ZH_FONT
@@ -121,7 +123,7 @@ static const symbol_t lv_symbols[] = {
 
 lv_obj_t *_create_new_scr()
 {
-    lv_obj_t *scr = eos_nav_init(lv_screen_active());
+    lv_obj_t *scr = eos_nav_init(eos_screen_active());
     eos_app_header_bind_screen(scr, "ElenaOS Test");
     eos_screen_load(scr);
     return scr;
@@ -156,7 +158,7 @@ static void _test_msg_list()
     _create_new_scr();
     eos_msg_list_t *msg_list = eos_msg_list_get_instance();
     EOS_CHECK_PTR_RETURN(msg_list);
-    lv_obj_t *btn = lv_button_create(lv_screen_active());
+    lv_obj_t *btn = lv_button_create(eos_screen_active());
     lv_obj_center(btn);
     lv_obj_t *btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, RI_CHAT_FOLLOW_UP_FILL " Add new message");
@@ -187,7 +189,7 @@ static void _test_nav_cb_1(lv_event_t *e)
     lv_obj_t *scr;
     if (!eos_nav_get_initialized())
     {
-        scr = eos_nav_init(lv_screen_active());
+        scr = eos_nav_init(eos_screen_active());
     }
     else
     {
@@ -231,7 +233,7 @@ static void _test_font()
                                               /* 常用汉字测试 */ "在夏末的午后，风把阳台上的风铃吹得叮当作响，像是某种不经意的暗号。"
                                               /* 罕见汉字测试 */ "霡霂淅沥，薜荔葳蕤。彳亍踟蹰，睥睨娉婷。觊觎饕餮，倥偬倜傥。菡萏猗傩，蘼芜菁菁。";
 
-    lv_obj_t *container = eos_list_create(lv_screen_active());
+    lv_obj_t *container = eos_list_create(eos_screen_active());
     lv_obj_set_size(container, lv_pct(100), lv_pct(100));
     lv_obj_t *font_label = lv_label_create(container);
     lv_label_set_text(font_label, test_str);
@@ -258,14 +260,14 @@ static void _test_lang(lv_event_t *e)
 {
     _create_new_scr();
 
-    lv_obj_t *label = lv_label_create(lv_screen_active());
+    lv_obj_t *label = lv_label_create(eos_screen_active());
     lv_obj_set_width(label, lv_pct(100));
     lv_obj_center(label);
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(label, &eos_font_resource_han_rounded_30, LV_PART_MAIN);
 #endif
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-    lv_obj_t *btn = lv_button_create(lv_screen_active());
+    lv_obj_t *btn = lv_button_create(eos_screen_active());
     lv_obj_t *btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, RI_REPEAT_2_FILL " Switch Language");
     lv_obj_add_event_cb(btn, _test_lang_cb, LV_EVENT_CLICKED, NULL);
@@ -297,14 +299,14 @@ static void _test_vkb_event_cb(lv_event_t *e)
 static void _test_vkb()
 {
     _create_new_scr();
-    lv_obj_t *pinyin_ime = lv_ime_pinyin_create(lv_screen_active());
+    lv_obj_t *pinyin_ime = lv_ime_pinyin_create(eos_screen_active());
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(pinyin_ime, &eos_font_resource_han_rounded_30, 0);
 #endif
     // lv_ime_pinyin_set_dict(pinyin_ime, your_dict); // Use a custom dictionary. If it is not set, the built-in dictionary will be used.
 
     /* ta1 */
-    lv_obj_t *ta1 = lv_textarea_create(lv_screen_active());
+    lv_obj_t *ta1 = lv_textarea_create(eos_screen_active());
     lv_textarea_set_one_line(ta1, true);
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(ta1, &eos_font_resource_han_rounded_30, 0);
@@ -313,7 +315,7 @@ static void _test_vkb()
     lv_obj_set_width(ta1, lv_pct(100));
 
     /*Create a keyboard and add it to ime_pinyin*/
-    lv_obj_t *kb = lv_keyboard_create(lv_screen_active());
+    lv_obj_t *kb = lv_keyboard_create(eos_screen_active());
 
     lv_ime_pinyin_set_keyboard(pinyin_ime, kb);
     lv_keyboard_set_textarea(kb, ta1);
@@ -656,7 +658,7 @@ static void _test_sensor()
 
 void eos_test_start(void)
 {
-    lv_obj_t *scr = lv_screen_active();
+    lv_obj_t *scr = eos_screen_active();
 
     lv_obj_t *test_list = lv_list_create(scr);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));

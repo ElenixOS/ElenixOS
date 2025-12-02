@@ -23,6 +23,8 @@
 #include "elena_os_misc.h"
 #include "elena_os_anim.h"
 #include "elena_os_nav.h"
+#include "elena_os_screen_mgr.h"
+
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
 #define _HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
@@ -238,7 +240,7 @@ static void _app_header_lang_changed_cb(lv_event_t *e)
     lv_obj_t *label = lv_event_get_target(e);
 
     // 从用户数据中获取str_id
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(lv_screen_active());
+    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(eos_screen_active());
     if (!t)
         return;
     if (t->type == APP_HEADER_TITLE_TYPE_ID)
@@ -325,12 +327,14 @@ void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
 void eos_app_header_hide(void)
 {
     EOS_CHECK_PTR_RETURN(app_header);
+    EOS_LOG_D("Hide app header");
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
 void eos_app_header_show(void)
 {
     EOS_CHECK_PTR_RETURN(app_header);
+    EOS_LOG_D("Show app header");
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -351,6 +355,7 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
     t->type = APP_HEADER_TITLE_TYPE_STRING;
     t->data.string = eos_strdup(title);
     lv_obj_set_user_data(scr, (void *)t);
+    lv_label_set_text(app_header->title_label, title);
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
@@ -376,12 +381,25 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
     t->type = APP_HEADER_TITLE_TYPE_ID;
     t->data.id = id;
     lv_obj_set_user_data(scr, (void *)t);
+    lv_label_set_text(app_header->title_label, current_lang[id]);
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
+}
+
+bool eos_app_header_is_visible(void)
+{
+    EOS_CHECK_PTR_RETURN_VAL(app_header, false);
+    return !lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+}
+
+void eos_app_header_set_parent(lv_obj_t *parent)
+{
+    EOS_CHECK_PTR_RETURN(app_header && parent);
+    lv_obj_set_parent(app_header->container, parent);
 }
 
 static void _nav_clean_up_reset_label_cb(lv_event_t *e)

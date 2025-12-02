@@ -115,6 +115,12 @@ eos_scene_type_t eos_scene_get_current_type(void)
     return current_scene->type;
 }
 
+eos_scene_type_t eos_scene_get_last_type(void)
+{
+    EOS_CHECK_PTR_RETURN_VAL(last_scene, EOS_SCENE_UNKNOWN);
+    return last_scene->type;
+}
+
 void eos_scene_switch(eos_scene_type_t type)
 {
     EOS_CHECK_PTR_RETURN(current_scene);
@@ -153,8 +159,12 @@ void eos_scene_switch(eos_scene_type_t type)
 void eos_scene_auto_switch(void)
 {
     EOS_CHECK_PTR_RETURN(current_scene);
+    eos_scene_exit_t exit_func = NULL;
     if (current_scene->exit)
-        current_scene->exit();
+    {
+        exit_func = current_scene->exit;
+    }
+
     switch (current_scene->type)
     {
     case EOS_SCENE_WATCHFACE:
@@ -176,7 +186,7 @@ void eos_scene_auto_switch(void)
 #endif /* EOS_SYSTEM_MODE */
     case EOS_SCENE_NAVIGATION:
         // 如果当前在导航页面，切换场景会返回上级页面
-        _set_current_scene(&nav_scene);
+        eos_scene_back();
         eos_nav_back_clean();
         return;
     case EOS_SCENE_UNKNOWN:
@@ -185,6 +195,11 @@ void eos_scene_auto_switch(void)
         return;
     }
     current_scene->entry();
+    // 最后再进入上一个场景的退出函数
+    if (exit_func)
+    {
+        exit_func();
+    }
 }
 
 static void _screen_load_cb(lv_event_t *e)

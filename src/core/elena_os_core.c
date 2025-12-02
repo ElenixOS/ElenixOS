@@ -50,10 +50,10 @@
 #include "elena_os_pm.h"
 #include "elena_os_dfw.h"
 #include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
-lv_group_t *encoder_group;
 static bool is_logo_played = false;
 static lv_obj_t *logo = NULL;
 /* Function Implementations -----------------------------------*/
@@ -80,7 +80,7 @@ void eos_logo_play(bool anim)
     eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
 
     // 创建全屏容器
-    logo = lv_obj_create(lv_screen_active());
+    logo = lv_obj_create(eos_screen_active());
     lv_obj_set_style_bg_color(logo, EOS_COLOR_BLACK, 0);
     lv_obj_set_size(logo, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(logo, 0, 0);
@@ -133,19 +133,6 @@ void eos_run(void)
     eos_app_init();
     eos_watchface_init();
     eos_lang_init();
-
-    /*
-    lv_indev_t *indev = _get_key_indev();
-    if (indev)
-    {
-        encoder_group = lv_indev_get_group(indev);
-        lv_group_add_obj(encoder_group, eos_watchface_get_screen());
-    }
-    else
-    {
-        EOS_LOG_W("Input device not found");
-    }
-    */
     if (eos_watchface_list_size() == 0)
     {
         EOS_LOG_E("Watchface not found");

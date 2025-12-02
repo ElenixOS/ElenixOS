@@ -286,12 +286,13 @@ void eos_anim_transform_scale_start(lv_obj_t *tar_obj,
  * @param start 起始 X 坐标
  * @param end 结束 X 坐标
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
-                                  uint32_t duration,
+                                  uint32_t duration, uint32_t delay,
                                   lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -300,12 +301,13 @@ void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
  * @param start 起始 Y 坐标
  * @param end 结束 Y 坐标
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
-                                  uint32_t duration,
+                                  uint32_t duration, uint32_t delay,
                                   lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -314,12 +316,13 @@ void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
  * @param start 起始宽度
  * @param end 结束宽度
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
-                                 uint32_t duration,
+                                 uint32_t duration, uint32_t delay,
                                  lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -328,12 +331,13 @@ void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
  * @param start 起始高度
  * @param end 结束高度
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
-                                 uint32_t duration,
+                                 uint32_t duration, uint32_t delay,
                                  lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -342,12 +346,13 @@ void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
  * @param start 起始缩放值
  * @param end 结束缩放值
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
                                          int32_t start, int32_t end,
-                                         uint32_t duration,
+                                         uint32_t duration, uint32_t delay,
                                          lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -356,12 +361,13 @@ void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
  * @param start 起始透明度（0-255），适用`LV_OPA_*`
  * @param end 结束透明度（0-255），适用`LV_OPA_*`
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_fade_start(lv_obj_t *target_obj,
                               int32_t start, int32_t end,
-                              uint32_t duration,
+                              uint32_t duration, uint32_t delay,
                               lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
@@ -370,12 +376,13 @@ void eos_lite_anim_fade_start(lv_obj_t *target_obj,
  * @param start 起始透明度（0-255），适用`LV_OPA_*`
  * @param end 结束透明度（0-255），适用`LV_OPA_*`
  * @param duration 动画持续时间（毫秒）
+ * @param delay 动画延迟时间（毫秒）
  * @param completed_cb 动画完成回调，可为 NULL
  * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
  */
 void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
                               int32_t start, int32_t end,
-                              uint32_t duration,
+                              uint32_t duration, uint32_t delay,
                               lv_anim_completed_cb_t completed_cb, void *user_data);
 
 #ifdef __cplusplus

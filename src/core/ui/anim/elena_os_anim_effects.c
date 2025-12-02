@@ -22,12 +22,6 @@
 /* Macros and Definitions -------------------------------------*/
 #define _ANIM_LIST_DURATION EOS_SCREEN_SWITCH_DURATION
 
-typedef enum
-{
-    _SCREEN_LOAD,
-    _SCREEN_DELETE,
-} eos_screen_state_t;
-
 typedef struct
 {
     lv_obj_t *list;

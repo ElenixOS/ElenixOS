@@ -24,7 +24,7 @@
  *
  * // Somewhere
  * eos_lang_set(LANG_EN);
- * lv_obj_t *label = lv_label_create(lv_screen_active());
+ * lv_obj_t *label = lv_label_create(eos_screen_active());
  * lv_label_set_text(label, current_lang[STR_ID_LANGUAGE]);
  * lv_obj_center(label);
  *

@@ -58,6 +58,10 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 获取上一个场景类型
+ */
+eos_scene_type_t eos_scene_get_last_type(void);
+/**
  * @brief 获取当前的场景类型
  */
 eos_scene_type_t eos_scene_get_current_type(void);

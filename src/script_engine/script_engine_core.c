@@ -26,7 +26,7 @@
  *
  * ### SCRIPT_STATE_RUNNING
  *
- * 脚本正在运行，例如正在执行`eos.lv_label_create(lv_screen_active());`。
+ * 脚本正在运行，例如正在执行`eos.lv_label_create(eos_screen_active());`。
  *
  * ### SCRIPT_STATE_SUSPEND
  *

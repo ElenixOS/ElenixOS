@@ -48,7 +48,7 @@
  *    }
  *
  *    eos_event_add_cb(
- *        lv_screen_active(),
+ *        eos_screen_active(),
  *        _on_battery_update,
  *        EOS_EVENT_SENSOR_REPORT_BAT,
  *        NULL);

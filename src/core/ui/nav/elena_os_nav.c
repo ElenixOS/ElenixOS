@@ -21,6 +21,7 @@
 #include "elena_os_scene.h"
 #include "elena_os_event.h"
 #include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define NAV_INITIAL_CAPACITY 16 // 初始容量
@@ -173,6 +174,12 @@ lv_obj_t *eos_nav_get_home_screen(void)
     return eos_nav.top >= NAV_HOME_SCREEN_INDEX ? eos_nav.stack[NAV_HOME_SCREEN_INDEX] : NULL;
 }
 
+static void _screen_unloaded_event_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    lv_obj_delete_async(obj);
+}
+
 /**
  * @brief 清除整个导航栈
  */
@@ -194,6 +201,10 @@ eos_result_t eos_nav_clean_up(void)
     // 设置清理状态
     _eos_nav_set_state(EOS_NAV_STATE_CLEANING_UP, false);
 
+    eos_event_broadcast(EOS_EVENT_NAVIGATION_CLEAN_UP_START, NULL);
+
+    // 先返回场景再加载新屏幕
+    eos_scene_back();
     // 加载 launcher_screen
     eos_screen_load(eos_nav.launcher_screen);
 
@@ -205,7 +216,15 @@ eos_result_t eos_nav_clean_up(void)
             if (lv_obj_is_valid(eos_nav.stack[i]))
             {
                 EOS_LOG_D("Screen[%p]-[%d] Clearing", eos_nav.stack[i], i);
-                lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
+                if (i == 0)
+                {
+                    lv_obj_add_event_cb(eos_nav.stack[i], _screen_unloaded_event_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
+                }
+                else
+                {
+                    lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
+                }
+
                 EOS_LOG_D("Screen[%p] Cleared", eos_nav.stack[i]);
             }
             else
@@ -237,7 +256,6 @@ eos_result_t eos_nav_clean_up(void)
     // 设置最终状态
     _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
 
-    eos_scene_back();
     EOS_LOG_D("Nav stack completely cleared.");
     eos_event_broadcast(EOS_EVENT_NAVIGATION_CLEAN_UP, NULL);
     return EOS_OK;

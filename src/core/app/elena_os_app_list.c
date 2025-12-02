@@ -32,30 +32,27 @@
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
 #include "elena_os_app_header.h"
+#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
-
+#define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
+#define _APP_ICON_ANIM_DELAY 75 * EOS_ANIM_PLAY_COEFFICIENT
 /* Variables --------------------------------------------------*/
-extern lv_group_t *encoder_group;
 static lv_obj_t *app_list_screen = NULL;
-
+static lv_obj_t *last_clicked_icon = NULL;
+static bool needs_reset_anim = false;
 
 const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {
     "sys.settings",
-    "sys.flash_light"
-};
+    "sys.flash_light"};
 
 const char *eos_sys_app_icon_list[EOS_SYS_APP_LAST] = {
     EOS_IMG_SETTINGS,
-    EOS_IMG_FLASH_LIGHT
-};
-
+    EOS_IMG_FLASH_LIGHT};
 
 const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
     eos_settings_create,
-    eos_flash_light_create
-};
-
+    eos_flash_light_create};
 
 /* Function Implementations -----------------------------------*/
 static void _app_list_icon_clicked_cb(lv_event_t *e);
@@ -151,7 +148,8 @@ static void _app_list_refresh(lv_obj_t *container)
         for (size_t i = 0; i < app_list_size; i++)
         {
             const char *app_id = eos_app_list_get_id(i);
-            if (!app_id) continue;
+            if (!app_id)
+                continue;
 
             // 系统内置应用使用内置图标与入口
             bool is_sys = false;
@@ -254,6 +252,64 @@ static void _app_list_settings_cb(lv_event_t *e)
     eos_settings_create();
 }
 
+void eos_app_list_get_clicked_icon_center_pos(lv_coord_t *x, lv_coord_t *y)
+{
+    if (last_clicked_icon)
+    {
+        *x = lv_obj_get_x(last_clicked_icon) + lv_obj_get_width(last_clicked_icon) / 2;
+        *y = lv_obj_get_y(last_clicked_icon) + lv_obj_get_height(last_clicked_icon) / 2;
+    }
+    else
+    {
+        *x = 0;
+        *y = 0;
+    }
+}
+
+static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse)
+{
+    lv_coord_t x, y;
+    eos_app_list_get_clicked_icon_center_pos(&x, &y);
+    int32_t scale_start, scale_end;
+    lv_opa_t fade_start, fade_end;
+    uint32_t delay;
+    if (reverse)
+    {
+        scale_start = 1500;
+        scale_end = 256;
+        fade_start = LV_OPA_TRANSP;
+        fade_end = LV_OPA_COVER;
+        needs_reset_anim = false;
+        delay = _APP_ICON_ANIM_DELAY;
+    }
+    else
+    {
+        scale_start = 256;
+        scale_end = 1500;
+        fade_start = LV_OPA_COVER;
+        fade_end = LV_OPA_TRANSP;
+        needs_reset_anim = true;
+        delay = 0;
+    }
+    lv_obj_set_style_transform_pivot_x(app_list_screen, x, 0);
+    lv_obj_set_style_transform_pivot_y(app_list_screen, y, 0);
+    eos_lite_anim_transform_scale_start(app_list_screen,
+                                        scale_start, scale_end,
+                                        _APP_ICON_ANIM_DURATION, delay,
+                                        NULL, NULL);
+    eos_lite_anim_fade_layered_start(obj,
+                                     fade_start, fade_end,
+                                     _APP_ICON_ANIM_DURATION, delay,
+                                     NULL, NULL);
+}
+
+static void _app_icon_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    last_clicked_icon = obj;
+    _app_list_play_icon_anim(obj, false);
+}
+
 /**
  * @brief 创建应用图标
  */
@@ -269,6 +325,7 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
     eos_img_set_src(app_icon, icon_path);
     eos_img_set_size(app_icon, 100, 100);
     lv_obj_center(app_icon);
+    lv_obj_add_event_cb(app_icon, _app_icon_clicked_cb, LV_EVENT_CLICKED, NULL);
 
     return app_icon;
 }
@@ -294,6 +351,14 @@ lv_obj_t *eos_app_list_get_screen(void)
     return app_list_screen;
 }
 
+static void _screen_loaded_cb(lv_event_t *e)
+{
+    if (needs_reset_anim)
+    {
+        _app_list_play_icon_anim(last_clicked_icon, true);
+    }
+}
+
 void eos_app_list_create(void)
 {
     if (app_list_screen)
@@ -304,7 +369,7 @@ void eos_app_list_create(void)
     // 创建新的页面用于绘制应用列表
     eos_screen_load(app_list_screen);
 
-    lv_obj_t *container = lv_list_create(app_list_screen);
+    lv_obj_t *container = app_list_screen;
     lv_obj_set_style_pad_all(container, 20, 0);
     lv_obj_set_style_pad_column(container, 20, 0); // 列间距
     lv_obj_set_style_pad_row(container, 20, 0);
@@ -321,4 +386,5 @@ void eos_app_list_create(void)
     eos_event_add_cb(container, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)container);
 
     _app_list_refresh(container);
+    lv_obj_add_event_cb(app_list_screen, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
 }

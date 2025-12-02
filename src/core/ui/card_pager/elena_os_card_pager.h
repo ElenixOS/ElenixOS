@@ -14,7 +14,7 @@
  * ## 示例
  *
  * ```c
- * eos_card_pager_t *cp = eos_card_pager_create(lv_screen_active(), EOS_CARD_PAGER_DIR_HOR);
+ * eos_card_pager_t *cp = eos_card_pager_create(eos_screen_active(), EOS_CARD_PAGER_DIR_HOR);
  * lv_obj_t *page = eos_card_pager_create_page(cp);
  * lv_obj_set_style_bg_color(page, EOS_COLOR_GREEN, 0);
  * page = eos_card_pager_create_page(cp);

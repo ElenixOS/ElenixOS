@@ -52,6 +52,8 @@ lv_obj_t *eos_app_list_get_screen(void);
  * @brief 创建应用列表
  */
 void eos_app_list_create(void);
+
+void eos_app_list_get_clicked_icon_center_pos(lv_coord_t *x, lv_coord_t *y);
 #ifdef __cplusplus
 }
 #endif

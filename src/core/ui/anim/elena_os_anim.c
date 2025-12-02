@@ -613,7 +613,8 @@ void eos_anim_fade_set_layered(eos_anim_t *a, bool layered)
 
 void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
-                                  uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                  uint32_t duration, uint32_t delay,
+                                  lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_x_anim(&a, target_obj, start, end, duration, NULL);
@@ -621,12 +622,14 @@ void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
-                                  uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                  uint32_t duration, uint32_t delay,
+                                  lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_y_anim(&a, target_obj, start, end, duration, NULL);
@@ -634,12 +637,14 @@ void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
-                                 uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                 uint32_t duration, uint32_t delay,
+                                 lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_width_anim(&a, target_obj, start, end, duration, NULL);
@@ -647,12 +652,14 @@ void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
-                                 uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                 uint32_t duration, uint32_t delay,
+                                 lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_height_anim(&a, target_obj, start, end, duration, NULL);
@@ -660,12 +667,14 @@ void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
                                          int32_t start, int32_t end,
-                                         uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                         uint32_t duration, uint32_t delay,
+                                         lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_scale_anim(&a, target_obj, start, end, duration, NULL);
@@ -673,12 +682,14 @@ void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_fade_start(lv_obj_t *target_obj,
                               int32_t start, int32_t end,
-                              uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                              uint32_t duration, uint32_t delay,
+                              lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_opa_anim(&a, target_obj, start, end, duration, NULL);
@@ -686,12 +697,14 @@ void eos_lite_anim_fade_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 
 void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
                                       int32_t start, int32_t end,
-                                      uint32_t duration, lv_anim_completed_cb_t completed_cb, void *user_data)
+                                      uint32_t duration, uint32_t delay,
+                                      lv_anim_completed_cb_t completed_cb, void *user_data)
 {
     lv_anim_t a;
     _init_opa_layered_anim(&a, target_obj, start, end, duration, NULL);
@@ -699,6 +712,7 @@ void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
         lv_anim_set_completed_cb(&a, completed_cb);
     if (user_data)
         lv_anim_set_user_data(&a, user_data);
+    lv_anim_set_delay(&a, delay);
     lv_anim_start(&a);
 }
 

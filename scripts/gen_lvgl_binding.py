@@ -35,21 +35,21 @@ HEADER_CODE = r"""
  * @date """ + date.today().strftime("%Y-%m-%d") + r"""
  */
 
-// Third party header files
+/* Third party header files ---------------------------------------*/
 #include <stdlib.h>
 #include <string.h>
 #include "jerryscript.h"
 #include "lvgl.h"
-// ElenaOS header files
+/* ElenaOS header files ---------------------------------------*/
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
 #include "script_engine_core.h"
-#include "elena_os_port.h"
+#include "elena_os_mem.h"
 
-// Macros and Definitions
+/* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj
 
-// Variables
+/* Variables --------------------------------------------------*/
 extern jerry_value_t script_engine_eos_obj;
 
 /********************************** 错误处理辅助函数 **********************************/

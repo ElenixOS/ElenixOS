@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2025-11-07
+ * @date 2025-12-03
  */
 
 // Third party header files
@@ -15,7 +15,7 @@
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
 #include "script_engine_core.h"
-#include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj

@@ -21,6 +21,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_misc.h"
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 typedef struct
 {

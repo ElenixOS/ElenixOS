@@ -17,6 +17,7 @@
 #define EOS_LOG_TAG "VirtualDisplay"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 typedef struct

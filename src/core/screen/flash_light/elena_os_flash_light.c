@@ -31,6 +31,7 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
@@ -58,7 +59,7 @@ static inline void _flash_light_delete(_pressing_user_data_t *ud)
         eos_swipe_panel_delete(ud->sp);
 
     if (ud->mask && lv_obj_is_valid(ud->mask))
-        lv_obj_delete(ud->mask);
+        lv_obj_delete_async(ud->mask);
 
     ud->mask = NULL;
     ud->sp = NULL;

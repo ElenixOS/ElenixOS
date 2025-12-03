@@ -15,6 +15,7 @@
 #include "elena_os_log.h"
 #include "elena_os_theme.h"
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_BLOCKER_VISIBLE 0
@@ -92,7 +93,7 @@ void eos_anim_blocker_hide(void)
     {
         if (!(blocker && lv_obj_is_valid(blocker) && lv_obj_has_class(blocker, &lv_obj_class)))
             return;
-        lv_obj_delete(blocker);
+        lv_obj_delete_async(blocker);
         blocker = NULL;
         is_blocker_show = false;
     }

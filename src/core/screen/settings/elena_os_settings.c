@@ -43,6 +43,7 @@
 #include "elena_os_lang.h"
 #include "elena_os_anim_effects.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -249,7 +250,6 @@ static void _settings_screen_display(lv_event_t *e)
         list, current_lang[STR_ID_SETTINGS_WAKE_ON_RAISE], EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
     lv_obj_add_event_cb(sw, _wake_on_raise_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
-    // TODO: 用于选择亮屏时间的Radio Group
     lv_obj_t *wd_btn = eos_list_add_entry_button(list, current_lang[STR_ID_SETTINGS_WAKE_DURATION]);
     lv_obj_add_event_cb(wd_btn, _wake_duration_entry_button_clicked_cb, LV_EVENT_CLICKED, NULL);
 }

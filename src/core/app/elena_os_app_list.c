@@ -33,6 +33,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
@@ -363,7 +364,7 @@ void eos_app_list_create(void)
 {
     if (app_list_screen)
     {
-        lv_obj_delete(app_list_screen);
+        lv_obj_delete_async(app_list_screen);
     }
     app_list_screen = eos_screen_create();
     // 创建新的页面用于绘制应用列表

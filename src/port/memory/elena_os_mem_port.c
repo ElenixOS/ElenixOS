@@ -25,22 +25,22 @@
 
 /* Function Implementations -----------------------------------*/
 
-EOS_WEAK void *eos_malloc(size_t size)
+EOS_WEAK void *eos_malloc_core(size_t size)
 {
     return malloc(size);
 }
 
-EOS_WEAK void *eos_malloc_zeroed(size_t size)
+EOS_WEAK void *eos_malloc_zeroed_core(size_t size)
 {
     return calloc(1, size);
 }
 
-EOS_WEAK void eos_free(void *ptr)
+EOS_WEAK void eos_free_core(void *ptr)
 {
     free(ptr);
 }
 
-EOS_WEAK void *eos_realloc(void *ptr, size_t new_size)
+EOS_WEAK void *eos_realloc_core(void *ptr, size_t new_size)
 {
     return realloc(ptr, new_size);
 }

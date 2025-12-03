@@ -33,6 +33,7 @@
 #include "elena_os_sensor.h"
 #include "elena_os_fs.h"
 #include "elena_os_dfw.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"

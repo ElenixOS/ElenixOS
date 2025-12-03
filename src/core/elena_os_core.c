@@ -148,7 +148,7 @@ void eos_run(void)
     eos_msg_list_init();
     eos_control_center_init();
     if (logo)
-        lv_obj_delete(logo);
+        lv_obj_delete_async(logo);
     eos_pm_init();
     /************************** 系统启动 **************************/
     eos_scene_init(eos_watchface_create, eos_watchface_delete, eos_app_list_create, eos_watchface_list_create);

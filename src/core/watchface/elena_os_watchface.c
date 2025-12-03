@@ -25,6 +25,8 @@
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
+
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -245,7 +247,7 @@ static void _screen_unloaded_event_cb(lv_event_t *e)
         EOS_LOG_D("Request Stop");
         script_engine_request_stop();
         EOS_LOG_D("[MY_DEBUG_TAG]Delete scr[%p]", watchface_screen);
-        lv_obj_delete(watchface_screen);
+        lv_obj_delete_async(watchface_screen);
         watchface_screen = NULL;
     }
 }
@@ -270,7 +272,7 @@ void eos_watchface_create(void)
     if (watchface_screen && lv_obj_has_class(watchface_screen, &lv_obj_class))
     {
         // 如果不为空则清空
-        lv_obj_delete(watchface_screen);
+        lv_obj_delete_async(watchface_screen);
         watchface_screen = NULL;
     }
     watchface_screen = eos_screen_create();

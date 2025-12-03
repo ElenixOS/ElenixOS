@@ -19,6 +19,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_icon.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _RADIO_ITEM_HEIGHT 100

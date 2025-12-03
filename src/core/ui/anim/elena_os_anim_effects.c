@@ -19,6 +19,7 @@
 #include "elena_os_nav.h"
 #include "elena_os_anim.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ANIM_LIST_DURATION EOS_SCREEN_SWITCH_DURATION
 

@@ -30,14 +30,16 @@ static bool is_app_header_visible_before_anim = false;
 
 static void _snapshot_obj_delete_cb(lv_event_t *e)
 {
-    lv_obj_t *obj = lv_event_get_target(e);
     lv_draw_buf_t *snapshot = lv_event_get_user_data(e);
-    lv_draw_buf_destroy(snapshot);
+    if (snapshot)
+        lv_draw_buf_destroy(snapshot);
 }
 
 static void _anim_complete_cb(lv_anim_t *a)
 {
     lv_obj_delete_async((lv_obj_t *)a->var);
+    if (!scr_to_load)
+        return;
     lv_screen_load(scr_to_load);
     eos_anim_blocker_hide();
     if (scr_to_load == eos_app_list_get_screen())
@@ -57,7 +59,6 @@ static void _anim_exec_cb(void *var, int32_t value)
 {
     lv_image_set_scale(var, value);
     lv_obj_set_style_opa(var, (value - 128) * 255 / 128, 0);
-    EOS_LOG_D("OPA: %d", (value - 128) * 255 / 128);
 }
 
 static void _play_zoom_anim(lv_obj_t *scr,
@@ -66,7 +67,6 @@ static void _play_zoom_anim(lv_obj_t *scr,
                             uint32_t duration,
                             uint32_t delay)
 {
-    // TODO: AppHeader 的显示时机问题
     if (eos_app_header_is_visible())
     {
         EOS_LOG_D("App header is visible before anim");
@@ -129,7 +129,7 @@ lv_obj_t *eos_screen_active(void)
     return lv_screen_active();
 }
 
-static void _async_call(void *user_data)
+static void _enter_app_anim_async_cb(void *user_data)
 {
     _play_zoom_anim(scr_to_load,
                     _ENTER_APP_ANIM_SCALE_START,
@@ -170,7 +170,7 @@ void eos_screen_load(lv_obj_t *scr)
         EOS_LOG_D("Normal Load");
         if ((eos_scene_get_current_type() == EOS_SCENE_NAVIGATION) && (eos_scene_get_last_type() == EOS_SCENE_APP_LIST))
         {
-            lv_async_call(_async_call, NULL);
+            lv_async_call(_enter_app_anim_async_cb, NULL);
             eos_event_add_global_cb(_nav_clean_up_event_cb, EOS_EVENT_NAVIGATION_CLEAN_UP_START, NULL);
         }
         else

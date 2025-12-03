@@ -68,6 +68,7 @@
 #include "elena_os_watchface.h"
 #include "elena_os_config.h"
 #include "elena_os_fs.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_EOS_OBJ_KEY "eos"

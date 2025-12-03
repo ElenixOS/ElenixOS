@@ -18,6 +18,7 @@
 #define EOS_LOG_TAG "LvBindingsMisc"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define BINDING_OBJ script_engine_eos_obj

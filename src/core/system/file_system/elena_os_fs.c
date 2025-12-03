@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "elena_os_log.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define _FILE_NAME_MAX_LENGTH 256
 /* Variables --------------------------------------------------*/

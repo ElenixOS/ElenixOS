@@ -29,6 +29,7 @@
 #include "elena_os_lang.h"
 #include "elena_os_settings.h"
 #include "elena_os_scene.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR

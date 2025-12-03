@@ -194,12 +194,12 @@ void eos_scene_auto_switch(void)
         EOS_LOG_E("Unknown scene");
         return;
     }
-    current_scene->entry();
     // 最后再进入上一个场景的退出函数
     if (exit_func)
     {
         exit_func();
     }
+    current_scene->entry();
 }
 
 static void _screen_load_cb(lv_event_t *e)

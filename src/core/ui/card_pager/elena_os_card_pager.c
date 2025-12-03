@@ -18,6 +18,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_event.h"
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _CARD_PAGER_TOUCH_OBJ_HEIGHT 50
@@ -291,9 +292,9 @@ bool eos_card_pager_remove_page(eos_card_pager_t *cp, uint8_t page_index)
 
     // 释放 LVGL 对象与节点
     if (cur->page)
-        lv_obj_delete(cur->page);
+        lv_obj_delete_async(cur->page);
     if (cur->indicator)
-        lv_obj_delete(cur->indicator);
+        lv_obj_delete_async(cur->indicator);
     eos_free(cur);
 
     cp->page_count--;

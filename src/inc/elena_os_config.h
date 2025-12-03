@@ -80,12 +80,14 @@ extern "C"
  * 选择内存分配策略
  * 可用选项:
  *  - EOS_MEM_STDLIB:       使用标准库的内存分配函数
- *  - EOS_MEM_CUSTOM:       使用自定义的分配函数（覆盖弱定义的eos_malloc等函数即可）
+ *  - EOS_MEM_CUSTOM:       使用自定义的分配函数（覆盖弱定义的eos_malloc_core等函数即可）
  *  - EOS_MEM_AUTO:         使用多级自动分配，参见`elena_os_mem_auto.c`
  */
 #ifndef EOS_MEM_ALLOC_STRATEGY
     #define EOS_MEM_ALLOC_STRATEGY EOS_MEM_STDLIB
 #endif /* EOS_MEM_ALLOC_STRATEGY */
+
+#define EOS_MEM_TRACK_ENABLE LV_USE_MEM_MONITOR
 
 /************************** 传感器配置 **************************/
 

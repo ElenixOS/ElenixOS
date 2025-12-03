@@ -68,7 +68,7 @@ extern "C" {
 
 #define EOS_LOG_D(fmt, ...) EOS_LOG_BASE("DEBUG", EOS_LOG_COLOR_CYAN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
 #define EOS_LOG_I(fmt, ...) EOS_LOG_BASE("INFO",  EOS_LOG_COLOR_GREEN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_W(fmt, ...) EOS_LOG_BASE("WARN",  EOS_LOG_COLOR_YELLOW, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_W(fmt, ...) EOS_LOG_ALL("WARN",  EOS_LOG_COLOR_YELLOW, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
 #define EOS_LOG_E(fmt, ...) EOS_LOG_ALL("ERROR", EOS_LOG_COLOR_RED, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
 
 #endif /* EOS_LOG_DISABLE */

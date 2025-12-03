@@ -18,6 +18,7 @@
 #include "lvgl.h"
 #include "elena_os_sys.h"
 #include "elena_os_icon.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 /**

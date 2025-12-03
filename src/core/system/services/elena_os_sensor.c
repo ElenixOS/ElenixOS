@@ -21,6 +21,7 @@
 #include "elena_os_event.h"
 #include "elena_os_config.h"
 #include "elena_os_dispatcher.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -59,40 +60,40 @@ eos_sensor_t *eos_sensor_get(eos_sensor_type_t type)
 {
     if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
-
-    if (_sensor_count[type] == 0)
+    uint8_t type_idx = type - 1;
+    if (_sensor_count[type_idx] == 0)
         return NULL;
 
-    return _sensor_list[type][0];
+    return _sensor_list[type_idx][0];
 }
 
 eos_sensor_t *eos_sensor_find(eos_sensor_type_t type, uint8_t index)
 {
     if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
-
-    if (index >= _sensor_count[type])
+    uint8_t type_idx = type - 1;
+    if (index >= _sensor_count[type_idx])
         return NULL;
 
-    return _sensor_list[type][index];
+    return _sensor_list[type_idx][index];
 }
 
 eos_sensor_t *eos_sensor_register(eos_sensor_type_t type)
 {
     if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return NULL;
-
-    if (_sensor_count[type] >= EOS_SENSOR_CFG_INST_MAX)
+    uint8_t type_idx = type - 1;
+    if (_sensor_count[type_idx] >= EOS_SENSOR_CFG_INST_MAX)
         return NULL;
 
     eos_sensor_t *s = eos_malloc_zeroed(sizeof(eos_sensor_t));
     EOS_CHECK_PTR_RETURN_VAL(s, NULL);
 
     s->type = type;
-    s->id = _sensor_count[type];
+    s->id = _sensor_count[type_idx];
 
-    _sensor_list[type][_sensor_count[type]] = s;
-    _sensor_count[type]++;
+    _sensor_list[type_idx][_sensor_count[type_idx]] = s;
+    _sensor_count[type_idx]++;
 
     return s;
 }
@@ -101,6 +102,6 @@ uint8_t eos_sensor_get_count(eos_sensor_type_t type)
 {
     if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= _EOS_SENSOR_MAX)
         return 0;
-
-    return _sensor_count[type];
+    uint8_t type_idx = type - 1;
+    return _sensor_count[type_idx];
 }

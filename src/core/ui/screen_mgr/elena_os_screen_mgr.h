@@ -17,7 +17,7 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 /* Public macros ----------------------------------------------*/
-#define EOS_ANIM_PLAY_COEFFICIENT 2
+#define EOS_ANIM_PLAY_COEFFICIENT 1
 #define EOS_APP_LIST_ENTER_APP_ANIM_DELAY 100 * EOS_ANIM_PLAY_COEFFICIENT
 #define EOS_SCREEN_ENTER_APP_ANIM_DURATION 200 * EOS_ANIM_PLAY_COEFFICIENT
 /* Public typedefs --------------------------------------------*/

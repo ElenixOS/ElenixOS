@@ -49,7 +49,7 @@ typedef struct
 #define EOS_MEM_CALLOC_FAST     calloc
 #define EOS_MEM_CALLOC_LARGE    calloc
 
-EOS_WEAK void *eos_malloc(size_t size)
+EOS_WEAK void *eos_malloc_core(size_t size)
 {
     size_t total = size + sizeof(eos_mem_header_t);
     eos_mem_header_t *hdr;
@@ -69,7 +69,7 @@ EOS_WEAK void *eos_malloc(size_t size)
     return (void *)(hdr + 1);
 }
 
-EOS_WEAK void *eos_malloc_zeroed(size_t size)
+EOS_WEAK void *eos_malloc_zeroed_core(size_t size)
 {
     size_t total = size + sizeof(eos_mem_header_t);
     eos_mem_header_t *hdr;
@@ -87,7 +87,7 @@ EOS_WEAK void *eos_malloc_zeroed(size_t size)
     return (void *)(hdr + 1);
 }
 
-EOS_WEAK void eos_free(void *ptr)
+EOS_WEAK void eos_free_core(void *ptr)
 {
     if (!ptr)
         return; // 添加NULL指针检查
@@ -108,10 +108,10 @@ EOS_WEAK void eos_free(void *ptr)
     }
 }
 
-EOS_WEAK void *eos_realloc(void *ptr, size_t new_size)
+EOS_WEAK void *eos_realloc_core(void *ptr, size_t new_size)
 {
     if (!ptr)
-        return eos_malloc(new_size);
+        return eos_malloc_core(new_size);
 
     // 获取原内存块信息
     eos_mem_header_t *old_hdr = (eos_mem_header_t *)ptr - 1;

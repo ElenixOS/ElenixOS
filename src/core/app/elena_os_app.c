@@ -22,6 +22,7 @@
 #include "cJSON.h"
 #include "elena_os_app_list.h"
 #include "elena_os_fs.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
@@ -522,7 +523,7 @@ static void _app_delete_cb(lv_event_t *e)
     if (strcmp(deleted_app_id, obj_app_id) == 0)
     {
         eos_event_remove_cb(obj, EOS_EVENT_APP_UNINSTALLED, _app_delete_cb);
-        lv_obj_delete(obj);
+        lv_obj_delete_async(obj);
     }
 }
 

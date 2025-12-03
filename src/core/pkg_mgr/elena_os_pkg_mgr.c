@@ -18,6 +18,7 @@
 #include "elena_os_log.h"
 #include "elena_os_fs.h"
 #include "elena_os_fs_port.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_PKG_HEADER_LENGTH EOS_PKG_TABLE_OFFSET
 /* Variables --------------------------------------------------*/

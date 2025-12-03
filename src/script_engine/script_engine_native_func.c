@@ -28,6 +28,7 @@
 #include "elena_os_dfw.h"
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/

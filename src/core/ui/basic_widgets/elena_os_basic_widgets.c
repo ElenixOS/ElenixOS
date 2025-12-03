@@ -35,6 +35,7 @@
 #include "elena_os_app_header.h"
 #include "elena_os_app_list.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -657,7 +658,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
 
     // 完成绘制
     lv_canvas_finish_layer(canvas, &layer);
-    lv_obj_delete(canvas);
+    lv_obj_delete_async(canvas);
 
     // 创建图像描述符
     lv_image_dsc_t *dsc = eos_malloc_zeroed(sizeof(lv_image_dsc_t));

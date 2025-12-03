@@ -22,6 +22,7 @@
 #include "elena_os_event.h"
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define NAV_INITIAL_CAPACITY 16 // 初始容量
@@ -205,8 +206,6 @@ eos_result_t eos_nav_clean_up(void)
 
     // 先返回场景再加载新屏幕
     eos_scene_back();
-    // 加载 launcher_screen
-    eos_screen_load(eos_nav.launcher_screen);
 
     // 从栈顶向下清理所有screen
     for (int32_t i = eos_nav.top; i >= 0; i--)
@@ -222,7 +221,7 @@ eos_result_t eos_nav_clean_up(void)
                 }
                 else
                 {
-                    lv_obj_delete(eos_nav.stack[i]); // 彻底删除screen
+                    lv_obj_delete_async(eos_nav.stack[i]); // 彻底删除screen
                 }
 
                 EOS_LOG_D("Screen[%p] Cleared", eos_nav.stack[i]);
@@ -234,6 +233,9 @@ eos_result_t eos_nav_clean_up(void)
             eos_nav.stack[i] = NULL; // 清除指针
         }
     }
+
+    // 加载 launcher_screen
+    eos_screen_load(eos_nav.launcher_screen);
 
     // 释放栈内存
     if (eos_nav.stack != NULL)
@@ -298,7 +300,7 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     if (eos_nav.stack == NULL)
     {
         EOS_LOG_E("Failed to allocate nav stack");
-        lv_obj_delete(home_screen);
+        lv_obj_delete_async(home_screen);
         eos_sem_destroy(eos_nav.semaphore);
         eos_nav.semaphore = NULL;
         _eos_nav_set_state(EOS_NAV_STATE_UNINITIALIZED, true);
@@ -380,7 +382,7 @@ lv_obj_t *eos_nav_scr_create(void)
         if (eos_nav.stack[i] == scr)
         {
             EOS_LOG_E("New screen address conflicts with existing screen!");
-            lv_obj_delete(scr);
+            lv_obj_delete_async(scr);
             _eos_nav_set_state(EOS_NAV_STATE_IDLE, true); // 恢复空闲状态
             _eos_nav_sem_give();
             return NULL;
@@ -444,7 +446,8 @@ eos_result_t eos_nav_back_clean(void)
         return -EOS_ERR_STACK_EMPTY;
     }
 
-    eos_app_header_set_title_anim(eos_nav.stack[eos_nav.top], eos_nav.stack[eos_nav.top - 1], false);
+    if (eos_nav.top > 0)
+        eos_app_header_set_title_anim(eos_nav.stack[eos_nav.top], eos_nav.stack[eos_nav.top - 1], false);
 
     // 如果当前在home_screen（top==0），则清理整个栈
     if (eos_nav.top == NAV_HOME_SCREEN_INDEX)

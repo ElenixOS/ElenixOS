@@ -23,6 +23,7 @@
 #include "elena_os_event.h"
 #include "elena_os_port.h"
 #include "elena_os_anim.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBUG_LAYOUT 0
 
@@ -102,7 +103,7 @@ static void _mark_as_read_anim_end_cb(eos_anim_t *a)
     // 删除容器（自动删除所有子对象）
     if (data->detail_container)
     {
-        lv_obj_delete(data->detail_container);
+        lv_obj_delete_async(data->detail_container);
     }
 
     // 释放数据内存
@@ -341,7 +342,7 @@ void eos_msg_list_item_delete(eos_msg_list_item_t *item)
     // 直接删除容器（LVGL会自动删除子对象）
     if (item->container)
     {
-        lv_obj_delete(item->container);
+        lv_obj_delete_async(item->container);
         item->container = NULL;
     }
 
@@ -428,7 +429,7 @@ void eos_msg_list_clear_all(eos_msg_list_t *msg_list)
         }
         else
         {
-            lv_obj_delete(child);
+            lv_obj_delete_async(child);
         }
     }
 
@@ -534,7 +535,7 @@ static void _msg_list_deleted_cb(lv_event_t *e)
     // 删除无消息标签
     if (list->no_msg_label)
     {
-        lv_obj_delete(list->no_msg_label);
+        lv_obj_delete_async(list->no_msg_label);
         list->no_msg_label = NULL;
     }
 

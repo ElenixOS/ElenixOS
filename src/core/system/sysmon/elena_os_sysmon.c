@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_port.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 

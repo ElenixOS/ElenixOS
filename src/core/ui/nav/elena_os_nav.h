@@ -75,7 +75,7 @@ eos_result_t eos_nav_clean_up(void);
 eos_result_t eos_nav_back_clean(void);
 /**
  * @brief 仅返回上一级，不销毁 screen 对象
- * @warning 在不需要 screen 时，需要手动调用`lv_obj_delete`清除 screen，否则可能导致内存泄漏。
+ * @warning 在不需要 screen 时，需要手动调用`lv_obj_delete_async`清除 screen，否则可能导致内存泄漏。
  */
 eos_result_t eos_nav_back(void);
 /**

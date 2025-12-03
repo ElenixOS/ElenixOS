@@ -18,6 +18,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define GESTURE_AREA_HEIGHT 50
@@ -205,7 +206,7 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
 void eos_swipe_panel_delete(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
-    lv_obj_delete(sp->swipe_obj);
+    lv_obj_delete_async(sp->swipe_obj);
     eos_free(sp);
 }
 

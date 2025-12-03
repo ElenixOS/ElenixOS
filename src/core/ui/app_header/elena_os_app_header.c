@@ -24,6 +24,7 @@
 #include "elena_os_anim.h"
 #include "elena_os_nav.h"
 #include "elena_os_screen_mgr.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120

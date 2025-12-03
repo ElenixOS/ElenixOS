@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #define EOS_LOG_TAG "CircularQueue"
 #include "elena_os_log.h"
-#include "elena_os_port.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define _SHRINK_ENABLE 1
 #define _SHRINK_THRESHOLD (4)  /**< 低于capacity的`_SHRINK_THRESHOLD`时自动收缩 */

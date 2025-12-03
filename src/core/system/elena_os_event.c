@@ -17,6 +17,7 @@
 #include "elena_os_port.h"
 #include "elena_os_config.h"
 #include "lvgl_private.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 /**
  * @brief 事件回调节点结构

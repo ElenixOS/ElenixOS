@@ -77,17 +77,52 @@ extern "C"
 /************************** 内存配置 **************************/
 
 /**
- * 选择内存分配策略
+ * 选择内存分配模式
  * 可用选项:
- *  - EOS_MEM_STDLIB:       使用标准库的内存分配函数
- *  - EOS_MEM_CUSTOM:       使用自定义的分配函数（覆盖弱定义的eos_malloc_core等函数即可）
- *  - EOS_MEM_AUTO:         使用多级自动分配，参见`elena_os_mem_auto.c`
+ *  - EOS_MEM_PROVIDER_STDLIB_CLIB:    使用标准库的内存分配函数
+ *  - EOS_MEM_PROVIDER_AUTO:           使用自动分配方法
+ *  - EOS_MEM_PROVIDER_CUSTOM:         使用自定义的分配函数（覆盖弱定义的`eos_malloc_core()`等函数即可）
  */
-#ifndef EOS_MEM_ALLOC_STRATEGY
-    #define EOS_MEM_ALLOC_STRATEGY EOS_MEM_STDLIB
-#endif /* EOS_MEM_ALLOC_STRATEGY */
+#ifndef EOS_MEM_ALLOC_PROVIDER
+    #define EOS_MEM_ALLOC_PROVIDER EOS_MEM_PROVIDER_AUTO
+#endif /* EOS_MEM_ALLOC_PROVIDER */
 
-#define EOS_MEM_TRACK_ENABLE LV_USE_MEM_MONITOR
+#if EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_AUTO
+    #define EOS_MEM_POOL_ALLOC_THRESHOLD 32/*KB*/ * 1024/*B*/    /**< 分配阈值，单位：字节 */
+
+    #define EOS_MEM_PROVIDER_AUTO_INCLUDE    "mem_mgr.h"
+
+    #define EOS_MEM_ALLOC_FAST malloc
+    #define EOS_MEM_ALLOC_LARGE mem_mgr_alloc
+
+    #define EOS_MEM_FREE_FAST free
+    #define EOS_MEM_FREE_LARGE mem_mgr_free
+
+    #define EOS_MEM_REALLOC_FAST realloc
+    #define EOS_MEM_REALLOC_LARGE mem_mgr_realloc
+
+    #define EOS_MEM_CALLOC_FAST calloc
+    #define EOS_MEM_CALLOC_LARGE mem_mgr_calloc
+#endif /* EOS_MEM_ALLOC_PROVIDER */
+
+/**
+ * 是否让 ElenaOS 覆盖 LVGL 的标准库 malloc
+ * 
+ * - 当此项关闭时：
+ *   LVGL 在需要分配显示相关的大块内存（如图片、截图缓冲等）时，
+ *   最终都会调用 ElenaOS 的 `eos_malloc()` 来完成分配，
+ *   因此这些显示用内存实际上仍由 ElenaOS 分配和管理。
+ *
+ * - 当此项开启时：
+ *   LVGL 的所有内存申请（包括显示相关和其它内部数据）都将完全交由
+ *   ElenaOS 的分配函数处理，由 ElenaOS 统一管理全部内存。
+ */
+#define EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE \
+    (LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM)
+
+#if EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE
+    #define EOS_MEM_TRACK_ENABLE LV_USE_MEM_MONITOR /**< 是否启用内存检测 */
+#endif /* EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE */
 
 /************************** 传感器配置 **************************/
 
@@ -118,7 +153,7 @@ extern "C"
 
 #if EOS_FONT_TYPE == EOS_FONT_C_MULTI
 
-#define EOS_ENABLE_CHINESE_FONT 1
+#define EOS_ENABLE_CHINESE_FONT 0
 
 #if EOS_ENABLE_CHINESE_FONT
 

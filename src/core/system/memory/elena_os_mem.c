@@ -9,9 +9,6 @@
 
 /* Includes ---------------------------------------------------*/
 #include "lvgl.h"
-#if LV_USE_STDLIB_MALLOC != LV_STDLIB_CUSTOM
-#error "LV_USE_STDLIB_MALLOC must be set to LV_STDLIB_CUSTOM"
-#endif /* LV_USE_STDLIB_MALLOC */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,6 +155,8 @@ void *eos_malloc_zeroed(size_t size)
 
 /************************** LVGL **************************/
 
+#if EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE
+
 void lv_mem_init(void)
 {
 #if EOS_MEM_TRACK_ENABLE
@@ -168,7 +167,7 @@ void lv_mem_init(void)
 
 void lv_mem_deinit(void)
 {
-
+    /* Not supported */
 }
 
 lv_mem_pool_t lv_mem_add_pool(void *mem, size_t bytes)
@@ -215,5 +214,8 @@ void lv_mem_monitor_core(lv_mem_monitor_t *mon_p)
 
 lv_result_t lv_mem_test_core(void)
 {
+    /* Not supported */
     return LV_RESULT_OK;
 }
+
+#endif /* EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE */

@@ -88,6 +88,7 @@ static void _play_zoom_anim(lv_obj_t *scr,
     lv_draw_buf_t *snapshot = lv_snapshot_take(
         scr,
         lv_display_get_color_format(lv_display_get_default()));
+    // TODO: 截图使用 eos_malloc 分配内存
     eos_app_header_hide();
     eos_app_header_set_parent(lv_layer_top());
 
@@ -122,10 +123,10 @@ lv_obj_t *eos_screen_active(void)
     EOS_LOG_D("eos_screen_active");
     if (scr_to_load && lv_obj_is_valid(scr_to_load) && lv_obj_has_class(scr_to_load, &lv_obj_class))
     {
-        EOS_LOG_D("[MY_DEBUG_TAG]scr_to_load[%p]", scr_to_load);
+        EOS_LOG_D("scr_to_load[%p]", scr_to_load);
         return scr_to_load;
     }
-    EOS_LOG_D("[MY_DEBUG_TAG]lv_screen_active[%p]", lv_screen_active());
+    EOS_LOG_D("lv_screen_active[%p]", lv_screen_active());
     return lv_screen_active();
 }
 
@@ -151,7 +152,7 @@ static void _nav_clean_up_event_cb(lv_event_t *e)
 
 void eos_screen_load(lv_obj_t *scr)
 {
-    EOS_LOG_D("[MY_DEBUG_TAG]eos_screen_load scr[%p]", scr);
+    EOS_LOG_D("eos_screen_load scr[%p]", scr);
     if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
         return;
     scr_to_load = scr;
@@ -182,7 +183,7 @@ void eos_screen_load(lv_obj_t *scr)
 lv_obj_t *eos_screen_create(void)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
-    EOS_LOG_D("[MY_DEBUG_TAG]eos_screen_create scr[%p]", scr);
+    EOS_LOG_D("eos_screen_create scr[%p]", scr);
     lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
     return scr;
 }

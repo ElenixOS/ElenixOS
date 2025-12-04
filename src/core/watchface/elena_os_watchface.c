@@ -246,7 +246,7 @@ static void _screen_unloaded_event_cb(lv_event_t *e)
     {
         EOS_LOG_D("Request Stop");
         script_engine_request_stop();
-        EOS_LOG_D("[MY_DEBUG_TAG]Delete scr[%p]", watchface_screen);
+        EOS_LOG_D("Delete scr[%p]", watchface_screen);
         lv_obj_delete_async(watchface_screen);
         watchface_screen = NULL;
     }

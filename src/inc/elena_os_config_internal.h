@@ -36,13 +36,13 @@ extern "C" {
 #define EOS_FS_RTTHREAD     3
 #define EOS_FS_CUSTOM       4
 
-#define EOS_MEM_STDLIB      0
-#define EOS_MEM_CUSTOM      1
-#define EOS_MEM_AUTO        2
+#define EOS_MEM_PROVIDER_STDLIB_CLIB 0
+#define EOS_MEM_PROVIDER_AUTO        1
+#define EOS_MEM_PROVIDER_CUSTOM      2
 
 #define EOS_SYSMON_DISABLE          0
 #define EOS_SYSMON_USE_INTERNAL     1
-#define EOS_SYSMON_USE_CUSTOM           2
+#define EOS_SYSMON_USE_CUSTOM       2
 
 /* Public typedefs --------------------------------------------*/
 

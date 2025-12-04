@@ -1,13 +1,13 @@
 /**
  * @file elena_os_mem_auto.c
- * @brief 自动分配内存示例
+ * @brief 自动分配内存
  * @author Sab1e
  * @date 2025-11-18
  */
 
 #include "elena_os_config.h"
 
-#if EOS_MEM_ALLOC_STRATEGY == EOS_MEM_AUTO
+#if EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_AUTO
 
 #include "elena_os_mem_port.h"
 
@@ -16,11 +16,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "elena_os_port.h"
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "MemAuto"
 #include "elena_os_log.h"
 #include "elena_os_config.h"
-
+#include EOS_MEM_PROVIDER_AUTO_INCLUDE
 /* Macros and Definitions -------------------------------------*/
-#define EOS_MEM_POOL_ALLOC_THRESHOLD 1024 /**< 分配阈值，单位：字节 */
 
 typedef enum
 {
@@ -33,23 +34,12 @@ typedef struct
     uint8_t type;                                  /**< 内存类型 */
     uint8_t pad[sizeof(void *) - sizeof(uint8_t)]; /**< 内存对齐 */
 } eos_mem_header_t;
+
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
 
-#define EOS_MEM_ALLOC_FAST      malloc
-#define EOS_MEM_ALLOC_LARGE     malloc
-
-#define EOS_MEM_FREE_FAST       free
-#define EOS_MEM_FREE_LARGE      free
-
-#define EOS_MEM_REALLOC_FAST    realloc
-#define EOS_MEM_REALLOC_LARGE   realloc
-
-#define EOS_MEM_CALLOC_FAST     calloc
-#define EOS_MEM_CALLOC_LARGE    calloc
-
-EOS_WEAK void *eos_malloc_core(size_t size)
+void *eos_malloc_core(size_t size)
 {
     size_t total = size + sizeof(eos_mem_header_t);
     eos_mem_header_t *hdr;
@@ -69,7 +59,7 @@ EOS_WEAK void *eos_malloc_core(size_t size)
     return (void *)(hdr + 1);
 }
 
-EOS_WEAK void *eos_malloc_zeroed_core(size_t size)
+void *eos_malloc_zeroed_core(size_t size)
 {
     size_t total = size + sizeof(eos_mem_header_t);
     eos_mem_header_t *hdr;
@@ -87,10 +77,9 @@ EOS_WEAK void *eos_malloc_zeroed_core(size_t size)
     return (void *)(hdr + 1);
 }
 
-EOS_WEAK void eos_free_core(void *ptr)
+void eos_free_core(void *ptr)
 {
-    if (!ptr)
-        return; // 添加NULL指针检查
+    EOS_CHECK_PTR_RETURN(ptr);
 
     eos_mem_header_t *hdr = (eos_mem_header_t *)ptr - 1;
 
@@ -108,32 +97,35 @@ EOS_WEAK void eos_free_core(void *ptr)
     }
 }
 
-EOS_WEAK void *eos_realloc_core(void *ptr, size_t new_size)
+void *eos_realloc_core(void *ptr, size_t new_size)
 {
-    if (!ptr)
-        return eos_malloc_core(new_size);
+    EOS_CHECK_PTR_RETURN_VAL(ptr, eos_malloc_core(new_size));
 
     // 获取原内存块信息
     eos_mem_header_t *old_hdr = (eos_mem_header_t *)ptr - 1;
-    eos_mem_type_t original_type = old_hdr->type;  // 保持原内存类型
+    eos_mem_type_t original_type = old_hdr->type; // 保持原内存类型
 
     EOS_LOG_D("Realloc:  %zu, keep pool: %s",
-               new_size,
-              original_type == EOS_MEM_POOL_FAST ? "SRAM" : "PSRAM");
+              new_size,
+              original_type == EOS_MEM_POOL_FAST ? "EOS_MEM_POOL_FAST" : "EOS_MEM_POOL_LARGE");
 
     // 始终在原始内存池中realloc
     size_t total = new_size + sizeof(eos_mem_header_t);
     eos_mem_header_t *new_hdr;
 
-    if (original_type == EOS_MEM_POOL_FAST) {
+    if (original_type == EOS_MEM_POOL_FAST)
+    {
         new_hdr = EOS_MEM_REALLOC_FAST(old_hdr, total);
-    } else {
+    }
+    else
+    {
         new_hdr = EOS_MEM_REALLOC_LARGE(old_hdr, total);
     }
 
-    if (!new_hdr) {
+    if (!new_hdr)
+    {
         EOS_LOG_E("Realloc failed for pool: %s",
-                 original_type == EOS_MEM_POOL_FAST ? "SRAM" : "PSRAM");
+                  original_type == EOS_MEM_POOL_FAST ? "EOS_MEM_POOL_FAST" : "EOS_MEM_POOL_LARGE");
         return NULL;
     }
 
@@ -144,4 +136,4 @@ EOS_WEAK void *eos_realloc_core(void *ptr, size_t new_size)
     return (void *)(new_hdr + 1);
 }
 
-#endif /* EOS_MEM_ALLOC_STRATEGY */
+#endif /* EOS_MEM_ALLOC_PROVIDER */

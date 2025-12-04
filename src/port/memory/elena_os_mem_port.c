@@ -7,7 +7,7 @@
 
 #include "elena_os_config.h"
 
-#if (EOS_MEM_ALLOC_STRATEGY == EOS_MEM_STDLIB) || (EOS_MEM_ALLOC_STRATEGY == EOS_MEM_CUSTOM)
+#if (EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_STDLIB_CLIB) || (EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_CUSTOM)
 
 #include "elena_os_mem_port.h"
 
@@ -45,4 +45,4 @@ EOS_WEAK void *eos_realloc_core(void *ptr, size_t new_size)
     return realloc(ptr, new_size);
 }
 
-#endif /* EOS_MEM_ALLOC_STRATEGY */
+#endif /* EOS_MEM_ALLOC_PROVIDER */

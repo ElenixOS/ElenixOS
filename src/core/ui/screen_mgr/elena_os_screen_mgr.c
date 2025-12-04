@@ -32,7 +32,7 @@ static void _snapshot_obj_delete_cb(lv_event_t *e)
 {
     lv_draw_buf_t *snapshot = lv_event_get_user_data(e);
     if (snapshot)
-        lv_draw_buf_destroy(snapshot);
+        eos_draw_buf_destory(snapshot);
 }
 
 static void _anim_complete_cb(lv_anim_t *a)
@@ -85,10 +85,15 @@ static void _play_zoom_anim(lv_obj_t *scr,
 
     // 切换 app header 父对象使其可以被截图
     eos_app_header_set_parent(scr);
-    lv_draw_buf_t *snapshot = lv_snapshot_take(
+    lv_draw_buf_t *snapshot = eos_draw_buf_create(
+        lv_obj_get_width(scr),
+        lv_obj_get_height(scr),
+        lv_display_get_color_format(lv_display_get_default()),
+        0);
+
+    lv_snapshot_take_to_draw_buf(
         scr,
-        lv_display_get_color_format(lv_display_get_default()));
-    // TODO: 截图使用 eos_malloc 分配内存
+        lv_display_get_color_format(lv_display_get_default()),snapshot);
     eos_app_header_hide();
     eos_app_header_set_parent(lv_layer_top());
 

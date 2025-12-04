@@ -19,7 +19,7 @@ extern "C" {
 #include "elena_os_core.h"
 #include "elena_os_sensor.h"
 #include "elena_os_fs_port.h"
-#include "elena_os_mem_port.h"
+
 /* Public macros ----------------------------------------------*/
 /**
  * @brief 函数弱定义宏

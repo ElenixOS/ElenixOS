@@ -84,7 +84,7 @@ extern "C"
  *  - EOS_MEM_PROVIDER_CUSTOM:         使用自定义的分配函数（覆盖弱定义的`eos_malloc_core()`等函数即可）
  */
 #ifndef EOS_MEM_ALLOC_PROVIDER
-    #define EOS_MEM_ALLOC_PROVIDER EOS_MEM_PROVIDER_AUTO
+    #define EOS_MEM_ALLOC_PROVIDER EOS_MEM_PROVIDER_STDLIB_CLIB
 #endif /* EOS_MEM_ALLOC_PROVIDER */
 
 #if EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_AUTO
@@ -107,7 +107,7 @@ extern "C"
 
 /**
  * 是否让 ElenaOS 覆盖 LVGL 的标准库 malloc
- * 
+ *
  * - 当此项关闭时：
  *   LVGL 在需要分配显示相关的大块内存（如图片、截图缓冲等）时，
  *   最终都会调用 ElenaOS 的 `eos_malloc()` 来完成分配，
@@ -153,7 +153,7 @@ extern "C"
 
 #if EOS_FONT_TYPE == EOS_FONT_C_MULTI
 
-#define EOS_ENABLE_CHINESE_FONT 0
+#define EOS_ENABLE_CHINESE_FONT 1
 
 #if EOS_ENABLE_CHINESE_FONT
 

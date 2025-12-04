@@ -58,6 +58,19 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 创建绘制缓冲区
+ * @param w 宽度
+ * @param h 高度
+ * @param cf 色彩格式
+ * @param stride 每行字节数，置`0`则自动计算
+ * @return lv_draw_buf_t* 创建成功则返回绘制缓冲区，否则返回 NULL
+ */
+lv_draw_buf_t *eos_draw_buf_create(uint32_t w, uint32_t h, lv_color_format_t cf, uint32_t stride);
+/**
+ * @brief 销毁绘制缓冲区
+ */
+void eos_draw_buf_destory(lv_draw_buf_t *draw_buf);
+/**
  * @brief 设置开关状态（带有动画）
  * @param sw 目标开关对象
  * @param checked true = 开启，false = 关闭

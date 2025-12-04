@@ -55,6 +55,47 @@
 
 /* Function Implementations -----------------------------------*/
 
+lv_draw_buf_t *eos_draw_buf_create(uint32_t w, uint32_t h, lv_color_format_t cf, uint32_t stride)
+{
+    if (w == 0 || h == 0)
+    {
+        return NULL;
+    }
+
+    uint32_t data_size;
+    if (stride == 0)
+    {
+        data_size = w * h * lv_color_format_get_size(cf);
+    }
+    else
+    {
+        data_size = h * stride;
+    }
+    if (data_size == 0)
+        return NULL;
+    void *data_buf = eos_malloc_zeroed(data_size);
+    EOS_CHECK_PTR_RETURN_VAL(data_buf, NULL);
+    lv_draw_buf_t *draw_buf = eos_malloc_zeroed(sizeof(lv_draw_buf_t));
+    EOS_CHECK_PTR_RETURN_VAL_FREE(data_buf, NULL, data_buf);
+
+    if (lv_draw_buf_init(draw_buf, w, h, cf, stride, data_buf, data_size) != LV_RESULT_OK)
+    {
+        EOS_LOG_E("Init draw buf failed");
+        eos_free(data_buf);
+        eos_free(draw_buf);
+        return NULL;
+    }
+    return draw_buf;
+}
+
+void eos_draw_buf_destory(lv_draw_buf_t *draw_buf)
+{
+    EOS_CHECK_PTR_RETURN(draw_buf);
+    if (draw_buf->data)
+        eos_free(draw_buf->data);
+    eos_free(draw_buf);
+}
+
 static void _back_btn_cb(lv_event_t *e)
 {
     EOS_LOG_D("NAV back");

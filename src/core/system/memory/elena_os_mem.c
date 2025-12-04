@@ -16,7 +16,7 @@
 #include "elena_os_log.h"
 #include "elena_os_config.h"
 #include "elena_os_port.h"
-
+#include "elena_os_mem_port.h"
 /* Macros and Definitions -------------------------------------*/
 #if EOS_MEM_TRACK_ENABLE
 #define EOS_MEM_TRACK_MAX 2048

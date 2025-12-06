@@ -28,8 +28,7 @@
 
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
-#define _HEADER_CLOCK_UPDATE_PERIOD_MS 60000 // 一分钟
-// TODO: 计算出剩余时间，而不是固定一分钟
+#define _HEADER_CLOCK_UPDATE_PERIOD_MINUTES 1   /**< 时钟标签文本更新间隔，单位：分钟 */
 
 #define _HEADER_MARGIN_RIGHT 30
 
@@ -81,16 +80,20 @@ typedef struct
 /* Variables --------------------------------------------------*/
 static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
+static void _clock_update_cb(lv_timer_t *timer);
 
 static char *_get_title_str(eos_app_header_title_t *t)
 {
     return (t->type == APP_HEADER_TITLE_TYPE_ID) ? current_lang[t->data.id] : t->data.string;
 }
 
-static void _free_header_title_data(eos_app_header_title_t *t) {
-    if (!t) return;
-    if (t->type == APP_HEADER_TITLE_TYPE_STRING && t->data.string) {
-        eos_free((void*)t->data.string);
+static void _free_header_title_data(eos_app_header_title_t *t)
+{
+    if (!t)
+        return;
+    if (t->type == APP_HEADER_TITLE_TYPE_STRING && t->data.string)
+    {
+        eos_free((void *)t->data.string);
         t->data.string = NULL;
     }
 }
@@ -222,6 +225,8 @@ void _play_title_changed_anim(void)
 static inline void _app_header_update_clock_label(lv_obj_t *label)
 {
     eos_datetime_t dt = eos_time_get();
+    uint32_t next_ms = (uint32_t)((_HEADER_CLOCK_UPDATE_PERIOD_MINUTES * 60) - dt.sec) * 1000;
+    lv_timer_set_period(app_header->clock_timer, next_ms);
     lv_label_set_text_fmt(label, "%02d:%02d", dt.hour, dt.min);
 }
 
@@ -360,7 +365,7 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
+    // _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
@@ -386,7 +391,7 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
+    // _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
@@ -434,9 +439,10 @@ void eos_app_header_init(void)
     // 时间文字
     app_header->clock_label = lv_label_create(app_header->container);
     lv_obj_add_style(app_header->clock_label, eos_theme_get_label_style(), 0);
+    app_header->clock_timer = lv_timer_create(_clock_update_cb, _HEADER_CLOCK_UPDATE_PERIOD_MINUTES * 60 * 1000, app_header->clock_label);
+    lv_timer_set_repeat_count(app_header->clock_timer, -1);
     _app_header_update_clock_label(app_header->clock_label);
     lv_obj_align(app_header->clock_label, LV_ALIGN_RIGHT_MID, -_HEADER_MARGIN_RIGHT, -20);
-    app_header->clock_timer = lv_timer_create(_clock_update_cb, _HEADER_CLOCK_UPDATE_PERIOD_MS, app_header->clock_label);
 
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);

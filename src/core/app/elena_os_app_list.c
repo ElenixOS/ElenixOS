@@ -34,6 +34,7 @@
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "elena_os_crown.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
@@ -257,8 +258,13 @@ void eos_app_list_get_clicked_icon_center_pos(lv_coord_t *x, lv_coord_t *y)
 {
     if (last_clicked_icon)
     {
-        *x = lv_obj_get_x(last_clicked_icon) + lv_obj_get_width(last_clicked_icon) / 2;
-        *y = lv_obj_get_y(last_clicked_icon) + lv_obj_get_height(last_clicked_icon) / 2;
+        lv_coord_t obj_x, obj_y;
+        lv_area_t area;
+        lv_obj_get_coords(last_clicked_icon, &area);
+        obj_x = area.x1;
+        obj_y = area.y1;
+        *x = obj_x + lv_obj_get_width(last_clicked_icon) / 2;
+        *y = obj_y + lv_obj_get_height(last_clicked_icon) / 2;
     }
     else
     {
@@ -358,6 +364,7 @@ static void _screen_loaded_cb(lv_event_t *e)
     {
         _app_list_play_icon_anim(last_clicked_icon, true);
     }
+    eos_crown_encoder_set_target_obj(app_list_screen);
 }
 
 void eos_app_list_create(void)

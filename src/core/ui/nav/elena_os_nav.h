@@ -100,6 +100,16 @@ eos_nav_state_t eos_nav_get_state(void);
  */
 bool eos_nav_is_state_completed(void);
 
+/**
+ * @brief 通用的导航返回回调函数`lv_event_cb_t`
+ */
+void eos_nav_back_prev_cb(lv_event_t *e);
+
+/**
+ * @brief 通用的导航清理回调函数`lv_event_cb_t`
+ */
+void eos_nav_clean_up_cb(lv_event_t *e);
+
 #ifdef __cplusplus
 }
 #endif

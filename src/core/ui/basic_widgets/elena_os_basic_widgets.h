@@ -58,6 +58,34 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 创建一个标准按钮
+ * @param parent 按钮的父对象
+ * @param txt 按钮文本内容
+ * @param clicked_cb 按钮按下时的回调
+ * @param event_user_data 回调事件的用户数据
+ * @return lv_obj_t* 创建成功则返回`lv_button`对象，否则返回 NULL
+ */
+lv_obj_t *eos_button_create(lv_obj_t *parent,
+                                   const char *txt,
+                                   lv_event_cb_t clicked_cb,
+                                   void *event_user_data);
+/**
+ * @brief 创建一个高级按钮
+ * @param parent 按钮的父对象
+ * @param btn_color 按钮背景色
+ * @param txt 文本
+ * @param txt_color 文本颜色
+ * @param clicked_cb 按钮按下时的回调
+ * @param event_user_data 回调事件的用户数据
+ * @return lv_obj_t* 创建成功则返回`lv_button`对象，否则返回 NULL
+ */
+lv_obj_t *eos_button_create_ex(lv_obj_t *parent,
+                               lv_color_t btn_color,
+                               const char *txt,
+                               lv_color_t txt_color,
+                               lv_event_cb_t clicked_cb,
+                               void *event_user_data);
+/**
  * @brief 创建绘制缓冲区
  * @param w 宽度
  * @param h 高度
@@ -156,33 +184,41 @@ lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt);
  */
 lv_obj_t *eos_list_add_comment(lv_obj_t *list, const char *txt);
 /**
- * @brief 向列表中添加圆形图标的按钮
- *
- * btn{  [icon]  [txt]  }
- *
- * @param list 目标列表
- * @param circle_color 圆形图标的背景色
- * @param icon 图标
- * @param txt 按钮描述文字
- * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
- *
- * 创建失败则返回 NULL
+ * @brief 创建一个圆形图标
+ * @param parent 图标父对象
+ * @param bg_color 圆形图标的背景色
+ * @param icon_src 图标
+ * @return lv_obj_t* 创建成功则返回圆形图标对象，否则返回 NULL
  */
-lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_color, const void *icon, const char *txt);
+lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const void *icon_src);
 /**
  * @brief 向列表中添加圆形图标的按钮
  *
  * btn{  [icon]  [txt]  }
  *
  * @param list 目标列表
- * @param circle_color 圆形图标的背景色
+ * @param bg_color 圆形图标的背景色
+ * @param icon 图标
+ * @param txt 按钮描述文字
+ * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
+ *
+ * 创建失败则返回 NULL
+ */
+lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, const void *icon, const char *txt);
+/**
+ * @brief 向列表中添加圆形图标的按钮
+ *
+ * btn{  [icon]  [txt]  }
+ *
+ * @param list 目标列表
+ * @param bg_color 圆形图标的背景色
  * @param icon 图标
  * @param id 字符串 ID，用于适配多语言
  * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
  *
  * 创建失败则返回 NULL
  */
-lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, lang_string_id_t id);
+lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, lang_string_id_t id);
 /**
  * @brief 向列表内创建滑块
  * @param list 目标列表

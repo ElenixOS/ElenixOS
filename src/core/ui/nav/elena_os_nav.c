@@ -561,3 +561,21 @@ bool eos_nav_is_state_completed(void)
 {
     return eos_nav.state_completed;
 }
+
+void eos_nav_back_prev_cb(lv_event_t *e)
+{
+    EOS_LOG_D("Navigation back event");
+    if (eos_nav_back_clean() != EOS_OK)
+    {
+        EOS_LOG_E("Failed to back prev screen");
+    }
+}
+
+void eos_nav_clean_up_cb(lv_event_t *e)
+{
+    EOS_LOG_D("Navigation clean up event");
+    if (eos_nav_clean_up() != EOS_OK)
+    {
+        EOS_LOG_E("Failed to clean up");
+    }
+}

@@ -28,7 +28,7 @@
 
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
-#define _HEADER_CLOCK_UPDATE_PERIOD_MINUTES 1   /**< 时钟标签文本更新间隔，单位：分钟 */
+#define _HEADER_CLOCK_UPDATE_PERIOD_MINUTES 1 /**< 时钟标签文本更新间隔，单位：分钟 */
 
 #define _HEADER_MARGIN_RIGHT 30
 
@@ -299,6 +299,7 @@ static void _screen_delete_cb(lv_event_t *e)
     if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
         eos_free(t->data.string);
     lv_obj_set_user_data(scr, NULL);
+    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
     eos_event_remove_cb(scr, LV_EVENT_REFRESH, _app_header_lang_changed_cb);
     EOS_LOG_D("Freed t: [%p]", t);
     eos_free(t);
@@ -365,7 +366,6 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    // _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
@@ -391,7 +391,6 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
 
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    // _app_header_update_clock_label(app_header->clock_label); // 提前触发一次同步时钟
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
     lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
 }
@@ -414,6 +413,13 @@ static void _nav_clean_up_reset_label_cb(lv_event_t *e)
     app_header->is_title_label_initialized = false;
 }
 
+void eos_app_header_set_title_color_once(lv_color_t title_text_color)
+{
+    EOS_CHECK_PTR_RETURN(app_header && app_header->title_label);
+    if (lv_obj_is_valid(app_header->title_label))
+        lv_obj_set_style_text_color(app_header->title_label, title_text_color, 0);
+}
+
 void eos_app_header_init(void)
 {
     EOS_LOG_D("Init eos_app_header");
@@ -422,7 +428,7 @@ void eos_app_header_init(void)
     app_header->is_title_label_initialized = false;
 
     // 半透明容器
-    app_header->container = lv_image_create(lv_layer_top());
+    app_header->container = lv_image_create(lv_layer_sys());
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_move_background(app_header->container);

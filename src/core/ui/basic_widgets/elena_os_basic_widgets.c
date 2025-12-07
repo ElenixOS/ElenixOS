@@ -45,7 +45,7 @@
 #define _LIST_LABEL_MARGIN_VER 8
 
 #define _LIST_HEAD_PLACEHOLDER_HEIGHT 110
-#define _LIST_TAIL_PLACEHOLDER_HEIGHT 60
+#define _LIST_TAIL_PLACEHOLDER_HEIGHT 100
 
 #define _LIST_CONTAINER_MARGIN_BOTTOM 8
 
@@ -54,6 +54,37 @@
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
+
+lv_obj_t *eos_button_create_ex(lv_obj_t *parent,
+                               lv_color_t btn_color,
+                               const char *txt,
+                               lv_color_t txt_color,
+                               lv_event_cb_t clicked_cb,
+                               void *event_user_data)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_set_size(btn, lv_pct(100), EOS_THEME_BUTTON_HEIGHT);
+    lv_obj_set_style_bg_color(btn, btn_color, 0);
+    lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, 0);
+
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, txt);
+    lv_obj_set_style_text_color(label, txt_color, 0);
+    lv_obj_center(label);
+
+    if (clicked_cb)
+        lv_obj_add_event_cb(btn, clicked_cb, LV_EVENT_CLICKED, event_user_data);
+
+    return btn;
+}
+
+lv_obj_t *eos_button_create(lv_obj_t *parent,
+                            const char *txt,
+                            lv_event_cb_t clicked_cb,
+                            void *event_user_data)
+{
+    return eos_button_create_ex(parent, EOS_THEME_SECONDARY_COLOR, txt, EOS_COLOR_WHITE, clicked_cb, event_user_data);
+}
 
 lv_draw_buf_t *eos_draw_buf_create(uint32_t w, uint32_t h, lv_color_format_t cf, uint32_t stride)
 {
@@ -96,19 +127,10 @@ void eos_draw_buf_destory(lv_draw_buf_t *draw_buf)
     eos_free(draw_buf);
 }
 
-static void _back_btn_cb(lv_event_t *e)
-{
-    EOS_LOG_D("NAV back");
-    if (eos_nav_back_clean() != EOS_OK)
-    {
-        EOS_LOG_E("BACK ERR");
-    }
-}
-
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 {
     lv_obj_t *btn = lv_button_create(parent);
-    lv_obj_add_event_cb(btn, _back_btn_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, eos_nav_back_prev_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_set_style_border_width(btn, 0, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
 
@@ -222,22 +244,29 @@ lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height)
     return ph;
 }
 
-lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, const char *txt)
+lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const void *icon_src)
+{
+    // 绘制圆形背景
+    lv_obj_t *round = lv_obj_create(parent);
+    lv_obj_set_style_border_width(round, 0, 0);
+    lv_obj_remove_flag(round, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(round, 50, 50);
+    lv_obj_set_style_pad_all(round, 0, 0);
+    lv_obj_set_style_radius(round, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(round, bg_color, 0);
+    // 绘制图像
+    lv_obj_t *icon = lv_label_create(round);
+    lv_label_set_text(icon, icon_src);
+    lv_obj_set_style_translate_y(icon, 2, 0);
+    lv_obj_center(icon);
+    return round;
+}
+
+lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, const char *txt)
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
-    // 绘制圆形背景
-    lv_obj_t *circle = lv_obj_create(btn);
-    lv_obj_set_style_border_width(circle, 0, 0);
-    lv_obj_remove_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(circle, 50, 50);
-    lv_obj_set_style_pad_all(circle, 0, 0);
-    lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(circle, circle_color, 0);
-    // 绘制图像
-    lv_obj_t *icon = lv_image_create(circle);
-    lv_image_set_src(icon, icon_src);
-    lv_obj_center(icon);
+    eos_round_icon_create(btn, bg_color, icon_src);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
     lv_obj_set_style_margin_left(label, 14, 0);
@@ -248,22 +277,11 @@ lv_obj_t *eos_list_add_circle_icon_button(lv_obj_t *list, lv_color_t circle_colo
     return btn;
 }
 
-lv_obj_t *eos_list_add_circle_icon_button_str_id(lv_obj_t *list, lv_color_t circle_color, const void *icon_src, lang_string_id_t id)
+lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, lang_string_id_t id)
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
-    // 绘制圆形背景
-    lv_obj_t *circle = lv_obj_create(btn);
-    lv_obj_set_style_border_width(circle, 0, 0);
-    lv_obj_remove_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(circle, 45, 45);
-    lv_obj_set_style_pad_all(circle, 0, 0);
-    lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(circle, circle_color, 0);
-    // 绘制图像
-    lv_obj_t *icon = lv_image_create(circle);
-    lv_image_set_src(icon, icon_src);
-    lv_obj_center(icon);
+    eos_round_icon_create(btn, bg_color, icon_src);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
     eos_label_set_text_id(label, id);

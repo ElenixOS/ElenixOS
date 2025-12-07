@@ -50,18 +50,16 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define EOS_LOG_TAG "ScriptEngine"
+#include "elena_os_log.h"
 
 #include "lvgl.h"
-
 #include "cJSON.h"
-
 #include "lv_bindings.h"
 #include "lv_bindings_misc.h"
 
 #include "script_engine_native_func.h"
 #include "elena_os_port.h"
-#define EOS_LOG_TAG "ScriptEngine"
-#include "elena_os_log.h"
 #include "elena_os_misc.h"
 #include "elena_os_nav.h"
 #include "elena_os_icon.h"
@@ -83,6 +81,7 @@ typedef struct
     script_pkg_t *current_script; /**< 当前运行的脚本 */
     jerry_value_t old_realm;      /**< 旧realm */
     bool initialized;             /**< 引擎是否初始化 */
+    char *error_info;             /**< 上一次运行的错误信息 */
 } script_engine_context_t;
 /* Variables --------------------------------------------------*/
 jerry_value_t script_engine_eos_obj; /**< 通过此对象访问到所有已注册的函数 */
@@ -91,6 +90,42 @@ static script_engine_context_t engine_ctx = {
     .current_script = NULL,
     .initialized = false};
 /* Function Implementations -----------------------------------*/
+
+void script_engine_set_error_info(const char *msg)
+{
+    if (engine_ctx.error_info)
+    {
+        free(engine_ctx.error_info);
+        engine_ctx.error_info = NULL;
+    }
+
+    if (!msg)
+    {
+        return;
+    }
+
+    size_t len = strlen(msg);
+    engine_ctx.error_info = (char *)malloc(len + 1);
+
+    if (engine_ctx.error_info)
+    {
+        memcpy(engine_ctx.error_info, msg, len + 1);
+    }
+}
+
+const char *script_engine_get_error_info(void)
+{
+    return engine_ctx.error_info ? engine_ctx.error_info : "";
+}
+
+void script_engine_clear_error_info(void)
+{
+    if (engine_ctx.error_info)
+    {
+        free(engine_ctx.error_info);
+        engine_ctx.error_info = NULL;
+    }
+}
 
 #if EOS_COMPILE_MODE == DEUBG
 
@@ -239,30 +274,44 @@ inline void script_engine_set_prop_string(jerry_value_t obj,
  */
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
-    printf("[ERROR][%s]", tag);
     jerry_value_t value = jerry_exception_value(result, false);
-    jerry_char_t str_buf_p[256];
+    jerry_value_t final_str_val = value;
 
-    jerry_size_t req_sz = jerry_string_size(value, JERRY_ENCODING_CESU8);
-
-    if (req_sz <= 255)
+    // 如果不是字符串，则转换成字符串
+    if (!(jerry_value_is_string(value)))
     {
-        if (req_sz <= 1)
+        final_str_val = jerry_value_to_string(value);
+    }
+    // 取字符串长度
+    jerry_size_t req_sz = jerry_string_size(final_str_val, JERRY_ENCODING_CESU8);
+    char *buf = NULL;
+
+    if (req_sz > 0)
+    {
+        buf = (char *)eos_malloc(req_sz + 1);
+        if (buf)
         {
-            printf("unknown error");
+            jerry_string_to_buffer(final_str_val, JERRY_ENCODING_CESU8,
+                                   (jerry_char_t *)buf, req_sz);
+            buf[req_sz] = '\0';
+            EOS_LOG_E("[%s]%s", tag, buf);
+            script_engine_set_error_info(buf);
+
+            eos_free(buf);
         }
         else
         {
-            jerry_string_to_buffer(value, JERRY_ENCODING_CESU8, str_buf_p, req_sz);
-            str_buf_p[req_sz] = '\0';
-            printf("%s", (const char *)str_buf_p);
+            EOS_LOG_E("malloc failed");
+            script_engine_set_error_info("malloc failed");
         }
     }
     else
     {
-        printf("error: buffer isn't big enough");
+        EOS_LOG_E("Unknown error");
+        script_engine_set_error_info("Unknown error");
     }
-    printf("\r\n");
+
+    jerry_value_free(final_str_val);
     jerry_value_free(value);
 }
 /**

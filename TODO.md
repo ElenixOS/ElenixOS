@@ -38,7 +38,7 @@
     - [x] CardPager
       - [x] Indicator
   - [x] Toast
-    - [ ] Toast 消息队列
+    - [x] Toast 消息队列
 - [x] 系统功能测试页面
 - [x] MessageList
   - [x] 修复 obj NULL bug

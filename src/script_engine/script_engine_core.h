@@ -81,6 +81,12 @@ typedef enum {
 } script_engine_result_t;
 
 /* Public function prototypes --------------------------------*/
+
+/**
+ * @brief 获取上一次运行的错误信息
+ * @return const char* 错误信息字符串
+ */
+const char *script_engine_get_error_info(void);
 /**
  * @brief 向指定的JerryScript对象中添加参数 参数为数值型
  * @param obj 目标对象

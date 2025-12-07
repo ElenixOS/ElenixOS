@@ -10,13 +10,13 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#define EOS_LOG_TAG "Toast"
+#include "elena_os_log.h"
 #include "elena_os_theme.h"
 #include "elena_os_img.h"
 #include "elena_os_config.h"
 #include "elena_os_anim.h"
-#define EOS_LOG_DISABLE
-#define EOS_LOG_TAG "Toast"
-#include "elena_os_log.h"
+#include "elena_os_cqueue.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _TOAST_PAD_ALL 12
@@ -41,30 +41,65 @@
 
 #define _TOAST_LABEL_MAX_LENGTH 128
 /* Variables --------------------------------------------------*/
-
+static eos_cqueue_t *anim_cq = NULL;
+static bool is_toast_playing = false;
 /* Function Implementations -----------------------------------*/
+static void _play_move_anim(lv_obj_t *toast);
 
-static void _toast_timer_cb(lv_timer_t *t)
+static void _anim_move_end_cb(lv_anim_t *a)
 {
-    lv_obj_t *toast = lv_timer_get_user_data(t);
-    EOS_CHECK_PTR_RETURN(toast);
-    eos_anim_move_start(toast, 0, _TOAST_MARGIN_TOP, 0, -lv_obj_get_height(toast), _TOAST_ANIM_DURATION, true);
-    lv_timer_del(t);
-}
-
-static void _anim_move_end_cb(eos_anim_t *a)
-{
-    lv_obj_t *label = (lv_obj_t *)eos_anim_get_user_data(a);
-    if (label)
+    lv_obj_t *label = (lv_obj_t *)lv_anim_get_user_data(a);
+    if (label && lv_obj_is_valid(label))
     {
         lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     }
 }
 
+static void _toast_move_back_completed_cb(lv_anim_t *a)
+{
+    // 启动下一个动画
+    if (eos_cqueue_get_size(anim_cq) > 0)
+    {
+        lv_obj_t *next_toast = eos_cqueue_dequeue(anim_cq);
+        if (next_toast && lv_obj_is_valid(next_toast))
+            _play_move_anim(next_toast);
+    }
+    else
+    {
+        is_toast_playing = false;
+    }
+}
+
+static void _toast_start_move_back_cb(lv_anim_t *a)
+{
+    lv_obj_t *toast = lv_anim_get_user_data(a);
+    if (toast && lv_obj_is_valid(toast))
+    {
+        uint32_t duration = (uint32_t)lv_obj_get_user_data(toast);
+        eos_lite_anim_move_ver_start(toast,
+                                     _TOAST_MARGIN_TOP,
+                                     -lv_obj_get_height(toast),
+                                     _TOAST_ANIM_DURATION, duration,
+                                     _toast_move_back_completed_cb, NULL);
+    }
+}
+
+static void _play_move_anim(lv_obj_t *toast)
+{
+    if (!(toast && lv_obj_is_valid(toast)))
+        return;
+    // 动画移入屏幕
+    eos_lite_anim_move_ver_start(toast,
+                                 -lv_obj_get_height(toast),
+                                 _TOAST_MARGIN_TOP,
+                                 _TOAST_ANIM_DURATION, 0,
+                                 _toast_start_move_back_cb, toast);
+}
+
 lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
 {
     // 创建 Toast 容器
-    lv_obj_t *toast = lv_button_create(lv_layer_top());
+    lv_obj_t *toast = lv_button_create(lv_layer_sys());
     lv_obj_set_size(toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_color(toast, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_bg_opa(toast, LV_OPA_COVER, 0);
@@ -117,27 +152,33 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     // 顶部居中
     lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_update_layout(toast);
-
-    // 动画移入屏幕
-    eos_anim_t *a = eos_anim_move_create(toast, 0, -lv_obj_get_height(toast), 0, _TOAST_MARGIN_TOP, _TOAST_ANIM_DURATION, false);
-
-    eos_anim_add_cb(a, _anim_move_end_cb, label);
-    eos_anim_start(a);
+    lv_obj_set_style_translate_y(toast, -lv_obj_get_height(toast), 0);
 
     // 定时器时长计算
-    uint32_t delay = 0;
+    uint32_t duration = 0;
     if (need_scroll)
     {
         // 获取 label 滚动动画的持续时间
         uint32_t anim_dur = lv_obj_get_style_anim_duration(label, 0);
-        delay = _TOAST_SHOW_ANIM_BASE_DURATION + anim_dur; // 滚动完后再加上停留时间
+        duration = _TOAST_SHOW_ANIM_BASE_DURATION + anim_dur; // 滚动完后再加上停留时间
     }
     else
     {
-        delay = _TOAST_SHOW_DURATION;
+        duration = _TOAST_SHOW_DURATION;
     }
-    EOS_LOG_D("Toast will show for %d ms", delay);
-    lv_timer_create(_toast_timer_cb, delay, toast);
+    EOS_LOG_D("Toast will show for %d ms", duration);
+    lv_obj_set_user_data(toast, (void *)(intptr_t)duration);
+    if (is_toast_playing)
+    {
+        if (!eos_cqueue_enqueue(anim_cq, toast))
+            EOS_LOG_E("Toast enqueue failed");
+    }
+    else
+    {
+        is_toast_playing = true;
+        _play_move_anim(toast);
+    }
+
     return toast;
 }
 
@@ -150,4 +191,9 @@ lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...)
     va_end(args);
 
     return eos_toast_show(icon_src, buf);
+}
+
+void eos_toast_init(void)
+{
+    anim_cq = eos_cqueue_create(4);
 }

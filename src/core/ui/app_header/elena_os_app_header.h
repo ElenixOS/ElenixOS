@@ -89,7 +89,18 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title);
  * @param id 标题 ID（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
  */
 void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id);
+/**
+ * @brief 临时设置一次标题文字颜色（当被绑定的 Screen 被删除时恢复原色）
+ * @param title_text_color 标题文本颜色
+ */
+void eos_app_header_set_title_color_once(lv_color_t title_text_color);
+/**
+ * @brief 设置应用头的父对象
+ */
 void eos_app_header_set_parent(lv_obj_t *parent);
+/**
+ * @brief 判断应用头当前是否可见
+ */
 bool eos_app_header_is_visible(void);
 #ifdef __cplusplus
 }

@@ -25,7 +25,6 @@
 #include "elena_os_icon.h"
 #include "elena_os_flash_light.h"
 #include "elena_os_anim.h"
-#include "elena_os_toast.h"
 #include "elena_os_lang.h"
 #include "elena_os_settings.h"
 #include "elena_os_scene.h"

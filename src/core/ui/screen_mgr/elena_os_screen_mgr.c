@@ -95,7 +95,7 @@ static void _play_zoom_anim(lv_obj_t *scr,
         scr,
         lv_display_get_color_format(lv_display_get_default()),snapshot);
     eos_app_header_hide();
-    eos_app_header_set_parent(lv_layer_top());
+    eos_app_header_set_parent(lv_layer_sys());
 
     lv_obj_add_event_cb(snapshot_obj, _snapshot_obj_delete_cb, LV_EVENT_DELETE, snapshot);
     lv_image_set_src(snapshot_obj, snapshot);

@@ -56,7 +56,6 @@
 void eos_settings_slient_mode_on(void)
 {
     eos_speaker_set_volume(0);
-    eos_toast_show_fmt(NULL, RI_NOTIFICATION_OFF_FILL "%s", current_lang[STR_ID_TOAST_SHOW_MUTE]);
     eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, true);
 }
 
@@ -64,7 +63,6 @@ void eos_settings_slient_mode_off(void)
 {
     uint8_t volume = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 20);
     eos_speaker_set_volume(volume);
-    eos_toast_show_fmt(NULL, RI_NOTIFICATION_4_FILL "%s", current_lang[STR_ID_TOAST_SHOW_UNMUTE]);
     eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false);
 }
 
@@ -446,17 +444,15 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
         lv_label_set_long_mode(desc_label, LV_LABEL_LONG_WRAP);
     }
 
-    lv_obj_t *clear_data_btn = lv_button_create(list);
-    lv_obj_set_size(clear_data_btn, lv_pct(100), EOS_THEME_BUTTON_HEIGHT);
-    lv_obj_set_style_margin_bottom(clear_data_btn, 20, 0);
-    lv_obj_set_style_bg_color(clear_data_btn, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_set_style_radius(clear_data_btn, LV_RADIUS_CIRCLE, 0);
+    eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
 
-    lv_obj_t *clear_data_btn_label = lv_label_create(clear_data_btn);
-    lv_label_set_text(clear_data_btn_label, current_lang[STR_ID_SETTINGS_APPS_CLEAR_DATA]);
-    lv_obj_add_event_cb(clear_data_btn, _clear_data_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
-    lv_obj_set_style_text_color(clear_data_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
-    lv_obj_center(clear_data_btn_label);
+    lv_obj_t *clear_data_btn = eos_button_create_ex(
+        list,
+        EOS_THEME_SECONDARY_COLOR,
+        current_lang[STR_ID_SETTINGS_APPS_CLEAR_DATA],
+        EOS_THEME_DANGEROS_COLOR,
+        _clear_data_btn_cb,
+        app_id);
 
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
@@ -465,16 +461,13 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
         lv_obj_add_state(clear_data_btn, LV_STATE_DISABLED);
     }
 
-    lv_obj_t *uninstall_btn = lv_button_create(list);
-    lv_obj_set_size(uninstall_btn, lv_pct(100), EOS_THEME_BUTTON_HEIGHT);
-    lv_obj_set_style_bg_color(uninstall_btn, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_set_style_radius(uninstall_btn, LV_RADIUS_CIRCLE, 0);
-
-    lv_obj_t *uninstall_btn_label = lv_label_create(uninstall_btn);
-    lv_label_set_text(uninstall_btn_label, current_lang[STR_ID_SETTINGS_APPS_UINSTALL]);
-    lv_obj_add_event_cb(uninstall_btn, _uninstall_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
-    lv_obj_set_style_text_color(uninstall_btn_label, EOS_THEME_DANGEROS_COLOR, 0);
-    lv_obj_center(uninstall_btn_label);
+    lv_obj_t *uninstall_btn = eos_button_create_ex(
+        list,
+        EOS_THEME_SECONDARY_COLOR,
+        current_lang[STR_ID_SETTINGS_APPS_UINSTALL],
+        EOS_THEME_DANGEROS_COLOR,
+        _uninstall_btn_cb,
+        app_id);
 }
 
 static void _app_btn_create(lv_obj_t *parent, const char *app_id)
@@ -611,21 +604,21 @@ void eos_settings_create(void)
 
     lv_obj_t *btn;
     // 蓝牙设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_BLUE, RI_BLUETOOTH_FILL, STR_ID_SETTINGS_BLUETOOTH);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_BLUE, RI_BLUETOOTH_FILL, STR_ID_SETTINGS_BLUETOOTH);
     lv_obj_add_event_cb(btn, _settings_screen_bluetooth, LV_EVENT_CLICKED, NULL);
     // 显示设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_ORANGE, RI_SUN_FILL, STR_ID_SETTINGS_DISPLAY);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_ORANGE, RI_SUN_FILL, STR_ID_SETTINGS_DISPLAY);
     lv_obj_add_event_cb(btn, _settings_screen_display, LV_EVENT_CLICKED, NULL);
     // 通知设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_RED, RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_RED, RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
     lv_obj_add_event_cb(btn, _settings_screen_notification, LV_EVENT_CLICKED, NULL);
     // 声音与触感反馈
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUND_AND_HAPTICS);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUND_AND_HAPTICS);
     lv_obj_add_event_cb(btn, _settings_screen_sound_and_haptics, LV_EVENT_CLICKED, NULL);
     // 应用列表
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
     lv_obj_add_event_cb(btn, _settings_screen_apps, LV_EVENT_CLICKED, NULL);
     // 其他设置
-    btn = eos_list_add_circle_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
     lv_obj_add_event_cb(btn, _settings_screen_general, LV_EVENT_CLICKED, NULL);
 }

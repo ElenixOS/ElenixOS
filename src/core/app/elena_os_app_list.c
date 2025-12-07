@@ -35,6 +35,10 @@
 #include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 #include "elena_os_crown.h"
+#include "elena_os_theme.h"
+#include "elena_os_icon.h"
+#include "elena_os_font.h"
+#include "elena_os_std_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
@@ -62,6 +66,7 @@ static void _app_list_settings_cb(lv_event_t *e);
 static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
+static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse);
 
 /**
  * @brief 系统内置应用点击回调
@@ -191,6 +196,7 @@ static void _app_list_refresh(lv_obj_t *container)
  */
 static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
+    lv_obj_t *icon = lv_event_get_target(e);
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
         EOS_LOG_E("Another script running");
@@ -232,16 +238,24 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     script_engine_result_t ret = script_engine_run(pkg);
     if (ret != SE_OK)
     {
-        eos_nav_clean_up();
-        eos_scene_switch(EOS_SCENE_APP_LIST);
+        lv_obj_t *home_scr = eos_nav_get_home_screen();
+        lv_obj_clean(home_scr);
+        lv_obj_remove_style_all(home_scr);
+        eos_app_header_bind_screen_str_id(home_scr, STR_ID_ERROR);
+        eos_app_header_set_title_color_once(EOS_COLOR_RED);
+        char info_str[2048];
+        snprintf(info_str, sizeof(info_str), current_lang[STR_ID_APP_RUN_ERR], ret, app_id);
+        lv_obj_t *list = eos_std_info_create(
+            home_scr,
+            EOS_COLOR_RED,
+            RI_BUG_LINE,
+            current_lang[STR_ID_APP_RUN_ERR_TITLE],
+            info_str,
+            true);
+        snprintf(info_str, sizeof(info_str), "Error: %s", script_engine_get_error_info());
+        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
+        lv_obj_move_to_index(err_label, lv_obj_get_index(err_label) - 1);
         EOS_LOG_E("Script encounter a fatal error");
-        // TODO: 错误处理
-        // lv_obj_t *mbox = lv_msgbox_create(NULL);
-        // lv_obj_set_size(mbox, lv_pct(90),lv_pct(90));
-        // lv_msgbox_add_title(mbox, "Scrip Runtime");
-
-        // lv_msgbox_add_text(mbox, current_lang[STR_ID_SCRIPT_RUN_ERR]);
-        // lv_msgbox_add_close_button(mbox);
     }
     EOS_LOG_D("Script OK");
 }

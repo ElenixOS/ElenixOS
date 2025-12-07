@@ -37,18 +37,12 @@ lv_font_t *eos_font_init(void)
 
 lv_font_t *_select_font(eos_font_size_t size)
 {
-    switch (size)
-    {
-    case EOS_FONT_SIZE_LARGE:
+    if (size >= EOS_FONT_SIZE_LARGE)
         return font_large;
-    case EOS_FONT_SIZE_MEDIUM:
+    else if (size < EOS_FONT_SIZE_LARGE && size > EOS_FONT_SIZE_SMALL)
         return font_medium;
-    case EOS_FONT_SIZE_SMALL:
+    else
         return font_small;
-    default:
-        EOS_LOG_W("Multiple font sizes are not supported");
-        return font_medium;
-    }
 }
 
 void eos_label_set_font_size(lv_obj_t *label, eos_font_size_t size)

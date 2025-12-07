@@ -34,6 +34,10 @@ lv_obj_t * eos_toast_show(const char *icon_src, const char *message);
  * @brief 支持格式化字符串的 Toast 提示
  */
 lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...);
+/**
+ * @brief 初始化 Toast 系统
+ */
+void eos_toast_init(void);
 #ifdef __cplusplus
 }
 #endif

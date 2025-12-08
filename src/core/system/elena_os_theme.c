@@ -80,9 +80,9 @@ void _init_style_screen(void)
     lv_style_init(&style_screen);
     lv_style_set_bg_color(&style_screen, SCREEN_BG_COLOR);
     lv_style_set_bg_opa(&style_screen, LV_OPA_COVER);
-    lv_style_set_radius(&style_screen, EOS_DISPLAY_RADIUS > 0 ? EOS_DISPLAY_RADIUS - 2 : EOS_DISPLAY_RADIUS);
-    lv_style_set_size(&style_screen, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
-    lv_style_set_clip_corner(&style_screen, true);
+    // lv_style_set_radius(&style_screen, EOS_DISPLAY_RADIUS > 0 ? EOS_DISPLAY_RADIUS - 2 : EOS_DISPLAY_RADIUS);
+    // lv_style_set_size(&style_screen, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    // lv_style_set_clip_corner(&style_screen, true);
 }
 
 void _init_style_label(void)

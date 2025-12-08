@@ -527,7 +527,7 @@ static void _settings_screen_apps(lv_event_t *e)
     }
 }
 
-/************************** 更多设置 **************************/
+/************************** 通用设置 **************************/
 
 static void _language_roller_event_handler(lv_event_t *e)
 {

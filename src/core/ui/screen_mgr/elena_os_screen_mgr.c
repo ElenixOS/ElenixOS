@@ -93,7 +93,7 @@ static void _play_zoom_anim(lv_obj_t *scr,
 
     lv_snapshot_take_to_draw_buf(
         scr,
-        lv_display_get_color_format(lv_display_get_default()),snapshot);
+        lv_display_get_color_format(lv_display_get_default()), snapshot);
     eos_app_header_hide();
     eos_app_header_set_parent(lv_layer_sys());
 
@@ -144,17 +144,6 @@ static void _enter_app_anim_async_cb(void *user_data)
                     EOS_APP_LIST_ENTER_APP_ANIM_DELAY);
 }
 
-static void _nav_clean_up_event_cb(lv_event_t *e)
-{
-    lv_obj_t *nav_home_scr = eos_nav_get_home_screen();
-    _play_zoom_anim(nav_home_scr,
-                    _ENTER_APP_ANIM_SCALE_END,
-                    _ENTER_APP_ANIM_SCALE_START,
-                    EOS_SCREEN_ENTER_APP_ANIM_DURATION,
-                    0);
-    eos_event_remove_global_cb(EOS_EVENT_NAVIGATION_CLEAN_UP_START, _nav_clean_up_event_cb);
-}
-
 void eos_screen_load(lv_obj_t *scr)
 {
     EOS_LOG_D("eos_screen_load scr[%p]", scr);
@@ -174,13 +163,27 @@ void eos_screen_load(lv_obj_t *scr)
     else
     {
         EOS_LOG_D("Normal Load");
-        if ((eos_scene_get_current_type() == EOS_SCENE_NAVIGATION) && (eos_scene_get_last_type() == EOS_SCENE_APP_LIST))
+        if (eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_APP_LIST))
         {
+            // 必须异步调用，让scr渲染一帧以便截图
             lv_async_call(_enter_app_anim_async_cb, NULL);
-            eos_event_add_global_cb(_nav_clean_up_event_cb, EOS_EVENT_NAVIGATION_CLEAN_UP_START, NULL);
         }
-        else
+        else if (eos_secne_is_equal(EOS_SCENE_APP_LIST, EOS_SCENE_NAVIGATION))
+        {
             lv_screen_load(scr);
+            lv_obj_t *nav_home_scr = eos_nav_get_home_screen();
+            _play_zoom_anim(nav_home_scr,
+                            _ENTER_APP_ANIM_SCALE_END,
+                            _ENTER_APP_ANIM_SCALE_START,
+                            EOS_SCREEN_ENTER_APP_ANIM_DURATION,
+                            0);
+        }
+        else if (eos_secne_is_equal(EOS_SCENE_APP_LIST, EOS_SCENE_WATCHFACE))
+            lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OVER_TOP, EOS_SCREEN_SWITCH_DURATION, 0, false);
+        else if (eos_secne_is_equal(EOS_SCENE_WATCHFACE, EOS_SCENE_APP_LIST))
+            lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OUT_BOTTOM, EOS_SCREEN_SWITCH_DURATION, 0, false);
+        else
+            lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_IN, EOS_SCREEN_SWITCH_DURATION, 0, false);
     }
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
 }
@@ -190,5 +193,6 @@ lv_obj_t *eos_screen_create(void)
     lv_obj_t *scr = lv_obj_create(NULL);
     EOS_LOG_D("eos_screen_create scr[%p]", scr);
     lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
+    lv_obj_set_style_clip_corner(scr, true, 0);
     return scr;
 }

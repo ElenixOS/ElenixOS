@@ -363,7 +363,7 @@ void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
     t->data.string = eos_strdup(title);
     lv_obj_set_user_data(scr, (void *)t);
     lv_label_set_text(app_header->title_label, title);
-
+    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
@@ -388,7 +388,7 @@ void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
     t->data.id = id;
     lv_obj_set_user_data(scr, (void *)t);
     lv_label_set_text(app_header->title_label, current_lang[id]);
-
+    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
     // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
     // 并在 screen 被删除时触发 LV_EVENT_DELETE
     lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
@@ -405,6 +405,7 @@ void eos_app_header_set_parent(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN(app_header && parent);
     lv_obj_set_parent(app_header->container, parent);
+    lv_obj_move_foreground(app_header->container);
 }
 
 static void _nav_clean_up_reset_label_cb(lv_event_t *e)

@@ -207,6 +207,9 @@ eos_result_t eos_nav_clean_up(void)
     // 先返回场景再加载新屏幕
     eos_scene_back();
 
+    // 加载 launcher_screen
+    eos_screen_load(eos_nav.launcher_screen);
+
     // 从栈顶向下清理所有screen
     for (int32_t i = eos_nav.top; i >= 0; i--)
     {
@@ -233,9 +236,6 @@ eos_result_t eos_nav_clean_up(void)
             eos_nav.stack[i] = NULL; // 清除指针
         }
     }
-
-    // 加载 launcher_screen
-    eos_screen_load(eos_nav.launcher_screen);
 
     // 释放栈内存
     if (eos_nav.stack != NULL)

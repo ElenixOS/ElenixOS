@@ -243,21 +243,18 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         lv_obj_remove_style_all(home_scr);
         eos_app_header_bind_screen_str_id(home_scr, STR_ID_ERROR);
         eos_app_header_set_title_color_once(EOS_COLOR_RED);
-        char info_str[2048];
-        snprintf(info_str, sizeof(info_str), current_lang[STR_ID_APP_RUN_ERR], ret, app_id);
         lv_obj_t *list = eos_std_info_create(
             home_scr,
             EOS_COLOR_RED,
             RI_BUG_LINE,
             current_lang[STR_ID_APP_RUN_ERR_TITLE],
-            info_str,
-            true);
-        snprintf(info_str, sizeof(info_str), "Error: %s", script_engine_get_error_info());
+            current_lang[STR_ID_APP_RUN_ERR]);
+        char info_str[1024];
+        snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s", ret, app_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_move_to_index(err_label, lv_obj_get_index(err_label) - 1);
-        EOS_LOG_E("Script encounter a fatal error");
+        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_nav_clean_up_cb, NULL);
+        EOS_LOG_E("Application encounter a fatal error");
     }
-    EOS_LOG_D("Script OK");
 }
 
 /**
@@ -347,6 +344,13 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
     eos_img_set_size(app_icon, 100, 100);
     lv_obj_center(app_icon);
     lv_obj_add_event_cb(app_icon, _app_icon_clicked_cb, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_update_layout(app_icon);
+    lv_obj_set_style_transform_pivot_x(app_icon, lv_obj_get_width(app_icon) / 2, 0);
+    lv_obj_set_style_transform_pivot_y(app_icon, lv_obj_get_height(app_icon) / 2, 0);
+    lv_obj_set_style_transform_scale(app_icon, 230, LV_STATE_PRESSED);
+    lv_obj_set_style_image_recolor(app_icon, EOS_COLOR_BLACK, LV_STATE_PRESSED);
+    lv_obj_set_style_image_recolor_opa(app_icon, LV_OPA_40, LV_STATE_PRESSED);
 
     return app_icon;
 }

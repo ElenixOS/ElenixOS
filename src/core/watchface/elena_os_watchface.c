@@ -26,6 +26,8 @@
 #include "elena_os_fs.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "elena_os_icon.h"
+#include "elena_os_std_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
@@ -304,7 +306,6 @@ void eos_watchface_create(void)
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
              wf_id);
-    eos_free((void *)wf_id);
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
@@ -317,8 +318,20 @@ void eos_watchface_create(void)
     script_engine_result_t ret = script_engine_run(pkg);
     if (ret != SE_OK)
     {
-        EOS_LOG_E("Script encounter a fatal error");
+        lv_obj_t *list = eos_std_info_create(
+            watchface_screen,
+            EOS_COLOR_RED,
+            RI_BUG_LINE,
+            current_lang[STR_ID_WATCHFACE_RUN_ERR_TITLE],
+            current_lang[STR_ID_WATCHFACE_RUN_ERR]);
+        lv_obj_set_style_pad_top(list, 30, 0);
+        char info_str[1024];
+        snprintf(info_str, sizeof(info_str), "Code: %d\nWFID: %s\nError: %s", ret, wf_id, script_engine_get_error_info());
+        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
+        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_WATCHFACE_SWITCH], _watchface_long_pressed_cb, NULL);
+        EOS_LOG_E("Watchface encounter a fatal error");
     }
+    eos_free((void *)wf_id);
 }
 
 eos_result_t eos_watchface_init(void)

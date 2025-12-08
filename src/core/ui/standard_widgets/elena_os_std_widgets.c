@@ -26,8 +26,7 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
                               lv_color_t icon_bg_color,
                               const char *icon,
                               const char *title_txt,
-                              const char *txt,
-                              bool clear_nav)
+                              const char *txt)
 {
     lv_obj_t *list = eos_list_create(scr);
     lv_obj_set_style_pad_row(list, 20, 0);
@@ -39,18 +38,12 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
     eos_label_set_font_size(title_label, EOS_FONT_SIZE_LARGE);
 
     lv_obj_t *label = lv_label_create(list);
-    if (eos_lang_get == LANG_EN)
-        lv_obj_set_width(label, lv_pct(100));
-    else if (eos_lang_get == LANG_ZH)
-        lv_obj_set_width(label, lv_pct(60));
+    if (eos_lang_get() == LANG_EN)
+        lv_obj_set_width(label, lv_pct(90));
+    else if (eos_lang_get() == LANG_ZH)
+        lv_obj_set_width(label, lv_pct(95));
     else
         lv_obj_set_width(label, lv_pct(80));
     lv_label_set_text(label, txt);
-    lv_obj_t *btn;
-    if (clear_nav)
-        btn = eos_button_create(list, current_lang[STR_ID_BASE_ITEM_BACK], eos_nav_clean_up_cb, NULL);
-    else
-        btn = eos_button_create(list, current_lang[STR_ID_BASE_ITEM_BACK], eos_nav_back_prev_cb, NULL);
-    lv_obj_set_width(btn, lv_pct(80));
     return list;
 }

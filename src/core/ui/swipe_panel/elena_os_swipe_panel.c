@@ -244,10 +244,6 @@ static void _slide_widget_move_done_cb(lv_event_t *e)
 void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
-    if (sp->sw->reversed)
-    {
-        eos_slide_widget_reverse(sp->sw);
-    }
     lv_coord_t base, target;
     switch (sp->dir)
     {
@@ -278,6 +274,10 @@ void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
     else
     {
         lv_obj_set_x(sp->sw->touch_obj, sp->sw->touch_obj_target);
+    }
+    if (!sp->sw->reversed)
+    {
+        eos_slide_widget_reverse(sp->sw);
     }
 }
 

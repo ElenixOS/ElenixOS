@@ -58,6 +58,14 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 判断当前场景过程与指定是否一致
+ * @param current_type 当前场景类型
+ * @param last_type 之前场景类型
+ * @return true
+ * @return false
+ */
+bool eos_secne_is_equal(eos_scene_type_t current_type, eos_scene_type_t last_type);
+/**
  * @brief 获取上一个场景类型
  */
 eos_scene_type_t eos_scene_get_last_type(void);

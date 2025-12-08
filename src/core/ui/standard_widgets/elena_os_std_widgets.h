@@ -29,15 +29,13 @@ extern "C" {
  * @param icon 图标源
  * @param title_txt 标题文本
  * @param txt 正文文本
- * @param clear_nav 返回按钮是否清理整个导航栈
  * @return lv_obj_t* 返回消息页面容器列表
  */
 lv_obj_t *eos_std_info_create(lv_obj_t *scr,
                               lv_color_t icon_bg_color,
                               const char *icon,
                               const char *title_txt,
-                              const char *txt,
-                              bool clear_nav);
+                              const char *txt);
 #ifdef __cplusplus
 }
 #endif

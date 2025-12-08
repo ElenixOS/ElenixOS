@@ -10,7 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
+// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Scene"
 #include "elena_os_log.h"
 #include "elena_os_nav.h"
@@ -80,7 +80,7 @@ static void _set_current_scene(eos_scene_t *scene)
     {
         eos_app_header_hide();
     }
-
+    last_scene = current_scene;
     current_scene = scene;
     if (scene == &watchface_scene)
     {
@@ -94,7 +94,9 @@ static void _set_current_scene(eos_scene_t *scene)
     }
 
 #if EOS_COMPILE_MODE == DEUBG
-    EOS_LOG_I("Current scene: %s", eos_scene_type_t_to_string(current_scene->type));
+    EOS_LOG_I("Current scene: %s. Last scene: %s",
+              eos_scene_type_t_to_string(current_scene->type),
+              last_scene?eos_scene_type_t_to_string(last_scene->type):"NULL");
 #else
     EOS_LOG_I("Current scene: eos_scene_type_t[%d]", current_scene->type);
 #endif /* EOS_COMPILE_MODE */
@@ -102,11 +104,32 @@ static void _set_current_scene(eos_scene_t *scene)
 
 void eos_scene_back(void)
 {
+    EOS_LOG_D("eos_scene_back");
     EOS_CHECK_PTR_RETURN(current_scene);
     if (current_scene == last_scene)
         return;
-    // 返回上一个场景
-    _set_current_scene(last_scene);
+    eos_scene_t *tmp;
+    tmp = last_scene;
+    last_scene = current_scene;
+    current_scene = tmp;
+    if (current_scene == &watchface_scene)
+    {
+        eos_control_center_show();
+        eos_msg_list_show();
+    }
+    else
+    {
+        eos_control_center_hide();
+        eos_msg_list_hide();
+    }
+
+#if EOS_COMPILE_MODE == DEUBG
+    EOS_LOG_I("Current scene: %s. Last scene: %s",
+              eos_scene_type_t_to_string(current_scene->type),
+              last_scene?eos_scene_type_t_to_string(last_scene->type):"NULL");
+#else
+    EOS_LOG_I("Current scene: eos_scene_type_t[%d]", current_scene->type);
+#endif /* EOS_COMPILE_MODE */
 }
 
 eos_scene_type_t eos_scene_get_current_type(void)
@@ -121,6 +144,12 @@ eos_scene_type_t eos_scene_get_last_type(void)
     return last_scene->type;
 }
 
+bool eos_secne_is_equal(eos_scene_type_t current_type, eos_scene_type_t last_type)
+{
+    EOS_CHECK_PTR_RETURN_VAL(current_scene && last_scene, false);
+    return (current_scene->type == current_type) && (last_scene->type == last_type);
+}
+
 void eos_scene_switch(eos_scene_type_t type)
 {
     EOS_CHECK_PTR_RETURN(current_scene);
@@ -128,7 +157,6 @@ void eos_scene_switch(eos_scene_type_t type)
         return;
     if (current_scene->exit && (type != EOS_SCENE_NAVIGATION))
         current_scene->exit();
-    last_scene = current_scene;
     switch (type)
     {
     case EOS_SCENE_WATCHFACE:
@@ -164,7 +192,6 @@ void eos_scene_auto_switch(void)
     {
         exit_func = current_scene->exit;
     }
-
     switch (current_scene->type)
     {
     case EOS_SCENE_WATCHFACE:
@@ -186,7 +213,6 @@ void eos_scene_auto_switch(void)
 #endif /* EOS_SYSTEM_MODE */
     case EOS_SCENE_NAVIGATION:
         // 如果当前在导航页面，切换场景会返回上级页面
-        eos_scene_back();
         eos_nav_back_clean();
         return;
     case EOS_SCENE_UNKNOWN:

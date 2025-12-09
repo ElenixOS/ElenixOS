@@ -116,6 +116,7 @@ void eos_scene_back(void)
     {
         eos_control_center_show();
         eos_msg_list_show();
+        eos_app_header_hide();
     }
     else
     {
@@ -214,6 +215,8 @@ void eos_scene_auto_switch(void)
     case EOS_SCENE_NAVIGATION:
         // 如果当前在导航页面，切换场景会返回上级页面
         eos_nav_back_clean();
+        if(eos_nav_get_state() == EOS_NAV_STATE_IDLE)
+            eos_scene_back();
         return;
     case EOS_SCENE_UNKNOWN:
     default:

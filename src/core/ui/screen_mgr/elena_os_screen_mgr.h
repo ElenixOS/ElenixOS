@@ -25,6 +25,10 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 设置上一次按下的点
+ */
+void eos_screen_set_last_clicked_point(lv_coord_t x, lv_coord_t y);
+/**
  * @brief 获取当前活跃的屏幕
  *
  * 如果设置了`lv_screen_load_anim()`，则返回动画执行的目标屏幕；

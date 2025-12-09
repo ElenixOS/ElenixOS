@@ -29,6 +29,7 @@ extern "C" {
 
 #define EOS_SYS_RES_FONT_DIR EOS_SYS_RES_DIR "font/"
 /************************** 系统配置信息的键 **************************/
+#define EOS_SYS_CFG_KEY_DEVICE_NAME_STR "device_name"
 #define EOS_SYS_CFG_KEY_VERSION_STR "version"
 #define EOS_SYS_CFG_KEY_LANGUAGE_STR "language"
 #define EOS_SYS_CFG_KEY_WATCHFACE_ID_STR "wf_id"
@@ -39,6 +40,10 @@ extern "C" {
 #define EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER "sleep_timeout_sec"
 #define EOS_SYS_CFG_KEY_AOD_MODE_BOOL "aod_mode"
 #define EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL "wake_on_raise"
+/************************** 默认值 **************************/
+#define EOS_SYS_DEFAULT_DEVICE_NAME "Elena Watch"
+#define EOS_SYS_DEFAULT_LANG_STR "English"
+#define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

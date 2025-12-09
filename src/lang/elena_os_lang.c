@@ -64,6 +64,18 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "Clear data",
     [STR_ID_SETTINGS_GENERAL] = "General",
     [STR_ID_SETTINGS_GENERAL_LANGUAGE] = "Language",
+    [STR_ID_SETTINGS_GENERAL_DEVICE_INFO] = "Device info",
+    [STR_ID_SETTINGS_GENERAL_DEVICE_NAME] = "Device name",
+    [STR_ID_SETTINGS_GENERAL_EOS_VER] = "ElenaOS version",
+    [STR_ID_SETTINGS_GENERAL_MARKETING_NAME] = "Marketing name",
+    [STR_ID_SETTINGS_GENERAL_MODEL_NUMBER] = "Model number",
+    [STR_ID_SETTINGS_GENERAL_OPEN_SOURCE] = "Open Source",
+    [STR_ID_SETTINGS_GENERAL_OPEN_SOURCE_CONTENT] = "ElenaOS is open-sourced on GitHub:\n"
+                                                    "https://github.com/\nSab1e-dev/ElenaOS",
+    [STR_ID_SETTINGS_GENERAL_LEGAL_INFO] = "Legal info",
+    [STR_ID_SETTINGS_GENERAL_LEGAL_INFO_CONTENT] = "ElenaOS is licensed under the Apache License, Version 2.0.\n"
+                                                   "See full license at:\n"
+                                                   "https://www.apache.org/\nlicenses/LICENSE-2.0",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS] = "Sound & Haptics",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "Silent Mode",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "Volume",
@@ -121,7 +133,7 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_WAKE_ON_TAP] = "轻点时",
     [STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT] = "选择轻点唤醒Elena Watch的屏幕后，保持唤醒的时长。",
     [STR_ID_SETTINGS_NOTIFICATION] = "通知",
-    [STR_ID_SETTINGS_APPS] = "应用",
+    [STR_ID_SETTINGS_APPS] = "应用程序",
     [STR_ID_SETTINGS_APPS_DETAILS] = "应用详情",
     [STR_ID_SETTINGS_APPS_APPID] = "ID",
     [STR_ID_SETTINGS_APPS_AUTHOR] = "作者",
@@ -131,6 +143,18 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_APPS_CLEAR_DATA] = "删除应用数据",
     [STR_ID_SETTINGS_GENERAL] = "通用",
     [STR_ID_SETTINGS_GENERAL_LANGUAGE] = "语言",
+    [STR_ID_SETTINGS_GENERAL_DEVICE_INFO] = "设备信息",
+    [STR_ID_SETTINGS_GENERAL_DEVICE_NAME] = "设备名称",
+    [STR_ID_SETTINGS_GENERAL_EOS_VER] = "ElenaOS 版本",
+    [STR_ID_SETTINGS_GENERAL_MARKETING_NAME] = "型号名称",
+    [STR_ID_SETTINGS_GENERAL_MODEL_NUMBER] = "型号",
+    [STR_ID_SETTINGS_GENERAL_OPEN_SOURCE] = "开源信息",
+    [STR_ID_SETTINGS_GENERAL_OPEN_SOURCE_CONTENT] = "ElenaOS 已经在 GitHub 开源：\n"
+                                                    "https://github.com/\nSab1e-dev/ElenaOS",
+    [STR_ID_SETTINGS_GENERAL_LEGAL_INFO] = "法律信息",
+    [STR_ID_SETTINGS_GENERAL_LEGAL_INFO_CONTENT] = "ElenaOS 采用 Apache License 2.0 授权。\n"
+                                                   "更多信息请查看：\n"
+                                                   "https://www.apache.org/\nlicenses/LICENSE-2.0",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS] = "声效与触感反馈",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE] = "静音模式",
     [STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME] = "音量",

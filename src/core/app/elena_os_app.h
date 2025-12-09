@@ -43,10 +43,9 @@ extern "C" {
  */
 eos_result_t eos_app_order_move(const char *app_id, size_t new_index);
 /**
- * @brief 获取当前已安装的应用数量，即列表大小
- * @return size_t 列表大小
+ * @brief 获取当前已安装的应用数量
  */
-size_t eos_app_list_size(void);
+uint32_t eos_app_get_installed(void);
 /**
  * @brief 根据索引值获取应用的 id
  * @param index 索引值（0基）

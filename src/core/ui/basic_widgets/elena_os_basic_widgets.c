@@ -58,6 +58,25 @@
 
 /* Function Implementations -----------------------------------*/
 
+void eos_obj_get_coord_center(lv_obj_t *obj, lv_coord_t *x, lv_coord_t *y)
+{
+    if (obj)
+    {
+        lv_coord_t obj_x, obj_y;
+        lv_area_t area;
+        lv_obj_get_coords(obj, &area);
+        obj_x = area.x1;
+        obj_y = area.y1;
+        *x = obj_x + lv_obj_get_width(obj) / 2;
+        *y = obj_y + lv_obj_get_height(obj) / 2;
+    }
+    else
+    {
+        *x = 0;
+        *y = 0;
+    }
+}
+
 lv_obj_t *eos_button_create_ex(lv_obj_t *parent,
                                lv_color_t btn_color,
                                const char *txt,

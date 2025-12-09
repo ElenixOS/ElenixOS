@@ -47,3 +47,15 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
     lv_label_set_text(label, txt);
     return list;
 }
+
+void eos_std_title_comment_create(lv_obj_t *parent,
+                                  const char *title,
+                                  const char *comment)
+{
+    lv_obj_t *lt, *lc;
+    lt = eos_list_add_title(parent, title);
+    eos_label_set_font_size(lt, EOS_FONT_SIZE_LARGE);
+    lc = eos_list_add_comment(parent, comment);
+    lv_obj_set_style_margin_ver(lc, 0, 0);
+    lv_obj_align_to(lc, lt, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+}

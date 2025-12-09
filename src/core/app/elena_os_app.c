@@ -269,7 +269,7 @@ eos_result_t eos_app_order_move(const char *app_id, size_t new_index)
     return _eos_app_order_save();
 }
 
-size_t eos_app_list_size(void)
+uint32_t eos_app_get_installed(void)
 {
     return app_list.size;
 }

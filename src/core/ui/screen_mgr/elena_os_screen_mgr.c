@@ -26,6 +26,7 @@
 /* Variables --------------------------------------------------*/
 static lv_obj_t *scr_to_load = NULL;
 static bool is_app_header_visible_before_anim = false;
+static lv_point_t last_clicked_point;
 /* Function Implementations -----------------------------------*/
 
 static void _snapshot_obj_delete_cb(lv_event_t *e)
@@ -61,11 +62,7 @@ static void _anim_exec_cb(void *var, int32_t value)
     lv_obj_set_style_opa(var, (value - 128) * 255 / 128, 0);
 }
 
-static void _play_zoom_anim(lv_obj_t *scr,
-                            int32_t scale_start,
-                            int32_t scale_end,
-                            uint32_t duration,
-                            uint32_t delay)
+static void _is_app_header_visible(void)
 {
     if (eos_app_header_is_visible())
     {
@@ -77,6 +74,21 @@ static void _play_zoom_anim(lv_obj_t *scr,
         EOS_LOG_D("App header is hidden before anim");
         is_app_header_visible_before_anim = false;
     }
+}
+
+void eos_screen_set_last_clicked_point(lv_coord_t x, lv_coord_t y)
+{
+    last_clicked_point.x = x;
+    last_clicked_point.y = y;
+}
+
+static void _play_zoom_anim(lv_obj_t *scr,
+                            int32_t scale_start,
+                            int32_t scale_end,
+                            uint32_t duration,
+                            uint32_t delay)
+{
+    _is_app_header_visible();
     // 显示动画阻塞层
     eos_anim_blocker_show();
 
@@ -95,7 +107,7 @@ static void _play_zoom_anim(lv_obj_t *scr,
         scr,
         lv_display_get_color_format(lv_display_get_default()), snapshot);
     eos_app_header_hide();
-    eos_app_header_set_parent(lv_layer_sys());
+    eos_app_header_parent_reset();
 
     lv_obj_add_event_cb(snapshot_obj, _snapshot_obj_delete_cb, LV_EVENT_DELETE, snapshot);
     lv_image_set_src(snapshot_obj, snapshot);
@@ -103,9 +115,7 @@ static void _play_zoom_anim(lv_obj_t *scr,
     lv_obj_set_style_clip_corner(snapshot_obj, true, 0);
 
     // 计算 pivot
-    lv_coord_t x, y;
-    eos_app_list_get_clicked_icon_center_pos(&x, &y);
-    lv_image_set_pivot(snapshot_obj, x, y);
+    lv_image_set_pivot(snapshot_obj, last_clicked_point.x, last_clicked_point.y);
 
     // 配置动画
     lv_anim_t a;
@@ -163,12 +173,12 @@ void eos_screen_load(lv_obj_t *scr)
     else
     {
         EOS_LOG_D("Normal Load");
-        if (eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_APP_LIST))
+        if (eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_APP_LIST) || eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_WATCHFACE))
         {
             // 必须异步调用，让scr渲染一帧以便截图
             lv_async_call(_enter_app_anim_async_cb, NULL);
         }
-        else if (eos_secne_is_equal(EOS_SCENE_APP_LIST, EOS_SCENE_NAVIGATION))
+        else if (eos_secne_is_equal(EOS_SCENE_APP_LIST, EOS_SCENE_NAVIGATION) || eos_secne_is_equal(EOS_SCENE_WATCHFACE, EOS_SCENE_NAVIGATION))
         {
             lv_screen_load(scr);
             lv_obj_t *nav_home_scr = eos_nav_get_home_screen();
@@ -183,7 +193,9 @@ void eos_screen_load(lv_obj_t *scr)
         else if (eos_secne_is_equal(EOS_SCENE_WATCHFACE, EOS_SCENE_APP_LIST))
             lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_OUT_BOTTOM, EOS_SCREEN_SWITCH_DURATION, 0, false);
         else
+        {
             lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_IN, EOS_SCREEN_SWITCH_DURATION, 0, false);
+        }
     }
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
 }

@@ -26,6 +26,9 @@ extern "C"
 
 /* 配置开始 ----------------------------------------------------*/
 
+#define ELENA_WATCH_MARKETING_NAME "Elena Watch"    /**< 型号名称 */
+#define ELENA_WATCH_MODEL_NUMBER "S2508(0)"        /**< 型号 */
+
 /**
  * 选择编译模式
  * 可用模式:

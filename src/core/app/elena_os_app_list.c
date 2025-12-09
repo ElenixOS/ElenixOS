@@ -151,7 +151,7 @@ static void _app_list_refresh(lv_obj_t *container)
     else
     {
         // 如果没有JSON顺序文件，按默认顺序添加（app_list 已包含系统应用与已安装应用）
-        size_t app_list_size = eos_app_list_size();
+        size_t app_list_size = eos_app_get_installed();
         for (size_t i = 0; i < app_list_size; i++)
         {
             const char *app_id = eos_app_list_get_id(i);
@@ -267,27 +267,14 @@ static void _app_list_settings_cb(lv_event_t *e)
 
 void eos_app_list_get_clicked_icon_center_pos(lv_coord_t *x, lv_coord_t *y)
 {
-    if (last_clicked_icon)
-    {
-        lv_coord_t obj_x, obj_y;
-        lv_area_t area;
-        lv_obj_get_coords(last_clicked_icon, &area);
-        obj_x = area.x1;
-        obj_y = area.y1;
-        *x = obj_x + lv_obj_get_width(last_clicked_icon) / 2;
-        *y = obj_y + lv_obj_get_height(last_clicked_icon) / 2;
-    }
-    else
-    {
-        *x = 0;
-        *y = 0;
-    }
+    eos_obj_get_coord_center(last_clicked_icon, x, y);
 }
 
 static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse)
 {
     lv_coord_t x, y;
     eos_app_list_get_clicked_icon_center_pos(&x, &y);
+    eos_screen_set_last_clicked_point(x, y);
     int32_t scale_start, scale_end;
     lv_opa_t fade_start, fade_end;
     uint32_t delay;

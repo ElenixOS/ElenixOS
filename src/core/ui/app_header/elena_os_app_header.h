@@ -99,6 +99,10 @@ void eos_app_header_set_title_color_once(lv_color_t title_text_color);
  */
 void eos_app_header_set_parent(lv_obj_t *parent);
 /**
+ * @brief 恢复父级对象
+ */
+void eos_app_header_parent_reset(void);
+/**
  * @brief 判断应用头当前是否可见
  */
 bool eos_app_header_is_visible(void);

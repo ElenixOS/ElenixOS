@@ -36,6 +36,16 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
                               const char *icon,
                               const char *title_txt,
                               const char *txt);
+
+/**
+ * @brief 创建一个标题与注释组合
+ * @param parent 父对象
+ * @param title 标题内容
+ * @param comment 注释内容
+ */
+void eos_std_title_comment_create(lv_obj_t *parent,
+                                  const char *title,
+                                  const char *comment);
 #ifdef __cplusplus
 }
 #endif

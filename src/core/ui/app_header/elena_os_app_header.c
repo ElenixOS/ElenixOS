@@ -408,6 +408,14 @@ void eos_app_header_set_parent(lv_obj_t *parent)
     lv_obj_move_foreground(app_header->container);
 }
 
+void eos_app_header_parent_reset(void)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+    lv_obj_set_parent(app_header->container, lv_layer_sys());
+    lv_obj_move_foreground(app_header->container);
+}
+
+
 static void _nav_clean_up_reset_label_cb(lv_event_t *e)
 {
     lv_label_set_text(app_header->title_label, "");
@@ -428,13 +436,28 @@ void eos_app_header_init(void)
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
     app_header->is_title_label_initialized = false;
 
+    static lv_grad_dsc_t grad;
+    grad.dir = LV_GRAD_DIR_VER;
+    grad.stops_count = 2;
+    grad.stops[0].color = lv_color_black();
+    grad.stops[0].opa = LV_OPA_90;
+    grad.stops[0].frac = 125;
+
+    grad.stops[1].color = lv_color_black();
+    grad.stops[1].opa = LV_OPA_TRANSP;
+    grad.stops[1].frac = 255;
+
     // 半透明容器
-    app_header->container = lv_image_create(lv_layer_sys());
+    app_header->container = lv_obj_create(lv_layer_sys());
+    lv_obj_remove_style_all(app_header->container);
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_move_background(app_header->container);
-    eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
+    // eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
+    lv_obj_set_style_bg_grad(app_header->container, &grad, 0);
+    lv_obj_set_style_bg_opa(app_header->container, LV_OPA_COVER, 0);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_CLICKABLE);
 
     lv_coord_t header_h = _HEADER_HEIGHT;
     lv_coord_t header_w = lv_obj_get_width(app_header->container);

@@ -44,6 +44,8 @@
 #include "elena_os_anim_effects.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "elena_os_font.h"
+#include "elena_os_std_widgets.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -520,7 +522,7 @@ static void _settings_screen_apps(lv_event_t *e)
     lv_obj_t *app_list = eos_list_create(scr);
     eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
 
-    size_t app_list_size = eos_app_list_size();
+    size_t app_list_size = eos_app_get_installed();
     for (size_t i = 0; i < app_list_size; i++)
     {
         _app_btn_create(app_list, eos_app_list_get_id(i));
@@ -579,6 +581,76 @@ static void _settings_screen_language(lv_event_t *e)
     eos_free(sel_str);
 }
 
+static void _settings_screen_device_info(lv_event_t *e)
+{
+    lv_obj_t *scr = eos_nav_scr_create();
+    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
+    eos_screen_load(scr);
+    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_set_style_pad_row(list, 0, 0);
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_DEVICE_NAME],
+                                 eos_sys_cfg_get_string(
+                                     EOS_SYS_CFG_KEY_DEVICE_NAME_STR,
+                                     EOS_SYS_DEFAULT_DEVICE_NAME));
+    eos_list_add_placeholder(list, 20);
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_EOS_VER],
+                                 eos_sys_cfg_get_string(
+                                     EOS_SYS_CFG_KEY_VERSION_STR, ELENA_OS_VERSION_FULL));
+    eos_list_add_placeholder(list, 20);
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_MARKETING_NAME],
+                                 ELENA_WATCH_MARKETING_NAME);
+    eos_list_add_placeholder(list, 20);
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_MODEL_NUMBER],
+                                 ELENA_WATCH_MODEL_NUMBER);
+    eos_list_add_placeholder(list, 20);
+
+    char install_number_str[32];
+    snprintf(install_number_str, sizeof(install_number_str), "%d", eos_app_get_installed());
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_APPS],
+                                 install_number_str);
+    eos_list_add_placeholder(list, 20);
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_OPEN_SOURCE],
+                                 current_lang[STR_ID_SETTINGS_GENERAL_OPEN_SOURCE_CONTENT]);
+
+#if LV_USE_QRCODE
+    lv_obj_t *qr = lv_qrcode_create(list);
+    lv_qrcode_set_size(qr, 200);
+    lv_qrcode_set_dark_color(qr, EOS_COLOR_BLACK);
+    lv_qrcode_set_light_color(qr, EOS_COLOR_WHITE);
+    lv_obj_set_style_margin_all(qr, 20, 0);
+    const char *repo_data = "https://github.com/Sab1e-dev/ElenaOS";
+    lv_qrcode_update(qr, repo_data, strlen(repo_data));
+    lv_obj_set_style_border_color(qr, EOS_COLOR_WHITE, 0);
+    lv_obj_set_style_border_width(qr, 8, 0);
+#endif /* LV_USE_QRCODE */
+
+    eos_std_title_comment_create(list,
+                                 current_lang[STR_ID_SETTINGS_GENERAL_LEGAL_INFO],
+                                 current_lang[STR_ID_SETTINGS_GENERAL_LEGAL_INFO_CONTENT]);
+#if LV_USE_QRCODE
+    qr = lv_qrcode_create(list);
+    lv_qrcode_set_size(qr, 200);
+    lv_qrcode_set_dark_color(qr, EOS_COLOR_BLACK);
+    lv_qrcode_set_light_color(qr, EOS_COLOR_WHITE);
+    lv_obj_set_style_margin_all(qr, 20, 0);
+    const char *legal_data = "https://www.apache.org/licenses/LICENSE-2.0";
+    lv_qrcode_update(qr, legal_data, strlen(legal_data));
+    lv_obj_set_style_border_color(qr, EOS_COLOR_WHITE, 0);
+    lv_obj_set_style_border_width(qr, 8, 0);
+#endif /* LV_USE_QRCODE */
+}
+
 static void _settings_screen_general(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
@@ -591,6 +663,8 @@ static void _settings_screen_general(lv_event_t *e)
     // 语言设置
     btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_LANGUAGE);
     lv_obj_add_event_cb(btn, _settings_screen_language, LV_EVENT_CLICKED, NULL);
+    btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
+    lv_obj_add_event_cb(btn, _settings_screen_device_info, LV_EVENT_CLICKED, NULL);
 }
 
 /************************** 系统设置程序入口 **************************/

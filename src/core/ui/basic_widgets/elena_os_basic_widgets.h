@@ -58,6 +58,13 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief 获取对象的中心坐标
+ * @param obj 目标对象
+ * @param x [out] 中心点 x 坐标
+ * @param y [out] 中心点 y 坐标
+ */
+void eos_obj_get_coord_center(lv_obj_t *obj, lv_coord_t *x, lv_coord_t *y);
+/**
  * @brief 创建一个标准按钮
  * @param parent 按钮的父对象
  * @param txt 按钮文本内容

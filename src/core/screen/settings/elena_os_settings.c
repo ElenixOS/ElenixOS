@@ -46,6 +46,7 @@
 #include "elena_os_mem.h"
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
+#include "elena_os_vibrator.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -180,7 +181,7 @@ static void _wake_on_raise_switch_cb(lv_event_t *e)
     }
 }
 
-static void _radio_list_selection_changed_cb(lv_event_t *e)
+static void _wake_duration_radio_list_selection_changed_cb(lv_event_t *e)
 {
     uint32_t index = (uint32_t)lv_event_get_param(e);
     uint32_t wake_duration = 15;
@@ -204,7 +205,7 @@ static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
     uint32_t timeout_15_item_index = eos_radio_list_add_item(rl, str);
     snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 70);
     uint32_t timeout_70_item_index = eos_radio_list_add_item(rl, str);
-    eos_radio_list_add_event_cb(rl, _radio_list_selection_changed_cb, NULL);
+    eos_radio_list_add_event_cb(rl, _wake_duration_radio_list_selection_changed_cb, NULL);
     eos_radio_list_set_subtitle(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP]);
     eos_radio_list_set_comment(rl, current_lang[STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT]);
     uint32_t timeout = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, 15);
@@ -321,19 +322,69 @@ static void _mute_switch_cb(lv_event_t *e)
     }
 }
 
+static void _haptics_radio_list_selection_changed_cb(lv_event_t *e)
+{
+    uint32_t index = (uint32_t)lv_event_get_param(e);
+    eos_vibrator_strength_t strength = EOS_VIBRATOR_STRENGTH_NORMAL;
+    switch (index)
+    {
+    case 0:
+        strength = EOS_VIBRATOR_STRENGTH_OFF;
+        break;
+    case 1:
+        strength = EOS_VIBRATOR_STRENGTH_NORMAL;
+        break;
+    case 2:
+        strength = EOS_VIBRATOR_STRENGTH_INTENSE;
+        break;
+    default:
+        break;
+    }
+    eos_vibrator_set_strength(strength);
+}
+
+static void _haptics_entry_button_clicked_cb(lv_event_t *e)
+{
+    eos_radio_list_t *rl = eos_radio_list_create(current_lang[STR_ID_SETTINGS_HAPTICS]);
+    eos_radio_list_add_item(rl, current_lang[STR_ID_OFF]);
+    eos_radio_list_add_item(rl, current_lang[STR_ID_NORMAL]);
+    eos_radio_list_add_item(rl, current_lang[STR_ID_INTENSE]);
+    eos_radio_list_set_subtitle(rl, current_lang[STR_ID_SETTINGS_HAPTICS_STRENGTH]);
+    eos_radio_list_add_event_cb(rl, _haptics_radio_list_selection_changed_cb, NULL);
+    eos_vibrator_strength_t s = eos_sys_cfg_get_number(
+        EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER,
+        EOS_VIBRATOR_STRENGTH_NORMAL);
+    switch (s)
+    {
+    case EOS_VIBRATOR_STRENGTH_OFF:
+        eos_radio_list_check(rl, 0);
+        break;
+    case EOS_VIBRATOR_STRENGTH_NORMAL:
+        eos_radio_list_check(rl, 1);
+        break;
+    case EOS_VIBRATOR_STRENGTH_INTENSE:
+        eos_radio_list_check(rl, 2);
+        break;
+    default:
+        break;
+    }
+}
+
 static void _settings_screen_sound_and_haptics(lv_event_t *e)
 {
     lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_SOUND_AND_HAPTICS);
+    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
     eos_screen_load(scr);
 
     lv_obj_t *list = eos_list_create(scr);
 
+    eos_list_add_title(list,current_lang[STR_ID_SETTINGS_SOUNDS_AND_ALERTS]);
+
     lv_obj_t *bt_sw = _auto_get_config_switch_create(
-        list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_SILENT_MODE], EOS_SYS_CFG_KEY_MUTE_BOOL, false);
+        list, current_lang[STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_SILENT_MODE], EOS_SYS_CFG_KEY_MUTE_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _mute_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
-    eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_SOUND_AND_HAPTICS_VOLUME]);
+    eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_VOLUME]);
     lv_label_set_text(ls->minus_label, RI_VOLUME_DOWN_FILL);
     lv_label_set_text(ls->plus_label, RI_VOLUME_UP_FILL);
 
@@ -344,6 +395,11 @@ static void _settings_screen_sound_and_haptics(lv_event_t *e)
     lv_obj_add_event_cb(ls->slider, _volume_slider_released_cb, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(ls->minus_btn, _volume_slider_minus_cb, LV_EVENT_CLICKED, ls->slider);
     lv_obj_add_event_cb(ls->plus_btn, _volume_slider_plus_cb, LV_EVENT_CLICKED, ls->slider);
+
+    eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
+
+    lv_obj_t *h_btn = eos_list_add_entry_button(list, current_lang[STR_ID_SETTINGS_HAPTICS]);
+    lv_obj_add_event_cb(h_btn, _haptics_entry_button_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 
 /************************** 应用列表 **************************/
@@ -687,7 +743,7 @@ void eos_settings_create(void)
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_RED, RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
     lv_obj_add_event_cb(btn, _settings_screen_notification, LV_EVENT_CLICKED, NULL);
     // 声音与触感反馈
-    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUND_AND_HAPTICS);
+    btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
     lv_obj_add_event_cb(btn, _settings_screen_sound_and_haptics, LV_EVENT_CLICKED, NULL);
     // 应用列表
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);

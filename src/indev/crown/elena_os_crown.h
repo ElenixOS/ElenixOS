@@ -46,6 +46,10 @@ void eos_crown_button_report(eos_button_state_t state);
  * @param diff 增量
  */
 void eos_crown_encoder_report(eos_crown_encoder_diff_t diff);
+/**
+ * @brief 初始化
+ */
+void eos_crown_init(void);
 #ifdef __cplusplus
 }
 #endif

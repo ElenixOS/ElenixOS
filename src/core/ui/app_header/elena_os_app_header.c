@@ -224,7 +224,7 @@ void _play_title_changed_anim(void)
  */
 static inline void _app_header_update_clock_label(lv_obj_t *label)
 {
-    eos_datetime_t dt = eos_time_get();
+    eos_datetime_t dt = eos_time_get_core();
     uint32_t next_ms = (uint32_t)((_HEADER_CLOCK_UPDATE_PERIOD_MINUTES * 60) - dt.sec) * 1000;
     lv_timer_set_period(app_header->clock_timer, next_ms);
     lv_label_set_text_fmt(label, "%02d:%02d", dt.hour, dt.min);

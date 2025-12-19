@@ -66,7 +66,6 @@ void eos_watchface_list_create(void)
     lv_obj_set_size(cont, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(cont, 0, 0);
     lv_obj_set_scroll_dir(cont, LV_DIR_HOR);
-    lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);
     lv_obj_center(cont);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(cont,

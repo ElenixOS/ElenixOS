@@ -24,6 +24,7 @@
 #include "elena_os_port.h"
 #include "elena_os_anim.h"
 #include "elena_os_mem.h"
+#include "elena_os_crown.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBUG_LAYOUT 0
 
@@ -550,57 +551,64 @@ static void _msg_list_deleted_cb(lv_event_t *e)
     eos_free(list);
 }
 
+static void _slide_widget_reached_threshold_cb(lv_event_t *e)
+{
+    if (lv_obj_get_y(message_list_instance->swipe_panel->swipe_obj) >= 0)
+        eos_crown_encoder_set_target_obj(message_list_instance->list);
+}
+
 eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
-    eos_msg_list_t *list = eos_malloc_zeroed(sizeof(eos_msg_list_t));
-    EOS_CHECK_PTR_RETURN_VAL_FREE(list, NULL, list);
+    eos_msg_list_t *msg_list = eos_malloc_zeroed(sizeof(eos_msg_list_t));
+    EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list, NULL, msg_list);
     detail_flag = false;
 
-    list->swipe_panel = eos_swipe_panel_create(parent);
-    EOS_CHECK_PTR_RETURN_VAL_FREE(list->swipe_panel, NULL, list);
-    eos_swipe_panel_set_dir(list->swipe_panel, EOS_SWIPE_DIR_DOWN);
+    msg_list->swipe_panel = eos_swipe_panel_create(parent);
+    EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list->swipe_panel, NULL, msg_list);
+    eos_swipe_panel_set_dir(msg_list->swipe_panel, EOS_SWIPE_DIR_DOWN);
+    lv_obj_add_event_cb(msg_list->swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, NULL);
 
-    list->list = lv_list_create(list->swipe_panel->swipe_obj);
-    EOS_CHECK_PTR_RETURN_VAL_FREE(list->list, NULL, list);
-    lv_obj_set_size(list->list, LV_PCT(100), LV_PCT(88));
-    lv_obj_center(list->list);
-    lv_obj_set_style_bg_opa(list->list, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(list->list, 0, 0);
-    lv_obj_set_style_pad_all(list->list, 30, 0);
-    lv_obj_align(list->list, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_user_data(list->list, list);
-    lv_obj_set_scroll_dir(list->list, LV_DIR_VER);
-    lv_obj_add_event_cb(list->list, _msg_list_deleted_cb, LV_EVENT_DELETE, list);
+    msg_list->list = lv_list_create(msg_list->swipe_panel->swipe_obj);
+    EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list->list, NULL, msg_list);
+    lv_obj_set_size(msg_list->list, LV_PCT(100), LV_PCT(88));
+    lv_obj_center(msg_list->list);
+    lv_obj_set_style_bg_opa(msg_list->list, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(msg_list->list, 0, 0);
+    lv_obj_set_style_pad_all(msg_list->list, 30, 0);
+    lv_obj_align(msg_list->list, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_user_data(msg_list->list, msg_list);
+    lv_obj_set_scroll_dir(msg_list->list, LV_DIR_VER);
+    lv_obj_add_event_cb(msg_list->list, _msg_list_deleted_cb, LV_EVENT_DELETE, msg_list);
     // 创建清除所有按钮
-    list->clear_all_btn = lv_button_create(list->list);
-    lv_obj_set_size(list->clear_all_btn, lv_pct(100), 80);
-    lv_obj_remove_flag(list->clear_all_btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(list->clear_all_btn, EOS_COLOR_DARK_GREY_2, 0);
-    lv_obj_set_style_border_width(list->clear_all_btn, 0, 0);
-    lv_obj_set_style_margin_bottom(list->clear_all_btn, _MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
-    lv_obj_set_style_pad_all(list->clear_all_btn, 0, 0);
-    lv_obj_set_style_align(list->clear_all_btn, LV_ALIGN_CENTER, 0);
-    lv_obj_set_style_radius(list->clear_all_btn, 50, 0);
-    lv_obj_set_style_shadow_width(list->clear_all_btn, 0, 0);
+    msg_list->clear_all_btn = lv_button_create(msg_list->list);
+    lv_obj_set_size(msg_list->clear_all_btn, lv_pct(100), 80);
+    lv_obj_remove_flag(msg_list->clear_all_btn, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(msg_list->clear_all_btn, EOS_COLOR_DARK_GREY_2, 0);
+    lv_obj_set_style_border_width(msg_list->clear_all_btn, 0, 0);
+    lv_obj_set_style_margin_bottom(msg_list->clear_all_btn, _MSG_LIST_ITEM_MARGIN_BOTTOM, 0);
+    lv_obj_set_style_pad_all(msg_list->clear_all_btn, 0, 0);
+    lv_obj_set_style_align(msg_list->clear_all_btn, LV_ALIGN_CENTER, 0);
+    lv_obj_set_style_radius(msg_list->clear_all_btn, 50, 0);
+    lv_obj_set_style_shadow_width(msg_list->clear_all_btn, 0, 0);
 
     // 初始时隐藏清除按钮
-    lv_obj_add_flag(list->clear_all_btn, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(msg_list->clear_all_btn, LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_t *clear_all_label = lv_label_create(list->clear_all_btn);
+    lv_obj_t *clear_all_label = lv_label_create(msg_list->clear_all_btn);
     eos_label_set_text_id(clear_all_label, STR_ID_MSG_LIST_CLEAR_ALL);
 
     lv_obj_center(clear_all_label);
 
-    lv_obj_add_event_cb(list->clear_all_btn, _msg_list_clear_all_btn_cb, LV_EVENT_CLICKED, list);
+    lv_obj_add_event_cb(msg_list->clear_all_btn, _msg_list_clear_all_btn_cb, LV_EVENT_CLICKED, msg_list);
 
     // 创建无消息标签
-    list->no_msg_label = lv_label_create(list->swipe_panel->swipe_obj);
-    eos_label_set_text_id(list->no_msg_label, STR_ID_MSG_LIST_NO_MSG);
+    msg_list->no_msg_label = lv_label_create(msg_list->swipe_panel->swipe_obj);
+    eos_label_set_text_id(msg_list->no_msg_label, STR_ID_MSG_LIST_NO_MSG);
 
-    lv_obj_center(list->no_msg_label);
+    lv_obj_center(msg_list->no_msg_label);
 
-    return list;
+    return msg_list;
 }
 
 void eos_msg_list_hide(void)

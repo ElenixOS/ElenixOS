@@ -31,6 +31,7 @@
 #include "elena_os_mem.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_basic_widgets.h"
+#include "elena_os_crown.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
@@ -106,6 +107,8 @@ static void _slide_widget_reached_threshold_cb(lv_event_t *e)
 {
     lv_obj_t *container = (lv_obj_t *)lv_event_get_user_data(e);
     lv_obj_scroll_to_y(container, 0, LV_ANIM_OFF);
+    if (lv_obj_get_y(control_center_instance->swipe_panel->swipe_obj) < EOS_DISPLAY_HEIGHT)
+        eos_crown_encoder_set_target_obj(container);
 }
 
 /************************** 基础组件 **************************/
@@ -409,7 +412,6 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     lv_obj_set_style_pad_column(container, 20, 0); // 列间距
     lv_obj_set_style_pad_row(container, 8, 0);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
-    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_flex_align(container,
                           LV_FLEX_ALIGN_CENTER, // 主轴（水平方向）从头开始（靠左）
                           LV_FLEX_ALIGN_CENTER, // 交叉轴（垂直方向）居中

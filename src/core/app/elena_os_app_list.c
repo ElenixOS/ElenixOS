@@ -388,7 +388,6 @@ void eos_app_list_create(void)
     lv_obj_set_style_pad_row(container, 20, 0);
     lv_obj_set_size(container, lv_pct(100), lv_pct(100));
     lv_obj_set_scroll_dir(container, LV_DIR_VER);
-    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_center(container);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_flex_align(container,

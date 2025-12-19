@@ -19,7 +19,8 @@ extern "C" {
 #include "elena_os_core.h"
 #include "elena_os_sensor.h"
 #include "elena_os_fs_port.h"
-
+#include "elena_os_port_sensor.h"
+#include "elena_os_time.h"
 /* Public macros ----------------------------------------------*/
 /**
  * @brief 函数弱定义宏
@@ -93,28 +94,12 @@ void eos_bluetooth_disable(void);
  * @note 推荐使用RTC获取时间
  * @warning 请自行同步时间，确保获取的是准确时间
  */
-eos_datetime_t eos_time_get(void);
+eos_datetime_t eos_time_get_core(void);
 /**
  * @brief 设置屏幕亮度
  * @param brightness 亮度值（0~100）
  */
 void eos_display_set_brightness(uint8_t brightness);
-/**
- * @brief 异步读取一次传感器的值
- *
- * 示例用法：
- * 提前创建读取线程，在此函数中启动线程，开始读取传感器，读取完毕后上报数据。
- * @param type 传感器类型
- * @note 读取完毕后，必须使用`eos_sensor_report()`上报读取结果，否则上层无法得知传感器数据
- * @warning 禁止在函数中执行高耗时任务
- */
-void eos_sensor_read_async(eos_sensor_type_t type);
-/**
- * @brief 同步读取一次传感器的值
- * @param type 传感器类型
- * @param out 传感器读取结果
- */
- void eos_sensor_read_sync(eos_sensor_type_t type, eos_sensor_t *out);
 /**
  * @brief 定位手机
  *

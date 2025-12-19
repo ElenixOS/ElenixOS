@@ -52,6 +52,8 @@
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_toast.h"
+#include "elena_os_vibrator.h"
+#include "elena_os_crown.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -125,6 +127,8 @@ void eos_run(void)
 #endif /* EOS_DFW_ENABLE */
     eos_dispatcher_init();
     eos_toast_init();
+    eos_vibrator_init();
+    eos_crown_init();
     script_engine_init();
     eos_sys_init();
     lv_font_t *default_font = eos_font_init();

@@ -202,7 +202,6 @@ lv_obj_t *eos_list_create(lv_obj_t *parent)
     lv_obj_set_style_pad_ver(list, 0, 0);
     lv_obj_set_style_pad_hor(list, 10, 0);
     lv_obj_center(list);
-    lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_style_pad_top(list, _LIST_HEAD_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_style_pad_bottom(list, _LIST_TAIL_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_flex_align(list, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);

@@ -28,7 +28,7 @@
 #include "elena_os_mem.h"
 #include "elena_os_icon.h"
 #include "elena_os_std_widgets.h"
-
+#include "elena_os_ww_clock_hand.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -316,6 +316,12 @@ void eos_watchface_create(void)
     lv_obj_add_event_cb(watchface_screen, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // 正式运行表盘脚本（脚本禁止阻塞线程）
     script_engine_result_t ret = script_engine_run(pkg);
+    lv_obj_t *h = eos_clock_hand_create(watchface_screen, EOS_SYS_RES_IMG_DIR "clock_hand.bin", EOS_CLOCK_HAND_SECOND, 10, 176);
+    eos_clock_hand_center(h);
+    h = eos_clock_hand_create(watchface_screen, EOS_SYS_RES_IMG_DIR "clock_hand.bin", EOS_CLOCK_HAND_MINUTE, 10, 176);
+    eos_clock_hand_center(h);
+    lv_obj_set_style_image_recolor(h, EOS_COLOR_RED, 0);
+    lv_obj_set_style_image_recolor_opa(h, LV_OPA_60, 0);
     if (ret != SE_OK)
     {
         lv_obj_t *list = eos_std_info_create(

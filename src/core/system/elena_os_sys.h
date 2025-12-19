@@ -40,6 +40,7 @@ extern "C" {
 #define EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER "sleep_timeout_sec"
 #define EOS_SYS_CFG_KEY_AOD_MODE_BOOL "aod_mode"
 #define EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL "wake_on_raise"
+#define EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER "vibrator_strength"
 /************************** 默认值 **************************/
 #define EOS_SYS_DEFAULT_DEVICE_NAME "Elena Watch"
 #define EOS_SYS_DEFAULT_LANG_STR "English"

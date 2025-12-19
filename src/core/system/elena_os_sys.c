@@ -34,6 +34,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_dfw.h"
 #include "elena_os_mem.h"
+#include "elena_os_vibrator.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -395,6 +396,11 @@ void eos_sys_init()
         eos_speaker_set_volume(volume);
         EOS_LOG_I("Volume: %d", volume);
     }
+
+    // 震动强度
+    uint8_t strength = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_VIBRATOR_STRENGTH_NORMAL);
+    eos_vibrator_set_strength(strength);
+    EOS_LOG_I("Vibrator strength: %d", strength);
 }
 
 /**

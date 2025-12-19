@@ -68,19 +68,6 @@ typedef enum
     EOS_BUTTON_STATE_DOUBLE_CLICKED
 } eos_button_state_t;
 
-/**
- * @brief 时间结构体定义
- */
-typedef struct
-{
-    uint16_t year;
-    uint8_t month;
-    uint8_t day;
-    uint8_t hour;
-    uint8_t min;
-    uint8_t sec;
-    uint8_t day_of_week;    /**< 取值范围[0,6] */
-} eos_datetime_t;
 /* Public function prototypes --------------------------------*/
 
 /**

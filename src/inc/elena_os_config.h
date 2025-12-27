@@ -257,7 +257,7 @@ extern "C"
 
 // 是否启用断言
 #define EOS_USE_ASSERT 1
-#define EOS_ASSERT_HANDLER while(1);
+#define EOS_ASSERT_HANDLER __builtin_trap();
 
 // 是否启用彩色日志
 #define EOS_LOG_USE_COLOR 0

@@ -1,16 +1,17 @@
-﻿/**
- * @file script_engine_native_func.c
- * @brief 原生函数实现及注册
+/**
+ * @file eos_bindings.c
+ * @brief EOS 绑定
  * @author Sab1e
- * @date 2025-07-26
+ * @date 2025-12-27
  */
 
+#include "eos_bindings.h"
+
 /* Includes ---------------------------------------------------*/
-#include "script_engine_native_func.h"
-#include "jerryscript.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "jerryscript.h"
 #include "cJSON.h"
 #include "lvgl.h"
 #include "script_engine_core.h"
@@ -20,7 +21,7 @@
 #include "elena_os_app.h"
 #include "elena_os_watchface.h"
 #include "elena_os_misc.h"
-#define EOS_LOG_TAG "ScriptEngineNativeFunc"
+#define EOS_LOG_TAG "EOS Bindings"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_basic_widgets.h"
@@ -29,19 +30,89 @@
 #include "elena_os_app_header.h"
 #include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "lvgl_js_bridge.h"
+#include "elena_os_ww_clock_hand.h"
+#include "script_engine_core.h"
+#include "script_engine_utils.h"
+
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-/********************************** 错误处理 **********************************/
-static jerry_value_t throw_error(const char *message)
-{
-    EOS_LOG_E("%s", message);
-    jerry_value_t error_obj = jerry_error_sz(JERRY_ERROR_TYPE, (const jerry_char_t *)message);
-    return jerry_throw_value(error_obj, true);
-}
+
 /********************************** 辅助函数 **********************************/
+
+static char *_get_assets_file_str(jerry_value_t obj)
+{
+    if (jerry_value_is_undefined(obj) || jerry_value_is_null(obj))
+    {
+        return NULL;
+    }
+
+    if (!jerry_value_is_string(obj))
+    {
+        return NULL;
+    }
+
+    // 取 JS 字符串
+    jerry_size_t src_len = jerry_string_size(obj, JERRY_ENCODING_UTF8);
+    char *src = eos_malloc(src_len + 1);
+    if (!src)
+    {
+        return NULL;
+    }
+
+    jerry_string_to_buffer(obj, JERRY_ENCODING_UTF8,
+                           (jerry_char_t *)src, src_len);
+    src[src_len] = '\0';
+
+    // 生成完整路径
+    char path[PATH_MAX];
+
+    const char *script_id = script_engine_get_current_script_id();
+    if (!script_id)
+    {
+        eos_free(src);
+        return NULL;
+    }
+
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
+    {
+        snprintf(path, sizeof(path),
+                 EOS_APP_INSTALLED_DIR "%s/assets/%s",
+                 script_id, src);
+    }
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
+    {
+        snprintf(path, sizeof(path),
+                 EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
+                 script_id, src);
+    }
+    else
+    {
+        eos_free(src);
+        return NULL;
+    }
+
+    eos_free(src);
+
+    if (!eos_is_file(path))
+    {
+        return NULL;
+    }
+
+    char *ret = eos_malloc(strlen(path) + 1);
+    if (!ret)
+    {
+        return NULL;
+    }
+
+    strcpy(ret, path);
+    EOS_LOG_D("Image Path: %s", ret);
+    return ret;
+}
+
 // 内部工具函数：写入配置文件
 static bool config_write_to_file(cJSON *root)
 {
@@ -140,15 +211,6 @@ static cJSON *config_load_from_file(void)
 /********************************** 原生函数定义 **********************************/
 /**
  * @brief 处理 JavaScript 的 print 调用
- *
- * 将所有参数转换为字符串并打印到标准输出。
- * 每个参数之间以空格分隔，末尾换行。
- * 适用于 JerryScript 引擎的原生函数绑定。
- *
- * @param call_info_p 指向调用信息的指针，当前未使用，可忽略。类型为 const jerry_call_info_t*。
- * @param args_p 参数数组，包含所有传入的 JavaScript 参数。类型为 const jerry_value_t[]。
- * @param args_count 参数数量，表示 args_p 数组的长度。类型为 jerry_length_t。
- * @return 返回一个未定义值（jerry_undefined），表示没有返回结果。
  */
 jerry_value_t js_print_handler(const jerry_call_info_t *call_info_p,
                                const jerry_value_t args_p[],
@@ -213,7 +275,7 @@ static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
 {
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
-        return throw_error("Watchface can't create screen");
+        return script_engine_throw_error("Watchface can't create screen");
     }
     // 调用底层函数
     lv_obj_t *ret_value = eos_nav_scr_create();
@@ -221,13 +283,7 @@ static jerry_value_t js_eos_nav_scr_create(const jerry_call_info_t *call_info_p,
     // 处理返回值
     jerry_value_t js_result;
     // 包装为LVGL对象
-    js_result = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), cls));
-    jerry_value_free(ptr);
-    jerry_value_free(cls);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_OBJ);
 
     return js_result;
 }
@@ -242,7 +298,7 @@ static jerry_value_t js_eos_nav_back(const jerry_call_info_t *call_info_p,
 {
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
-        return throw_error("Using navigation in the watchface is prohibited");
+        return script_engine_throw_error("Using navigation in the watchface is prohibited");
     }
     // 调用底层函数
     script_engine_result_t ret = eos_nav_back_clean();
@@ -268,80 +324,20 @@ static jerry_value_t js_lv_image_set_src(const jerry_call_info_t *call_info_p,
     // 参数数量检查
     if (argc < 2)
     {
-        return throw_error("Insufficient arguments");
+        return script_engine_throw_error("Insufficient arguments");
     }
 
     // 解析参数: obj (lv_obj_t*)
     // 对象类型参数，支持null
-    void *arg_obj = NULL;
-    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0]))
-    {
-        jerry_value_t js_arg_obj = args[0];
-        if (!jerry_value_is_object(js_arg_obj))
-        {
-            return throw_error("Argument 0 must be an object or null");
-        }
-
-        jerry_value_t arg_obj_ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
-        jerry_value_free(arg_obj_ptr_prop);
-
-        if (!jerry_value_is_number(arg_obj_ptr_val))
-        {
-            jerry_value_free(arg_obj_ptr_val);
-            return throw_error("Invalid __ptr property");
-        }
-
-        uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
-        jerry_value_free(arg_obj_ptr_val);
-        arg_obj = (void *)arg_obj_ptr;
-    }
-
+    void *arg_obj = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
     // 解析参数: src (const char*)
-    char *arg_src_str = NULL;
-    const char *arg_src = NULL;
-    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1]))
-    {
-        if (!jerry_value_is_string(args[1]))
-        {
-            return throw_error("Argument 1 must be a string");
-        }
-        jerry_size_t arg_src_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-        arg_src_str = (char *)eos_malloc(arg_src_len + 1);
-        jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_src_str, arg_src_len);
-        arg_src_str[arg_src_len] = '\0';
-        arg_src = arg_src_str;
-    }
-    char img_path[PATH_MAX];
-    if (script_engine_get_current_script_id() == NULL)
-    {
-        return throw_error("Script package info is NULL");
-    }
-    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
-    {
-        snprintf(img_path, sizeof(img_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
-                 script_engine_get_current_script_id(), arg_src);
-    }
-    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
-    {
-        snprintf(img_path, sizeof(img_path), EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
-                 script_engine_get_current_script_id(), arg_src);
-    }
-    else
-    {
-        return throw_error("Unknown script type");
-    }
-    if (!eos_is_file(img_path))
-    {
-        return throw_error("Not a file");
-    }
-    EOS_LOG_D("Image Path: %s", img_path);
+    char *img_path = _get_assets_file_str(args[1]);
     // 调用底层函数
     eos_img_set_src(arg_obj, img_path);
 
     // 释放临时字符串内存
-    if (arg_src_str)
-        eos_free(arg_src_str);
+    if (img_path)
+        eos_free(img_path);
 
     return jerry_undefined();
 }
@@ -353,7 +349,7 @@ static jerry_value_t js_config_set_str(const jerry_call_info_t *call_info_p,
 {
     if (argc < 2 || !jerry_value_is_string(args[0]) || !jerry_value_is_string(args[1]))
     {
-        return throw_error("Usage: config_set_str(key, value)");
+        return script_engine_throw_error("Usage: config_set_str(key, value)");
     }
 
     // key
@@ -395,7 +391,7 @@ static jerry_value_t js_config_set_bool(const jerry_call_info_t *call_info_p,
 {
     if (argc < 2 || !jerry_value_is_string(args[0]) || !jerry_value_is_boolean(args[1]))
     {
-        return throw_error("Usage: config_set_bool(key, bool)");
+        return script_engine_throw_error("Usage: config_set_bool(key, bool)");
     }
 
     // key
@@ -410,7 +406,7 @@ static jerry_value_t js_config_set_bool(const jerry_call_info_t *call_info_p,
     cJSON *root = config_load_from_file();
     if (!root)
     {
-        return throw_error("Can't load config");
+        return script_engine_throw_error("Can't load config");
     }
     cJSON *item = cJSON_GetObjectItem(root, key);
 
@@ -436,7 +432,7 @@ static jerry_value_t js_config_set_number(const jerry_call_info_t *call_info_p,
 {
     if (argc < 2 || !jerry_value_is_string(args[0]) || !jerry_value_is_number(args[1]))
     {
-        return throw_error("Usage: config_set_number(key, number)");
+        return script_engine_throw_error("Usage: config_set_number(key, number)");
     }
 
     // key
@@ -451,7 +447,7 @@ static jerry_value_t js_config_set_number(const jerry_call_info_t *call_info_p,
     cJSON *root = config_load_from_file();
     if (!root)
     {
-        return throw_error("Can't load config");
+        return script_engine_throw_error("Can't load config");
     }
     cJSON *item = cJSON_GetObjectItem(root, key);
 
@@ -480,7 +476,7 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
 {
     if (argc < 1 || !jerry_value_is_string(args[0]))
     {
-        return throw_error("Usage: config_get_str(key)");
+        return script_engine_throw_error("Usage: config_get_str(key)");
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
@@ -491,7 +487,7 @@ static jerry_value_t js_config_get_str(const jerry_call_info_t *call_info_p,
     cJSON *root = config_load_from_file();
     if (!root)
     {
-        return throw_error("Can't load config");
+        return script_engine_throw_error("Can't load config");
     }
     cJSON *item = cJSON_GetObjectItem(root, key);
 
@@ -517,7 +513,7 @@ static jerry_value_t js_config_get_bool(const jerry_call_info_t *call_info_p,
 {
     if (argc < 1 || !jerry_value_is_string(args[0]))
     {
-        return throw_error("Usage: config_get_bool(key)");
+        return script_engine_throw_error("Usage: config_get_bool(key)");
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
@@ -528,7 +524,7 @@ static jerry_value_t js_config_get_bool(const jerry_call_info_t *call_info_p,
     cJSON *root = config_load_from_file();
     if (!root)
     {
-        return throw_error("Can't load config");
+        return script_engine_throw_error("Can't load config");
     }
     cJSON *item = cJSON_GetObjectItem(root, key);
 
@@ -554,7 +550,7 @@ static jerry_value_t js_config_get_number(const jerry_call_info_t *call_info_p,
 {
     if (argc < 1 || !jerry_value_is_string(args[0]))
     {
-        return throw_error("Usage: config_get_number(key)");
+        return script_engine_throw_error("Usage: config_get_number(key)");
     }
 
     jerry_size_t key_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
@@ -565,7 +561,7 @@ static jerry_value_t js_config_get_number(const jerry_call_info_t *call_info_p,
     cJSON *root = config_load_from_file();
     if (!root)
     {
-        return throw_error("Can't load config");
+        return script_engine_throw_error("Can't load config");
     }
     cJSON *item = cJSON_GetObjectItem(root, key);
 
@@ -605,103 +601,6 @@ static jerry_value_t js_eos_time_get(const jerry_call_info_t *call_info_p,
     return obj;
 }
 
-static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_info_p,
-                                                const jerry_value_t args[],
-                                                const jerry_length_t argc)
-{
-#if LV_TINY_TTF_FILE_SUPPORT
-    // 参数数量检查
-    if (argc < 2)
-    {
-        return throw_error("Insufficient arguments");
-    }
-
-    // 解析参数: src (const char*)
-    char *arg_src_str = NULL;
-    const char *arg_src = NULL;
-    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0]))
-    {
-        if (!jerry_value_is_string(args[0]))
-        {
-            return throw_error("Argument 0 must be a string");
-        }
-        jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
-        arg_src_str = (char *)eos_malloc(arg_src_len + 0);
-        jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_src_str, arg_src_len);
-        arg_src_str[arg_src_len] = '\0';
-        arg_src = arg_src_str;
-    }
-
-    // 解析参数: font_size (uint32_t)
-    if (!jerry_value_is_number(args[1]))
-    {
-        if (arg_src_str)
-            eos_free(arg_src_str);
-        return throw_error("Argument 1 must be a number");
-    }
-    uint32_t font_size = (uint32_t)jerry_value_as_number(args[1]);
-
-    char font_path[PATH_MAX];
-    if (script_engine_get_current_script_id() == NULL)
-    {
-        if (arg_src_str)
-            eos_free(arg_src_str);
-        return throw_error("Script package info is NULL");
-    }
-
-    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
-    {
-        snprintf(font_path, sizeof(font_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
-                 script_engine_get_current_script_id(), arg_src);
-    }
-    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
-    {
-        snprintf(font_path, sizeof(font_path), EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
-                 script_engine_get_current_script_id(), arg_src);
-    }
-    else
-    {
-        if (arg_src_str)
-            eos_free(arg_src_str);
-        return throw_error("Unknown script type");
-    }
-
-    if (!eos_is_file(font_path))
-    {
-        if (arg_src_str)
-            eos_free(arg_src_str);
-        return throw_error("Font file not found");
-    }
-
-    EOS_LOG_D("Font Path: %s", font_path);
-
-    // 调用底层函数创建字体
-    lv_font_t *font = lv_tiny_ttf_create_file(font_path, font_size);
-
-    // 释放临时字符串内存
-    if (arg_src_str)
-        eos_free(arg_src_str);
-
-    if (!font)
-    {
-        return throw_error("Failed to create font");
-    }
-
-    // 包装为LVGL字体对象返回
-    jerry_value_t js_result = jerry_object();
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)font);
-    jerry_value_t type = jerry_string_sz("lv_font");
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__ptr"), ptr));
-    jerry_value_free(jerry_object_set(js_result, jerry_string_sz("__type"), type));
-    jerry_value_free(ptr);
-    jerry_value_free(type);
-
-    return js_result;
-#else
-    return throw_error("LV_TINY_TTF_FILE_SUPPORT is not enabled");
-#endif
-}
-
 // 设置字符串配置项
 static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args[],
@@ -710,34 +609,12 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
     // 参数数量检查
     if (argc < 2)
     {
-        return throw_error("eos_app_header_set_title: Insufficient arguments");
+        return script_engine_throw_error("eos_app_header_set_title: Insufficient arguments");
     }
 
     // 解析参数: scr (lv_obj_t*)
     // 对象类型参数，支持null
-    void *arg_obj = NULL;
-    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0]))
-    {
-        jerry_value_t js_arg_obj = args[0];
-        if (!jerry_value_is_object(js_arg_obj))
-        {
-            return throw_error("Argument 0 must be an object or null");
-        }
-
-        jerry_value_t arg_obj_ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_t arg_obj_ptr_val = jerry_object_get(js_arg_obj, arg_obj_ptr_prop);
-        jerry_value_free(arg_obj_ptr_prop);
-
-        if (!jerry_value_is_number(arg_obj_ptr_val))
-        {
-            jerry_value_free(arg_obj_ptr_val);
-            return throw_error("Invalid __ptr property");
-        }
-
-        uintptr_t arg_obj_ptr = (uintptr_t)jerry_value_as_number(arg_obj_ptr_val);
-        jerry_value_free(arg_obj_ptr_val);
-        arg_obj = (void *)arg_obj_ptr;
-    }
+    void *arg_obj = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
 
     // 解析参数: text (const char*)
 
@@ -747,7 +624,7 @@ static jerry_value_t js_eos_app_header_set_title(const jerry_call_info_t *call_i
     {
         if (!jerry_value_is_string(args[1]))
         {
-            return throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_text_str = (char *)eos_malloc(arg_text_len + 1);
@@ -792,19 +669,156 @@ static jerry_value_t js_eos_screen_active(const jerry_call_info_t *call_info_p,
     // 处理返回值
     jerry_value_t js_result;
     // 包装为LVGL对象
-    js_result = jerry_object();
-    jerry_value_t ptr_key = jerry_string_sz("__ptr");
-    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);
-    jerry_value_t cls_key = jerry_string_sz("__class");
-    jerry_value_t cls = jerry_string_sz("lv_obj");
-    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));
-    jerry_value_free(jerry_object_set(js_result, cls_key, cls));
-    jerry_value_free(ptr_key);
-    jerry_value_free(ptr);
-    jerry_value_free(cls_key);
-    jerry_value_free(cls);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_OBJ);
 
     return js_result;
+}
+
+static jerry_value_t js_eos_clock_hand_create(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args[],
+                                              const jerry_length_t argc)
+{
+    if (argc < 5)
+    {
+        return script_engine_throw_error("clockHand.create(obj, src, type, cx, cy)");
+    }
+
+    js_arg_type_t type_arr[] = {
+        ARG_TYPE_OBJ,
+        ARG_TYPE_STR,
+        ARG_TYPE_NUMBER,
+        ARG_TYPE_NUMBER,
+        ARG_TYPE_NUMBER,
+    };
+
+    int32_t ret = js_args_check_type(args, type_arr, argc);
+    if (ret >= 0)
+    {
+        char err[128];
+        snprintf(err, sizeof(err),
+                 "Argument %d type mismatch, expected %s",
+                 ret, js_get_arg_type_str(type_arr[ret]));
+        return script_engine_throw_error(err);
+    }
+
+    lv_obj_t *obj = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
+    if (!obj)
+    {
+        return script_engine_throw_error("Invalid LVGL object");
+    }
+
+    char *src = _get_assets_file_str(args[1]);
+    if (!src)
+    {
+        return script_engine_throw_error("Invalid image source");
+    }
+
+    int type = (int)jerry_value_as_number(args[2]);
+    int cx = (int)jerry_value_as_number(args[3]);
+    int cy = (int)jerry_value_as_number(args[4]);
+
+    lv_obj_t *ret_obj = eos_clock_hand_create(obj, src, type, cx, cy);
+
+    jerry_value_t ret_val = lv_js_bridge_ptr_2_obj(ret_obj, LV_TYPE_OBJ);
+
+    eos_free(src);
+    return ret_val;
+}
+
+static jerry_value_t js_eos_clock_hand_center(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args[],
+                                              const jerry_length_t argc)
+{
+    if (argc < 1)
+    {
+        return script_engine_throw_error("clockHand.center(obj)");
+    }
+
+    js_arg_type_t type_arr[] = {
+        ARG_TYPE_OBJ};
+
+    int32_t ret = js_args_check_type(args, type_arr, argc);
+    if (ret >= 0)
+    {
+        char err[128];
+        snprintf(err, sizeof(err),
+                 "Argument %d type mismatch, expected %s",
+                 ret, js_get_arg_type_str(type_arr[ret]));
+        return script_engine_throw_error(err);
+    }
+
+    lv_obj_t *obj = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
+    if (!obj)
+    {
+        return script_engine_throw_error("Invalid LVGL object");
+    }
+
+    eos_clock_hand_center(obj);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_eos_clock_hand_place_pivot(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args[],
+                                                   const jerry_length_t argc)
+{
+    if (argc < 3)
+    {
+        return script_engine_throw_error("clockHand.placePivot(obj, x, y)");
+    }
+
+    js_arg_type_t type_arr[] = {
+        ARG_TYPE_OBJ,
+        ARG_TYPE_NUMBER,
+        ARG_TYPE_NUMBER};
+
+    int32_t ret = js_args_check_type(args, type_arr, argc);
+    if (ret >= 0)
+    {
+        char err[128];
+        snprintf(err, sizeof(err),
+                 "Argument %d type mismatch, expected %s",
+                 ret, js_get_arg_type_str(type_arr[ret]));
+        return script_engine_throw_error(err);
+    }
+
+    lv_obj_t *obj = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
+    if (!obj)
+    {
+        return script_engine_throw_error("Invalid LVGL object");
+    }
+
+    eos_clock_hand_place_pivot(obj, jerry_value_as_number(args[1]), jerry_value_as_number(args[2]));
+
+    return jerry_undefined();
+}
+
+/************************** 注册常量 **************************/
+
+static void register_eos_enums(jerry_value_t parent)
+{
+
+    typedef struct
+    {
+        const char *name;
+        int value;
+    } eos_enum_entry_t;
+
+    static const eos_enum_entry_t enum_entries[] = {
+        {"CLOCK_HAND_HOUR", EOS_CLOCK_HAND_HOUR},
+        {"CLOCK_HAND_MINUTE", EOS_CLOCK_HAND_MINUTE},
+        {"CLOCK_HAND_SECOND", EOS_CLOCK_HAND_SECOND},
+        {NULL, 0}};
+
+    // 注册枚举条目
+    for (size_t i = 0; enum_entries[i].name != NULL; ++i)
+    {
+        jerry_value_t jkey = jerry_string_sz(enum_entries[i].name);
+        jerry_value_t jval = jerry_number(enum_entries[i].value);
+        jerry_value_free(jerry_object_set(parent, jkey, jval));
+        jerry_value_free(jkey);
+        jerry_value_free(jval);
+    }
 }
 
 /********************************** 注册原生函数 **********************************/
@@ -813,47 +827,30 @@ static jerry_value_t js_eos_screen_active(const jerry_call_info_t *call_info_p,
  * @brief 原生函数列表
  */
 const script_engine_func_entry_t script_engine_native_funcs[] = {
-    {.name = "print",
-     .handler = js_print_handler},
-    {.name = "delay",
-     .handler = js_delay_handler},
-    {.name = "eos_nav_scr_create",
-     .handler = js_eos_nav_scr_create},
-    {.name = "eos_nav_back",
-     .handler = js_eos_nav_back},
-    {.name = "eos_app_header_set_title",
-     .handler = js_eos_app_header_set_title},
-    {.name = "eos_app_header_hide",
-     .handler = js_eos_app_header_hide},
-    {.name = "eos_app_header_show",
-     .handler = js_eos_app_header_show},
-    {.name = "lv_image_set_src",
-     .handler = js_lv_image_set_src},
-    {.name = "config_set_str",
-     .handler = js_config_set_str},
-    {.name = "config_set_bool",
-     .handler = js_config_set_bool},
-    {.name = "config_set_number",
-     .handler = js_config_set_number},
-    {.name = "config_get_str",
-     .handler = js_config_get_str},
-    {.name = "config_get_bool",
-     .handler = js_config_get_bool},
-    {.name = "config_get_number",
-     .handler = js_config_get_number},
-    {.name = "eos_time_get",
-     .handler = js_eos_time_get},
-    {.name = "lv_tiny_ttf_create_file",
-     .handler = js_lv_tiny_ttf_create_file},
-    {.name = "eos_screen_active",
-     .handler = js_eos_screen_active},
+    {NULL, "print", js_print_handler},
+    {NULL, "delay", js_delay_handler},
+    {"nav", "scrCreate", js_eos_nav_scr_create},
+    {"nav", "back", js_eos_nav_back},
+    {"appHeader", "setTitle", js_eos_app_header_set_title},
+    {"appHeader", "hide", js_eos_app_header_hide},
+    {"appHeader", "show", js_eos_app_header_show},
+    {"image", "setSrc", js_lv_image_set_src},
+    {"config", "setStr", js_config_set_str},
+    {"config", "setBool", js_config_set_bool},
+    {"config", "setNumber", js_config_set_number},
+    {"config", "getStr", js_config_get_str},
+    {"config", "getBool", js_config_get_bool},
+    {"config", "getNumber", js_config_get_number},
+    {"time", "getNow", js_eos_time_get},
+    {"screen", "getActive", js_eos_screen_active},
+    {"clockHand", "create", js_eos_clock_hand_create},
+    {"clockHand", "center", js_eos_clock_hand_center},
+    {"clockHand", "placePivot", js_eos_clock_hand_place_pivot}};
 
-};
-
-/**
- * @brief 将原生函数注册到 JerryScript 全局对象中
- */
-void script_engine_register_natives()
+void eos_binding_init(jerry_value_t parent)
 {
-    script_engine_register_functions(script_engine_native_funcs, sizeof(script_engine_native_funcs) / sizeof(script_engine_func_entry_t));
+    script_engine_register_functions(parent,
+                                     script_engine_native_funcs,
+                                     sizeof(script_engine_native_funcs) / sizeof(script_engine_func_entry_t));
+    register_eos_enums(parent);
 }

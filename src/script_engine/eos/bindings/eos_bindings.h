@@ -1,12 +1,12 @@
-﻿
 /**
- * @file script_engine_native_func.h
- * @brief 注册原生函数的头文件
+ * @file eos_bindings.h
+ * @brief EOS 绑定
  * @author Sab1e
- * @date 2025-07-26
+ * @date 2025-12-27
  */
-#ifndef SCRIPT_ENGINE_NATIVE_FUNC_H
-#define SCRIPT_ENGINE_NATIVE_FUNC_H
+
+#ifndef EOS_BINDINGS_H
+#define EOS_BINDINGS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,18 +15,21 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include "jerryscript.h"
+
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
-/**
- * @brief 注册 Native 函数
- */
-void script_engine_register_natives();
 
+/**
+ * @brief 初始化绑定层
+ * @param parent 父对象
+ */
+void eos_binding_init(jerry_value_t parent);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SCRIPT_ENGINE_NATIVE_FUNC_H */
+#endif /* EOS_BINDINGS_H */

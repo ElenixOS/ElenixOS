@@ -17,6 +17,7 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "jerryscript.h"
+
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -42,7 +43,8 @@ typedef enum{
  * @brief 函数入口链接结构体
  */
 typedef struct {
-    const char* name;
+    const char* class_name;
+    const char* method_name;
     jerry_external_handler_t handler;
 } script_engine_func_entry_t;
 /**
@@ -82,6 +84,12 @@ typedef enum {
 
 /* Public function prototypes --------------------------------*/
 
+/**
+ * @brief 抛出错误
+ * @param message 错误内容
+ * @return jerry_value_t 错误对象
+ */
+jerry_value_t script_engine_throw_error(const char *message);
 /**
  * @brief 获取上一次运行的错误信息
  * @return const char* 错误信息字符串
@@ -147,10 +155,11 @@ script_engine_result_t script_engine_run(script_pkg_t* script_package);
 script_state_t script_engine_get_state(void);
 /**
  * @brief 注册C函数到JS
- * @param entry 函数入口数组
+ * @param parent 父对象
+ * @param entry 函数入口数组；其中，如果 class_name == NULL，那么会直接将 handler 注册到 parent
  * @param funcs_count 数组长度
  */
-void script_engine_register_functions(const script_engine_func_entry_t* entry, const size_t funcs_count);
+void script_engine_register_functions(jerry_value_t parent, const script_engine_func_entry_t *entry, const size_t funcs_count);
 /**
  * @brief 设置脚本运行状态
  * @param state script_state_t

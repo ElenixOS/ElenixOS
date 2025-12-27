@@ -1,45 +1,72 @@
-﻿
 /**
- * @file lv_bindings_misc.c
- * @brief 模块功能说明
+ * @file lv_bindings_special.c
+ * @brief 特殊绑定层
  * @author Sab1e
- * @date 2025-8-10
+ * @date 2025-12-25
  */
+
+#include "lv_bindings_special.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
-#include "lv_bindings_misc.h"
-#include "lv_bindings.h"
 #include <stdlib.h>
 #include <string.h>
+#define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "LV Bindings Special"
+#include "elena_os_log.h"
+#include "lv_bindings.h"
 #include "elena_os_nav.h"
 #include "elena_os_watchface.h"
-#define EOS_LOG_DISABLE
-#define EOS_LOG_TAG "LvBindingsMisc"
-#include "elena_os_log.h"
 #include "elena_os_port.h"
 #include "elena_os_mem.h"
+#include "lvgl_js_bridge.h"
+#include "script_engine_lv.h"
+#include "elena_os_app.h"
+#include "elena_os_fs.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define BINDING_OBJ script_engine_eos_obj
 
 /* Variables --------------------------------------------------*/
-extern jerry_value_t script_engine_eos_obj;
 
 /* Function Implementations -----------------------------------*/
-/********************************** 错误处理辅助函数 **********************************/
-static jerry_value_t throw_error(const char *message)
-{
-    jerry_value_t error_obj = jerry_error_sz(JERRY_ERROR_TYPE, (const jerry_char_t *)message);
-    return jerry_throw_value(error_obj, true);
-}
-
 /********************************** 回调系统 **********************************/
 typedef struct
 {
     jerry_value_t js_cb;        // JS回调函数
     jerry_value_t js_user_data; // JS用户数据
 } lv_event_js_data_t;
+
+
+static void lv_js_event_prepare(jerry_value_t obj, lv_event_t *e)
+{
+    // 防止重复初始化
+    jerry_value_t flag =
+        jerry_object_get_sz(obj, "__inited");
+
+    if (jerry_value_is_boolean(flag))
+    {
+        jerry_value_free(flag);
+        return;
+    }
+    jerry_value_free(flag);
+
+    jerry_value_t t = jerry_boolean(true);
+    jerry_object_set_sz(obj, "__inited", t);
+    jerry_value_free(t);
+
+    jerry_value_t target =
+        lv_js_bridge_ptr_2_obj(lv_event_get_target(e), LV_TYPE_OBJ);
+
+    jerry_object_set_sz(obj, "target", target);
+    jerry_value_free(target);
+
+    jerry_object_set_sz(obj, "type",
+                        jerry_number(lv_event_get_code(e)));
+
+    lv_event_js_data_t *data = lv_event_get_user_data(e);
+    jerry_object_set_sz(obj, "user_data",
+                        jerry_value_copy(data->js_user_data));
+}
 
 /**
  * @brief 处理 LVGL 的事件回调
@@ -48,9 +75,8 @@ typedef struct
 static void lv_event_handler(lv_event_t *e)
 {
     int event = lv_event_get_code(e);
-    lv_event_js_data_t *data = (lv_event_js_data_t *)lv_event_get_user_data(e);
+    lv_event_js_data_t *data = lv_event_get_user_data(e);
 
-    // 处理对象删除事件
     if (event == LV_EVENT_DELETE)
     {
         jerry_value_free(data->js_cb);
@@ -59,46 +85,22 @@ static void lv_event_handler(lv_event_t *e)
         return;
     }
 
-    // 创建事件对象
-    jerry_value_t event_obj = jerry_object();
+    // ★ 统一桥接：lv_event_t*
+    jerry_value_t event_obj =
+        lv_js_bridge_ptr_2_obj(e, LV_TYPE_EVENT);
+
+    // ★ 设置事件属性（一次性，或懒设置）
+    lv_js_event_prepare(event_obj, e);
+
     jerry_value_t args[1] = {event_obj};
 
-    // 添加标准属性
-    jerry_value_t prop_name = jerry_string_sz("__ptr");
-    jerry_value_t prop_value = jerry_number((uintptr_t)lv_event_get_target(e));
-    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
+    jerry_value_t ret = jerry_call(data->js_cb,
+                                   jerry_undefined(),
+                                   args, 1);
 
-    prop_name = jerry_string_sz("__type");
-    prop_value = jerry_string_sz("lv_event");
-    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
-
-    prop_name = jerry_string_sz("__event_ptr");
-    prop_value = jerry_number((uintptr_t)e);
-    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
-
-    prop_name = jerry_string_sz("type");
-    prop_value = jerry_number(event);
-    jerry_value_free(jerry_object_set(event_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
-
-    // 添加JS用户数据
-    prop_name = jerry_string_sz("user_data");
-    jerry_value_free(jerry_object_set(event_obj, prop_name, jerry_value_copy(data->js_user_data)));
-    jerry_value_free(prop_name);
-
-    // 调用JS回调
-    jerry_value_t ret = jerry_call(data->js_cb, BINDING_OBJ, args, 1);
     if (jerry_value_is_error(ret))
     {
         EOS_LOG_E("Callback encounter an error");
-        // 处理错误
     }
 
     jerry_value_free(ret);
@@ -113,54 +115,37 @@ static void lv_event_handler(lv_event_t *e)
  * @param args[3] （可选）JS用户数据
  * @return 封装的事件描述符对象
  */
-static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_info_p,
-                                               const jerry_value_t args[],
-                                               const jerry_length_t arg_cnt)
+static jerry_value_t register_lv_event_handler(
+    const jerry_call_info_t *call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t arg_cnt)
 {
-    if (arg_cnt < 3 || !jerry_value_is_object(args[0]) ||
-        !jerry_value_is_function(args[1]) || !jerry_value_is_number(args[2]))
+    if (arg_cnt < 3 ||
+        !jerry_value_is_object(args[0]) ||
+        !jerry_value_is_function(args[1]) ||
+        !jerry_value_is_number(args[2]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
-    // 解析LVGL对象指针
-    jerry_value_t ptr_val = jerry_object_get(args[0], jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(ptr_val))
-    {
-        jerry_value_free(ptr_val);
-        return throw_error("Invalid __ptr");
-    }
-    lv_obj_t *obj = (lv_obj_t *)(uintptr_t)jerry_value_as_number(ptr_val);
-    jerry_value_free(ptr_val);
+    lv_obj_t *obj =
+        lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
 
     int event = (int)jerry_value_as_number(args[2]);
 
-    // 创建JS回调数据
-    lv_event_js_data_t *data = eos_malloc(sizeof(lv_event_js_data_t));
+    lv_event_js_data_t *data =
+        eos_malloc(sizeof(lv_event_js_data_t));
+
     data->js_cb = jerry_value_copy(args[1]);
+    data->js_user_data =
+        (arg_cnt >= 4 && !jerry_value_is_undefined(args[3]))
+            ? jerry_value_copy(args[3])
+            : jerry_undefined();
 
-    data->js_user_data = (arg_cnt >= 4 && !jerry_value_is_undefined(args[3]))
-                             ? jerry_value_copy(args[3])
-                             : jerry_undefined();
+    lv_event_dsc_t *dsc =
+        lv_obj_add_event_cb(obj, lv_event_handler, event, data);
 
-    // 注册LVGL事件
-    lv_event_dsc_t *dsc = lv_obj_add_event_cb(obj, lv_event_handler, event, data);
-
-    // 创建封装对象
-    jerry_value_t event_dsc_obj = jerry_object();
-    jerry_value_t prop_name = jerry_string_sz("__ptr");
-    jerry_value_t prop_value = jerry_number((uintptr_t)dsc);
-    jerry_value_free(jerry_object_set(event_dsc_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
-
-    prop_name = jerry_string_sz("__type");
-    prop_value = jerry_string_sz("lv_event_dsc");
-    jerry_value_free(jerry_object_set(event_dsc_obj, prop_name, prop_value));
-    jerry_value_free(prop_name);
-    jerry_value_free(prop_value);
-
-    return event_dsc_obj;
+    return lv_js_bridge_ptr_2_obj(dsc, LV_TYPE_EVENT_DSC);
 }
 
 /**
@@ -169,59 +154,26 @@ static jerry_value_t register_lv_event_handler(const jerry_call_info_t *call_inf
  * @param args[1] 封装的事件描述符对象
  * @return 无返回或抛出异常
  */
-static jerry_value_t unregister_lv_event_handler(const jerry_call_info_t *call_info_p,
-                                                 const jerry_value_t args[],
-                                                 const jerry_length_t arg_cnt)
+static jerry_value_t unregister_lv_event_handler(
+    const jerry_call_info_t *call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t arg_cnt)
 {
-    if (arg_cnt < 2 ||
-        !jerry_value_is_object(args[0]) ||
-        !jerry_value_is_object(args[1]))
-    {
-        return throw_error("Invalid arguments");
-    }
+    if (arg_cnt < 2)
+        return script_engine_throw_error("Invalid arguments");
 
-    // 解析对象参数
-    jerry_value_t obj_ptr_val = jerry_object_get(args[0], jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(obj_ptr_val))
-    {
-        jerry_value_free(obj_ptr_val);
-        return throw_error("Invalid object __ptr");
-    }
-    lv_obj_t *obj = (lv_obj_t *)(uintptr_t)jerry_value_as_number(obj_ptr_val);
-    jerry_value_free(obj_ptr_val);
+    lv_obj_t *obj =
+        lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_OBJ);
 
-    // 解析事件描述符对象
-    jerry_value_t event_dsc_obj = args[1];
+    lv_event_dsc_t *dsc =
+        lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_EVENT_DSC);
 
-    // 验证事件描述符类型
-    jerry_value_t type_val = jerry_object_get(event_dsc_obj, jerry_string_sz("__type"));
-    jerry_value_t str_val = jerry_value_to_string(type_val);
-    jerry_size_t str_size = jerry_string_size(str_val, JERRY_ENCODING_UTF8);
-    char type_str[str_size + 1];
-    jerry_string_to_buffer(str_val, JERRY_ENCODING_UTF8, (jerry_char_t *)type_str, str_size);
-    type_str[str_size] = '\0';
+    if (!obj || !dsc)
+        return script_engine_throw_error("Invalid object");
 
-    if (strcmp(type_str, "lv_event_dsc") != 0)
-    {
-        jerry_value_free(type_val);
-        jerry_value_free(str_val);
-        return throw_error("Invalid event descriptor");
-    }
-    jerry_value_free(type_val);
-    jerry_value_free(str_val);
+    lv_event_js_data_t *data =
+        lv_event_dsc_get_user_data(dsc);
 
-    // 获取事件描述符指针
-    jerry_value_t ptr_val = jerry_object_get(event_dsc_obj, jerry_string_sz("__ptr"));
-    if (!jerry_value_is_number(ptr_val))
-    {
-        jerry_value_free(ptr_val);
-        return throw_error("Invalid event descriptor __ptr");
-    }
-    lv_event_dsc_t *dsc = (lv_event_dsc_t *)(uintptr_t)jerry_value_as_number(ptr_val);
-    jerry_value_free(ptr_val);
-
-    // 移除事件并释放资源
-    lv_event_js_data_t *data = (lv_event_js_data_t *)lv_event_dsc_get_user_data(dsc);
     lv_obj_remove_event_dsc(obj, dsc);
 
     jerry_value_free(data->js_cb);
@@ -253,7 +205,7 @@ static void lv_timer_js_cb(lv_timer_t *timer)
     {
         jerry_value_t args[1] = {data->user_data};
 
-        jerry_value_t ret = jerry_call(data->js_cb, BINDING_OBJ, args, 1);
+        jerry_value_t ret = jerry_call(data->js_cb, script_engine_lv_get_root(), args, 1);
         if (jerry_value_is_error(ret))
         {
             EOS_LOG_E("Timer callback encounter an error");
@@ -287,7 +239,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
 {
     if (arg_cnt < 2 || !jerry_value_is_function(args[0]) || !jerry_value_is_number(args[1]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     // 获取定时器周期
@@ -309,7 +261,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     {
         jerry_value_free(js_cb);
         jerry_value_free(user_data);
-        return throw_error("Failed to allocate memory for timer data");
+        return script_engine_throw_error("Failed to allocate memory for timer data");
     }
 
     timer_data->js_cb = js_cb;
@@ -320,7 +272,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
     if (!timer)
     {
         eos_free(timer_data);
-        return throw_error("Failed to create timer");
+        return script_engine_throw_error("Failed to create timer");
     }
 
     // 绑定到根页面以便实现自动删除
@@ -329,7 +281,7 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
         lv_obj_t *home_screen = eos_nav_get_home_screen();
         if (!home_screen)
         {
-            return throw_error("Home screen is NULL");
+            return script_engine_throw_error("Home screen is NULL");
         }
         lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
         EOS_LOG_I("App timer auto delete registered");
@@ -339,10 +291,10 @@ static jerry_value_t js_lv_timer_create(const jerry_call_info_t *call_info_p,
         lv_obj_t *home_screen = eos_watchface_get_screen();
         if (!home_screen)
         {
-            return throw_error("Watchface screen is NULL");
+            return script_engine_throw_error("Watchface screen is NULL");
         }
         lv_obj_add_event_cb(home_screen, _lv_timer_auto_delete_cb, LV_EVENT_DELETE, (void *)timer);
-        EOS_LOG_I("Screen[%p]Watchface timer auto delete registered",eos_watchface_get_screen());
+        EOS_LOG_I("Screen[%p]Watchface timer auto delete registered", eos_watchface_get_screen());
     }
 
     timer_data->timer = timer;
@@ -378,7 +330,7 @@ static jerry_value_t js_lv_timer_delete(const jerry_call_info_t *call_info_p,
 {
     if (arg_cnt < 1 || !jerry_value_is_object(args[0]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     // 获取定时器指针
@@ -389,7 +341,7 @@ static jerry_value_t js_lv_timer_delete(const jerry_call_info_t *call_info_p,
     if (!jerry_value_is_number(ptr_val))
     {
         jerry_value_free(ptr_val);
-        return throw_error("Invalid timer object");
+        return script_engine_throw_error("Invalid timer object");
     }
 
     lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
@@ -424,7 +376,7 @@ static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t *call_info_p
 {
     if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     // 获取定时器指针
@@ -435,7 +387,7 @@ static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t *call_info_p
     if (!jerry_value_is_number(ptr_val))
     {
         jerry_value_free(ptr_val);
-        return throw_error("Invalid timer object");
+        return script_engine_throw_error("Invalid timer object");
     }
 
     lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
@@ -460,7 +412,7 @@ static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t *call_
 {
     if (arg_cnt < 2 || !jerry_value_is_object(args[0]) || !jerry_value_is_number(args[1]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     // 获取定时器指针
@@ -471,7 +423,7 @@ static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t *call_
     if (!jerry_value_is_number(ptr_val))
     {
         jerry_value_free(ptr_val);
-        return throw_error("Invalid timer object");
+        return script_engine_throw_error("Invalid timer object");
     }
 
     lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
@@ -495,7 +447,7 @@ static jerry_value_t js_lv_timer_reset(const jerry_call_info_t *call_info_p,
 {
     if (arg_cnt < 1 || !jerry_value_is_object(args[0]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     // 获取定时器指针
@@ -506,7 +458,7 @@ static jerry_value_t js_lv_timer_reset(const jerry_call_info_t *call_info_p,
     if (!jerry_value_is_number(ptr_val))
     {
         jerry_value_free(ptr_val);
-        return throw_error("Invalid timer object");
+        return script_engine_throw_error("Invalid timer object");
     }
 
     lv_timer_t *timer = (lv_timer_t *)(uintptr_t)jerry_value_as_number(ptr_val);
@@ -617,13 +569,13 @@ static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
     // 参数数量检查
     if (argc < 1)
     {
-        return throw_error("Insufficient arguments");
+        return script_engine_throw_error("Insufficient arguments");
     }
 
     // 检查参数是否为对象
     if (!jerry_value_is_object(args[0]))
     {
-        return throw_error("Argument must be a style object");
+        return script_engine_throw_error("Argument must be a style object");
     }
 
     // 检查对象是否已经分配了内存
@@ -646,7 +598,7 @@ static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
         if (!style)
         {
             jerry_value_free(ptr_val);
-            return throw_error("Failed to allocate memory for style");
+            return script_engine_throw_error("Failed to allocate memory for style");
         }
 
         // 将指针保存回JS对象
@@ -679,7 +631,7 @@ static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
 {
     if (argc < 1 || !jerry_value_is_object(args[0]))
     {
-        return throw_error("Invalid arguments");
+        return script_engine_throw_error("Invalid arguments");
     }
 
     jerry_value_t ptr_prop = jerry_string_sz("__ptr");
@@ -702,7 +654,7 @@ static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
 }
 
 /********************************** 字体系统 **********************************/
-static void register_lvgl_fonts(void)
+static void register_lvgl_fonts(jerry_value_t parent)
 {
     // 创建字体对象容器
     jerry_value_t fonts = jerry_object();
@@ -799,38 +751,121 @@ static void register_lvgl_fonts(void)
 
     // 将字体容器挂载到全局对象
     jerry_value_t font_key = jerry_string_sz("lv_font");
-    jerry_value_free(jerry_object_set(BINDING_OBJ, font_key, fonts));
+    jerry_value_free(jerry_object_set(parent, font_key, fonts));
     jerry_value_free(font_key);
     jerry_value_free(fonts);
 }
+
+static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args[],
+                                                const jerry_length_t argc)
+{
+#if LV_TINY_TTF_FILE_SUPPORT
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("Insufficient arguments");
+    }
+
+    // 解析参数: src (const char*)
+    char *arg_src_str = NULL;
+    const char *arg_src = NULL;
+    if (!jerry_value_is_undefined(args[0]) && !jerry_value_is_null(args[0]))
+    {
+        if (!jerry_value_is_string(args[0]))
+        {
+            return script_engine_throw_error("Argument 0 must be a string");
+        }
+        jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
+        arg_src_str = (char *)eos_malloc(arg_src_len + 0);
+        jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_src_str, arg_src_len);
+        arg_src_str[arg_src_len] = '\0';
+        arg_src = arg_src_str;
+    }
+
+    // 解析参数: font_size (uint32_t)
+    if (!jerry_value_is_number(args[1]))
+    {
+        if (arg_src_str)
+            eos_free(arg_src_str);
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+    uint32_t font_size = (uint32_t)jerry_value_as_number(args[1]);
+
+    char font_path[PATH_MAX];
+    if (script_engine_get_current_script_id() == NULL)
+    {
+        if (arg_src_str)
+            eos_free(arg_src_str);
+        return script_engine_throw_error("Script package info is NULL");
+    }
+
+    if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
+    {
+        snprintf(font_path, sizeof(font_path), EOS_APP_INSTALLED_DIR "%s/assets/%s",
+                 script_engine_get_current_script_id(), arg_src);
+    }
+    else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
+    {
+        snprintf(font_path, sizeof(font_path), EOS_WATCHFACE_INSTALLED_DIR "%s/assets/%s",
+                 script_engine_get_current_script_id(), arg_src);
+    }
+    else
+    {
+        if (arg_src_str)
+            eos_free(arg_src_str);
+        return script_engine_throw_error("Unknown script type");
+    }
+
+    if (!eos_is_file(font_path))
+    {
+        if (arg_src_str)
+            eos_free(arg_src_str);
+        return script_engine_throw_error("Font file not found");
+    }
+
+    EOS_LOG_D("Font Path: %s", font_path);
+
+    // 调用底层函数创建字体
+    lv_font_t *font = lv_tiny_ttf_create_file(font_path, font_size);
+
+    // 释放临时字符串内存
+    if (arg_src_str)
+        eos_free(arg_src_str);
+
+    if (!font)
+    {
+        return script_engine_throw_error("Failed to create font");
+    }
+
+    // 包装为LVGL字体对象返回
+    jerry_value_t js_result = lv_js_bridge_ptr_2_obj(font, LV_TYPE_FONT);
+
+    return js_result;
+#else
+    return script_engine_throw_error("LV_TINY_TTF_FILE_SUPPORT is not enabled");
+#endif
+}
+
 /********************************** 绑定注册 **********************************/
 
-const LVBindingJerryscriptFuncEntry_t lvgl_binding_special_funcs[] = {
-    {"lv_obj_add_event_cb", register_lv_event_handler},
-    {"lv_obj_remove_event_cb", unregister_lv_event_handler},
-    {"lv_style_init", js_lv_style_init},
-    {"lv_style_delete", js_lv_style_delete},
-    {"lv_timer_create", js_lv_timer_create},
-    {"lv_timer_delete", js_lv_timer_delete},
-    {"lv_timer_set_period", js_lv_timer_set_period},
-    {"lv_timer_set_repeat_count", js_lv_timer_set_repeat_count},
-    {"lv_timer_reset", js_lv_timer_reset}};
+const script_engine_func_entry_t lvgl_binding_special_funcs[] = {
+    {"obj", "addEventCb", register_lv_event_handler},
+    {"obj", "removeEventCb", unregister_lv_event_handler},
+    {"style", "init", js_lv_style_init},
+    {"style", "delete", js_lv_style_delete},
+    {"timer", "create", js_lv_timer_create},
+    {"timer", "delete", js_lv_timer_delete},
+    {"timer", "setPeriod", js_lv_timer_set_period},
+    {"timer", "setRepeatCount", js_lv_timer_set_repeat_count},
+    {"timer", "reset", js_lv_timer_reset},
+    {"tinyTTF","createFile", js_lv_tiny_ttf_create_file}};
 
-void lv_binding_jerryscript_register_functions(const LVBindingJerryscriptFuncEntry_t *entry, const size_t funcs_count)
-{
-    for (size_t i = 0; i < funcs_count; ++i)
-    {
-        jerry_value_t fn = jerry_function_external(entry[i].handler);
-        jerry_value_t name = jerry_string_sz(entry[i].name);
-        jerry_value_free(jerry_object_set(BINDING_OBJ, name, fn));
-        jerry_value_free(name);
-        jerry_value_free(fn);
-    }
-}
 /********************************** 初始化 **********************************/
-void lv_bindings_misc_init(void)
+
+void lv_bindings_special_init(jerry_value_t parent)
 {
     // 初始化函数
-    lv_binding_jerryscript_register_functions(lvgl_binding_special_funcs, sizeof(lvgl_binding_special_funcs) / sizeof(LVBindingJerryscriptFuncEntry_t));
-    register_lvgl_fonts();
+    script_engine_register_functions(parent, lvgl_binding_special_funcs, sizeof(lvgl_binding_special_funcs) / sizeof(script_engine_func_entry_t));
+    register_lvgl_fonts(parent);
 }

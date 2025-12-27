@@ -2,3 +2,13 @@ lv_img_set_src
 lv_obj_add_event_cb
 lv_style_init
 lv_timer_handler
+lv_obj*_id*
+lv_*_fmt
+lv_obj_transform_point_array
+*prop*
+lv_obj_style_apply_color_filter
+lv_obj_set_grid_dsc_array
+lv_image_buf_set_palette
+lv_image_set_src
+lv_obj_add_event_cb
+lv_obj_add_event

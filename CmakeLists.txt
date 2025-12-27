@@ -36,6 +36,7 @@ target_include_directories(elenaos_lib
         ${ELENAOS_INC_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/include
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/uthash/include
 )
 
 # -----------------------------

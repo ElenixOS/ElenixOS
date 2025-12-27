@@ -26,6 +26,14 @@ blacklist_macros_path = os.path.join(script_dir, "blacklist_macros.txt")
 extract_funcs_from = None
 print_all_info = False
 print_macro_info = False
+
+# TYPE_NAME
+
+TYPE_NAME_COMMON_PTR = "LV_TYPE_COMMON_PTR"
+TYPE_NAME_OBJ = "LV_TYPE_OBJ"
+TYPE_NAME_FONT = "LV_TYPE_FONT"
+
+
 # 目标代码的固定部分
 HEADER_CODE = r"""
 /**
@@ -42,21 +50,15 @@ HEADER_CODE = r"""
 #include "lvgl.h"
 /* ElenaOS header files ---------------------------------------*/
 #include "lv_bindings.h"
-#include "lv_bindings_misc.h"
+#include "lv_bindings_special.h"
 #include "script_engine_core.h"
 #include "elena_os_mem.h"
+#include "lvgl_js_bridge.h"
+#include "script_engine_lv.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define BINDING_OBJ script_engine_eos_obj
 
 /* Variables --------------------------------------------------*/
-extern jerry_value_t script_engine_eos_obj;
-
-/********************************** 错误处理辅助函数 **********************************/
-static jerry_value_t throw_error(const char* message) {
-    jerry_value_t error_obj = jerry_error_sz(JERRY_ERROR_TYPE, (const jerry_char_t*)message);
-    return jerry_throw_value(error_obj, true);
-}
 
 /********************************** 宏定义处理辅助函数 **********************************/
 
@@ -72,13 +74,16 @@ static void lvgl_binding_set_enum(jerry_value_t global, const char* key, int32_t
 
 INIT_FUNCTION_CODE = r"""
 /********************************** 初始化 LVGL 绑定系统 **********************************/
+
 /**
  * @brief 初始化回调系统，注册 LVGL 对象删除事件处理函数，并注册 LVGL 函数
  */
-void lv_binding_init() {
-    lv_binding_jerryscript_register_functions(lvgl_binding_funcs, sizeof(lvgl_binding_funcs) / sizeof(LVBindingJerryscriptFuncEntry_t));
-    lv_bindings_misc_init();
-    register_lvgl_enums();
+void lv_binding_init(jerry_value_t parent) {
+    script_engine_register_functions(parent,
+                                     lvgl_binding_funcs,
+                                     sizeof(lvgl_binding_funcs) / sizeof(script_engine_func_entry_t));
+    lv_bindings_special_init(parent);
+    register_lvgl_enums(parent);
 }
 """
 
@@ -162,7 +167,7 @@ def is_number_type(type_str):
     number_types = ['int', 'float', 'double', 'uint8_t', 'uint16_t', 'uint32_t',
                    'int8_t', 'int16_t', 'int32_t', 'size_t', 'bool', 'short',
                    'long', 'unsigned', 'signed', 'uintptr_t']
-    return any(num_type in type_str for num_type in number_types)
+    return any(num_type in type_str for num_type in number_types) and '*' not in type_str
 
 def is_lvgl_value_type(type_str):
     """检查是否是LVGL值类型（非指针）"""
@@ -221,7 +226,7 @@ def generate_void_pointer_arg_parsing(index, name):
             jerry_size_t {name}_len = jerry_string_size(args[{index}], JERRY_ENCODING_UTF8);
             {name}_str = (char*)eos_malloc({name}_len + 1);
             if (!{name}_str) {{
-                return throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("Failed to allocate memory for string argument");
             }}
             jerry_string_to_buffer(args[{index}], JERRY_ENCODING_UTF8, (jerry_char_t*){name}_str, {name}_len);
             {name}_str[{name}_len] = '\0';
@@ -229,15 +234,7 @@ def generate_void_pointer_arg_parsing(index, name):
         }}
         else if (jerry_value_is_object(args[{index}])) {{
             // 尝试从对象获取指针
-            jerry_value_t ptr_prop = jerry_string_sz("__ptr");
-            jerry_value_t ptr_val = jerry_object_get(args[{index}], ptr_prop);
-            jerry_value_free(ptr_prop);
-
-            if (jerry_value_is_number(ptr_val)) {{
-                uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(ptr_val);
-                {name} = (void*)ptr_num;
-            }}
-            jerry_value_free(ptr_val);
+            {name} = lv_js_bridge_obj_2_ptr(args[{index}],{TYPE_NAME_COMMON_PTR});
         }}
         else if (jerry_value_is_number(args[{index}])) {{
             // 直接传递指针数值
@@ -246,7 +243,7 @@ def generate_void_pointer_arg_parsing(index, name):
         }}
         else {{
             if ({name}_str) eos_free({name}_str);
-            return throw_error("Argument {index} must be string, object or number");
+            return script_engine_throw_error("Argument {index} must be string, object or number");
         }}
     }}
 
@@ -256,56 +253,14 @@ def generate_void_pointer_arg_parsing(index, name):
 def generate_generic_pointer_arg_parsing(index, name, type_str):
     """生成通用指针类型参数解析代码，支持null"""
     return fr"""    // 通用指针类型: {type_str}，支持null
-    void* {name} = NULL;
-    if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
-        if (jerry_value_is_object(args[{index}])) {{
-            // 尝试从对象获取指针
-            jerry_value_t ptr_prop = jerry_string_sz("__ptr");
-            jerry_value_t ptr_val = jerry_object_get(args[{index}], ptr_prop);
-            jerry_value_free(ptr_prop);
-
-            if (jerry_value_is_number(ptr_val)) {{
-                uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(ptr_val);
-                {name} = (void*)ptr_num;
-            }}
-            jerry_value_free(ptr_val);
-        }}
-        else if (jerry_value_is_number(args[{index}])) {{
-            // 直接传递指针数值
-            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[{index}]);
-            {name} = (void*)ptr_num;
-        }}
-        else {{
-            return throw_error("Argument {index} must be object, number or null for {type_str}");
-        }}
-    }}
+    {type_str} {name} = lv_js_bridge_obj_2_ptr(args[{index}],{TYPE_NAME_COMMON_PTR});
 
 """
 
 def generate_object_arg_parsing(index, name):
     """生成对象类型参数解析代码，支持null"""
     return fr"""    // 对象类型参数，支持null
-    void* {name} = NULL;
-    if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
-        jerry_value_t js_{name} = args[{index}];
-        if (!jerry_value_is_object(js_{name})) {{
-            return throw_error("Argument {index} must be an object or null");
-        }}
-
-        jerry_value_t {name}_ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_t {name}_ptr_val = jerry_object_get(js_{name}, {name}_ptr_prop);
-        jerry_value_free({name}_ptr_prop);
-
-        if (!jerry_value_is_number({name}_ptr_val)) {{
-            jerry_value_free({name}_ptr_val);
-            return throw_error("Invalid __ptr property");
-        }}
-
-        uintptr_t {name}_ptr = (uintptr_t)jerry_value_as_number({name}_ptr_val);
-        jerry_value_free({name}_ptr_val);
-        {name} = (void*){name}_ptr;
-    }}
-
+    void* {name} = lv_js_bridge_obj_2_ptr(args[{index}],{TYPE_NAME_OBJ});
 """
 
 def generate_string_arg_parsing(index, name):
@@ -315,13 +270,13 @@ def generate_string_arg_parsing(index, name):
     if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
         jerry_value_t js_{name} = args[{index}];
         if (!jerry_value_is_string(js_{name})) {{
-            return throw_error("Argument {index} must be a string or null");
+            return script_engine_throw_error("Argument {index} must be a string or null");
         }}
 
         jerry_size_t {name}_len = jerry_string_size(js_{name}, JERRY_ENCODING_UTF8);
         {name} = (char*)eos_malloc({name}_len + 1);
         if (!{name}) {{
-            return throw_error("Out of memory");
+            return script_engine_throw_error("Out of memory");
         }}
         jerry_string_to_buffer(js_{name}, JERRY_ENCODING_UTF8, (jerry_char_t*){name}, {name}_len);
         {name}[{name}_len] = '\0';
@@ -333,7 +288,7 @@ def generate_number_arg_parsing(index, name, type_str):
     """生成数字类型参数解析代码"""
     return fr"""    jerry_value_t js_{name} = args[{index}];
     if (!jerry_value_is_number(js_{name})) {{
-        return throw_error("Argument {index} must be a number");
+        return script_engine_throw_error("Argument {index} must be a number");
     }}
 
     {type_str} {name} = ({type_str})jerry_value_as_number(js_{name});
@@ -344,7 +299,7 @@ def generate_bool_arg_parsing(index, name):
     """生成布尔类型参数解析代码"""
     return fr"""    jerry_value_t js_{name} = args[{index}];
     if (!jerry_value_is_boolean(js_{name})) {{
-        return throw_error("Argument {index} must be a boolean");
+        return script_engine_throw_error("Argument {index} must be a boolean");
     }}
 
     bool {name} = jerry_value_to_boolean(js_{name});
@@ -353,49 +308,13 @@ def generate_bool_arg_parsing(index, name):
 
 def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
     """根据类型信息生成参数解析代码"""
-    type_str = arg_type.replace(' ', '')
+    type_str_normalized = arg_type.replace(' ', '')
     var_name = f"arg_{name}"  # 添加arg_前缀避免冲突
 
     # 特殊处理lv_font_t指针
     if type_info.get('is_font_pointer'):
         return fr"""    // lv_font_t* 类型参数处理
-    const lv_font_t* {var_name} = NULL;
-    if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
-        jerry_value_t js_{var_name} = args[{index}];
-        if (!jerry_value_is_object(js_{var_name})) {{
-            return throw_error("Argument {index} must be a font object or null");
-        }}
-
-        // 检查类型标记
-        jerry_value_t type_prop = jerry_string_sz("__type");
-        jerry_value_t type_val = jerry_object_get(js_{var_name}, type_prop);
-        jerry_value_free(type_prop);
-
-        jerry_size_t type_len = jerry_string_size(type_val, JERRY_ENCODING_UTF8);
-        char type_str[32];
-        jerry_string_to_buffer(type_val, JERRY_ENCODING_UTF8, (jerry_char_t*)type_str, type_len);
-        type_str[type_len] = '\0';
-        jerry_value_free(type_val);
-
-        if (strcmp(type_str, "lv_font") != 0) {{
-            return throw_error("Argument {index} must be a font object");
-        }}
-
-        // 获取字体指针
-        jerry_value_t ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_t ptr_val = jerry_object_get(js_{var_name}, ptr_prop);
-        jerry_value_free(ptr_prop);
-
-        if (!jerry_value_is_number(ptr_val)) {{
-            jerry_value_free(ptr_val);
-            return throw_error("Invalid font pointer");
-        }}
-
-        uintptr_t ptr = (uintptr_t)jerry_value_as_number(ptr_val);
-        jerry_value_free(ptr_val);
-        {var_name} = (const lv_font_t*)ptr;
-    }}
-
+    const lv_font_t* {var_name} = lv_js_bridge_obj_2_ptr(args[{index}], {TYPE_NAME_FONT});
 """
     # 特殊处理lv_event_t指针
     if type_info.get('is_event_pointer'):
@@ -404,7 +323,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
     if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
         jerry_value_t js_{var_name} = args[{index}];
         if (!jerry_value_is_object(js_{var_name})) {{
-            return throw_error("Argument {index} must be an event object");
+            return script_engine_throw_error("Argument {index} must be an event object");
         }}
 
         // 检查类型标记
@@ -419,7 +338,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
         jerry_value_free(type_val);
 
         if (strcmp(type_str, "lv_event") != 0) {{
-            return throw_error("Argument {index} must be an event object");
+            return script_engine_throw_error("Argument {index} must be an event object");
         }}
 
         // 获取事件指针
@@ -429,7 +348,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
 
         if (!jerry_value_is_number(ptr_val)) {{
             jerry_value_free(ptr_val);
-            return throw_error("Invalid event pointer");
+            return script_engine_throw_error("Invalid event pointer");
         }}
 
         uintptr_t ptr = (uintptr_t)jerry_value_as_number(ptr_val);
@@ -439,31 +358,31 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
 
 """
     # 特殊处理lv_obj_t指针
-    if is_lv_obj_pointer(type_str):
+    if is_lv_obj_pointer(type_str_normalized):
         return generate_object_arg_parsing(index, var_name)
 
     # 处理基本类型
-    if is_void_type(type_str):
+    if is_void_type(type_str_normalized):
         return f"    // void 类型跳过解析\n"
 
     # 处理void指针
-    if is_void_pointer(type_str):
+    if is_void_pointer(type_str_normalized):
         return generate_void_pointer_arg_parsing(index, var_name)
 
     # 处理对象指针
-    if is_object_pointer(type_str):
+    if is_object_pointer(type_str_normalized):
         return generate_object_arg_parsing(index, var_name)
 
     # 处理字符串指针
-    if is_string_pointer(type_str):
+    if is_string_pointer(type_str_normalized):
         return generate_string_arg_parsing(index, var_name)
 
     # 处理lv_color_t
-    if is_lv_color_t(type_str):
+    if is_lv_color_t(type_str_normalized):
         return f"    lv_color_t {var_name} = js_to_lv_color(args[{index}]);\n\n"
 
     # 处理布尔类型
-    if type_str == 'bool' or (is_typedef_convertible_to_basic(type_info.get('type_name', ''), typedefs_data)
+    if type_str_normalized == 'bool' or (is_typedef_convertible_to_basic(type_info.get('type_name', ''), typedefs_data)
                              and get_typedef_base_type(type_info['type_name'], typedefs_data) == 'bool'):
         return fr"""    // 布尔类型参数: {name}
     bool {var_name} = false;
@@ -475,15 +394,15 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
             {var_name} = (jerry_value_as_number(args[{index}]) != 0);
         }}
         else {{
-            return throw_error("Argument {index} must be boolean or number for {type_str}");
+            return script_engine_throw_error("Argument {index} must be boolean or number for {arg_type}");
         }}
     }}
 
 """
 
     # 处理数字类型
-    if is_number_type(type_str):
-        return generate_number_arg_parsing(index, var_name, type_str)
+    if is_number_type(type_str_normalized):
+        return generate_number_arg_parsing(index, var_name, arg_type)
 
     # 检查typedef类型
     type_name = type_info.get('type_name', '')
@@ -496,7 +415,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
                 return generate_number_arg_parsing(index, var_name, base_type)
 
     # 1默认处理为通用指针
-    return generate_generic_pointer_arg_parsing(index, var_name, type_str)
+    return generate_generic_pointer_arg_parsing(index, var_name, arg_type)
 
 def find_real_function_definition(func_name, data):
     """
@@ -608,7 +527,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
     if args:
         code += f"    // 参数数量检查\n"
         code += f"    if (argc < {len(args)}) {{\n"
-        code += f"        return throw_error(\"{func_name}: Insufficient arguments\");\n"
+        code += f"        return script_engine_throw_error(\"{func_name}: Insufficient arguments\");\n"
         code += f"    }}\n\n"
 
     # 参数解析
@@ -642,7 +561,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
     const char* {var_name} = NULL;
     if (!jerry_value_is_undefined(args[{i}]) && !jerry_value_is_null(args[{i}])) {{
         if (!jerry_value_is_string(args[{i}])) {{
-            return throw_error("Argument {i} must be a string");
+            return script_engine_throw_error("Argument {i} must be a string");
         }}
         jerry_size_t {var_name}_len = jerry_string_size(args[{i}], JERRY_ENCODING_UTF8);
         {str_var} = (char*)eos_malloc({var_name}_len + 1);
@@ -672,33 +591,13 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 
         if is_void_pointer(return_type):
             code += "    // 包装为通用指针对象\n"
-            code += "    js_result = jerry_object();\n"
-            code += "    jerry_value_t ptr_key = jerry_string_sz(\"__ptr\");\n"
-            code += "    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);\n"
-            code += "    jerry_value_t type_key = jerry_string_sz(\"__type\");\n"
-            code += "    jerry_value_t type = jerry_string_sz(\"void*\");\n"
-            code += "    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));\n"
-            code += "    jerry_value_free(jerry_object_set(js_result, type_key, type));\n"
-            code += "    jerry_value_free(ptr_key);\n"
-            code += "    jerry_value_free(ptr);\n"
-            code += "    jerry_value_free(type_key);\n"
-            code += "    jerry_value_free(type);\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_COMMON_PTR});\n"
         elif is_lv_color_t(return_type):
             code += "    // 转换为JS颜色对象\n"
             code += "    js_result = lv_color_to_js(ret_value);\n"
         elif is_lv_obj_pointer(return_type):
             code += "    // 包装为LVGL对象\n"
-            code += "    js_result = jerry_object();\n"
-            code += "    jerry_value_t ptr_key = jerry_string_sz(\"__ptr\");\n"
-            code += "    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);\n"
-            code += "    jerry_value_t cls_key = jerry_string_sz(\"__class\");\n"
-            code += "    jerry_value_t cls = jerry_string_sz(\"lv_obj\");\n"
-            code += "    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));\n"
-            code += "    jerry_value_free(jerry_object_set(js_result, cls_key, cls));\n"
-            code += "    jerry_value_free(ptr_key);\n"
-            code += "    jerry_value_free(ptr);\n"
-            code += "    jerry_value_free(cls_key);\n"
-            code += "    jerry_value_free(cls);\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_OBJ});\n"
         elif is_string_pointer(return_type):
             code += "    if (ret_value == NULL) {\n"
             code += "        js_result = jerry_string_sz(\"\");\n"
@@ -711,12 +610,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
             code += "    js_result = jerry_boolean(ret_value);\n"
         else:
             # 默认处理为通用指针
-            code += "    js_result = jerry_object();\n"
-            code += "    jerry_value_t ptr_key = jerry_string_sz(\"__ptr\");\n"
-            code += "    jerry_value_t ptr = jerry_number((double)(uintptr_t)ret_value);\n"
-            code += "    jerry_value_free(jerry_object_set(js_result, ptr_key, ptr));\n"
-            code += "    jerry_value_free(ptr);\n"
-            code += "    jerry_value_free(ptr_key);\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_COMMON_PTR});\n"
 
     # 释放临时字符串内存（确保在函数调用之后）
     if string_vars:
@@ -740,6 +634,26 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 
     return code
 
+def extract_class_and_method(func_name):
+    """从函数名提取 class_name 和 method_name"""
+    # 移除 'lv_' 前缀
+    if func_name.startswith('lv_'):
+        name = func_name[3:]
+    else:
+        name = func_name
+
+    parts = name.split('_')
+    if len(parts) < 2:
+        # 处理异常情况，如没有下划线
+        return "", name
+
+    class_name = parts[0].lower()
+    method_parts = parts[1:]
+    # 驼峰命名：第一个单词首字母小写，其余单词首字母大写
+    method_name = method_parts[0].lower() + ''.join(word.capitalize() for word in method_parts[1:])
+
+    return class_name, method_name
+
 def generate_native_funcs_list(functions, macro_alias_map=None):
     """生成原生函数列表数组，支持宏别名（旧API映射到新API）"""
     entries = []
@@ -747,25 +661,29 @@ def generate_native_funcs_list(functions, macro_alias_map=None):
 
     for func in functions:
         func_name = func['name']
+        class_name, method_name = extract_class_and_method(func_name)
+
         # 支持宏别名
         if macro_alias_map and func_name in macro_alias_map:
             real_func_name = macro_alias_map[func_name]
+            real_class_name, real_method_name = extract_class_and_method(real_func_name)
+
             # 旧API条目
             if func_name not in added_names:
-                entries.append(f'    {{ "{func_name}", js_{real_func_name} }}')
+                entries.append(f'    {{ "{class_name}", "{method_name}", js_{real_func_name} }}')
                 added_names.add(func_name)
             # 新API条目
             if real_func_name not in added_names:
-                entries.append(f'    {{ "{real_func_name}", js_{real_func_name} }}')
+                entries.append(f'    {{ "{real_class_name}", "{real_method_name}", js_{real_func_name} }}')
                 added_names.add(real_func_name)
         else:
             if func_name not in added_names:
-                entries.append(f'    {{ "{func_name}", js_{func_name} }}')
+                entries.append(f'    {{ "{class_name}", "{method_name}", js_{func_name} }}')
                 added_names.add(func_name)
 
     entries_str = ',\n'.join(entries)
     return f"""
-const LVBindingJerryscriptFuncEntry_t lvgl_binding_funcs[] = {{
+const script_engine_func_entry_t lvgl_binding_funcs[] = {{
 {entries_str}
 }};
 
@@ -881,7 +799,7 @@ def extract_lvgl_functions_from_file(file_path):
 def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macros=None):
     """生成枚举绑定代码，使用数组和for循环进行注册，减少冗长重复代码"""
     lines = []
-    lines.append("static void register_lvgl_enums(void) {")
+    lines.append("static void register_lvgl_enums(jerry_value_t parent) {")
     lines.append("")
     # 定义通用条目结构
     lines.append("    typedef struct { const char* name; int value; } lvgl_enum_entry_t;")
@@ -909,7 +827,8 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
                             val = int(v)
                     else:
                         val = int(value)
-                    lines.append(f'        {{ "{name}", {val} }},')
+                    display_name = name[3:] if name.startswith('LV_') else name
+                    lines.append(f'        {{ "{display_name}", {val} }},')
                     any_enum_member = True
                 except (ValueError, TypeError) as e:
                     print(f"{Fore.YELLOW}[警告] 无法解析枚举值 {name}={value}: {e}{Style.RESET_ALL}")
@@ -947,8 +866,9 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
                 print(f"{Fore.BLUE}[跳过] 宏 {macro_name} 不在导出列表中{Style.RESET_ALL}")
             continue
         # 使用#ifdef 包裹具体条目以保证宏存在时才编译入数组
+        display_name = macro_name[3:] if macro_name.startswith('LV_') else macro_name
         lines.append(f"#ifdef {macro_name}")
-        lines.append(f'        {{ "{macro_name}", {macro_name} }},')
+        lines.append(f'        {{ "{display_name}", {macro_name} }},')
         lines.append("#endif")
         any_macro_entry = True
     # 哨兵
@@ -980,8 +900,9 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
             if print_macro_info:
                 print(f"{Fore.BLUE}[跳过] 宏 {macro_name} 不在导出列表中{Style.RESET_ALL}")
             continue
+        display_name = macro_name[3:] if macro_name.startswith('LV_') else macro_name
         lines.append(f"#ifdef {macro_name}")
-        lines.append(f'        {{ "{macro_name}", {macro_name} }},')
+        lines.append(f'        {{ "{display_name}", {macro_name} }},')
         lines.append("#endif")
         any_symbol_entry = True
     # 哨兵
@@ -992,19 +913,19 @@ def generate_enum_binding(enums, macros=None, export_macros=None, blacklist_macr
     # 使用for循环遍历数组注册枚举与宏
     lines.append("    /* 注册枚举条目 */")
     lines.append("    for (size_t i = 0; enum_entries[i].name != NULL; ++i) {")
-    lines.append("        lvgl_binding_set_enum(BINDING_OBJ, enum_entries[i].name, enum_entries[i].value);")
+    lines.append("        lvgl_binding_set_enum(parent, enum_entries[i].name, enum_entries[i].value);")
     lines.append("    }")
     lines.append("")
     lines.append("    /* 注册数值宏条目 */")
     lines.append("    for (size_t i = 0; macro_entries[i].name != NULL; ++i) {")
-    lines.append("        lvgl_binding_set_enum(BINDING_OBJ, macro_entries[i].name, macro_entries[i].value);")
+    lines.append("        lvgl_binding_set_enum(parent, macro_entries[i].name, macro_entries[i].value);")
     lines.append("    }")
     lines.append("")
     lines.append("    /* 注册 LV_SYMBOL_ 字符串宏（作为全局字符串） */")
     lines.append("    for (size_t i = 0; symbol_entries[i].name != NULL; ++i) {")
     lines.append("        jerry_value_t key = jerry_string_sz(symbol_entries[i].name);")
     lines.append("        jerry_value_t val = jerry_string_sz(symbol_entries[i].val);")
-    lines.append("        jerry_value_free(jerry_object_set(BINDING_OBJ, key, val));")
+    lines.append("        jerry_value_free(jerry_object_set(parent, key, val));")
     lines.append("        jerry_value_free(key);")
     lines.append("        jerry_value_free(val);")
     lines.append("    }")
@@ -1058,7 +979,8 @@ def main():
 
     # 首先处理所有函数
     for func in data.get('functions', []):
-        func_name = func['name']
+        raw_name = func['name']
+        func_name = raw_name.split('(')[0].strip()
         if func_name in matched_funcs:
             continue
 
@@ -1072,7 +994,10 @@ def main():
             missing_funcs.discard(func_name)
             continue
 
-        exported_funcs.append(func)
+        # 创建清理后的函数字典
+        clean_func = func.copy()
+        clean_func['name'] = func_name
+        exported_funcs.append(clean_func)
         matched_funcs.add(func_name)
         missing_funcs.discard(func_name)  # 从缺失列表中移除
 
@@ -1109,9 +1034,12 @@ def main():
             missing_funcs.discard(macro_name)
 
     # 打印未生成的函数
-    if missing_funcs:
+    filtered_funcs = [func for func in missing_funcs if "*" not in func]
+
+    # 如果过滤后还有内容，才打印警告
+    if filtered_funcs:
         print(f"\n{Fore.YELLOW}[警告] 以下函数在export_functions.txt中指定但未生成:{Style.RESET_ALL}")
-        for func in sorted(missing_funcs):
+        for func in sorted(filtered_funcs):
             print(f"  - {func} (未在lvgl.json中找到定义)")
 
     if not exported_funcs:

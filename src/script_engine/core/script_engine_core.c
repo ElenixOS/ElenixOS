@@ -55,10 +55,7 @@
 
 #include "lvgl.h"
 #include "cJSON.h"
-#include "lv_bindings.h"
-#include "lv_bindings_misc.h"
 
-#include "script_engine_native_func.h"
 #include "elena_os_port.h"
 #include "elena_os_misc.h"
 #include "elena_os_nav.h"
@@ -67,6 +64,11 @@
 #include "elena_os_config.h"
 #include "elena_os_fs.h"
 #include "elena_os_mem.h"
+
+#include "lvgl_js_bridge.h"
+
+#include "script_engine_eos.h"
+#include "script_engine_lv.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_EOS_OBJ_KEY "eos"
@@ -90,6 +92,12 @@ static script_engine_context_t engine_ctx = {
     .current_script = NULL,
     .initialized = false};
 /* Function Implementations -----------------------------------*/
+
+jerry_value_t script_engine_throw_error(const char *message)
+{
+    jerry_value_t error_obj = jerry_error_sz(JERRY_ERROR_TYPE, (const jerry_char_t *)message);
+    return jerry_throw_value(error_obj, true);
+}
 
 void script_engine_set_error_info(const char *msg)
 {
@@ -393,15 +401,51 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     return SE_OK;
 }
 
-void script_engine_register_functions(const script_engine_func_entry_t *entry, const size_t funcs_count)
+void script_engine_register_functions(jerry_value_t parent,
+                                      const script_engine_func_entry_t *entries,
+                                      size_t funcs_count)
 {
     for (size_t i = 0; i < funcs_count; ++i)
     {
-        jerry_value_t fn = jerry_function_external(entry[i].handler);
-        jerry_value_t name = jerry_string_sz(entry[i].name);
-        jerry_value_free(jerry_object_set(script_engine_eos_obj, name, fn));
-        jerry_value_free(name);
+        const char *class_name = entries[i].class_name;
+        const char *method_name = entries[i].method_name;
+
+        jerry_value_t target_obj = parent;
+
+        // 如果指定了 class_name，则获取或创建 class 对象
+        if (class_name != NULL)
+        {
+            jerry_value_t class_key = jerry_string_sz(class_name);
+            jerry_value_t class_obj = jerry_object_get(parent, class_key);
+
+            if (jerry_value_is_undefined(class_obj))
+            {
+                // class 不存在，创建并挂到 parent
+                jerry_value_free(class_obj);
+                class_obj = jerry_object();
+                jerry_value_free(
+                    jerry_object_set(parent, class_key, class_obj));
+            }
+
+            jerry_value_free(class_key);
+            target_obj = class_obj; // 方法挂到 class 下
+        }
+
+        // 创建函数
+        jerry_value_t fn = jerry_function_external(entries[i].handler);
+        jerry_value_t method_key = jerry_string_sz(method_name);
+
+        jerry_value_free(
+            jerry_object_set(target_obj, method_key, fn));
+
+        // 释放
+        jerry_value_free(method_key);
         jerry_value_free(fn);
+
+        if (class_name != NULL)
+        {
+            jerry_value_free(target_obj);
+        }
     }
 }
 
@@ -561,8 +605,8 @@ script_engine_result_t script_engine_init(void)
     script_engine_eos_obj = jerry_object();
 
     // 注册函数和初始化
-    script_engine_register_natives();
-    lv_binding_init();
+    script_engine_lv_init();
+    script_engine_eos_init();
     eos_icon_register();
 
     engine_ctx.initialized = true;
@@ -601,10 +645,9 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
     jerry_value_t new_realm = jerry_realm();
     engine_ctx.old_realm = jerry_set_realm(new_realm);
 
-    // 设置EOS对象
-    jerry_value_t key = jerry_string_sz(SCRIPT_EOS_OBJ_KEY);
-    jerry_value_free(jerry_object_set(new_realm, key, script_engine_eos_obj));
-    jerry_value_free(key);
+    // 挂载库
+    script_engine_lv_attach(new_realm);
+    script_engine_eos_attach(new_realm);
 
     // 设置停止回调和日志
     jerry_halt_handler(16, _vm_exec_stop_callback, NULL);
@@ -613,7 +656,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
     // 设置全局script_info变量
     jerry_value_t global = jerry_current_realm();
     jerry_value_t script_info = _script_engine_create_info(script_package);
-    key = jerry_string_sz("script_info");
+    jerry_value_t key = jerry_string_sz("scriptInfo");
     jerry_value_free(jerry_object_set(global, key, script_info));
     jerry_value_free(key);
     jerry_value_free(script_info);

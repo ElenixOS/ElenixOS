@@ -7,3 +7,6 @@
 [submodule "third_party/RemixIcon"]
 	path = third_party/RemixIcon
 	url = https://github.com/Sab1e-dev/RemixIcon.git
+[submodule "third_party/uthash"]
+	path = third_party/uthash
+	url = https://github.com/troydhanson/uthash.git

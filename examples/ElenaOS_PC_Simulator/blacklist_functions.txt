@@ -1,2 +1,0 @@
-lv_img_set_src
-lv_obj_add_event_cb

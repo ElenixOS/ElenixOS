@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include "elena_os_scene.h"
 #include "elena_os_dispatcher.h"
-// #define EOS_LOG_DISABLE
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "elena_os_log.h"
 #include "elena_os_pm.h"
@@ -164,6 +164,10 @@ void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
     if (obj && lv_obj_is_valid(obj) && lv_obj_has_class(obj, &lv_obj_class))
     {
+        if(!lv_obj_get_parent(obj)){
+            eos_crown_encoder_set_target_screen(obj);
+            return;
+        }
         _apply_scrollable_obj(obj);
     }
     else

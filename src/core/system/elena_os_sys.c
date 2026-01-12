@@ -307,7 +307,6 @@ eos_result_t _create_default_cfg_json(const char *path)
     }
 
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_DEVICE_NAME_STR, EOS_SYS_DEFAULT_DEVICE_NAME);
-    cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_VERSION_STR, ELENA_OS_VERSION_FULL);
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_LANGUAGE_STR, EOS_SYS_DEFAULT_LANG_STR);
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, EOS_SYS_DEFAULT_WATCHFACE_ID_STR);
     // 转换为字符串

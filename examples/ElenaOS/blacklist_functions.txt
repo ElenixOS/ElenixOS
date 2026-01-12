@@ -12,3 +12,15 @@ lv_image_buf_set_palette
 lv_image_set_src
 lv_obj_add_event_cb
 lv_obj_add_event
+
+lv_timer_handler_run_in_period
+lv_timer_periodic_handler
+lv_timer_handler_set_resume_cb
+
+lv_timer_set_cb
+lv_timer_set_user_data
+lv_timer_enable
+lv_timer_get_idle
+lv_timer_get_time_until_next
+lv_timer_get_next
+lv_timer_get_user_data

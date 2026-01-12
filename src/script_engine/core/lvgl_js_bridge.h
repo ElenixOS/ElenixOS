@@ -19,6 +19,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "jerryscript.h"
+#include "lvgl.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -26,9 +27,11 @@ extern "C" {
 
 typedef enum{
     LV_TYPE_UNKNWON,
-    LV_TYPE_COMMON_PTR,
+    LV_TYPE_ANY,
     LV_TYPE_OBJ,
     LV_TYPE_FONT,
+    LV_TYPE_ANIM,
+    LV_TYPE_TIMER,
     LV_TYPE_EVENT,
     LV_TYPE_EVENT_DSC
 }lv_type_t;
@@ -55,6 +58,30 @@ jerry_value_t lv_js_bridge_ptr_2_obj(void *ptr, lv_type_t type);
  * @return lv_type_t 获取成功则返回对应类型，否则返回`LV_TYPE_UNKNOWN`
  */
 lv_type_t lv_js_bridge_obj_get_type(const jerry_value_t obj);
+/**
+ * @brief 将对象转换为动画结构体
+ * @param obj 目标对象
+ * @return lv_anim_t
+ */
+lv_anim_t lv_js_bridge_obj_2_anim(jerry_value_t obj);
+/**
+ * @brief 将动画结构体转换为对象
+ * @param a 动画结构体指针
+ * @return jerry_value_t
+ */
+jerry_value_t lv_js_bridge_anim_2_obj(lv_anim_t *a);
+/**
+ * @brief 将对象转换为颜色结构体
+ * @param obj 目标对象
+ * @return lv_color_t
+ */
+lv_color_t lv_js_bridge_obj_2_color(jerry_value_t obj);
+/**
+ * @brief 将颜色结构体转换为对象
+ * @param c 颜色结构体指针
+ * @return jerry_value_t
+ */
+jerry_value_t lv_js_bridge_color_2_obj(lv_color_t *c);
 #ifdef __cplusplus
 }
 #endif

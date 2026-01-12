@@ -46,6 +46,8 @@ typedef enum
     EOS_EVENT_NAVIGATION_BACK_PREV,             /**< 导航栈返回了上一个 Screen */
     EOS_EVENT_NAVIGATION_CLEAN_UP_START,        /**< 导航栈开始退出（准备清理） */
     EOS_EVENT_NAVIGATION_CLEAN_UP,              /**< 导航栈已退出（彻底清理） */
+    EOS_EVENT_SCRIPT_STARTED,                   /**< 脚本已启动 */
+    EOS_EVENT_SCRIPT_EXITED,                    /**< 脚本已退出 */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
@@ -120,6 +122,13 @@ void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user
  * @param cb 回调函数
  */
 void eos_event_remove_global_cb(lv_event_code_t event, lv_event_cb_t cb);
+/**
+ * @brief 移除指定事件下的指定回调函数（通过user_data区分）
+ * @param event 事件类型
+ * @param cb 回调函数
+ * @param user_data 用户数据，用于区分相同回调的不同注册
+ */
+void eos_event_remove_global_cb_with_user_data(lv_event_code_t event, lv_event_cb_t cb, void *user_data);
 /**
  * @brief 移除指定全局回调函数的所有事件注册
  * @param cb 回调函数

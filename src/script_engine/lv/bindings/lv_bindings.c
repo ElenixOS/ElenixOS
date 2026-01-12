@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2025-12-27
+ * @date 2026-01-13
  */
 
 /* Third party header files ---------------------------------------*/
@@ -14,6 +14,9 @@
 /* ElenaOS header files ---------------------------------------*/
 #include "lv_bindings.h"
 #include "lv_bindings_special.h"
+#include "lv_bindings_anim.h"
+#include "lv_bindings_timer.h"
+#include "lv_bindings_event.h"
 #include "script_engine_core.h"
 #include "elena_os_mem.h"
 #include "lvgl_js_bridge.h"
@@ -25,10 +28,10 @@
 
 /********************************** 宏定义处理辅助函数 **********************************/
 
-static void lvgl_binding_set_enum(jerry_value_t global, const char* key, int32_t val) {
+static void lvgl_binding_set_enum(jerry_value_t parent, const char* key, int32_t val) {
     jerry_value_t jkey = jerry_string_sz(key);
     jerry_value_t jval = jerry_number(val);
-    jerry_value_free(jerry_object_set(global, jkey, jval));
+    jerry_value_free(jerry_object_set(parent, jkey, jval));
     jerry_value_free(jkey);
     jerry_value_free(jval);
 }
@@ -578,6 +581,9 @@ static jerry_value_t js_lv_obj_tree_walk(const jerry_call_info_t*, const jerry_v
 static jerry_value_t js_lv_obj_update_flag(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_obj_update_layout(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_obj_update_snap(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_palette_darken(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_palette_lighten(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_palette_main(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_screen_active(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_screen_load(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_screen_load_anim(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
@@ -596,6 +602,19 @@ static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t*, const jerr
 static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_switch_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_tileview_set_tile(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_create_basic(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_delete(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_get_paused(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_pause(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_ready(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_reset(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_resume(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_set_auto_delete(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_trigo_cos(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_trigo_sin(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 
 // 函数实现
 
@@ -611,15 +630,15 @@ static jerry_value_t js_lv_arc_align_obj_to_angle(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: obj_to_align (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj_to_align = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 解析参数: r_offset (int32_t)
     jerry_value_t js_arg_r_offset = args[2];
     if (!jerry_value_is_number(js_arg_r_offset)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_arc_align_obj_to_angle: Argument 2 must be a number");
     }
 
     int32_t arg_r_offset = (int32_t)jerry_value_as_number(js_arg_r_offset);
@@ -644,17 +663,17 @@ static jerry_value_t js_lv_arc_bind_value(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_observer_t* ret_value = lv_arc_bind_value(arg_obj, arg_subject);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -673,7 +692,7 @@ static jerry_value_t js_lv_arc_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_arc_create(arg_parent);
@@ -700,7 +719,7 @@ static jerry_value_t js_lv_arc_get_angle_end(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_value_precise_t ret_value = lv_arc_get_angle_end(arg_obj);
@@ -726,7 +745,7 @@ static jerry_value_t js_lv_arc_get_angle_start(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_value_precise_t ret_value = lv_arc_get_angle_start(arg_obj);
@@ -752,7 +771,7 @@ static jerry_value_t js_lv_arc_get_bg_angle_end(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_value_precise_t ret_value = lv_arc_get_bg_angle_end(arg_obj);
@@ -778,7 +797,7 @@ static jerry_value_t js_lv_arc_get_bg_angle_start(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_value_precise_t ret_value = lv_arc_get_bg_angle_start(arg_obj);
@@ -804,7 +823,7 @@ static jerry_value_t js_lv_arc_get_knob_offset(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_arc_get_knob_offset(arg_obj);
@@ -830,7 +849,7 @@ static jerry_value_t js_lv_arc_get_max_value(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_arc_get_max_value(arg_obj);
@@ -856,7 +875,7 @@ static jerry_value_t js_lv_arc_get_min_value(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_arc_get_min_value(arg_obj);
@@ -882,7 +901,7 @@ static jerry_value_t js_lv_arc_get_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_arc_mode_t ret_value = lv_arc_get_mode(arg_obj);
@@ -908,7 +927,7 @@ static jerry_value_t js_lv_arc_get_rotation(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_arc_get_rotation(arg_obj);
@@ -934,7 +953,7 @@ static jerry_value_t js_lv_arc_get_value(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_arc_get_value(arg_obj);
@@ -960,15 +979,15 @@ static jerry_value_t js_lv_arc_rotate_obj_to_angle(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: obj_to_rotate (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj_to_rotate = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 解析参数: r_offset (int32_t)
     jerry_value_t js_arg_r_offset = args[2];
     if (!jerry_value_is_number(js_arg_r_offset)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_arc_rotate_obj_to_angle: Argument 2 must be a number");
     }
 
     int32_t arg_r_offset = (int32_t)jerry_value_as_number(js_arg_r_offset);
@@ -993,12 +1012,12 @@ static jerry_value_t js_lv_arc_set_angles(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: start (lv_value_precise_t)
     jerry_value_t js_arg_start = args[1];
     if (!jerry_value_is_number(js_arg_start)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_angles: Argument 1 must be a number");
     }
 
     float arg_start = (float)jerry_value_as_number(js_arg_start);
@@ -1006,7 +1025,7 @@ static jerry_value_t js_lv_arc_set_angles(const jerry_call_info_t* call_info_p,
     // 解析参数: end (lv_value_precise_t)
     jerry_value_t js_arg_end = args[2];
     if (!jerry_value_is_number(js_arg_end)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_arc_set_angles: Argument 2 must be a number");
     }
 
     float arg_end = (float)jerry_value_as_number(js_arg_end);
@@ -1031,12 +1050,12 @@ static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: start (lv_value_precise_t)
     jerry_value_t js_arg_start = args[1];
     if (!jerry_value_is_number(js_arg_start)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_bg_angles: Argument 1 must be a number");
     }
 
     float arg_start = (float)jerry_value_as_number(js_arg_start);
@@ -1044,7 +1063,7 @@ static jerry_value_t js_lv_arc_set_bg_angles(const jerry_call_info_t* call_info_
     // 解析参数: end (lv_value_precise_t)
     jerry_value_t js_arg_end = args[2];
     if (!jerry_value_is_number(js_arg_end)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_arc_set_bg_angles: Argument 2 must be a number");
     }
 
     float arg_end = (float)jerry_value_as_number(js_arg_end);
@@ -1069,12 +1088,12 @@ static jerry_value_t js_lv_arc_set_bg_end_angle(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: end (lv_value_precise_t)
     jerry_value_t js_arg_end = args[1];
     if (!jerry_value_is_number(js_arg_end)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_bg_end_angle: Argument 1 must be a number");
     }
 
     float arg_end = (float)jerry_value_as_number(js_arg_end);
@@ -1099,12 +1118,12 @@ static jerry_value_t js_lv_arc_set_bg_start_angle(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: start (lv_value_precise_t)
     jerry_value_t js_arg_start = args[1];
     if (!jerry_value_is_number(js_arg_start)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_bg_start_angle: Argument 1 must be a number");
     }
 
     float arg_start = (float)jerry_value_as_number(js_arg_start);
@@ -1129,12 +1148,12 @@ static jerry_value_t js_lv_arc_set_change_rate(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: rate (uint32_t)
     jerry_value_t js_arg_rate = args[1];
     if (!jerry_value_is_number(js_arg_rate)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_change_rate: Argument 1 must be a number");
     }
 
     uint32_t arg_rate = (uint32_t)jerry_value_as_number(js_arg_rate);
@@ -1159,12 +1178,12 @@ static jerry_value_t js_lv_arc_set_end_angle(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: end (lv_value_precise_t)
     jerry_value_t js_arg_end = args[1];
     if (!jerry_value_is_number(js_arg_end)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_end_angle: Argument 1 must be a number");
     }
 
     float arg_end = (float)jerry_value_as_number(js_arg_end);
@@ -1189,12 +1208,12 @@ static jerry_value_t js_lv_arc_set_knob_offset(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: offset (int32_t)
     jerry_value_t js_arg_offset = args[1];
     if (!jerry_value_is_number(js_arg_offset)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_knob_offset: Argument 1 must be a number");
     }
 
     int32_t arg_offset = (int32_t)jerry_value_as_number(js_arg_offset);
@@ -1219,12 +1238,12 @@ static jerry_value_t js_lv_arc_set_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: type (lv_arc_mode_t)
     jerry_value_t js_arg_type = args[1];
     if (!jerry_value_is_number(js_arg_type)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_mode: Argument 1 must be a number");
     }
 
     int arg_type = (int)jerry_value_as_number(js_arg_type);
@@ -1249,12 +1268,12 @@ static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: min (int32_t)
     jerry_value_t js_arg_min = args[1];
     if (!jerry_value_is_number(js_arg_min)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_range: Argument 1 must be a number");
     }
 
     int32_t arg_min = (int32_t)jerry_value_as_number(js_arg_min);
@@ -1262,7 +1281,7 @@ static jerry_value_t js_lv_arc_set_range(const jerry_call_info_t* call_info_p,
     // 解析参数: max (int32_t)
     jerry_value_t js_arg_max = args[2];
     if (!jerry_value_is_number(js_arg_max)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_arc_set_range: Argument 2 must be a number");
     }
 
     int32_t arg_max = (int32_t)jerry_value_as_number(js_arg_max);
@@ -1287,12 +1306,12 @@ static jerry_value_t js_lv_arc_set_rotation(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: rotation (int32_t)
     jerry_value_t js_arg_rotation = args[1];
     if (!jerry_value_is_number(js_arg_rotation)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_rotation: Argument 1 must be a number");
     }
 
     int32_t arg_rotation = (int32_t)jerry_value_as_number(js_arg_rotation);
@@ -1317,12 +1336,12 @@ static jerry_value_t js_lv_arc_set_start_angle(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: start (lv_value_precise_t)
     jerry_value_t js_arg_start = args[1];
     if (!jerry_value_is_number(js_arg_start)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_start_angle: Argument 1 must be a number");
     }
 
     float arg_start = (float)jerry_value_as_number(js_arg_start);
@@ -1347,12 +1366,12 @@ static jerry_value_t js_lv_arc_set_value(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_arc_set_value: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -1377,7 +1396,7 @@ static jerry_value_t js_lv_bar_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_bar_create(arg_parent);
@@ -1404,7 +1423,7 @@ static jerry_value_t js_lv_bar_get_max_value(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_bar_get_max_value(arg_obj);
@@ -1430,7 +1449,7 @@ static jerry_value_t js_lv_bar_get_min_value(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_bar_get_min_value(arg_obj);
@@ -1456,7 +1475,7 @@ static jerry_value_t js_lv_bar_get_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_bar_mode_t ret_value = lv_bar_get_mode(arg_obj);
@@ -1482,7 +1501,7 @@ static jerry_value_t js_lv_bar_get_orientation(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_bar_orientation_t ret_value = lv_bar_get_orientation(arg_obj);
@@ -1508,7 +1527,7 @@ static jerry_value_t js_lv_bar_get_start_value(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_bar_get_start_value(arg_obj);
@@ -1534,7 +1553,7 @@ static jerry_value_t js_lv_bar_get_value(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_bar_get_value(arg_obj);
@@ -1560,7 +1579,7 @@ static jerry_value_t js_lv_bar_is_symmetrical(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_bar_is_symmetrical(arg_obj);
@@ -1586,12 +1605,12 @@ static jerry_value_t js_lv_bar_set_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: mode (lv_bar_mode_t)
     jerry_value_t js_arg_mode = args[1];
     if (!jerry_value_is_number(js_arg_mode)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_bar_set_mode: Argument 1 must be a number");
     }
 
     int arg_mode = (int)jerry_value_as_number(js_arg_mode);
@@ -1616,12 +1635,12 @@ static jerry_value_t js_lv_bar_set_orientation(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: orientation (lv_bar_orientation_t)
     jerry_value_t js_arg_orientation = args[1];
     if (!jerry_value_is_number(js_arg_orientation)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_bar_set_orientation: Argument 1 must be a number");
     }
 
     int arg_orientation = (int)jerry_value_as_number(js_arg_orientation);
@@ -1646,12 +1665,12 @@ static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: min (int32_t)
     jerry_value_t js_arg_min = args[1];
     if (!jerry_value_is_number(js_arg_min)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_bar_set_range: Argument 1 must be a number");
     }
 
     int32_t arg_min = (int32_t)jerry_value_as_number(js_arg_min);
@@ -1659,7 +1678,7 @@ static jerry_value_t js_lv_bar_set_range(const jerry_call_info_t* call_info_p,
     // 解析参数: max (int32_t)
     jerry_value_t js_arg_max = args[2];
     if (!jerry_value_is_number(js_arg_max)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_bar_set_range: Argument 2 must be a number");
     }
 
     int32_t arg_max = (int32_t)jerry_value_as_number(js_arg_max);
@@ -1684,12 +1703,12 @@ static jerry_value_t js_lv_bar_set_start_value(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: start_value (int32_t)
     jerry_value_t js_arg_start_value = args[1];
     if (!jerry_value_is_number(js_arg_start_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_bar_set_start_value: Argument 1 must be a number");
     }
 
     int32_t arg_start_value = (int32_t)jerry_value_as_number(js_arg_start_value);
@@ -1697,7 +1716,7 @@ static jerry_value_t js_lv_bar_set_start_value(const jerry_call_info_t* call_inf
     // 解析参数: anim (lv_anim_enable_t)
     jerry_value_t js_arg_anim = args[2];
     if (!jerry_value_is_number(js_arg_anim)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_bar_set_start_value: Argument 2 must be a number");
     }
 
     int arg_anim = (int)jerry_value_as_number(js_arg_anim);
@@ -1722,12 +1741,12 @@ static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_bar_set_value: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -1735,7 +1754,7 @@ static jerry_value_t js_lv_bar_set_value(const jerry_call_info_t* call_info_p,
     // 解析参数: anim (lv_anim_enable_t)
     jerry_value_t js_arg_anim = args[2];
     if (!jerry_value_is_number(js_arg_anim)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_bar_set_value: Argument 2 must be a number");
     }
 
     int arg_anim = (int)jerry_value_as_number(js_arg_anim);
@@ -1760,11 +1779,11 @@ static jerry_value_t js_lv_bin_decoder_close(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_bin_decoder_close(arg_decoder, arg_dsc);
 
@@ -1785,11 +1804,11 @@ static jerry_value_t js_lv_bin_decoder_open(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_result_t ret_value = lv_bin_decoder_open(arg_decoder, arg_dsc);
 
@@ -1814,7 +1833,7 @@ static jerry_value_t js_lv_button_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_button_create(arg_parent);
@@ -1841,7 +1860,7 @@ static jerry_value_t js_lv_checkbox_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_checkbox_create(arg_parent);
@@ -1868,7 +1887,7 @@ static jerry_value_t js_lv_checkbox_get_text(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const char* ret_value = lv_checkbox_get_text(arg_obj);
@@ -1898,7 +1917,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: txt (const char*)
 
@@ -1906,7 +1925,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_checkbox_set_text: Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -1918,7 +1937,7 @@ static jerry_value_t js_lv_checkbox_set_text(const jerry_call_info_t* call_info_
     // 调用底层函数
     lv_checkbox_set_text(arg_obj, arg_txt);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
@@ -1938,7 +1957,7 @@ static jerry_value_t js_lv_checkbox_set_text_static(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: txt (const char*)
 
@@ -1946,7 +1965,7 @@ static jerry_value_t js_lv_checkbox_set_text_static(const jerry_call_info_t* cal
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_checkbox_set_text_static: Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -1958,7 +1977,7 @@ static jerry_value_t js_lv_checkbox_set_text_static(const jerry_call_info_t* cal
     // 调用底层函数
     lv_checkbox_set_text_static(arg_obj, arg_txt);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
@@ -1980,7 +1999,7 @@ static jerry_value_t js_lv_color_hex(const jerry_call_info_t* call_info_p,
     // 解析参数: c (uint32_t)
     jerry_value_t js_arg_c = args[0];
     if (!jerry_value_is_number(js_arg_c)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_color_hex: Argument 0 must be a number");
     }
 
     uint32_t arg_c = (uint32_t)jerry_value_as_number(js_arg_c);
@@ -1991,7 +2010,7 @@ static jerry_value_t js_lv_color_hex(const jerry_call_info_t* call_info_p,
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -2012,7 +2031,7 @@ static jerry_value_t js_lv_delay_ms(const jerry_call_info_t* call_info_p,
     // 解析参数: ms (uint32_t)
     jerry_value_t js_arg_ms = args[0];
     if (!jerry_value_is_number(js_arg_ms)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_delay_ms: Argument 0 must be a number");
     }
 
     uint32_t arg_ms = (uint32_t)jerry_value_as_number(js_arg_ms);
@@ -2037,8 +2056,8 @@ static jerry_value_t js_lv_display_get_screen_active(const jerry_call_info_t* ca
     }
 
     // 解析参数: disp (lv_display_t*)
-    // 对象类型参数，支持null
-    void* arg_disp = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_disp = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_t* ret_value = lv_display_get_screen_active(arg_disp);
 
@@ -2064,7 +2083,7 @@ static jerry_value_t js_lv_dropdown_add_option(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: option (const char*)
 
@@ -2072,7 +2091,7 @@ static jerry_value_t js_lv_dropdown_add_option(const jerry_call_info_t* call_inf
     const char* arg_option = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_add_option: Argument 1 must be a string");
         }
         jerry_size_t arg_option_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_option_str = (char*)eos_malloc(arg_option_len + 1);
@@ -2084,7 +2103,7 @@ static jerry_value_t js_lv_dropdown_add_option(const jerry_call_info_t* call_inf
     // 解析参数: pos (uint32_t)
     jerry_value_t js_arg_pos = args[2];
     if (!jerry_value_is_number(js_arg_pos)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_dropdown_add_option: Argument 2 must be a number");
     }
 
     uint32_t arg_pos = (uint32_t)jerry_value_as_number(js_arg_pos);
@@ -2092,7 +2111,7 @@ static jerry_value_t js_lv_dropdown_add_option(const jerry_call_info_t* call_inf
     // 调用底层函数
     lv_dropdown_add_option(arg_obj, arg_option, arg_pos);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_option_str) eos_free(arg_option_str);
 
     return jerry_undefined();
@@ -2112,17 +2131,17 @@ static jerry_value_t js_lv_dropdown_bind_value(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_observer_t* ret_value = lv_dropdown_bind_value(arg_obj, arg_subject);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -2141,7 +2160,7 @@ static jerry_value_t js_lv_dropdown_clear_options(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_dropdown_clear_options(arg_obj);
@@ -2163,7 +2182,7 @@ static jerry_value_t js_lv_dropdown_close(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_dropdown_close(arg_obj);
@@ -2185,7 +2204,7 @@ static jerry_value_t js_lv_dropdown_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_dropdown_create(arg_parent);
@@ -2212,7 +2231,7 @@ static jerry_value_t js_lv_dropdown_get_dir(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_dir_t ret_value = lv_dropdown_get_dir(arg_obj);
@@ -2238,7 +2257,7 @@ static jerry_value_t js_lv_dropdown_get_list(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_dropdown_get_list(arg_obj);
@@ -2265,7 +2284,7 @@ static jerry_value_t js_lv_dropdown_get_option_count(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_dropdown_get_option_count(arg_obj);
@@ -2291,7 +2310,7 @@ static jerry_value_t js_lv_dropdown_get_option_index(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: option (const char*)
 
@@ -2299,7 +2318,7 @@ static jerry_value_t js_lv_dropdown_get_option_index(const jerry_call_info_t* ca
     const char* arg_option = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_get_option_index: Argument 1 must be a string");
         }
         jerry_size_t arg_option_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_option_str = (char*)eos_malloc(arg_option_len + 1);
@@ -2315,7 +2334,7 @@ static jerry_value_t js_lv_dropdown_get_option_index(const jerry_call_info_t* ca
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_option_str) eos_free(arg_option_str);
 
     return js_result;
@@ -2335,7 +2354,7 @@ static jerry_value_t js_lv_dropdown_get_options(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const char* ret_value = lv_dropdown_get_options(arg_obj);
@@ -2365,7 +2384,7 @@ static jerry_value_t js_lv_dropdown_get_selected(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_dropdown_get_selected(arg_obj);
@@ -2391,7 +2410,7 @@ static jerry_value_t js_lv_dropdown_get_selected_highlight(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_dropdown_get_selected_highlight(arg_obj);
@@ -2417,7 +2436,7 @@ static jerry_value_t js_lv_dropdown_get_selected_str(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: buf (char*)
 
@@ -2425,7 +2444,7 @@ static jerry_value_t js_lv_dropdown_get_selected_str(const jerry_call_info_t* ca
     const char* arg_buf = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_get_selected_str: Argument 1 must be a string");
         }
         jerry_size_t arg_buf_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_buf_str = (char*)eos_malloc(arg_buf_len + 1);
@@ -2437,7 +2456,7 @@ static jerry_value_t js_lv_dropdown_get_selected_str(const jerry_call_info_t* ca
     // 解析参数: buf_size (uint32_t)
     jerry_value_t js_arg_buf_size = args[2];
     if (!jerry_value_is_number(js_arg_buf_size)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_dropdown_get_selected_str: Argument 2 must be a number");
     }
 
     uint32_t arg_buf_size = (uint32_t)jerry_value_as_number(js_arg_buf_size);
@@ -2445,7 +2464,7 @@ static jerry_value_t js_lv_dropdown_get_selected_str(const jerry_call_info_t* ca
     // 调用底层函数
     lv_dropdown_get_selected_str(arg_obj, arg_buf, arg_buf_size);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_buf_str) eos_free(arg_buf_str);
 
     return jerry_undefined();
@@ -2465,7 +2484,7 @@ static jerry_value_t js_lv_dropdown_get_symbol(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const char* ret_value = lv_dropdown_get_symbol(arg_obj);
@@ -2495,7 +2514,7 @@ static jerry_value_t js_lv_dropdown_get_text(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const char* ret_value = lv_dropdown_get_text(arg_obj);
@@ -2525,7 +2544,7 @@ static jerry_value_t js_lv_dropdown_is_open(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_dropdown_is_open(arg_obj);
@@ -2551,7 +2570,7 @@ static jerry_value_t js_lv_dropdown_open(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: dropdown_obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_dropdown_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_dropdown_open(arg_dropdown_obj);
@@ -2573,12 +2592,12 @@ static jerry_value_t js_lv_dropdown_set_dir(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: dir (lv_dir_t)
     jerry_value_t js_arg_dir = args[1];
     if (!jerry_value_is_number(js_arg_dir)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_dropdown_set_dir: Argument 1 must be a number");
     }
 
     int arg_dir = (int)jerry_value_as_number(js_arg_dir);
@@ -2603,7 +2622,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: options (const char*)
 
@@ -2611,7 +2630,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
     const char* arg_options = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_set_options: Argument 1 must be a string");
         }
         jerry_size_t arg_options_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_options_str = (char*)eos_malloc(arg_options_len + 1);
@@ -2623,7 +2642,7 @@ static jerry_value_t js_lv_dropdown_set_options(const jerry_call_info_t* call_in
     // 调用底层函数
     lv_dropdown_set_options(arg_obj, arg_options);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_options_str) eos_free(arg_options_str);
 
     return jerry_undefined();
@@ -2643,7 +2662,7 @@ static jerry_value_t js_lv_dropdown_set_options_static(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: options (const char*)
 
@@ -2651,7 +2670,7 @@ static jerry_value_t js_lv_dropdown_set_options_static(const jerry_call_info_t* 
     const char* arg_options = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_set_options_static: Argument 1 must be a string");
         }
         jerry_size_t arg_options_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_options_str = (char*)eos_malloc(arg_options_len + 1);
@@ -2663,7 +2682,7 @@ static jerry_value_t js_lv_dropdown_set_options_static(const jerry_call_info_t* 
     // 调用底层函数
     lv_dropdown_set_options_static(arg_obj, arg_options);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_options_str) eos_free(arg_options_str);
 
     return jerry_undefined();
@@ -2683,12 +2702,12 @@ static jerry_value_t js_lv_dropdown_set_selected(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: sel_opt (uint32_t)
     jerry_value_t js_arg_sel_opt = args[1];
     if (!jerry_value_is_number(js_arg_sel_opt)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_dropdown_set_selected: Argument 1 must be a number");
     }
 
     uint32_t arg_sel_opt = (uint32_t)jerry_value_as_number(js_arg_sel_opt);
@@ -2713,7 +2732,7 @@ static jerry_value_t js_lv_dropdown_set_selected_highlight(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: en (bool)
     // 布尔类型参数: en
@@ -2726,7 +2745,7 @@ static jerry_value_t js_lv_dropdown_set_selected_highlight(const jerry_call_info
             arg_en = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_dropdown_set_selected_highlight: Argument 1 must be boolean or number for bool");
         }
     }
 
@@ -2750,7 +2769,7 @@ static jerry_value_t js_lv_dropdown_set_symbol(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: symbol (const void*)
     // void*/字符串 类型参数，支持null
@@ -2763,7 +2782,7 @@ static jerry_value_t js_lv_dropdown_set_symbol(const jerry_call_info_t* call_inf
             jerry_size_t arg_symbol_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_symbol_str = (char*)eos_malloc(arg_symbol_len + 1);
             if (!arg_symbol_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_dropdown_set_symbol: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_symbol_str, arg_symbol_len);
             arg_symbol_str[arg_symbol_len] = '\0';
@@ -2771,7 +2790,7 @@ static jerry_value_t js_lv_dropdown_set_symbol(const jerry_call_info_t* call_inf
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_symbol = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_symbol = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -2779,14 +2798,14 @@ static jerry_value_t js_lv_dropdown_set_symbol(const jerry_call_info_t* call_inf
             arg_symbol = (void*)ptr_num;
         }
         else {
-            if (arg_symbol_str) eos_free(arg_symbol_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_dropdown_set_symbol: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_symbol_str);
     // 调用底层函数
     lv_dropdown_set_symbol(arg_obj, arg_symbol);
+
+    // 释放临时内存
+    if (arg_symbol_str) eos_free(arg_symbol_str);
 
     return jerry_undefined();
 }
@@ -2805,7 +2824,7 @@ static jerry_value_t js_lv_dropdown_set_text(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: txt (const char*)
 
@@ -2813,7 +2832,7 @@ static jerry_value_t js_lv_dropdown_set_text(const jerry_call_info_t* call_info_
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_dropdown_set_text: Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -2825,7 +2844,7 @@ static jerry_value_t js_lv_dropdown_set_text(const jerry_call_info_t* call_info_
     // 调用底层函数
     lv_dropdown_set_text(arg_obj, arg_txt);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
@@ -2845,8 +2864,8 @@ static jerry_value_t js_lv_image_buf_free(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: dsc (lv_image_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_buf_free(arg_dsc);
 
@@ -2877,7 +2896,7 @@ static jerry_value_t js_lv_image_cache_drop(const jerry_call_info_t* call_info_p
             jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
             arg_src_str = (char*)eos_malloc(arg_src_len + 1);
             if (!arg_src_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_cache_drop: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_src_str, arg_src_len);
             arg_src_str[arg_src_len] = '\0';
@@ -2885,7 +2904,7 @@ static jerry_value_t js_lv_image_cache_drop(const jerry_call_info_t* call_info_p
         }
         else if (jerry_value_is_object(args[0])) {
             // 尝试从对象获取指针
-            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_COMMON_PTR);
+            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[0])) {
             // 直接传递指针数值
@@ -2893,14 +2912,14 @@ static jerry_value_t js_lv_image_cache_drop(const jerry_call_info_t* call_info_p
             arg_src = (void*)ptr_num;
         }
         else {
-            if (arg_src_str) eos_free(arg_src_str);
-            return script_engine_throw_error("Argument 0 must be string, object or number");
+            return script_engine_throw_error("lv_image_cache_drop: Argument 0 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_src_str);
     // 调用底层函数
     lv_image_cache_drop(arg_src);
+
+    // 释放临时内存
+    if (arg_src_str) eos_free(arg_src_str);
 
     return jerry_undefined();
 }
@@ -2921,7 +2940,7 @@ static jerry_value_t js_lv_image_cache_init(const jerry_call_info_t* call_info_p
     // 解析参数: size (uint32_t)
     jerry_value_t js_arg_size = args[0];
     if (!jerry_value_is_number(js_arg_size)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_image_cache_init: Argument 0 must be a number");
     }
 
     uint32_t arg_size = (uint32_t)jerry_value_as_number(js_arg_size);
@@ -2970,7 +2989,7 @@ static jerry_value_t js_lv_image_cache_resize(const jerry_call_info_t* call_info
     // 解析参数: new_size (uint32_t)
     jerry_value_t js_arg_new_size = args[0];
     if (!jerry_value_is_number(js_arg_new_size)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_image_cache_resize: Argument 0 must be a number");
     }
 
     uint32_t arg_new_size = (uint32_t)jerry_value_as_number(js_arg_new_size);
@@ -2986,7 +3005,7 @@ static jerry_value_t js_lv_image_cache_resize(const jerry_call_info_t* call_info
             arg_evict_now = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_image_cache_resize: Argument 1 must be boolean or number for bool");
         }
     }
 
@@ -3010,7 +3029,7 @@ static jerry_value_t js_lv_image_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_image_create(arg_parent);
@@ -3037,14 +3056,14 @@ static jerry_value_t js_lv_image_decoder_add_to_cache(const jerry_call_info_t* c
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: search_key (lv_image_cache_data_t*)
-    // 对象类型参数，支持null
-    void* arg_search_key = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_search_key = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: decoded (const lv_draw_buf_t*)
-    // 对象类型参数，支持null
-    void* arg_decoded = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoded = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 解析参数: user_data (void*)
     // void*/字符串 类型参数，支持null
     void* arg_user_data = NULL;
@@ -3056,7 +3075,7 @@ static jerry_value_t js_lv_image_decoder_add_to_cache(const jerry_call_info_t* c
             jerry_size_t arg_user_data_len = jerry_string_size(args[3], JERRY_ENCODING_UTF8);
             arg_user_data_str = (char*)eos_malloc(arg_user_data_len + 1);
             if (!arg_user_data_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_decoder_add_to_cache: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[3], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_user_data_str, arg_user_data_len);
             arg_user_data_str[arg_user_data_len] = '\0';
@@ -3064,7 +3083,7 @@ static jerry_value_t js_lv_image_decoder_add_to_cache(const jerry_call_info_t* c
         }
         else if (jerry_value_is_object(args[3])) {
             // 尝试从对象获取指针
-            arg_user_data = lv_js_bridge_obj_2_ptr(args[3],LV_TYPE_COMMON_PTR);
+            arg_user_data = lv_js_bridge_obj_2_ptr(args[3],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[3])) {
             // 直接传递指针数值
@@ -3072,18 +3091,18 @@ static jerry_value_t js_lv_image_decoder_add_to_cache(const jerry_call_info_t* c
             arg_user_data = (void*)ptr_num;
         }
         else {
-            if (arg_user_data_str) eos_free(arg_user_data_str);
-            return script_engine_throw_error("Argument 3 must be string, object or number");
+            return script_engine_throw_error("lv_image_decoder_add_to_cache: Argument 3 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_user_data_str);
     // 调用底层函数
     lv_cache_entry_t* ret_value = lv_image_decoder_add_to_cache(arg_decoder, arg_search_key, arg_decoded, arg_user_data);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
+
+    // 释放临时内存
+    if (arg_user_data_str) eos_free(arg_user_data_str);
 
     return js_result;
 }
@@ -3102,8 +3121,8 @@ static jerry_value_t js_lv_image_decoder_close(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_decoder_close(arg_dsc);
 
@@ -3123,7 +3142,7 @@ static jerry_value_t js_lv_image_decoder_create(const jerry_call_info_t* call_in
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -3142,8 +3161,8 @@ static jerry_value_t js_lv_image_decoder_delete(const jerry_call_info_t* call_in
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_decoder_delete(arg_decoder);
 
@@ -3164,14 +3183,14 @@ static jerry_value_t js_lv_image_decoder_get_area(const jerry_call_info_t* call_
     }
 
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: full_area (const lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_full_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_full_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: decoded_area (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_decoded_area = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoded_area = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_result_t ret_value = lv_image_decoder_get_area(arg_dsc, arg_full_area, arg_decoded_area);
 
@@ -3206,7 +3225,7 @@ static jerry_value_t js_lv_image_decoder_get_info(const jerry_call_info_t* call_
             jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
             arg_src_str = (char*)eos_malloc(arg_src_len + 1);
             if (!arg_src_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_decoder_get_info: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_src_str, arg_src_len);
             arg_src_str[arg_src_len] = '\0';
@@ -3214,7 +3233,7 @@ static jerry_value_t js_lv_image_decoder_get_info(const jerry_call_info_t* call_
         }
         else if (jerry_value_is_object(args[0])) {
             // 尝试从对象获取指针
-            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_COMMON_PTR);
+            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[0])) {
             // 直接传递指针数值
@@ -3222,21 +3241,21 @@ static jerry_value_t js_lv_image_decoder_get_info(const jerry_call_info_t* call_
             arg_src = (void*)ptr_num;
         }
         else {
-            if (arg_src_str) eos_free(arg_src_str);
-            return script_engine_throw_error("Argument 0 must be string, object or number");
+            return script_engine_throw_error("lv_image_decoder_get_info: Argument 0 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_src_str);
     // 解析参数: header (lv_image_header_t*)
-    // 对象类型参数，支持null
-    void* arg_header = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_header = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_result_t ret_value = lv_image_decoder_get_info(arg_src, arg_header);
 
     // 处理返回值
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
+
+    // 释放临时内存
+    if (arg_src_str) eos_free(arg_src_str);
 
     return js_result;
 }
@@ -3255,14 +3274,14 @@ static jerry_value_t js_lv_image_decoder_get_next(const jerry_call_info_t* call_
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_decoder_t* ret_value = lv_image_decoder_get_next(arg_decoder);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -3281,8 +3300,8 @@ static jerry_value_t js_lv_image_decoder_open(const jerry_call_info_t* call_info
     }
 
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: src (const void*)
     // void*/字符串 类型参数，支持null
     void* arg_src = NULL;
@@ -3294,7 +3313,7 @@ static jerry_value_t js_lv_image_decoder_open(const jerry_call_info_t* call_info
             jerry_size_t arg_src_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_src_str = (char*)eos_malloc(arg_src_len + 1);
             if (!arg_src_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_decoder_open: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_src_str, arg_src_len);
             arg_src_str[arg_src_len] = '\0';
@@ -3302,7 +3321,7 @@ static jerry_value_t js_lv_image_decoder_open(const jerry_call_info_t* call_info
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_src = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_src = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -3310,21 +3329,21 @@ static jerry_value_t js_lv_image_decoder_open(const jerry_call_info_t* call_info
             arg_src = (void*)ptr_num;
         }
         else {
-            if (arg_src_str) eos_free(arg_src_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_image_decoder_open: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_src_str);
     // 解析参数: args (const lv_image_decoder_args_t*)
-    // 对象类型参数，支持null
-    void* arg_args = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_args = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_result_t ret_value = lv_image_decoder_open(arg_dsc, arg_src, arg_args);
 
     // 处理返回值
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
+
+    // 释放临时内存
+    if (arg_src_str) eos_free(arg_src_str);
 
     return js_result;
 }
@@ -3343,17 +3362,17 @@ static jerry_value_t js_lv_image_decoder_post_process(const jerry_call_info_t* c
     }
 
     // 解析参数: dsc (lv_image_decoder_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: decoded (lv_draw_buf_t*)
-    // 对象类型参数，支持null
-    void* arg_decoded = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoded = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_draw_buf_t* ret_value = lv_image_decoder_post_process(arg_dsc, arg_decoded);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -3372,11 +3391,11 @@ static jerry_value_t js_lv_image_decoder_set_close_cb(const jerry_call_info_t* c
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: close_cb (lv_image_decoder_close_f_t)
     // 通用指针类型: lv_image_decoder_close_f_t，支持null
-    lv_image_decoder_close_f_t arg_close_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_image_decoder_close_f_t arg_close_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 调用底层函数
     lv_image_decoder_set_close_cb(arg_decoder, arg_close_cb);
@@ -3398,11 +3417,11 @@ static jerry_value_t js_lv_image_decoder_set_get_area_cb(const jerry_call_info_t
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: read_line_cb (lv_image_decoder_get_area_cb_t)
     // 通用指针类型: lv_image_decoder_get_area_cb_t，支持null
-    lv_image_decoder_get_area_cb_t arg_read_line_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_image_decoder_get_area_cb_t arg_read_line_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 调用底层函数
     lv_image_decoder_set_get_area_cb(arg_decoder, arg_read_line_cb);
@@ -3424,11 +3443,11 @@ static jerry_value_t js_lv_image_decoder_set_info_cb(const jerry_call_info_t* ca
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: info_cb (lv_image_decoder_info_f_t)
     // 通用指针类型: lv_image_decoder_info_f_t，支持null
-    lv_image_decoder_info_f_t arg_info_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_image_decoder_info_f_t arg_info_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 调用底层函数
     lv_image_decoder_set_info_cb(arg_decoder, arg_info_cb);
@@ -3450,11 +3469,11 @@ static jerry_value_t js_lv_image_decoder_set_open_cb(const jerry_call_info_t* ca
     }
 
     // 解析参数: decoder (lv_image_decoder_t*)
-    // 对象类型参数，支持null
-    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_decoder = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: open_cb (lv_image_decoder_open_f_t)
     // 通用指针类型: lv_image_decoder_open_f_t，支持null
-    lv_image_decoder_open_f_t arg_open_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_image_decoder_open_f_t arg_open_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 调用底层函数
     lv_image_decoder_set_open_cb(arg_decoder, arg_open_cb);
@@ -3476,7 +3495,7 @@ static jerry_value_t js_lv_image_get_antialias(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_image_get_antialias(arg_obj);
@@ -3502,14 +3521,14 @@ static jerry_value_t js_lv_image_get_bitmap_map_src(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const lv_image_dsc_t* ret_value = lv_image_get_bitmap_map_src(arg_obj);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -3528,7 +3547,7 @@ static jerry_value_t js_lv_image_get_blend_mode(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_blend_mode_t ret_value = lv_image_get_blend_mode(arg_obj);
@@ -3554,7 +3573,7 @@ static jerry_value_t js_lv_image_get_inner_align(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_image_align_t ret_value = lv_image_get_inner_align(arg_obj);
@@ -3580,7 +3599,7 @@ static jerry_value_t js_lv_image_get_offset_x(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_offset_x(arg_obj);
@@ -3606,7 +3625,7 @@ static jerry_value_t js_lv_image_get_offset_y(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_offset_y(arg_obj);
@@ -3632,11 +3651,11 @@ static jerry_value_t js_lv_image_get_pivot(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: pivot (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_pivot = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_pivot = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_get_pivot(arg_obj, arg_pivot);
 
@@ -3657,7 +3676,7 @@ static jerry_value_t js_lv_image_get_rotation(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_rotation(arg_obj);
@@ -3683,7 +3702,7 @@ static jerry_value_t js_lv_image_get_scale(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_scale(arg_obj);
@@ -3709,7 +3728,7 @@ static jerry_value_t js_lv_image_get_scale_x(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_scale_x(arg_obj);
@@ -3735,7 +3754,7 @@ static jerry_value_t js_lv_image_get_scale_y(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_image_get_scale_y(arg_obj);
@@ -3761,7 +3780,7 @@ static jerry_value_t js_lv_image_get_src(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const void* ret_value = lv_image_get_src(arg_obj);
@@ -3769,7 +3788,7 @@ static jerry_value_t js_lv_image_get_src(const jerry_call_info_t* call_info_p,
     // 处理返回值
     jerry_value_t js_result;
     // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -3798,7 +3817,7 @@ static jerry_value_t js_lv_image_header_cache_drop(const jerry_call_info_t* call
             jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
             arg_src_str = (char*)eos_malloc(arg_src_len + 1);
             if (!arg_src_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_header_cache_drop: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_src_str, arg_src_len);
             arg_src_str[arg_src_len] = '\0';
@@ -3806,7 +3825,7 @@ static jerry_value_t js_lv_image_header_cache_drop(const jerry_call_info_t* call
         }
         else if (jerry_value_is_object(args[0])) {
             // 尝试从对象获取指针
-            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_COMMON_PTR);
+            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[0])) {
             // 直接传递指针数值
@@ -3814,14 +3833,14 @@ static jerry_value_t js_lv_image_header_cache_drop(const jerry_call_info_t* call
             arg_src = (void*)ptr_num;
         }
         else {
-            if (arg_src_str) eos_free(arg_src_str);
-            return script_engine_throw_error("Argument 0 must be string, object or number");
+            return script_engine_throw_error("lv_image_header_cache_drop: Argument 0 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_src_str);
     // 调用底层函数
     lv_image_header_cache_drop(arg_src);
+
+    // 释放临时内存
+    if (arg_src_str) eos_free(arg_src_str);
 
     return jerry_undefined();
 }
@@ -3842,7 +3861,7 @@ static jerry_value_t js_lv_image_header_cache_init(const jerry_call_info_t* call
     // 解析参数: count (uint32_t)
     jerry_value_t js_arg_count = args[0];
     if (!jerry_value_is_number(js_arg_count)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_image_header_cache_init: Argument 0 must be a number");
     }
 
     uint32_t arg_count = (uint32_t)jerry_value_as_number(js_arg_count);
@@ -3891,7 +3910,7 @@ static jerry_value_t js_lv_image_header_cache_resize(const jerry_call_info_t* ca
     // 解析参数: count (uint32_t)
     jerry_value_t js_arg_count = args[0];
     if (!jerry_value_is_number(js_arg_count)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_image_header_cache_resize: Argument 0 must be a number");
     }
 
     uint32_t arg_count = (uint32_t)jerry_value_as_number(js_arg_count);
@@ -3907,7 +3926,7 @@ static jerry_value_t js_lv_image_header_cache_resize(const jerry_call_info_t* ca
             arg_evict_now = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_image_header_cache_resize: Argument 1 must be boolean or number for bool");
         }
     }
 
@@ -3931,7 +3950,7 @@ static jerry_value_t js_lv_image_set_antialias(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: antialias (bool)
     // 布尔类型参数: antialias
@@ -3944,7 +3963,7 @@ static jerry_value_t js_lv_image_set_antialias(const jerry_call_info_t* call_inf
             arg_antialias = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_image_set_antialias: Argument 1 must be boolean or number for bool");
         }
     }
 
@@ -3968,11 +3987,11 @@ static jerry_value_t js_lv_image_set_bitmap_map_src(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: src (const lv_image_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_src = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_src = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_image_set_bitmap_map_src(arg_obj, arg_src);
 
@@ -3993,12 +4012,12 @@ static jerry_value_t js_lv_image_set_blend_mode(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: blend_mode (lv_blend_mode_t)
     jerry_value_t js_arg_blend_mode = args[1];
     if (!jerry_value_is_number(js_arg_blend_mode)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_blend_mode: Argument 1 must be a number");
     }
 
     int arg_blend_mode = (int)jerry_value_as_number(js_arg_blend_mode);
@@ -4023,12 +4042,12 @@ static jerry_value_t js_lv_image_set_inner_align(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: align (lv_image_align_t)
     jerry_value_t js_arg_align = args[1];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_inner_align: Argument 1 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -4053,12 +4072,12 @@ static jerry_value_t js_lv_image_set_offset_x(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_offset_x: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -4083,12 +4102,12 @@ static jerry_value_t js_lv_image_set_offset_y(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[1];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_offset_y: Argument 1 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -4113,12 +4132,12 @@ static jerry_value_t js_lv_image_set_pivot(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_pivot: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -4126,7 +4145,7 @@ static jerry_value_t js_lv_image_set_pivot(const jerry_call_info_t* call_info_p,
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[2];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_image_set_pivot: Argument 2 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -4151,12 +4170,12 @@ static jerry_value_t js_lv_image_set_rotation(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: angle (int32_t)
     jerry_value_t js_arg_angle = args[1];
     if (!jerry_value_is_number(js_arg_angle)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_rotation: Argument 1 must be a number");
     }
 
     int32_t arg_angle = (int32_t)jerry_value_as_number(js_arg_angle);
@@ -4181,12 +4200,12 @@ static jerry_value_t js_lv_image_set_scale(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: zoom (uint32_t)
     jerry_value_t js_arg_zoom = args[1];
     if (!jerry_value_is_number(js_arg_zoom)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_scale: Argument 1 must be a number");
     }
 
     uint32_t arg_zoom = (uint32_t)jerry_value_as_number(js_arg_zoom);
@@ -4211,12 +4230,12 @@ static jerry_value_t js_lv_image_set_scale_x(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: zoom (uint32_t)
     jerry_value_t js_arg_zoom = args[1];
     if (!jerry_value_is_number(js_arg_zoom)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_scale_x: Argument 1 must be a number");
     }
 
     uint32_t arg_zoom = (uint32_t)jerry_value_as_number(js_arg_zoom);
@@ -4241,12 +4260,12 @@ static jerry_value_t js_lv_image_set_scale_y(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: zoom (uint32_t)
     jerry_value_t js_arg_zoom = args[1];
     if (!jerry_value_is_number(js_arg_zoom)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_image_set_scale_y: Argument 1 must be a number");
     }
 
     uint32_t arg_zoom = (uint32_t)jerry_value_as_number(js_arg_zoom);
@@ -4281,7 +4300,7 @@ static jerry_value_t js_lv_image_src_get_type(const jerry_call_info_t* call_info
             jerry_size_t arg_src_len = jerry_string_size(args[0], JERRY_ENCODING_UTF8);
             arg_src_str = (char*)eos_malloc(arg_src_len + 1);
             if (!arg_src_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_image_src_get_type: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[0], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_src_str, arg_src_len);
             arg_src_str[arg_src_len] = '\0';
@@ -4289,7 +4308,7 @@ static jerry_value_t js_lv_image_src_get_type(const jerry_call_info_t* call_info
         }
         else if (jerry_value_is_object(args[0])) {
             // 尝试从对象获取指针
-            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_COMMON_PTR);
+            arg_src = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[0])) {
             // 直接传递指针数值
@@ -4297,18 +4316,18 @@ static jerry_value_t js_lv_image_src_get_type(const jerry_call_info_t* call_info
             arg_src = (void*)ptr_num;
         }
         else {
-            if (arg_src_str) eos_free(arg_src_str);
-            return script_engine_throw_error("Argument 0 must be string, object or number");
+            return script_engine_throw_error("lv_image_src_get_type: Argument 0 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_src_str);
     // 调用底层函数
     lv_image_src_t ret_value = lv_image_src_get_type(arg_src);
 
     // 处理返回值
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
+
+    // 释放临时内存
+    if (arg_src_str) eos_free(arg_src_str);
 
     return js_result;
 }
@@ -4327,18 +4346,18 @@ static jerry_value_t js_lv_label_bind_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: fmt (const char*)
 
     char* arg_fmt_str = NULL;
     const char* arg_fmt = NULL;
     if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
         if (!jerry_value_is_string(args[2])) {
-            return script_engine_throw_error("Argument 2 must be a string");
+            return script_engine_throw_error("lv_label_bind_text: Argument 2 must be a string");
         }
         jerry_size_t arg_fmt_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
         arg_fmt_str = (char*)eos_malloc(arg_fmt_len + 1);
@@ -4352,9 +4371,9 @@ static jerry_value_t js_lv_label_bind_text(const jerry_call_info_t* call_info_p,
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_fmt_str) eos_free(arg_fmt_str);
 
     return js_result;
@@ -4374,7 +4393,7 @@ static jerry_value_t js_lv_label_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_label_create(arg_parent);
@@ -4401,12 +4420,12 @@ static jerry_value_t js_lv_label_cut_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: pos (uint32_t)
     jerry_value_t js_arg_pos = args[1];
     if (!jerry_value_is_number(js_arg_pos)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_cut_text: Argument 1 must be a number");
     }
 
     uint32_t arg_pos = (uint32_t)jerry_value_as_number(js_arg_pos);
@@ -4414,7 +4433,7 @@ static jerry_value_t js_lv_label_cut_text(const jerry_call_info_t* call_info_p,
     // 解析参数: cnt (uint32_t)
     jerry_value_t js_arg_cnt = args[2];
     if (!jerry_value_is_number(js_arg_cnt)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_label_cut_text: Argument 2 must be a number");
     }
 
     uint32_t arg_cnt = (uint32_t)jerry_value_as_number(js_arg_cnt);
@@ -4439,11 +4458,11 @@ static jerry_value_t js_lv_label_get_letter_on(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: pos_in (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_pos_in = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_pos_in = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: bidi (bool)
     // 布尔类型参数: bidi
     bool arg_bidi = false;
@@ -4455,7 +4474,7 @@ static jerry_value_t js_lv_label_get_letter_on(const jerry_call_info_t* call_inf
             arg_bidi = (jerry_value_as_number(args[2]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 2 must be boolean or number for bool");
+            return script_engine_throw_error("lv_label_get_letter_on: Argument 2 must be boolean or number for bool");
         }
     }
 
@@ -4483,19 +4502,19 @@ static jerry_value_t js_lv_label_get_letter_pos(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: char_id (uint32_t)
     jerry_value_t js_arg_char_id = args[1];
     if (!jerry_value_is_number(js_arg_char_id)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_get_letter_pos: Argument 1 must be a number");
     }
 
     uint32_t arg_char_id = (uint32_t)jerry_value_as_number(js_arg_char_id);
 
     // 解析参数: pos (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_pos = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_pos = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_label_get_letter_pos(arg_obj, arg_char_id, arg_pos);
 
@@ -4516,7 +4535,7 @@ static jerry_value_t js_lv_label_get_long_mode(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_label_long_mode_t ret_value = lv_label_get_long_mode(arg_obj);
@@ -4542,7 +4561,7 @@ static jerry_value_t js_lv_label_get_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     char* ret_value = lv_label_get_text(arg_obj);
@@ -4572,7 +4591,7 @@ static jerry_value_t js_lv_label_get_text_selection_end(const jerry_call_info_t*
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_label_get_text_selection_end(arg_obj);
@@ -4598,7 +4617,7 @@ static jerry_value_t js_lv_label_get_text_selection_start(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_label_get_text_selection_start(arg_obj);
@@ -4624,12 +4643,12 @@ static jerry_value_t js_lv_label_ins_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: pos (uint32_t)
     jerry_value_t js_arg_pos = args[1];
     if (!jerry_value_is_number(js_arg_pos)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_ins_text: Argument 1 must be a number");
     }
 
     uint32_t arg_pos = (uint32_t)jerry_value_as_number(js_arg_pos);
@@ -4640,7 +4659,7 @@ static jerry_value_t js_lv_label_ins_text(const jerry_call_info_t* call_info_p,
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
         if (!jerry_value_is_string(args[2])) {
-            return script_engine_throw_error("Argument 2 must be a string");
+            return script_engine_throw_error("lv_label_ins_text: Argument 2 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -4652,7 +4671,7 @@ static jerry_value_t js_lv_label_ins_text(const jerry_call_info_t* call_info_p,
     // 调用底层函数
     lv_label_ins_text(arg_obj, arg_pos, arg_txt);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
@@ -4672,11 +4691,11 @@ static jerry_value_t js_lv_label_is_char_under_pos(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: pos (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_pos = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_pos = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_label_is_char_under_pos(arg_obj, arg_pos);
 
@@ -4701,12 +4720,12 @@ static jerry_value_t js_lv_label_set_long_mode(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: long_mode (lv_label_long_mode_t)
     jerry_value_t js_arg_long_mode = args[1];
     if (!jerry_value_is_number(js_arg_long_mode)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_set_long_mode: Argument 1 must be a number");
     }
 
     lv_label_long_mode_t arg_long_mode = (lv_label_long_mode_t)jerry_value_as_number(js_arg_long_mode);
@@ -4731,7 +4750,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: text (const char*)
 
@@ -4739,7 +4758,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
     const char* arg_text = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_label_set_text: Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_text_str = (char*)eos_malloc(arg_text_len + 1);
@@ -4751,7 +4770,7 @@ static jerry_value_t js_lv_label_set_text(const jerry_call_info_t* call_info_p,
     // 调用底层函数
     lv_label_set_text(arg_obj, arg_text);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_text_str) eos_free(arg_text_str);
 
     return jerry_undefined();
@@ -4771,12 +4790,12 @@ static jerry_value_t js_lv_label_set_text_selection_end(const jerry_call_info_t*
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: index (uint32_t)
     jerry_value_t js_arg_index = args[1];
     if (!jerry_value_is_number(js_arg_index)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_set_text_selection_end: Argument 1 must be a number");
     }
 
     uint32_t arg_index = (uint32_t)jerry_value_as_number(js_arg_index);
@@ -4801,12 +4820,12 @@ static jerry_value_t js_lv_label_set_text_selection_start(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: index (uint32_t)
     jerry_value_t js_arg_index = args[1];
     if (!jerry_value_is_number(js_arg_index)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_label_set_text_selection_start: Argument 1 must be a number");
     }
 
     uint32_t arg_index = (uint32_t)jerry_value_as_number(js_arg_index);
@@ -4831,7 +4850,7 @@ static jerry_value_t js_lv_label_set_text_static(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: text (const char*)
 
@@ -4839,7 +4858,7 @@ static jerry_value_t js_lv_label_set_text_static(const jerry_call_info_t* call_i
     const char* arg_text = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_label_set_text_static: Argument 1 must be a string");
         }
         jerry_size_t arg_text_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_text_str = (char*)eos_malloc(arg_text_len + 1);
@@ -4851,7 +4870,7 @@ static jerry_value_t js_lv_label_set_text_static(const jerry_call_info_t* call_i
     // 调用底层函数
     lv_label_set_text_static(arg_obj, arg_text);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_text_str) eos_free(arg_text_str);
 
     return jerry_undefined();
@@ -4871,7 +4890,7 @@ static jerry_value_t js_lv_list_add_button(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: list (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_list = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: icon (const void*)
     // void*/字符串 类型参数，支持null
@@ -4884,7 +4903,7 @@ static jerry_value_t js_lv_list_add_button(const jerry_call_info_t* call_info_p,
             jerry_size_t arg_icon_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_icon_str = (char*)eos_malloc(arg_icon_len + 1);
             if (!arg_icon_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_list_add_button: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_icon_str, arg_icon_len);
             arg_icon_str[arg_icon_len] = '\0';
@@ -4892,7 +4911,7 @@ static jerry_value_t js_lv_list_add_button(const jerry_call_info_t* call_info_p,
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_icon = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_icon = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -4900,19 +4919,16 @@ static jerry_value_t js_lv_list_add_button(const jerry_call_info_t* call_info_p,
             arg_icon = (void*)ptr_num;
         }
         else {
-            if (arg_icon_str) eos_free(arg_icon_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_list_add_button: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_icon_str);
     // 解析参数: txt (const char*)
 
     char* arg_txt_str = NULL;
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
         if (!jerry_value_is_string(args[2])) {
-            return script_engine_throw_error("Argument 2 must be a string");
+            return script_engine_throw_error("lv_list_add_button: Argument 2 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -4929,8 +4945,9 @@ static jerry_value_t js_lv_list_add_button(const jerry_call_info_t* call_info_p,
     // 包装为LVGL对象
     js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_OBJ);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
+    if (arg_icon_str) eos_free(arg_icon_str);
 
     return js_result;
 }
@@ -4949,7 +4966,7 @@ static jerry_value_t js_lv_list_add_text(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: list (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_list = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: txt (const char*)
 
@@ -4957,7 +4974,7 @@ static jerry_value_t js_lv_list_add_text(const jerry_call_info_t* call_info_p,
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
         if (!jerry_value_is_string(args[1])) {
-            return script_engine_throw_error("Argument 1 must be a string");
+            return script_engine_throw_error("lv_list_add_text: Argument 1 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -4974,7 +4991,7 @@ static jerry_value_t js_lv_list_add_text(const jerry_call_info_t* call_info_p,
     // 包装为LVGL对象
     js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_OBJ);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return js_result;
@@ -4994,7 +5011,7 @@ static jerry_value_t js_lv_list_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_list_create(arg_parent);
@@ -5021,10 +5038,10 @@ static jerry_value_t js_lv_list_get_button_text(const jerry_call_info_t* call_in
     }
 
     // 解析参数: list (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_list = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: btn (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_btn = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 调用底层函数
     const char* ret_value = lv_list_get_button_text(arg_list, arg_btn);
@@ -5054,10 +5071,10 @@ static jerry_value_t js_lv_list_set_button_text(const jerry_call_info_t* call_in
     }
 
     // 解析参数: list (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_list = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: btn (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_btn = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 解析参数: txt (const char*)
 
@@ -5065,7 +5082,7 @@ static jerry_value_t js_lv_list_set_button_text(const jerry_call_info_t* call_in
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
         if (!jerry_value_is_string(args[2])) {
-            return script_engine_throw_error("Argument 2 must be a string");
+            return script_engine_throw_error("lv_list_set_button_text: Argument 2 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -5077,7 +5094,7 @@ static jerry_value_t js_lv_list_set_button_text(const jerry_call_info_t* call_in
     // 调用底层函数
     lv_list_set_button_text(arg_list, arg_btn, arg_txt);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return jerry_undefined();
@@ -5097,12 +5114,12 @@ static jerry_value_t js_lv_obj_add_flag(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: f (lv_obj_flag_t)
     jerry_value_t js_arg_f = args[1];
     if (!jerry_value_is_number(js_arg_f)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_add_flag: Argument 1 must be a number");
     }
 
     int arg_f = (int)jerry_value_as_number(js_arg_f);
@@ -5127,12 +5144,12 @@ static jerry_value_t js_lv_obj_add_state(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[1];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_add_state: Argument 1 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -5157,15 +5174,15 @@ static jerry_value_t js_lv_obj_add_style(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: style (const lv_style_t*)
-    // 对象类型参数，支持null
-    void* arg_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_add_style: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -5190,12 +5207,12 @@ static jerry_value_t js_lv_obj_align(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: align (lv_align_t)
     jerry_value_t js_arg_align = args[1];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_align: Argument 1 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -5203,7 +5220,7 @@ static jerry_value_t js_lv_obj_align(const jerry_call_info_t* call_info_p,
     // 解析参数: x_ofs (int32_t)
     jerry_value_t js_arg_x_ofs = args[2];
     if (!jerry_value_is_number(js_arg_x_ofs)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_align: Argument 2 must be a number");
     }
 
     int32_t arg_x_ofs = (int32_t)jerry_value_as_number(js_arg_x_ofs);
@@ -5211,7 +5228,7 @@ static jerry_value_t js_lv_obj_align(const jerry_call_info_t* call_info_p,
     // 解析参数: y_ofs (int32_t)
     jerry_value_t js_arg_y_ofs = args[3];
     if (!jerry_value_is_number(js_arg_y_ofs)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_align: Argument 3 must be a number");
     }
 
     int32_t arg_y_ofs = (int32_t)jerry_value_as_number(js_arg_y_ofs);
@@ -5236,15 +5253,15 @@ static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: base (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_base = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 解析参数: align (lv_align_t)
     jerry_value_t js_arg_align = args[2];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_align_to: Argument 2 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -5252,7 +5269,7 @@ static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t* call_info_p,
     // 解析参数: x_ofs (int32_t)
     jerry_value_t js_arg_x_ofs = args[3];
     if (!jerry_value_is_number(js_arg_x_ofs)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_align_to: Argument 3 must be a number");
     }
 
     int32_t arg_x_ofs = (int32_t)jerry_value_as_number(js_arg_x_ofs);
@@ -5260,7 +5277,7 @@ static jerry_value_t js_lv_obj_align_to(const jerry_call_info_t* call_info_p,
     // 解析参数: y_ofs (int32_t)
     jerry_value_t js_arg_y_ofs = args[4];
     if (!jerry_value_is_number(js_arg_y_ofs)) {
-        return script_engine_throw_error("Argument 4 must be a number");
+        return script_engine_throw_error("lv_obj_align_to: Argument 4 must be a number");
     }
 
     int32_t arg_y_ofs = (int32_t)jerry_value_as_number(js_arg_y_ofs);
@@ -5285,7 +5302,7 @@ static jerry_value_t js_lv_obj_allocate_spec_attr(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_allocate_spec_attr(arg_obj);
@@ -5307,11 +5324,11 @@ static jerry_value_t js_lv_obj_area_is_visible(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: area (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_obj_area_is_visible(arg_obj, arg_area);
 
@@ -5336,17 +5353,17 @@ static jerry_value_t js_lv_obj_bind_checked(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_observer_t* ret_value = lv_obj_bind_checked(arg_obj, arg_subject);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -5365,15 +5382,15 @@ static jerry_value_t js_lv_obj_bind_flag_if_eq(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: flag (lv_obj_flag_t)
     jerry_value_t js_arg_flag = args[2];
     if (!jerry_value_is_number(js_arg_flag)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_bind_flag_if_eq: Argument 2 must be a number");
     }
 
     int arg_flag = (int)jerry_value_as_number(js_arg_flag);
@@ -5381,7 +5398,7 @@ static jerry_value_t js_lv_obj_bind_flag_if_eq(const jerry_call_info_t* call_inf
     // 解析参数: ref_value (int32_t)
     jerry_value_t js_arg_ref_value = args[3];
     if (!jerry_value_is_number(js_arg_ref_value)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_bind_flag_if_eq: Argument 3 must be a number");
     }
 
     int32_t arg_ref_value = (int32_t)jerry_value_as_number(js_arg_ref_value);
@@ -5391,7 +5408,7 @@ static jerry_value_t js_lv_obj_bind_flag_if_eq(const jerry_call_info_t* call_inf
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -5410,15 +5427,15 @@ static jerry_value_t js_lv_obj_bind_flag_if_not_eq(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: flag (lv_obj_flag_t)
     jerry_value_t js_arg_flag = args[2];
     if (!jerry_value_is_number(js_arg_flag)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_bind_flag_if_not_eq: Argument 2 must be a number");
     }
 
     int arg_flag = (int)jerry_value_as_number(js_arg_flag);
@@ -5426,7 +5443,7 @@ static jerry_value_t js_lv_obj_bind_flag_if_not_eq(const jerry_call_info_t* call
     // 解析参数: ref_value (int32_t)
     jerry_value_t js_arg_ref_value = args[3];
     if (!jerry_value_is_number(js_arg_ref_value)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_bind_flag_if_not_eq: Argument 3 must be a number");
     }
 
     int32_t arg_ref_value = (int32_t)jerry_value_as_number(js_arg_ref_value);
@@ -5436,7 +5453,7 @@ static jerry_value_t js_lv_obj_bind_flag_if_not_eq(const jerry_call_info_t* call
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -5455,15 +5472,15 @@ static jerry_value_t js_lv_obj_bind_state_if_eq(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[2];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_bind_state_if_eq: Argument 2 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -5471,7 +5488,7 @@ static jerry_value_t js_lv_obj_bind_state_if_eq(const jerry_call_info_t* call_in
     // 解析参数: ref_value (int32_t)
     jerry_value_t js_arg_ref_value = args[3];
     if (!jerry_value_is_number(js_arg_ref_value)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_bind_state_if_eq: Argument 3 must be a number");
     }
 
     int32_t arg_ref_value = (int32_t)jerry_value_as_number(js_arg_ref_value);
@@ -5481,7 +5498,7 @@ static jerry_value_t js_lv_obj_bind_state_if_eq(const jerry_call_info_t* call_in
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -5500,15 +5517,15 @@ static jerry_value_t js_lv_obj_bind_state_if_not_eq(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[2];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_bind_state_if_not_eq: Argument 2 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -5516,7 +5533,7 @@ static jerry_value_t js_lv_obj_bind_state_if_not_eq(const jerry_call_info_t* cal
     // 解析参数: ref_value (int32_t)
     jerry_value_t js_arg_ref_value = args[3];
     if (!jerry_value_is_number(js_arg_ref_value)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_bind_state_if_not_eq: Argument 3 must be a number");
     }
 
     int32_t arg_ref_value = (int32_t)jerry_value_as_number(js_arg_ref_value);
@@ -5526,7 +5543,7 @@ static jerry_value_t js_lv_obj_bind_state_if_not_eq(const jerry_call_info_t* cal
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -5545,12 +5562,12 @@ static jerry_value_t js_lv_obj_calculate_ext_draw_size(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_calculate_ext_draw_size: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -5579,12 +5596,12 @@ static jerry_value_t js_lv_obj_calculate_style_text_align(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_calculate_style_text_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -5595,7 +5612,7 @@ static jerry_value_t js_lv_obj_calculate_style_text_align(const jerry_call_info_
     const char* arg_txt = NULL;
     if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
         if (!jerry_value_is_string(args[2])) {
-            return script_engine_throw_error("Argument 2 must be a string");
+            return script_engine_throw_error("lv_obj_calculate_style_text_align: Argument 2 must be a string");
         }
         jerry_size_t arg_txt_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
         arg_txt_str = (char*)eos_malloc(arg_txt_len + 1);
@@ -5611,7 +5628,7 @@ static jerry_value_t js_lv_obj_calculate_style_text_align(const jerry_call_info_
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
 
-    // 释放临时字符串内存
+    // 释放临时内存
     if (arg_txt_str) eos_free(arg_txt_str);
 
     return js_result;
@@ -5631,7 +5648,7 @@ static jerry_value_t js_lv_obj_center(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_center(arg_obj);
@@ -5653,11 +5670,11 @@ static jerry_value_t js_lv_obj_check_type(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_obj_check_type(arg_obj, arg_class_p);
 
@@ -5682,10 +5699,10 @@ static jerry_value_t js_lv_obj_class_create_obj(const jerry_call_info_t* call_in
     }
 
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_class_create_obj(arg_class_p, arg_parent);
@@ -5712,7 +5729,7 @@ static jerry_value_t js_lv_obj_class_init_obj(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_class_init_obj(arg_obj);
@@ -5734,7 +5751,7 @@ static jerry_value_t js_lv_obj_clean(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_clean(arg_obj);
@@ -5756,7 +5773,7 @@ static jerry_value_t js_lv_obj_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_create(arg_parent);
@@ -5783,7 +5800,7 @@ static jerry_value_t js_lv_obj_delete(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_delete(arg_obj);
@@ -5804,9 +5821,9 @@ static jerry_value_t js_lv_obj_delete_anim_completed_cb(const jerry_call_info_t*
         return script_engine_throw_error("lv_obj_delete_anim_completed_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    // 对象类型参数，支持null
-    void* arg_a = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 解析参数: a ( lv_anim_t*)
+    // lv_anim_t* 类型参数处理
+    lv_anim_t* arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_delete_anim_completed_cb(arg_a);
 
@@ -5827,7 +5844,7 @@ static jerry_value_t js_lv_obj_delete_async(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_delete_async(arg_obj);
@@ -5849,12 +5866,12 @@ static jerry_value_t js_lv_obj_delete_delayed(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: delay_ms (uint32_t)
     jerry_value_t js_arg_delay_ms = args[1];
     if (!jerry_value_is_number(js_arg_delay_ms)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_delete_delayed: Argument 1 must be a number");
     }
 
     uint32_t arg_delay_ms = (uint32_t)jerry_value_as_number(js_arg_delay_ms);
@@ -5879,7 +5896,7 @@ static jerry_value_t js_lv_obj_dump_tree(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: start_obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_start_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_dump_tree(arg_start_obj);
@@ -5911,7 +5928,7 @@ static jerry_value_t js_lv_obj_enable_style_refresh(const jerry_call_info_t* cal
             arg_en = (jerry_value_as_number(args[0]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 0 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_enable_style_refresh: Argument 0 must be boolean or number for bool");
         }
     }
 
@@ -5935,11 +5952,11 @@ static jerry_value_t js_lv_obj_event_base(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: e (lv_event_t*)
-    // 对象类型参数，支持null
-    void* arg_e = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_e = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_EVENT);
     // 调用底层函数
     lv_result_t ret_value = lv_obj_event_base(arg_class_p, arg_e);
 
@@ -5964,12 +5981,12 @@ static jerry_value_t js_lv_obj_fade_in(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: time (uint32_t)
     jerry_value_t js_arg_time = args[1];
     if (!jerry_value_is_number(js_arg_time)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_fade_in: Argument 1 must be a number");
     }
 
     uint32_t arg_time = (uint32_t)jerry_value_as_number(js_arg_time);
@@ -5977,7 +5994,7 @@ static jerry_value_t js_lv_obj_fade_in(const jerry_call_info_t* call_info_p,
     // 解析参数: delay (uint32_t)
     jerry_value_t js_arg_delay = args[2];
     if (!jerry_value_is_number(js_arg_delay)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_fade_in: Argument 2 must be a number");
     }
 
     uint32_t arg_delay = (uint32_t)jerry_value_as_number(js_arg_delay);
@@ -6002,12 +6019,12 @@ static jerry_value_t js_lv_obj_fade_out(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: time (uint32_t)
     jerry_value_t js_arg_time = args[1];
     if (!jerry_value_is_number(js_arg_time)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_fade_out: Argument 1 must be a number");
     }
 
     uint32_t arg_time = (uint32_t)jerry_value_as_number(js_arg_time);
@@ -6015,7 +6032,7 @@ static jerry_value_t js_lv_obj_fade_out(const jerry_call_info_t* call_info_p,
     // 解析参数: delay (uint32_t)
     jerry_value_t js_arg_delay = args[2];
     if (!jerry_value_is_number(js_arg_delay)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_fade_out: Argument 2 must be a number");
     }
 
     uint32_t arg_delay = (uint32_t)jerry_value_as_number(js_arg_delay);
@@ -6040,12 +6057,12 @@ static jerry_value_t js_lv_obj_get_child(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: idx (int32_t)
     jerry_value_t js_arg_idx = args[1];
     if (!jerry_value_is_number(js_arg_idx)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_child: Argument 1 must be a number");
     }
 
     int32_t arg_idx = (int32_t)jerry_value_as_number(js_arg_idx);
@@ -6075,19 +6092,19 @@ static jerry_value_t js_lv_obj_get_child_by_type(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: idx (int32_t)
     jerry_value_t js_arg_idx = args[1];
     if (!jerry_value_is_number(js_arg_idx)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_child_by_type: Argument 1 must be a number");
     }
 
     int32_t arg_idx = (int32_t)jerry_value_as_number(js_arg_idx);
 
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_get_child_by_type(arg_obj, arg_idx, arg_class_p);
 
@@ -6113,7 +6130,7 @@ static jerry_value_t js_lv_obj_get_child_count(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_obj_get_child_count(arg_obj);
@@ -6139,11 +6156,11 @@ static jerry_value_t js_lv_obj_get_child_count_by_type(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     uint32_t ret_value = lv_obj_get_child_count_by_type(arg_obj, arg_class_p);
 
@@ -6168,14 +6185,14 @@ static jerry_value_t js_lv_obj_get_class(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     const lv_obj_class_t* ret_value = lv_obj_get_class(arg_obj);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -6194,11 +6211,11 @@ static jerry_value_t js_lv_obj_get_click_area(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: area (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_get_click_area(arg_obj, arg_area);
 
@@ -6219,11 +6236,11 @@ static jerry_value_t js_lv_obj_get_content_coords(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: area (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_get_content_coords(arg_obj, arg_area);
 
@@ -6244,7 +6261,7 @@ static jerry_value_t js_lv_obj_get_content_height(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_content_height(arg_obj);
@@ -6270,7 +6287,7 @@ static jerry_value_t js_lv_obj_get_content_width(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_content_width(arg_obj);
@@ -6296,11 +6313,11 @@ static jerry_value_t js_lv_obj_get_coords(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: coords (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_coords = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_coords = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_get_coords(arg_obj, arg_coords);
 
@@ -6321,14 +6338,14 @@ static jerry_value_t js_lv_obj_get_display(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_display_t* ret_value = lv_obj_get_display(arg_obj);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -6347,7 +6364,7 @@ static jerry_value_t js_lv_obj_get_event_count(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     uint32_t ret_value = lv_obj_get_event_count(arg_obj);
@@ -6373,12 +6390,12 @@ static jerry_value_t js_lv_obj_get_event_dsc(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: index (uint32_t)
     jerry_value_t js_arg_index = args[1];
     if (!jerry_value_is_number(js_arg_index)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_event_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_index = (uint32_t)jerry_value_as_number(js_arg_index);
@@ -6388,7 +6405,7 @@ static jerry_value_t js_lv_obj_get_event_dsc(const jerry_call_info_t* call_info_
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -6407,14 +6424,14 @@ static jerry_value_t js_lv_obj_get_group(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_group_t* ret_value = lv_obj_get_group(arg_obj);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -6433,7 +6450,7 @@ static jerry_value_t js_lv_obj_get_height(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_height(arg_obj);
@@ -6459,7 +6476,7 @@ static jerry_value_t js_lv_obj_get_index(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_index(arg_obj);
@@ -6485,11 +6502,11 @@ static jerry_value_t js_lv_obj_get_index_by_type(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_index_by_type(arg_obj, arg_class_p);
 
@@ -6514,7 +6531,7 @@ static jerry_value_t js_lv_obj_get_parent(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_get_parent(arg_obj);
@@ -6541,7 +6558,7 @@ static jerry_value_t js_lv_obj_get_screen(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_get_screen(arg_obj);
@@ -6568,7 +6585,7 @@ static jerry_value_t js_lv_obj_get_scroll_bottom(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_bottom(arg_obj);
@@ -6594,7 +6611,7 @@ static jerry_value_t js_lv_obj_get_scroll_dir(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_dir_t ret_value = lv_obj_get_scroll_dir(arg_obj);
@@ -6620,11 +6637,11 @@ static jerry_value_t js_lv_obj_get_scroll_end(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: end (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_end = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_end = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_get_scroll_end(arg_obj, arg_end);
 
@@ -6645,7 +6662,7 @@ static jerry_value_t js_lv_obj_get_scroll_left(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_left(arg_obj);
@@ -6671,7 +6688,7 @@ static jerry_value_t js_lv_obj_get_scroll_right(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_right(arg_obj);
@@ -6697,7 +6714,7 @@ static jerry_value_t js_lv_obj_get_scroll_snap_x(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_scroll_snap_t ret_value = lv_obj_get_scroll_snap_x(arg_obj);
@@ -6723,7 +6740,7 @@ static jerry_value_t js_lv_obj_get_scroll_snap_y(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_scroll_snap_t ret_value = lv_obj_get_scroll_snap_y(arg_obj);
@@ -6749,7 +6766,7 @@ static jerry_value_t js_lv_obj_get_scroll_top(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_top(arg_obj);
@@ -6775,7 +6792,7 @@ static jerry_value_t js_lv_obj_get_scroll_x(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_x(arg_obj);
@@ -6801,7 +6818,7 @@ static jerry_value_t js_lv_obj_get_scroll_y(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_scroll_y(arg_obj);
@@ -6827,14 +6844,14 @@ static jerry_value_t js_lv_obj_get_scrollbar_area(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: hor (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_hor = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_hor = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: ver (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_ver = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_ver = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_get_scrollbar_area(arg_obj, arg_hor, arg_ver);
 
@@ -6855,7 +6872,7 @@ static jerry_value_t js_lv_obj_get_scrollbar_mode(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_scrollbar_mode_t ret_value = lv_obj_get_scrollbar_mode(arg_obj);
@@ -6881,7 +6898,7 @@ static jerry_value_t js_lv_obj_get_self_height(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_self_height(arg_obj);
@@ -6907,7 +6924,7 @@ static jerry_value_t js_lv_obj_get_self_width(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_self_width(arg_obj);
@@ -6933,12 +6950,12 @@ static jerry_value_t js_lv_obj_get_sibling(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: idx (int32_t)
     jerry_value_t js_arg_idx = args[1];
     if (!jerry_value_is_number(js_arg_idx)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_sibling: Argument 1 must be a number");
     }
 
     int32_t arg_idx = (int32_t)jerry_value_as_number(js_arg_idx);
@@ -6968,19 +6985,19 @@ static jerry_value_t js_lv_obj_get_sibling_by_type(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: idx (int32_t)
     jerry_value_t js_arg_idx = args[1];
     if (!jerry_value_is_number(js_arg_idx)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_sibling_by_type: Argument 1 must be a number");
     }
 
     int32_t arg_idx = (int32_t)jerry_value_as_number(js_arg_idx);
 
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_t* ret_value = lv_obj_get_sibling_by_type(arg_obj, arg_idx, arg_class_p);
 
@@ -7006,7 +7023,7 @@ static jerry_value_t js_lv_obj_get_state(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_state_t ret_value = lv_obj_get_state(arg_obj);
@@ -7032,12 +7049,12 @@ static jerry_value_t js_lv_obj_get_style_align(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7066,22 +7083,22 @@ static jerry_value_t js_lv_obj_get_style_anim(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_anim: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 调用底层函数
-    const lv_anim_t* ret_value = lv_obj_get_style_anim(arg_obj, arg_part);
+     lv_anim_t* ret_value = lv_obj_get_style_anim(arg_obj, arg_part);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -7100,12 +7117,12 @@ static jerry_value_t js_lv_obj_get_style_anim_duration(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_anim_duration: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7134,12 +7151,12 @@ static jerry_value_t js_lv_obj_get_style_arc_color(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7150,7 +7167,7 @@ static jerry_value_t js_lv_obj_get_style_arc_color(const jerry_call_info_t* call
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7169,12 +7186,12 @@ static jerry_value_t js_lv_obj_get_style_arc_color_filtered(const jerry_call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7185,7 +7202,7 @@ static jerry_value_t js_lv_obj_get_style_arc_color_filtered(const jerry_call_inf
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7204,12 +7221,12 @@ static jerry_value_t js_lv_obj_get_style_arc_image_src(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_image_src: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7220,7 +7237,7 @@ static jerry_value_t js_lv_obj_get_style_arc_image_src(const jerry_call_info_t* 
     // 处理返回值
     jerry_value_t js_result;
     // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -7239,12 +7256,12 @@ static jerry_value_t js_lv_obj_get_style_arc_opa(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7273,12 +7290,12 @@ static jerry_value_t js_lv_obj_get_style_arc_rounded(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_rounded: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7307,12 +7324,12 @@ static jerry_value_t js_lv_obj_get_style_arc_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_arc_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7341,12 +7358,12 @@ static jerry_value_t js_lv_obj_get_style_base_dir(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_base_dir: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7375,12 +7392,12 @@ static jerry_value_t js_lv_obj_get_style_bg_color(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7391,7 +7408,7 @@ static jerry_value_t js_lv_obj_get_style_bg_color(const jerry_call_info_t* call_
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7410,12 +7427,12 @@ static jerry_value_t js_lv_obj_get_style_bg_color_filtered(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7426,7 +7443,7 @@ static jerry_value_t js_lv_obj_get_style_bg_color_filtered(const jerry_call_info
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7445,12 +7462,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7460,7 +7477,7 @@ static jerry_value_t js_lv_obj_get_style_bg_grad(const jerry_call_info_t* call_i
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -7479,12 +7496,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_color(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7495,7 +7512,7 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_color(const jerry_call_info_t* 
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7514,12 +7531,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_color_filtered(const jerry_call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7530,7 +7547,7 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_color_filtered(const jerry_call
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7549,12 +7566,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_dir(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad_dir: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7583,12 +7600,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7617,12 +7634,12 @@ static jerry_value_t js_lv_obj_get_style_bg_grad_stop(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_grad_stop: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7651,12 +7668,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_opa(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7685,12 +7702,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_recolor(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_recolor: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7701,7 +7718,7 @@ static jerry_value_t js_lv_obj_get_style_bg_image_recolor(const jerry_call_info_
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7720,12 +7737,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_recolor_filtered(const jerry_c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_recolor_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7736,7 +7753,7 @@ static jerry_value_t js_lv_obj_get_style_bg_image_recolor_filtered(const jerry_c
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -7755,12 +7772,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_recolor_opa(const jerry_call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_recolor_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7789,12 +7806,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_src(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_src: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7805,7 +7822,7 @@ static jerry_value_t js_lv_obj_get_style_bg_image_src(const jerry_call_info_t* c
     // 处理返回值
     jerry_value_t js_result;
     // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -7824,12 +7841,12 @@ static jerry_value_t js_lv_obj_get_style_bg_image_tiled(const jerry_call_info_t*
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_image_tiled: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7858,12 +7875,12 @@ static jerry_value_t js_lv_obj_get_style_bg_main_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_main_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7892,12 +7909,12 @@ static jerry_value_t js_lv_obj_get_style_bg_main_stop(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_main_stop: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7926,12 +7943,12 @@ static jerry_value_t js_lv_obj_get_style_bg_opa(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bg_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7960,12 +7977,12 @@ static jerry_value_t js_lv_obj_get_style_bitmap_mask_src(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_bitmap_mask_src: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -7976,7 +7993,7 @@ static jerry_value_t js_lv_obj_get_style_bitmap_mask_src(const jerry_call_info_t
     // 处理返回值
     jerry_value_t js_result;
     // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -7995,12 +8012,12 @@ static jerry_value_t js_lv_obj_get_style_blend_mode(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_blend_mode: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8029,12 +8046,12 @@ static jerry_value_t js_lv_obj_get_style_border_color(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8045,7 +8062,7 @@ static jerry_value_t js_lv_obj_get_style_border_color(const jerry_call_info_t* c
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -8064,12 +8081,12 @@ static jerry_value_t js_lv_obj_get_style_border_color_filtered(const jerry_call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8080,7 +8097,7 @@ static jerry_value_t js_lv_obj_get_style_border_color_filtered(const jerry_call_
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -8099,12 +8116,12 @@ static jerry_value_t js_lv_obj_get_style_border_opa(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8133,12 +8150,12 @@ static jerry_value_t js_lv_obj_get_style_border_post(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_post: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8167,12 +8184,12 @@ static jerry_value_t js_lv_obj_get_style_border_side(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_side: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8201,12 +8218,12 @@ static jerry_value_t js_lv_obj_get_style_border_width(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_border_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8235,12 +8252,12 @@ static jerry_value_t js_lv_obj_get_style_clip_corner(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_clip_corner: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8269,12 +8286,12 @@ static jerry_value_t js_lv_obj_get_style_color_filter_dsc(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_color_filter_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8284,7 +8301,7 @@ static jerry_value_t js_lv_obj_get_style_color_filter_dsc(const jerry_call_info_
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -8303,12 +8320,12 @@ static jerry_value_t js_lv_obj_get_style_color_filter_opa(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_color_filter_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8337,12 +8354,12 @@ static jerry_value_t js_lv_obj_get_style_flex_cross_place(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_flex_cross_place: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8371,12 +8388,12 @@ static jerry_value_t js_lv_obj_get_style_flex_flow(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_flex_flow: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8405,12 +8422,12 @@ static jerry_value_t js_lv_obj_get_style_flex_grow(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_flex_grow: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8439,12 +8456,12 @@ static jerry_value_t js_lv_obj_get_style_flex_main_place(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_flex_main_place: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8473,12 +8490,12 @@ static jerry_value_t js_lv_obj_get_style_flex_track_place(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_flex_track_place: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8507,12 +8524,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_column_pos(const jerry_call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_column_pos: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8541,12 +8558,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_column_span(const jerry_call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_column_span: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8575,12 +8592,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_row_pos(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_row_pos: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8609,12 +8626,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_row_span(const jerry_call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_row_span: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8643,12 +8660,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_x_align(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_x_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8677,12 +8694,12 @@ static jerry_value_t js_lv_obj_get_style_grid_cell_y_align(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_cell_y_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8711,12 +8728,12 @@ static jerry_value_t js_lv_obj_get_style_grid_column_align(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_column_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8745,12 +8762,12 @@ static jerry_value_t js_lv_obj_get_style_grid_column_dsc_array(const jerry_call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_column_dsc_array: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8760,7 +8777,7 @@ static jerry_value_t js_lv_obj_get_style_grid_column_dsc_array(const jerry_call_
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -8779,12 +8796,12 @@ static jerry_value_t js_lv_obj_get_style_grid_row_align(const jerry_call_info_t*
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_row_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8813,12 +8830,12 @@ static jerry_value_t js_lv_obj_get_style_grid_row_dsc_array(const jerry_call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_grid_row_dsc_array: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8828,7 +8845,7 @@ static jerry_value_t js_lv_obj_get_style_grid_row_dsc_array(const jerry_call_inf
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -8847,12 +8864,12 @@ static jerry_value_t js_lv_obj_get_style_height(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_height: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8881,12 +8898,12 @@ static jerry_value_t js_lv_obj_get_style_image_opa(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_image_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8915,12 +8932,12 @@ static jerry_value_t js_lv_obj_get_style_image_recolor(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_image_recolor: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8931,7 +8948,7 @@ static jerry_value_t js_lv_obj_get_style_image_recolor(const jerry_call_info_t* 
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -8950,12 +8967,12 @@ static jerry_value_t js_lv_obj_get_style_image_recolor_filtered(const jerry_call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_image_recolor_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -8966,7 +8983,7 @@ static jerry_value_t js_lv_obj_get_style_image_recolor_filtered(const jerry_call
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -8985,12 +9002,12 @@ static jerry_value_t js_lv_obj_get_style_image_recolor_opa(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_image_recolor_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9019,12 +9036,12 @@ static jerry_value_t js_lv_obj_get_style_layout(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_layout: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9053,12 +9070,12 @@ static jerry_value_t js_lv_obj_get_style_length(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_length: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9087,12 +9104,12 @@ static jerry_value_t js_lv_obj_get_style_line_color(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9103,7 +9120,7 @@ static jerry_value_t js_lv_obj_get_style_line_color(const jerry_call_info_t* cal
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -9122,12 +9139,12 @@ static jerry_value_t js_lv_obj_get_style_line_color_filtered(const jerry_call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9138,7 +9155,7 @@ static jerry_value_t js_lv_obj_get_style_line_color_filtered(const jerry_call_in
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -9157,12 +9174,12 @@ static jerry_value_t js_lv_obj_get_style_line_dash_gap(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_dash_gap: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9191,12 +9208,12 @@ static jerry_value_t js_lv_obj_get_style_line_dash_width(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_dash_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9225,12 +9242,12 @@ static jerry_value_t js_lv_obj_get_style_line_opa(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9259,12 +9276,12 @@ static jerry_value_t js_lv_obj_get_style_line_rounded(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_rounded: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9293,12 +9310,12 @@ static jerry_value_t js_lv_obj_get_style_line_width(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_line_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9327,12 +9344,12 @@ static jerry_value_t js_lv_obj_get_style_margin_bottom(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_margin_bottom: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9361,12 +9378,12 @@ static jerry_value_t js_lv_obj_get_style_margin_left(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_margin_left: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9395,12 +9412,12 @@ static jerry_value_t js_lv_obj_get_style_margin_right(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_margin_right: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9429,12 +9446,12 @@ static jerry_value_t js_lv_obj_get_style_margin_top(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_margin_top: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9463,12 +9480,12 @@ static jerry_value_t js_lv_obj_get_style_max_height(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_max_height: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9497,12 +9514,12 @@ static jerry_value_t js_lv_obj_get_style_max_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_max_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9531,12 +9548,12 @@ static jerry_value_t js_lv_obj_get_style_min_height(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_min_height: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9565,12 +9582,12 @@ static jerry_value_t js_lv_obj_get_style_min_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_min_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9599,12 +9616,12 @@ static jerry_value_t js_lv_obj_get_style_opa(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9633,12 +9650,12 @@ static jerry_value_t js_lv_obj_get_style_opa_layered(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_opa_layered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9667,12 +9684,12 @@ static jerry_value_t js_lv_obj_get_style_opa_recursive(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_opa_recursive: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9701,12 +9718,12 @@ static jerry_value_t js_lv_obj_get_style_outline_color(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_outline_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9717,7 +9734,7 @@ static jerry_value_t js_lv_obj_get_style_outline_color(const jerry_call_info_t* 
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -9736,12 +9753,12 @@ static jerry_value_t js_lv_obj_get_style_outline_color_filtered(const jerry_call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_outline_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9752,7 +9769,7 @@ static jerry_value_t js_lv_obj_get_style_outline_color_filtered(const jerry_call
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -9771,12 +9788,12 @@ static jerry_value_t js_lv_obj_get_style_outline_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_outline_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9805,12 +9822,12 @@ static jerry_value_t js_lv_obj_get_style_outline_pad(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_outline_pad: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9839,12 +9856,12 @@ static jerry_value_t js_lv_obj_get_style_outline_width(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_outline_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9873,12 +9890,12 @@ static jerry_value_t js_lv_obj_get_style_pad_bottom(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_bottom: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9907,12 +9924,12 @@ static jerry_value_t js_lv_obj_get_style_pad_column(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_column: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9941,12 +9958,12 @@ static jerry_value_t js_lv_obj_get_style_pad_left(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_left: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -9975,12 +9992,12 @@ static jerry_value_t js_lv_obj_get_style_pad_right(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_right: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10009,12 +10026,12 @@ static jerry_value_t js_lv_obj_get_style_pad_row(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_row: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10043,12 +10060,12 @@ static jerry_value_t js_lv_obj_get_style_pad_top(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_pad_top: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10077,12 +10094,12 @@ static jerry_value_t js_lv_obj_get_style_radius(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_radius: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10111,12 +10128,12 @@ static jerry_value_t js_lv_obj_get_style_rotary_sensitivity(const jerry_call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_rotary_sensitivity: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10145,12 +10162,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_color(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10161,7 +10178,7 @@ static jerry_value_t js_lv_obj_get_style_shadow_color(const jerry_call_info_t* c
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -10180,12 +10197,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_color_filtered(const jerry_call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10196,7 +10213,7 @@ static jerry_value_t js_lv_obj_get_style_shadow_color_filtered(const jerry_call_
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -10215,12 +10232,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_offset_x(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_offset_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10249,12 +10266,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_offset_y(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_offset_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10283,12 +10300,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_opa(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10317,12 +10334,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_spread(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_spread: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10351,12 +10368,12 @@ static jerry_value_t js_lv_obj_get_style_shadow_width(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_shadow_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10385,12 +10402,12 @@ static jerry_value_t js_lv_obj_get_style_space_bottom(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_space_bottom: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10419,12 +10436,12 @@ static jerry_value_t js_lv_obj_get_style_space_left(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_space_left: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10453,12 +10470,12 @@ static jerry_value_t js_lv_obj_get_style_space_right(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_space_right: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10487,12 +10504,12 @@ static jerry_value_t js_lv_obj_get_style_space_top(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_space_top: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10521,12 +10538,12 @@ static jerry_value_t js_lv_obj_get_style_text_align(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_align: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10555,12 +10572,12 @@ static jerry_value_t js_lv_obj_get_style_text_color(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_color: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10571,7 +10588,7 @@ static jerry_value_t js_lv_obj_get_style_text_color(const jerry_call_info_t* cal
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -10590,12 +10607,12 @@ static jerry_value_t js_lv_obj_get_style_text_color_filtered(const jerry_call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_color_filtered: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10606,7 +10623,7 @@ static jerry_value_t js_lv_obj_get_style_text_color_filtered(const jerry_call_in
     // 处理返回值
     jerry_value_t js_result;
     // 转换为JS颜色对象
-    js_result = lv_color_to_js(ret_value);
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
 
     return js_result;
 }
@@ -10625,12 +10642,12 @@ static jerry_value_t js_lv_obj_get_style_text_decor(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_decor: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10659,12 +10676,12 @@ static jerry_value_t js_lv_obj_get_style_text_font(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_font: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10674,7 +10691,7 @@ static jerry_value_t js_lv_obj_get_style_text_font(const jerry_call_info_t* call
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -10693,12 +10710,12 @@ static jerry_value_t js_lv_obj_get_style_text_letter_space(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_letter_space: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10727,12 +10744,12 @@ static jerry_value_t js_lv_obj_get_style_text_line_space(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_line_space: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10761,12 +10778,12 @@ static jerry_value_t js_lv_obj_get_style_text_opa(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_text_opa: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10795,12 +10812,12 @@ static jerry_value_t js_lv_obj_get_style_transform_height(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_height: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10829,12 +10846,12 @@ static jerry_value_t js_lv_obj_get_style_transform_pivot_x(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_pivot_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10863,12 +10880,12 @@ static jerry_value_t js_lv_obj_get_style_transform_pivot_y(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_pivot_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10897,12 +10914,12 @@ static jerry_value_t js_lv_obj_get_style_transform_rotation(const jerry_call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_rotation: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10931,12 +10948,12 @@ static jerry_value_t js_lv_obj_get_style_transform_scale_x(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_scale_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10965,12 +10982,12 @@ static jerry_value_t js_lv_obj_get_style_transform_scale_x_safe(const jerry_call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_scale_x_safe: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -10999,12 +11016,12 @@ static jerry_value_t js_lv_obj_get_style_transform_scale_y(const jerry_call_info
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_scale_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11033,12 +11050,12 @@ static jerry_value_t js_lv_obj_get_style_transform_scale_y_safe(const jerry_call
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_scale_y_safe: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11067,12 +11084,12 @@ static jerry_value_t js_lv_obj_get_style_transform_skew_x(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_skew_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11101,12 +11118,12 @@ static jerry_value_t js_lv_obj_get_style_transform_skew_y(const jerry_call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_skew_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11135,12 +11152,12 @@ static jerry_value_t js_lv_obj_get_style_transform_width(const jerry_call_info_t
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transform_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11169,12 +11186,12 @@ static jerry_value_t js_lv_obj_get_style_transition(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_transition: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11184,7 +11201,7 @@ static jerry_value_t js_lv_obj_get_style_transition(const jerry_call_info_t* cal
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -11203,12 +11220,12 @@ static jerry_value_t js_lv_obj_get_style_translate_x(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_translate_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11237,12 +11254,12 @@ static jerry_value_t js_lv_obj_get_style_translate_y(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_translate_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11271,12 +11288,12 @@ static jerry_value_t js_lv_obj_get_style_width(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_width: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11305,12 +11322,12 @@ static jerry_value_t js_lv_obj_get_style_x(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_x: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11339,12 +11356,12 @@ static jerry_value_t js_lv_obj_get_style_y(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_get_style_y: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -11373,15 +11390,15 @@ static jerry_value_t js_lv_obj_get_transformed_area(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: area (lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: flags (lv_obj_point_transform_flag_t)
     jerry_value_t js_arg_flags = args[2];
     if (!jerry_value_is_number(js_arg_flags)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_get_transformed_area: Argument 2 must be a number");
     }
 
     lv_obj_point_transform_flag_t arg_flags = (lv_obj_point_transform_flag_t)jerry_value_as_number(js_arg_flags);
@@ -11406,7 +11423,7 @@ static jerry_value_t js_lv_obj_get_user_data(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     void* ret_value = lv_obj_get_user_data(arg_obj);
@@ -11414,7 +11431,7 @@ static jerry_value_t js_lv_obj_get_user_data(const jerry_call_info_t* call_info_
     // 处理返回值
     jerry_value_t js_result;
     // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -11433,7 +11450,7 @@ static jerry_value_t js_lv_obj_get_width(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_width(arg_obj);
@@ -11459,7 +11476,7 @@ static jerry_value_t js_lv_obj_get_x(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_x(arg_obj);
@@ -11485,7 +11502,7 @@ static jerry_value_t js_lv_obj_get_x2(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_x2(arg_obj);
@@ -11511,7 +11528,7 @@ static jerry_value_t js_lv_obj_get_x_aligned(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_x_aligned(arg_obj);
@@ -11537,7 +11554,7 @@ static jerry_value_t js_lv_obj_get_y(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_y(arg_obj);
@@ -11563,7 +11580,7 @@ static jerry_value_t js_lv_obj_get_y2(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_y2(arg_obj);
@@ -11589,7 +11606,7 @@ static jerry_value_t js_lv_obj_get_y_aligned(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_obj_get_y_aligned(arg_obj);
@@ -11615,11 +11632,11 @@ static jerry_value_t js_lv_obj_has_class(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: class_p (const lv_obj_class_t*)
-    // 对象类型参数，支持null
-    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_class_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_obj_has_class(arg_obj, arg_class_p);
 
@@ -11644,12 +11661,12 @@ static jerry_value_t js_lv_obj_has_flag(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: f (lv_obj_flag_t)
     jerry_value_t js_arg_f = args[1];
     if (!jerry_value_is_number(js_arg_f)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_has_flag: Argument 1 must be a number");
     }
 
     int arg_f = (int)jerry_value_as_number(js_arg_f);
@@ -11678,12 +11695,12 @@ static jerry_value_t js_lv_obj_has_flag_any(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: f (lv_obj_flag_t)
     jerry_value_t js_arg_f = args[1];
     if (!jerry_value_is_number(js_arg_f)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_has_flag_any: Argument 1 must be a number");
     }
 
     int arg_f = (int)jerry_value_as_number(js_arg_f);
@@ -11712,12 +11729,12 @@ static jerry_value_t js_lv_obj_has_state(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[1];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_has_state: Argument 1 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -11746,11 +11763,11 @@ static jerry_value_t js_lv_obj_hit_test(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: point (const lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_point = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_point = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_obj_hit_test(arg_obj, arg_point);
 
@@ -11775,19 +11792,19 @@ static jerry_value_t js_lv_obj_init_draw_arc_dsc(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_init_draw_arc_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 解析参数: draw_dsc (lv_draw_arc_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_init_draw_arc_dsc(arg_obj, arg_part, arg_draw_dsc);
 
@@ -11808,19 +11825,19 @@ static jerry_value_t js_lv_obj_init_draw_image_dsc(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_init_draw_image_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 解析参数: draw_dsc (lv_draw_image_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_init_draw_image_dsc(arg_obj, arg_part, arg_draw_dsc);
 
@@ -11841,19 +11858,19 @@ static jerry_value_t js_lv_obj_init_draw_label_dsc(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_init_draw_label_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 解析参数: draw_dsc (lv_draw_label_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_init_draw_label_dsc(arg_obj, arg_part, arg_draw_dsc);
 
@@ -11874,19 +11891,19 @@ static jerry_value_t js_lv_obj_init_draw_line_dsc(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_init_draw_line_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 解析参数: draw_dsc (lv_draw_line_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_init_draw_line_dsc(arg_obj, arg_part, arg_draw_dsc);
 
@@ -11907,19 +11924,19 @@ static jerry_value_t js_lv_obj_init_draw_rect_dsc(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_init_draw_rect_dsc: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
 
     // 解析参数: draw_dsc (lv_draw_rect_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_draw_dsc = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_init_draw_rect_dsc(arg_obj, arg_part, arg_draw_dsc);
 
@@ -11940,7 +11957,7 @@ static jerry_value_t js_lv_obj_invalidate(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_invalidate(arg_obj);
@@ -11962,11 +11979,11 @@ static jerry_value_t js_lv_obj_invalidate_area(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: area (const lv_area_t*)
-    // 对象类型参数，支持null
-    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_area = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_invalidate_area(arg_obj, arg_area);
 
@@ -11987,7 +12004,7 @@ static jerry_value_t js_lv_obj_is_editable(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_editable(arg_obj);
@@ -12013,7 +12030,7 @@ static jerry_value_t js_lv_obj_is_group_def(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_group_def(arg_obj);
@@ -12039,7 +12056,7 @@ static jerry_value_t js_lv_obj_is_layout_positioned(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_layout_positioned(arg_obj);
@@ -12065,7 +12082,7 @@ static jerry_value_t js_lv_obj_is_scrolling(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_scrolling(arg_obj);
@@ -12091,7 +12108,7 @@ static jerry_value_t js_lv_obj_is_valid(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_valid(arg_obj);
@@ -12117,7 +12134,7 @@ static jerry_value_t js_lv_obj_is_visible(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_is_visible(arg_obj);
@@ -12143,7 +12160,7 @@ static jerry_value_t js_lv_obj_mark_layout_as_dirty(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_mark_layout_as_dirty(arg_obj);
@@ -12165,7 +12182,7 @@ static jerry_value_t js_lv_obj_move_background(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_move_background(arg_obj);
@@ -12187,12 +12204,12 @@ static jerry_value_t js_lv_obj_move_children_by(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x_diff (int32_t)
     jerry_value_t js_arg_x_diff = args[1];
     if (!jerry_value_is_number(js_arg_x_diff)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_move_children_by: Argument 1 must be a number");
     }
 
     int32_t arg_x_diff = (int32_t)jerry_value_as_number(js_arg_x_diff);
@@ -12200,7 +12217,7 @@ static jerry_value_t js_lv_obj_move_children_by(const jerry_call_info_t* call_in
     // 解析参数: y_diff (int32_t)
     jerry_value_t js_arg_y_diff = args[2];
     if (!jerry_value_is_number(js_arg_y_diff)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_move_children_by: Argument 2 must be a number");
     }
 
     int32_t arg_y_diff = (int32_t)jerry_value_as_number(js_arg_y_diff);
@@ -12216,7 +12233,7 @@ static jerry_value_t js_lv_obj_move_children_by(const jerry_call_info_t* call_in
             arg_ignore_floating = (jerry_value_as_number(args[3]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 3 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_move_children_by: Argument 3 must be boolean or number for bool");
         }
     }
 
@@ -12240,7 +12257,7 @@ static jerry_value_t js_lv_obj_move_foreground(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_move_foreground(arg_obj);
@@ -12262,12 +12279,12 @@ static jerry_value_t js_lv_obj_move_to(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_move_to: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -12275,7 +12292,7 @@ static jerry_value_t js_lv_obj_move_to(const jerry_call_info_t* call_info_p,
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[2];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_move_to: Argument 2 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -12300,12 +12317,12 @@ static jerry_value_t js_lv_obj_move_to_index(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: index (int32_t)
     jerry_value_t js_arg_index = args[1];
     if (!jerry_value_is_number(js_arg_index)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_move_to_index: Argument 1 must be a number");
     }
 
     int32_t arg_index = (int32_t)jerry_value_as_number(js_arg_index);
@@ -12330,8 +12347,8 @@ static jerry_value_t js_lv_obj_null_on_delete(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj_ptr (lv_obj_t**)
-    // 对象类型参数，支持null
-    void* arg_obj_ptr = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_obj_ptr = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_null_on_delete(arg_obj_ptr);
 
@@ -12352,12 +12369,12 @@ static jerry_value_t js_lv_obj_readjust_scroll(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[1];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_readjust_scroll: Argument 1 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -12382,10 +12399,10 @@ static jerry_value_t js_lv_obj_redraw(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: layer (lv_layer_t*)
-    // 对象类型参数，支持null
-    void* arg_layer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_layer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_redraw(arg_layer, arg_obj);
@@ -12407,7 +12424,7 @@ static jerry_value_t js_lv_obj_refr_pos(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_refr_pos(arg_obj);
@@ -12429,7 +12446,7 @@ static jerry_value_t js_lv_obj_refr_size(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_refr_size(arg_obj);
@@ -12455,7 +12472,7 @@ static jerry_value_t js_lv_obj_refresh_ext_draw_size(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_refresh_ext_draw_size(arg_obj);
@@ -12477,7 +12494,7 @@ static jerry_value_t js_lv_obj_refresh_self_size(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_obj_refresh_self_size(arg_obj);
@@ -12503,12 +12520,12 @@ static jerry_value_t js_lv_obj_refresh_style(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: part (lv_part_t)
     jerry_value_t js_arg_part = args[1];
     if (!jerry_value_is_number(js_arg_part)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_refresh_style: Argument 1 must be a number");
     }
 
     uint32_t arg_part = (uint32_t)jerry_value_as_number(js_arg_part);
@@ -12516,7 +12533,7 @@ static jerry_value_t js_lv_obj_refresh_style(const jerry_call_info_t* call_info_
     // 解析参数: prop (lv_style_prop_t)
     jerry_value_t js_arg_prop = args[2];
     if (!jerry_value_is_number(js_arg_prop)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_refresh_style: Argument 2 must be a number");
     }
 
     uint8_t arg_prop = (uint8_t)jerry_value_as_number(js_arg_prop);
@@ -12541,12 +12558,12 @@ static jerry_value_t js_lv_obj_remove_event(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: index (uint32_t)
     jerry_value_t js_arg_index = args[1];
     if (!jerry_value_is_number(js_arg_index)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_remove_event: Argument 1 must be a number");
     }
 
     uint32_t arg_index = (uint32_t)jerry_value_as_number(js_arg_index);
@@ -12575,11 +12592,11 @@ static jerry_value_t js_lv_obj_remove_event_cb(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: event_cb (lv_event_cb_t)
     // 通用指针类型: lv_event_cb_t，支持null
-    lv_event_cb_t arg_event_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_event_cb_t arg_event_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 调用底层函数
     bool ret_value = lv_obj_remove_event_cb(arg_obj, arg_event_cb);
@@ -12605,11 +12622,11 @@ static jerry_value_t js_lv_obj_remove_event_cb_with_user_data(const jerry_call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: event_cb (lv_event_cb_t)
     // 通用指针类型: lv_event_cb_t，支持null
-    lv_event_cb_t arg_event_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_event_cb_t arg_event_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 解析参数: user_data (void*)
     // void*/字符串 类型参数，支持null
@@ -12622,7 +12639,7 @@ static jerry_value_t js_lv_obj_remove_event_cb_with_user_data(const jerry_call_i
             jerry_size_t arg_user_data_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
             arg_user_data_str = (char*)eos_malloc(arg_user_data_len + 1);
             if (!arg_user_data_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_remove_event_cb_with_user_data: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[2], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_user_data_str, arg_user_data_len);
             arg_user_data_str[arg_user_data_len] = '\0';
@@ -12630,7 +12647,7 @@ static jerry_value_t js_lv_obj_remove_event_cb_with_user_data(const jerry_call_i
         }
         else if (jerry_value_is_object(args[2])) {
             // 尝试从对象获取指针
-            arg_user_data = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_COMMON_PTR);
+            arg_user_data = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[2])) {
             // 直接传递指针数值
@@ -12638,18 +12655,18 @@ static jerry_value_t js_lv_obj_remove_event_cb_with_user_data(const jerry_call_i
             arg_user_data = (void*)ptr_num;
         }
         else {
-            if (arg_user_data_str) eos_free(arg_user_data_str);
-            return script_engine_throw_error("Argument 2 must be string, object or number");
+            return script_engine_throw_error("lv_obj_remove_event_cb_with_user_data: Argument 2 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_user_data_str);
     // 调用底层函数
     uint32_t ret_value = lv_obj_remove_event_cb_with_user_data(arg_obj, arg_event_cb, arg_user_data);
 
     // 处理返回值
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
+
+    // 释放临时内存
+    if (arg_user_data_str) eos_free(arg_user_data_str);
 
     return js_result;
 }
@@ -12668,11 +12685,11 @@ static jerry_value_t js_lv_obj_remove_event_dsc(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: dsc (lv_event_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_dsc = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     bool ret_value = lv_obj_remove_event_dsc(arg_obj, arg_dsc);
 
@@ -12697,12 +12714,12 @@ static jerry_value_t js_lv_obj_remove_flag(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: f (lv_obj_flag_t)
     jerry_value_t js_arg_f = args[1];
     if (!jerry_value_is_number(js_arg_f)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_remove_flag: Argument 1 must be a number");
     }
 
     int arg_f = (int)jerry_value_as_number(js_arg_f);
@@ -12727,11 +12744,11 @@ static jerry_value_t js_lv_obj_remove_from_subject(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_remove_from_subject(arg_obj, arg_subject);
 
@@ -12752,12 +12769,12 @@ static jerry_value_t js_lv_obj_remove_state(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[1];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_remove_state: Argument 1 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -12782,15 +12799,15 @@ static jerry_value_t js_lv_obj_remove_style(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: style (const lv_style_t*)
-    // 对象类型参数，支持null
-    void* arg_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_remove_style: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -12815,7 +12832,7 @@ static jerry_value_t js_lv_obj_remove_style_all(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_remove_style_all(arg_obj);
@@ -12837,18 +12854,18 @@ static jerry_value_t js_lv_obj_replace_style(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: old_style (const lv_style_t*)
-    // 对象类型参数，支持null
-    void* arg_old_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_old_style = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: new_style (const lv_style_t*)
-    // 对象类型参数，支持null
-    void* arg_new_style = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_new_style = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[3];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_replace_style: Argument 3 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -12877,8 +12894,8 @@ static jerry_value_t js_lv_obj_report_style_change(const jerry_call_info_t* call
     }
 
     // 解析参数: style (lv_style_t*)
-    // 对象类型参数，支持null
-    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
     // 调用底层函数
     lv_obj_report_style_change(arg_style);
 
@@ -12899,12 +12916,12 @@ static jerry_value_t js_lv_obj_scroll_by(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -12912,7 +12929,7 @@ static jerry_value_t js_lv_obj_scroll_by(const jerry_call_info_t* call_info_p,
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[2];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by: Argument 2 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -12920,7 +12937,7 @@ static jerry_value_t js_lv_obj_scroll_by(const jerry_call_info_t* call_info_p,
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[3];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by: Argument 3 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -12945,12 +12962,12 @@ static jerry_value_t js_lv_obj_scroll_by_bounded(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: dx (int32_t)
     jerry_value_t js_arg_dx = args[1];
     if (!jerry_value_is_number(js_arg_dx)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by_bounded: Argument 1 must be a number");
     }
 
     int32_t arg_dx = (int32_t)jerry_value_as_number(js_arg_dx);
@@ -12958,7 +12975,7 @@ static jerry_value_t js_lv_obj_scroll_by_bounded(const jerry_call_info_t* call_i
     // 解析参数: dy (int32_t)
     jerry_value_t js_arg_dy = args[2];
     if (!jerry_value_is_number(js_arg_dy)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by_bounded: Argument 2 must be a number");
     }
 
     int32_t arg_dy = (int32_t)jerry_value_as_number(js_arg_dy);
@@ -12966,7 +12983,7 @@ static jerry_value_t js_lv_obj_scroll_by_bounded(const jerry_call_info_t* call_i
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[3];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_by_bounded: Argument 3 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -12991,12 +13008,12 @@ static jerry_value_t js_lv_obj_scroll_to(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -13004,7 +13021,7 @@ static jerry_value_t js_lv_obj_scroll_to(const jerry_call_info_t* call_info_p,
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[2];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to: Argument 2 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -13012,7 +13029,7 @@ static jerry_value_t js_lv_obj_scroll_to(const jerry_call_info_t* call_info_p,
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[3];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to: Argument 3 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -13037,12 +13054,12 @@ static jerry_value_t js_lv_obj_scroll_to_view(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[1];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_view: Argument 1 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -13067,12 +13084,12 @@ static jerry_value_t js_lv_obj_scroll_to_view_recursive(const jerry_call_info_t*
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[1];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_view_recursive: Argument 1 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -13097,12 +13114,12 @@ static jerry_value_t js_lv_obj_scroll_to_x(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_x: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -13110,7 +13127,7 @@ static jerry_value_t js_lv_obj_scroll_to_x(const jerry_call_info_t* call_info_p,
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[2];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_x: Argument 2 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -13135,12 +13152,12 @@ static jerry_value_t js_lv_obj_scroll_to_y(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[1];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_y: Argument 1 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -13148,7 +13165,7 @@ static jerry_value_t js_lv_obj_scroll_to_y(const jerry_call_info_t* call_info_p,
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[2];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_scroll_to_y: Argument 2 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -13173,7 +13190,7 @@ static jerry_value_t js_lv_obj_scrollbar_invalidate(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_scrollbar_invalidate(arg_obj);
@@ -13195,12 +13212,12 @@ static jerry_value_t js_lv_obj_send_event(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: event_code (lv_event_code_t)
     jerry_value_t js_arg_event_code = args[1];
     if (!jerry_value_is_number(js_arg_event_code)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_send_event: Argument 1 must be a number");
     }
 
     int arg_event_code = (int)jerry_value_as_number(js_arg_event_code);
@@ -13216,7 +13233,7 @@ static jerry_value_t js_lv_obj_send_event(const jerry_call_info_t* call_info_p,
             jerry_size_t arg_param_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
             arg_param_str = (char*)eos_malloc(arg_param_len + 1);
             if (!arg_param_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_send_event: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[2], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_param_str, arg_param_len);
             arg_param_str[arg_param_len] = '\0';
@@ -13224,7 +13241,7 @@ static jerry_value_t js_lv_obj_send_event(const jerry_call_info_t* call_info_p,
         }
         else if (jerry_value_is_object(args[2])) {
             // 尝试从对象获取指针
-            arg_param = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_COMMON_PTR);
+            arg_param = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[2])) {
             // 直接传递指针数值
@@ -13232,18 +13249,18 @@ static jerry_value_t js_lv_obj_send_event(const jerry_call_info_t* call_info_p,
             arg_param = (void*)ptr_num;
         }
         else {
-            if (arg_param_str) eos_free(arg_param_str);
-            return script_engine_throw_error("Argument 2 must be string, object or number");
+            return script_engine_throw_error("lv_obj_send_event: Argument 2 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_param_str);
     // 调用底层函数
     lv_result_t ret_value = lv_obj_send_event(arg_obj, arg_event_code, arg_param);
 
     // 处理返回值
     jerry_value_t js_result;
     js_result = jerry_number(ret_value);
+
+    // 释放临时内存
+    if (arg_param_str) eos_free(arg_param_str);
 
     return js_result;
 }
@@ -13262,12 +13279,12 @@ static jerry_value_t js_lv_obj_set_align(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: align (lv_align_t)
     jerry_value_t js_arg_align = args[1];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_align: Argument 1 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -13292,12 +13309,12 @@ static jerry_value_t js_lv_obj_set_content_height(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: h (int32_t)
     jerry_value_t js_arg_h = args[1];
     if (!jerry_value_is_number(js_arg_h)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_content_height: Argument 1 must be a number");
     }
 
     int32_t arg_h = (int32_t)jerry_value_as_number(js_arg_h);
@@ -13322,12 +13339,12 @@ static jerry_value_t js_lv_obj_set_content_width(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: w (int32_t)
     jerry_value_t js_arg_w = args[1];
     if (!jerry_value_is_number(js_arg_w)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_content_width: Argument 1 must be a number");
     }
 
     int32_t arg_w = (int32_t)jerry_value_as_number(js_arg_w);
@@ -13352,12 +13369,12 @@ static jerry_value_t js_lv_obj_set_ext_click_area(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: size (int32_t)
     jerry_value_t js_arg_size = args[1];
     if (!jerry_value_is_number(js_arg_size)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_ext_click_area: Argument 1 must be a number");
     }
 
     int32_t arg_size = (int32_t)jerry_value_as_number(js_arg_size);
@@ -13382,12 +13399,12 @@ static jerry_value_t js_lv_obj_set_flex_align(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: main_place (lv_flex_align_t)
     jerry_value_t js_arg_main_place = args[1];
     if (!jerry_value_is_number(js_arg_main_place)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_flex_align: Argument 1 must be a number");
     }
 
     int arg_main_place = (int)jerry_value_as_number(js_arg_main_place);
@@ -13395,7 +13412,7 @@ static jerry_value_t js_lv_obj_set_flex_align(const jerry_call_info_t* call_info
     // 解析参数: cross_place (lv_flex_align_t)
     jerry_value_t js_arg_cross_place = args[2];
     if (!jerry_value_is_number(js_arg_cross_place)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_flex_align: Argument 2 must be a number");
     }
 
     int arg_cross_place = (int)jerry_value_as_number(js_arg_cross_place);
@@ -13403,7 +13420,7 @@ static jerry_value_t js_lv_obj_set_flex_align(const jerry_call_info_t* call_info
     // 解析参数: track_cross_place (lv_flex_align_t)
     jerry_value_t js_arg_track_cross_place = args[3];
     if (!jerry_value_is_number(js_arg_track_cross_place)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_set_flex_align: Argument 3 must be a number");
     }
 
     int arg_track_cross_place = (int)jerry_value_as_number(js_arg_track_cross_place);
@@ -13428,12 +13445,12 @@ static jerry_value_t js_lv_obj_set_flex_flow(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: flow (lv_flex_flow_t)
     jerry_value_t js_arg_flow = args[1];
     if (!jerry_value_is_number(js_arg_flow)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_flex_flow: Argument 1 must be a number");
     }
 
     int arg_flow = (int)jerry_value_as_number(js_arg_flow);
@@ -13458,12 +13475,12 @@ static jerry_value_t js_lv_obj_set_flex_grow(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: grow (uint8_t)
     jerry_value_t js_arg_grow = args[1];
     if (!jerry_value_is_number(js_arg_grow)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_flex_grow: Argument 1 must be a number");
     }
 
     uint8_t arg_grow = (uint8_t)jerry_value_as_number(js_arg_grow);
@@ -13488,12 +13505,12 @@ static jerry_value_t js_lv_obj_set_grid_align(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: column_align (lv_grid_align_t)
     jerry_value_t js_arg_column_align = args[1];
     if (!jerry_value_is_number(js_arg_column_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_align: Argument 1 must be a number");
     }
 
     int arg_column_align = (int)jerry_value_as_number(js_arg_column_align);
@@ -13501,7 +13518,7 @@ static jerry_value_t js_lv_obj_set_grid_align(const jerry_call_info_t* call_info
     // 解析参数: row_align (lv_grid_align_t)
     jerry_value_t js_arg_row_align = args[2];
     if (!jerry_value_is_number(js_arg_row_align)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_align: Argument 2 must be a number");
     }
 
     int arg_row_align = (int)jerry_value_as_number(js_arg_row_align);
@@ -13526,12 +13543,12 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: column_align (lv_grid_align_t)
     jerry_value_t js_arg_column_align = args[1];
     if (!jerry_value_is_number(js_arg_column_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 1 must be a number");
     }
 
     int arg_column_align = (int)jerry_value_as_number(js_arg_column_align);
@@ -13539,7 +13556,7 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     // 解析参数: col_pos (int32_t)
     jerry_value_t js_arg_col_pos = args[2];
     if (!jerry_value_is_number(js_arg_col_pos)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 2 must be a number");
     }
 
     int32_t arg_col_pos = (int32_t)jerry_value_as_number(js_arg_col_pos);
@@ -13547,7 +13564,7 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     // 解析参数: col_span (int32_t)
     jerry_value_t js_arg_col_span = args[3];
     if (!jerry_value_is_number(js_arg_col_span)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 3 must be a number");
     }
 
     int32_t arg_col_span = (int32_t)jerry_value_as_number(js_arg_col_span);
@@ -13555,7 +13572,7 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     // 解析参数: row_align (lv_grid_align_t)
     jerry_value_t js_arg_row_align = args[4];
     if (!jerry_value_is_number(js_arg_row_align)) {
-        return script_engine_throw_error("Argument 4 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 4 must be a number");
     }
 
     int arg_row_align = (int)jerry_value_as_number(js_arg_row_align);
@@ -13563,7 +13580,7 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     // 解析参数: row_pos (int32_t)
     jerry_value_t js_arg_row_pos = args[5];
     if (!jerry_value_is_number(js_arg_row_pos)) {
-        return script_engine_throw_error("Argument 5 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 5 must be a number");
     }
 
     int32_t arg_row_pos = (int32_t)jerry_value_as_number(js_arg_row_pos);
@@ -13571,7 +13588,7 @@ static jerry_value_t js_lv_obj_set_grid_cell(const jerry_call_info_t* call_info_
     // 解析参数: row_span (int32_t)
     jerry_value_t js_arg_row_span = args[6];
     if (!jerry_value_is_number(js_arg_row_span)) {
-        return script_engine_throw_error("Argument 6 must be a number");
+        return script_engine_throw_error("lv_obj_set_grid_cell: Argument 6 must be a number");
     }
 
     int32_t arg_row_span = (int32_t)jerry_value_as_number(js_arg_row_span);
@@ -13596,12 +13613,12 @@ static jerry_value_t js_lv_obj_set_height(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: h (int32_t)
     jerry_value_t js_arg_h = args[1];
     if (!jerry_value_is_number(js_arg_h)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_height: Argument 1 must be a number");
     }
 
     int32_t arg_h = (int32_t)jerry_value_as_number(js_arg_h);
@@ -13626,12 +13643,12 @@ static jerry_value_t js_lv_obj_set_layout(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: layout (uint32_t)
     jerry_value_t js_arg_layout = args[1];
     if (!jerry_value_is_number(js_arg_layout)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_layout: Argument 1 must be a number");
     }
 
     uint32_t arg_layout = (uint32_t)jerry_value_as_number(js_arg_layout);
@@ -13656,10 +13673,10 @@ static jerry_value_t js_lv_obj_set_parent(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_set_parent(arg_obj, arg_parent);
@@ -13681,12 +13698,12 @@ static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_pos: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -13694,7 +13711,7 @@ static jerry_value_t js_lv_obj_set_pos(const jerry_call_info_t* call_info_p,
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[2];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_pos: Argument 2 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -13719,12 +13736,12 @@ static jerry_value_t js_lv_obj_set_scroll_dir(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: dir (lv_dir_t)
     jerry_value_t js_arg_dir = args[1];
     if (!jerry_value_is_number(js_arg_dir)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_scroll_dir: Argument 1 must be a number");
     }
 
     int arg_dir = (int)jerry_value_as_number(js_arg_dir);
@@ -13749,12 +13766,12 @@ static jerry_value_t js_lv_obj_set_scroll_snap_x(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: align (lv_scroll_snap_t)
     jerry_value_t js_arg_align = args[1];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_scroll_snap_x: Argument 1 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -13779,12 +13796,12 @@ static jerry_value_t js_lv_obj_set_scroll_snap_y(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: align (lv_scroll_snap_t)
     jerry_value_t js_arg_align = args[1];
     if (!jerry_value_is_number(js_arg_align)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_scroll_snap_y: Argument 1 must be a number");
     }
 
     int arg_align = (int)jerry_value_as_number(js_arg_align);
@@ -13809,12 +13826,12 @@ static jerry_value_t js_lv_obj_set_scrollbar_mode(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: mode (lv_scrollbar_mode_t)
     jerry_value_t js_arg_mode = args[1];
     if (!jerry_value_is_number(js_arg_mode)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_scrollbar_mode: Argument 1 must be a number");
     }
 
     int arg_mode = (int)jerry_value_as_number(js_arg_mode);
@@ -13839,12 +13856,12 @@ static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: w (int32_t)
     jerry_value_t js_arg_w = args[1];
     if (!jerry_value_is_number(js_arg_w)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_size: Argument 1 must be a number");
     }
 
     int32_t arg_w = (int32_t)jerry_value_as_number(js_arg_w);
@@ -13852,7 +13869,7 @@ static jerry_value_t js_lv_obj_set_size(const jerry_call_info_t* call_info_p,
     // 解析参数: h (int32_t)
     jerry_value_t js_arg_h = args[2];
     if (!jerry_value_is_number(js_arg_h)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_size: Argument 2 must be a number");
     }
 
     int32_t arg_h = (int32_t)jerry_value_as_number(js_arg_h);
@@ -13877,12 +13894,12 @@ static jerry_value_t js_lv_obj_set_state(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: state (lv_state_t)
     jerry_value_t js_arg_state = args[1];
     if (!jerry_value_is_number(js_arg_state)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_state: Argument 1 must be a number");
     }
 
     uint16_t arg_state = (uint16_t)jerry_value_as_number(js_arg_state);
@@ -13898,7 +13915,7 @@ static jerry_value_t js_lv_obj_set_state(const jerry_call_info_t* call_info_p,
             arg_v = (jerry_value_as_number(args[2]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 2 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_state: Argument 2 must be boolean or number for bool");
         }
     }
 
@@ -13922,12 +13939,12 @@ static jerry_value_t js_lv_obj_set_style_align(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -13935,7 +13952,7 @@ static jerry_value_t js_lv_obj_set_style_align(const jerry_call_info_t* call_inf
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -13960,15 +13977,15 @@ static jerry_value_t js_lv_obj_set_style_anim(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
-    // 解析参数: value (const lv_anim_t*)
-    // 对象类型参数，支持null
-    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 解析参数: value ( lv_anim_t*)
+    // lv_anim_t* 类型参数处理
+    lv_anim_t* arg_value = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_anim: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -13993,12 +14010,12 @@ static jerry_value_t js_lv_obj_set_style_anim_duration(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (uint32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_anim_duration: Argument 1 must be a number");
     }
 
     uint32_t arg_value = (uint32_t)jerry_value_as_number(js_arg_value);
@@ -14006,7 +14023,7 @@ static jerry_value_t js_lv_obj_set_style_anim_duration(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_anim_duration: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14031,15 +14048,15 @@ static jerry_value_t js_lv_obj_set_style_arc_color(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14064,7 +14081,7 @@ static jerry_value_t js_lv_obj_set_style_arc_image_src(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const void*)
     // void*/字符串 类型参数，支持null
@@ -14077,7 +14094,7 @@ static jerry_value_t js_lv_obj_set_style_arc_image_src(const jerry_call_info_t* 
             jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_value_str = (char*)eos_malloc(arg_value_len + 1);
             if (!arg_value_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_set_style_arc_image_src: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
             arg_value_str[arg_value_len] = '\0';
@@ -14085,7 +14102,7 @@ static jerry_value_t js_lv_obj_set_style_arc_image_src(const jerry_call_info_t* 
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -14093,22 +14110,22 @@ static jerry_value_t js_lv_obj_set_style_arc_image_src(const jerry_call_info_t* 
             arg_value = (void*)ptr_num;
         }
         else {
-            if (arg_value_str) eos_free(arg_value_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_obj_set_style_arc_image_src: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_value_str);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_image_src: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
 
     // 调用底层函数
     lv_obj_set_style_arc_image_src(arg_obj, arg_value, arg_selector);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
 
     return jerry_undefined();
 }
@@ -14127,12 +14144,12 @@ static jerry_value_t js_lv_obj_set_style_arc_opa(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14140,7 +14157,7 @@ static jerry_value_t js_lv_obj_set_style_arc_opa(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14165,7 +14182,7 @@ static jerry_value_t js_lv_obj_set_style_arc_rounded(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (bool)
     // 布尔类型参数: value
@@ -14178,14 +14195,14 @@ static jerry_value_t js_lv_obj_set_style_arc_rounded(const jerry_call_info_t* ca
             arg_value = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_style_arc_rounded: Argument 1 must be boolean or number for bool");
         }
     }
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_rounded: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14210,12 +14227,12 @@ static jerry_value_t js_lv_obj_set_style_arc_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -14223,7 +14240,7 @@ static jerry_value_t js_lv_obj_set_style_arc_width(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_arc_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14248,12 +14265,12 @@ static jerry_value_t js_lv_obj_set_style_base_dir(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_base_dir_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_base_dir: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -14261,7 +14278,7 @@ static jerry_value_t js_lv_obj_set_style_base_dir(const jerry_call_info_t* call_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_base_dir: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14286,15 +14303,15 @@ static jerry_value_t js_lv_obj_set_style_bg_color(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14319,15 +14336,15 @@ static jerry_value_t js_lv_obj_set_style_bg_grad(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const lv_grad_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14352,15 +14369,15 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_color(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14385,12 +14402,12 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_grad_dir_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_dir: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -14398,7 +14415,7 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_dir: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14423,12 +14440,12 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14436,7 +14453,7 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14461,12 +14478,12 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_stop: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -14474,7 +14491,7 @@ static jerry_value_t js_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_grad_stop: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14499,12 +14516,12 @@ static jerry_value_t js_lv_obj_set_style_bg_image_opa(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14512,7 +14529,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_opa(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14537,15 +14554,15 @@ static jerry_value_t js_lv_obj_set_style_bg_image_recolor(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_recolor: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14570,12 +14587,12 @@ static jerry_value_t js_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_recolor_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14583,7 +14600,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_recolor_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14608,7 +14625,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_src(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const void*)
     // void*/字符串 类型参数，支持null
@@ -14621,7 +14638,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_src(const jerry_call_info_t* c
             jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_value_str = (char*)eos_malloc(arg_value_len + 1);
             if (!arg_value_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_set_style_bg_image_src: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
             arg_value_str[arg_value_len] = '\0';
@@ -14629,7 +14646,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_src(const jerry_call_info_t* c
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -14637,22 +14654,22 @@ static jerry_value_t js_lv_obj_set_style_bg_image_src(const jerry_call_info_t* c
             arg_value = (void*)ptr_num;
         }
         else {
-            if (arg_value_str) eos_free(arg_value_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_obj_set_style_bg_image_src: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_value_str);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_src: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
 
     // 调用底层函数
     lv_obj_set_style_bg_image_src(arg_obj, arg_value, arg_selector);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
 
     return jerry_undefined();
 }
@@ -14671,7 +14688,7 @@ static jerry_value_t js_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t*
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (bool)
     // 布尔类型参数: value
@@ -14684,14 +14701,14 @@ static jerry_value_t js_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t*
             arg_value = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_style_bg_image_tiled: Argument 1 must be boolean or number for bool");
         }
     }
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_image_tiled: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14716,12 +14733,12 @@ static jerry_value_t js_lv_obj_set_style_bg_main_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_main_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14729,7 +14746,7 @@ static jerry_value_t js_lv_obj_set_style_bg_main_opa(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_main_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14754,12 +14771,12 @@ static jerry_value_t js_lv_obj_set_style_bg_main_stop(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_main_stop: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -14767,7 +14784,7 @@ static jerry_value_t js_lv_obj_set_style_bg_main_stop(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_main_stop: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14792,12 +14809,12 @@ static jerry_value_t js_lv_obj_set_style_bg_opa(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14805,7 +14822,7 @@ static jerry_value_t js_lv_obj_set_style_bg_opa(const jerry_call_info_t* call_in
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bg_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14830,7 +14847,7 @@ static jerry_value_t js_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const void*)
     // void*/字符串 类型参数，支持null
@@ -14843,7 +14860,7 @@ static jerry_value_t js_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t
             jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_value_str = (char*)eos_malloc(arg_value_len + 1);
             if (!arg_value_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_set_style_bitmap_mask_src: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
             arg_value_str[arg_value_len] = '\0';
@@ -14851,7 +14868,7 @@ static jerry_value_t js_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -14859,22 +14876,22 @@ static jerry_value_t js_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t
             arg_value = (void*)ptr_num;
         }
         else {
-            if (arg_value_str) eos_free(arg_value_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_obj_set_style_bitmap_mask_src: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_value_str);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_bitmap_mask_src: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
 
     // 调用底层函数
     lv_obj_set_style_bitmap_mask_src(arg_obj, arg_value, arg_selector);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
 
     return jerry_undefined();
 }
@@ -14893,12 +14910,12 @@ static jerry_value_t js_lv_obj_set_style_blend_mode(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_blend_mode_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_blend_mode: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -14906,7 +14923,7 @@ static jerry_value_t js_lv_obj_set_style_blend_mode(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_blend_mode: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14931,15 +14948,15 @@ static jerry_value_t js_lv_obj_set_style_border_color(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -14964,12 +14981,12 @@ static jerry_value_t js_lv_obj_set_style_border_opa(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -14977,7 +14994,7 @@ static jerry_value_t js_lv_obj_set_style_border_opa(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15002,7 +15019,7 @@ static jerry_value_t js_lv_obj_set_style_border_post(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (bool)
     // 布尔类型参数: value
@@ -15015,14 +15032,14 @@ static jerry_value_t js_lv_obj_set_style_border_post(const jerry_call_info_t* ca
             arg_value = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_style_border_post: Argument 1 must be boolean or number for bool");
         }
     }
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_post: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15047,12 +15064,12 @@ static jerry_value_t js_lv_obj_set_style_border_side(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_border_side_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_side: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15060,7 +15077,7 @@ static jerry_value_t js_lv_obj_set_style_border_side(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_side: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15085,12 +15102,12 @@ static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15098,7 +15115,7 @@ static jerry_value_t js_lv_obj_set_style_border_width(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_border_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15123,7 +15140,7 @@ static jerry_value_t js_lv_obj_set_style_clip_corner(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (bool)
     // 布尔类型参数: value
@@ -15136,14 +15153,14 @@ static jerry_value_t js_lv_obj_set_style_clip_corner(const jerry_call_info_t* ca
             arg_value = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_style_clip_corner: Argument 1 must be boolean or number for bool");
         }
     }
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_clip_corner: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15168,15 +15185,15 @@ static jerry_value_t js_lv_obj_set_style_color_filter_dsc(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const lv_color_filter_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_color_filter_dsc: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15201,12 +15218,12 @@ static jerry_value_t js_lv_obj_set_style_color_filter_opa(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_color_filter_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -15214,7 +15231,7 @@ static jerry_value_t js_lv_obj_set_style_color_filter_opa(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_color_filter_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15239,12 +15256,12 @@ static jerry_value_t js_lv_obj_set_style_flex_cross_place(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_flex_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_cross_place: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15252,7 +15269,7 @@ static jerry_value_t js_lv_obj_set_style_flex_cross_place(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_cross_place: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15277,12 +15294,12 @@ static jerry_value_t js_lv_obj_set_style_flex_flow(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_flex_flow_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_flow: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15290,7 +15307,7 @@ static jerry_value_t js_lv_obj_set_style_flex_flow(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_flow: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15315,12 +15332,12 @@ static jerry_value_t js_lv_obj_set_style_flex_grow(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (uint8_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_grow: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -15328,7 +15345,7 @@ static jerry_value_t js_lv_obj_set_style_flex_grow(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_grow: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15353,12 +15370,12 @@ static jerry_value_t js_lv_obj_set_style_flex_main_place(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_flex_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_main_place: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15366,7 +15383,7 @@ static jerry_value_t js_lv_obj_set_style_flex_main_place(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_main_place: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15391,12 +15408,12 @@ static jerry_value_t js_lv_obj_set_style_flex_track_place(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_flex_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_track_place: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15404,7 +15421,7 @@ static jerry_value_t js_lv_obj_set_style_flex_track_place(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_flex_track_place: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15429,12 +15446,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_column_pos(const jerry_call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_column_pos: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15442,7 +15459,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_column_pos(const jerry_call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_column_pos: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15467,12 +15484,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_column_span(const jerry_call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_column_span: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15480,7 +15497,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_column_span(const jerry_call_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_column_span: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15505,12 +15522,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_row_pos: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15518,7 +15535,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_row_pos: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15543,12 +15560,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_row_span(const jerry_call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_row_span: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15556,7 +15573,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_row_span(const jerry_call_inf
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_row_span: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15581,12 +15598,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_x_align(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_grid_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_x_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15594,7 +15611,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_x_align(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_x_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15619,12 +15636,12 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_y_align(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_grid_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_y_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15632,7 +15649,7 @@ static jerry_value_t js_lv_obj_set_style_grid_cell_y_align(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_cell_y_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15657,12 +15674,12 @@ static jerry_value_t js_lv_obj_set_style_grid_column_align(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_grid_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_column_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15670,7 +15687,7 @@ static jerry_value_t js_lv_obj_set_style_grid_column_align(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_column_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15695,16 +15712,16 @@ static jerry_value_t js_lv_obj_set_style_grid_column_dsc_array(const jerry_call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const int32_t*)
     // 通用指针类型: const int32_t*，支持null
-    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_column_dsc_array: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15729,12 +15746,12 @@ static jerry_value_t js_lv_obj_set_style_grid_row_align(const jerry_call_info_t*
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_grid_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_row_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -15742,7 +15759,7 @@ static jerry_value_t js_lv_obj_set_style_grid_row_align(const jerry_call_info_t*
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_row_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15767,16 +15784,16 @@ static jerry_value_t js_lv_obj_set_style_grid_row_dsc_array(const jerry_call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const int32_t*)
     // 通用指针类型: const int32_t*，支持null
-    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_grid_row_dsc_array: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15801,12 +15818,12 @@ static jerry_value_t js_lv_obj_set_style_height(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_height: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15814,7 +15831,7 @@ static jerry_value_t js_lv_obj_set_style_height(const jerry_call_info_t* call_in
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_height: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15839,12 +15856,12 @@ static jerry_value_t js_lv_obj_set_style_image_opa(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_image_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -15852,7 +15869,7 @@ static jerry_value_t js_lv_obj_set_style_image_opa(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_image_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15877,15 +15894,15 @@ static jerry_value_t js_lv_obj_set_style_image_recolor(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_image_recolor: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15910,12 +15927,12 @@ static jerry_value_t js_lv_obj_set_style_image_recolor_opa(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_image_recolor_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -15923,7 +15940,7 @@ static jerry_value_t js_lv_obj_set_style_image_recolor_opa(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_image_recolor_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15948,12 +15965,12 @@ static jerry_value_t js_lv_obj_set_style_layout(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (uint16_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_layout: Argument 1 must be a number");
     }
 
     uint16_t arg_value = (uint16_t)jerry_value_as_number(js_arg_value);
@@ -15961,7 +15978,7 @@ static jerry_value_t js_lv_obj_set_style_layout(const jerry_call_info_t* call_in
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_layout: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -15986,12 +16003,12 @@ static jerry_value_t js_lv_obj_set_style_length(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_length: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -15999,7 +16016,7 @@ static jerry_value_t js_lv_obj_set_style_length(const jerry_call_info_t* call_in
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_length: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16024,15 +16041,15 @@ static jerry_value_t js_lv_obj_set_style_line_color(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16057,12 +16074,12 @@ static jerry_value_t js_lv_obj_set_style_line_dash_gap(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_dash_gap: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16070,7 +16087,7 @@ static jerry_value_t js_lv_obj_set_style_line_dash_gap(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_dash_gap: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16095,12 +16112,12 @@ static jerry_value_t js_lv_obj_set_style_line_dash_width(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_dash_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16108,7 +16125,7 @@ static jerry_value_t js_lv_obj_set_style_line_dash_width(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_dash_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16133,12 +16150,12 @@ static jerry_value_t js_lv_obj_set_style_line_opa(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -16146,7 +16163,7 @@ static jerry_value_t js_lv_obj_set_style_line_opa(const jerry_call_info_t* call_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16171,7 +16188,7 @@ static jerry_value_t js_lv_obj_set_style_line_rounded(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (bool)
     // 布尔类型参数: value
@@ -16184,14 +16201,14 @@ static jerry_value_t js_lv_obj_set_style_line_rounded(const jerry_call_info_t* c
             arg_value = (jerry_value_as_number(args[1]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 1 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_set_style_line_rounded: Argument 1 must be boolean or number for bool");
         }
     }
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_rounded: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16216,12 +16233,12 @@ static jerry_value_t js_lv_obj_set_style_line_width(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16229,7 +16246,7 @@ static jerry_value_t js_lv_obj_set_style_line_width(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_line_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16254,12 +16271,12 @@ static jerry_value_t js_lv_obj_set_style_margin_all(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_all: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16267,7 +16284,7 @@ static jerry_value_t js_lv_obj_set_style_margin_all(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_all: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16292,12 +16309,12 @@ static jerry_value_t js_lv_obj_set_style_margin_bottom(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_bottom: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16305,7 +16322,7 @@ static jerry_value_t js_lv_obj_set_style_margin_bottom(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_bottom: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16330,12 +16347,12 @@ static jerry_value_t js_lv_obj_set_style_margin_hor(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_hor: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16343,7 +16360,7 @@ static jerry_value_t js_lv_obj_set_style_margin_hor(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_hor: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16368,12 +16385,12 @@ static jerry_value_t js_lv_obj_set_style_margin_left(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_left: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16381,7 +16398,7 @@ static jerry_value_t js_lv_obj_set_style_margin_left(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_left: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16406,12 +16423,12 @@ static jerry_value_t js_lv_obj_set_style_margin_right(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_right: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16419,7 +16436,7 @@ static jerry_value_t js_lv_obj_set_style_margin_right(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_right: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16444,12 +16461,12 @@ static jerry_value_t js_lv_obj_set_style_margin_top(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_top: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16457,7 +16474,7 @@ static jerry_value_t js_lv_obj_set_style_margin_top(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_top: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16482,12 +16499,12 @@ static jerry_value_t js_lv_obj_set_style_margin_ver(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_ver: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16495,7 +16512,7 @@ static jerry_value_t js_lv_obj_set_style_margin_ver(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_margin_ver: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16520,12 +16537,12 @@ static jerry_value_t js_lv_obj_set_style_max_height(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_max_height: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16533,7 +16550,7 @@ static jerry_value_t js_lv_obj_set_style_max_height(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_max_height: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16558,12 +16575,12 @@ static jerry_value_t js_lv_obj_set_style_max_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_max_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16571,7 +16588,7 @@ static jerry_value_t js_lv_obj_set_style_max_width(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_max_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16596,12 +16613,12 @@ static jerry_value_t js_lv_obj_set_style_min_height(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_min_height: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16609,7 +16626,7 @@ static jerry_value_t js_lv_obj_set_style_min_height(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_min_height: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16634,12 +16651,12 @@ static jerry_value_t js_lv_obj_set_style_min_width(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_min_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16647,7 +16664,7 @@ static jerry_value_t js_lv_obj_set_style_min_width(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_min_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16672,12 +16689,12 @@ static jerry_value_t js_lv_obj_set_style_opa(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -16685,7 +16702,7 @@ static jerry_value_t js_lv_obj_set_style_opa(const jerry_call_info_t* call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16710,12 +16727,12 @@ static jerry_value_t js_lv_obj_set_style_opa_layered(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_opa_layered: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -16723,7 +16740,7 @@ static jerry_value_t js_lv_obj_set_style_opa_layered(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_opa_layered: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16748,15 +16765,15 @@ static jerry_value_t js_lv_obj_set_style_outline_color(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16781,12 +16798,12 @@ static jerry_value_t js_lv_obj_set_style_outline_opa(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -16794,7 +16811,7 @@ static jerry_value_t js_lv_obj_set_style_outline_opa(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16819,12 +16836,12 @@ static jerry_value_t js_lv_obj_set_style_outline_pad(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_pad: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16832,7 +16849,7 @@ static jerry_value_t js_lv_obj_set_style_outline_pad(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_pad: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16857,12 +16874,12 @@ static jerry_value_t js_lv_obj_set_style_outline_width(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16870,7 +16887,7 @@ static jerry_value_t js_lv_obj_set_style_outline_width(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_outline_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16895,12 +16912,12 @@ static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_all: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16908,7 +16925,7 @@ static jerry_value_t js_lv_obj_set_style_pad_all(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_all: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16933,12 +16950,12 @@ static jerry_value_t js_lv_obj_set_style_pad_bottom(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_bottom: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16946,7 +16963,7 @@ static jerry_value_t js_lv_obj_set_style_pad_bottom(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_bottom: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -16971,12 +16988,12 @@ static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_column: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -16984,7 +17001,7 @@ static jerry_value_t js_lv_obj_set_style_pad_column(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_column: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17009,12 +17026,12 @@ static jerry_value_t js_lv_obj_set_style_pad_gap(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_gap: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17022,7 +17039,7 @@ static jerry_value_t js_lv_obj_set_style_pad_gap(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_gap: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17047,12 +17064,12 @@ static jerry_value_t js_lv_obj_set_style_pad_hor(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_hor: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17060,7 +17077,7 @@ static jerry_value_t js_lv_obj_set_style_pad_hor(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_hor: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17085,12 +17102,12 @@ static jerry_value_t js_lv_obj_set_style_pad_left(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_left: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17098,7 +17115,7 @@ static jerry_value_t js_lv_obj_set_style_pad_left(const jerry_call_info_t* call_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_left: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17123,12 +17140,12 @@ static jerry_value_t js_lv_obj_set_style_pad_right(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_right: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17136,7 +17153,7 @@ static jerry_value_t js_lv_obj_set_style_pad_right(const jerry_call_info_t* call
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_right: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17161,12 +17178,12 @@ static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_row: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17174,7 +17191,7 @@ static jerry_value_t js_lv_obj_set_style_pad_row(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_row: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17199,12 +17216,12 @@ static jerry_value_t js_lv_obj_set_style_pad_top(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_top: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17212,7 +17229,7 @@ static jerry_value_t js_lv_obj_set_style_pad_top(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_top: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17237,12 +17254,12 @@ static jerry_value_t js_lv_obj_set_style_pad_ver(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_ver: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17250,7 +17267,7 @@ static jerry_value_t js_lv_obj_set_style_pad_ver(const jerry_call_info_t* call_i
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_pad_ver: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17275,12 +17292,12 @@ static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_radius: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17288,7 +17305,7 @@ static jerry_value_t js_lv_obj_set_style_radius(const jerry_call_info_t* call_in
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_radius: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17313,12 +17330,12 @@ static jerry_value_t js_lv_obj_set_style_rotary_sensitivity(const jerry_call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (uint32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_rotary_sensitivity: Argument 1 must be a number");
     }
 
     uint32_t arg_value = (uint32_t)jerry_value_as_number(js_arg_value);
@@ -17326,7 +17343,7 @@ static jerry_value_t js_lv_obj_set_style_rotary_sensitivity(const jerry_call_inf
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_rotary_sensitivity: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17351,15 +17368,15 @@ static jerry_value_t js_lv_obj_set_style_shadow_color(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17384,12 +17401,12 @@ static jerry_value_t js_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_offset_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17397,7 +17414,7 @@ static jerry_value_t js_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_offset_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17422,12 +17439,12 @@ static jerry_value_t js_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_offset_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17435,7 +17452,7 @@ static jerry_value_t js_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_offset_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17460,12 +17477,12 @@ static jerry_value_t js_lv_obj_set_style_shadow_opa(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -17473,7 +17490,7 @@ static jerry_value_t js_lv_obj_set_style_shadow_opa(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17498,12 +17515,12 @@ static jerry_value_t js_lv_obj_set_style_shadow_spread(const jerry_call_info_t* 
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_spread: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17511,7 +17528,7 @@ static jerry_value_t js_lv_obj_set_style_shadow_spread(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_spread: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17536,12 +17553,12 @@ static jerry_value_t js_lv_obj_set_style_shadow_width(const jerry_call_info_t* c
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17549,7 +17566,7 @@ static jerry_value_t js_lv_obj_set_style_shadow_width(const jerry_call_info_t* c
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_shadow_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17574,12 +17591,12 @@ static jerry_value_t js_lv_obj_set_style_size(const jerry_call_info_t* call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: width (int32_t)
     jerry_value_t js_arg_width = args[1];
     if (!jerry_value_is_number(js_arg_width)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_size: Argument 1 must be a number");
     }
 
     int32_t arg_width = (int32_t)jerry_value_as_number(js_arg_width);
@@ -17587,7 +17604,7 @@ static jerry_value_t js_lv_obj_set_style_size(const jerry_call_info_t* call_info
     // 解析参数: height (int32_t)
     jerry_value_t js_arg_height = args[2];
     if (!jerry_value_is_number(js_arg_height)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_size: Argument 2 must be a number");
     }
 
     int32_t arg_height = (int32_t)jerry_value_as_number(js_arg_height);
@@ -17595,7 +17612,7 @@ static jerry_value_t js_lv_obj_set_style_size(const jerry_call_info_t* call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[3];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_size: Argument 3 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17620,12 +17637,12 @@ static jerry_value_t js_lv_obj_set_style_text_align(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_text_align_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_align: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -17633,7 +17650,7 @@ static jerry_value_t js_lv_obj_set_style_text_align(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_align: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17658,15 +17675,15 @@ static jerry_value_t js_lv_obj_set_style_text_color(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_color_t)
-    lv_color_t arg_value = js_to_lv_color(args[1]);
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_color: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17691,12 +17708,12 @@ static jerry_value_t js_lv_obj_set_style_text_decor(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_text_decor_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_decor: Argument 1 must be a number");
     }
 
     int arg_value = (int)jerry_value_as_number(js_arg_value);
@@ -17704,7 +17721,7 @@ static jerry_value_t js_lv_obj_set_style_text_decor(const jerry_call_info_t* cal
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_decor: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17729,15 +17746,15 @@ static jerry_value_t js_lv_obj_set_style_text_font(const jerry_call_info_t* call
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value ( lv_font_t*)
     // lv_font_t* 类型参数处理
-    const lv_font_t* arg_value = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_FONT);
+    const lv_font_t* arg_value = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_font: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17762,12 +17779,12 @@ static jerry_value_t js_lv_obj_set_style_text_letter_space(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_letter_space: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17775,7 +17792,7 @@ static jerry_value_t js_lv_obj_set_style_text_letter_space(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_letter_space: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17800,12 +17817,12 @@ static jerry_value_t js_lv_obj_set_style_text_line_space(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_line_space: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17813,7 +17830,7 @@ static jerry_value_t js_lv_obj_set_style_text_line_space(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_line_space: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17838,12 +17855,12 @@ static jerry_value_t js_lv_obj_set_style_text_opa(const jerry_call_info_t* call_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (lv_opa_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_opa: Argument 1 must be a number");
     }
 
     uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
@@ -17851,7 +17868,7 @@ static jerry_value_t js_lv_obj_set_style_text_opa(const jerry_call_info_t* call_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_text_opa: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17876,12 +17893,12 @@ static jerry_value_t js_lv_obj_set_style_transform_height(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_height: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17889,7 +17906,7 @@ static jerry_value_t js_lv_obj_set_style_transform_height(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_height: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17914,12 +17931,12 @@ static jerry_value_t js_lv_obj_set_style_transform_pivot_x(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_pivot_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17927,7 +17944,7 @@ static jerry_value_t js_lv_obj_set_style_transform_pivot_x(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_pivot_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17952,12 +17969,12 @@ static jerry_value_t js_lv_obj_set_style_transform_pivot_y(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_pivot_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -17965,7 +17982,7 @@ static jerry_value_t js_lv_obj_set_style_transform_pivot_y(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_pivot_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -17990,12 +18007,12 @@ static jerry_value_t js_lv_obj_set_style_transform_rotation(const jerry_call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_rotation: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18003,7 +18020,7 @@ static jerry_value_t js_lv_obj_set_style_transform_rotation(const jerry_call_inf
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_rotation: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18028,12 +18045,12 @@ static jerry_value_t js_lv_obj_set_style_transform_scale(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18041,7 +18058,7 @@ static jerry_value_t js_lv_obj_set_style_transform_scale(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18066,12 +18083,12 @@ static jerry_value_t js_lv_obj_set_style_transform_scale_x(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18079,7 +18096,7 @@ static jerry_value_t js_lv_obj_set_style_transform_scale_x(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18104,12 +18121,12 @@ static jerry_value_t js_lv_obj_set_style_transform_scale_y(const jerry_call_info
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18117,7 +18134,7 @@ static jerry_value_t js_lv_obj_set_style_transform_scale_y(const jerry_call_info
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_scale_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18142,12 +18159,12 @@ static jerry_value_t js_lv_obj_set_style_transform_skew_x(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_skew_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18155,7 +18172,7 @@ static jerry_value_t js_lv_obj_set_style_transform_skew_x(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_skew_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18180,12 +18197,12 @@ static jerry_value_t js_lv_obj_set_style_transform_skew_y(const jerry_call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_skew_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18193,7 +18210,7 @@ static jerry_value_t js_lv_obj_set_style_transform_skew_y(const jerry_call_info_
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_skew_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18218,12 +18235,12 @@ static jerry_value_t js_lv_obj_set_style_transform_width(const jerry_call_info_t
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18231,7 +18248,7 @@ static jerry_value_t js_lv_obj_set_style_transform_width(const jerry_call_info_t
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transform_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18256,15 +18273,15 @@ static jerry_value_t js_lv_obj_set_style_transition(const jerry_call_info_t* cal
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (const lv_style_transition_dsc_t*)
-    // 对象类型参数，支持null
-    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_transition: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18289,12 +18306,12 @@ static jerry_value_t js_lv_obj_set_style_translate_x(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_translate_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18302,7 +18319,7 @@ static jerry_value_t js_lv_obj_set_style_translate_x(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_translate_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18327,12 +18344,12 @@ static jerry_value_t js_lv_obj_set_style_translate_y(const jerry_call_info_t* ca
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_translate_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18340,7 +18357,7 @@ static jerry_value_t js_lv_obj_set_style_translate_y(const jerry_call_info_t* ca
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_translate_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18365,12 +18382,12 @@ static jerry_value_t js_lv_obj_set_style_width(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_width: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18378,7 +18395,7 @@ static jerry_value_t js_lv_obj_set_style_width(const jerry_call_info_t* call_inf
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_width: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18403,12 +18420,12 @@ static jerry_value_t js_lv_obj_set_style_x(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_x: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18416,7 +18433,7 @@ static jerry_value_t js_lv_obj_set_style_x(const jerry_call_info_t* call_info_p,
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_x: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18441,12 +18458,12 @@ static jerry_value_t js_lv_obj_set_style_y(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_y: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -18454,7 +18471,7 @@ static jerry_value_t js_lv_obj_set_style_y(const jerry_call_info_t* call_info_p,
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[2];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_set_style_y: Argument 2 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18479,7 +18496,7 @@ static jerry_value_t js_lv_obj_set_user_data(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: user_data (void*)
     // void*/字符串 类型参数，支持null
@@ -18492,7 +18509,7 @@ static jerry_value_t js_lv_obj_set_user_data(const jerry_call_info_t* call_info_
             jerry_size_t arg_user_data_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
             arg_user_data_str = (char*)eos_malloc(arg_user_data_len + 1);
             if (!arg_user_data_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_set_user_data: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_user_data_str, arg_user_data_len);
             arg_user_data_str[arg_user_data_len] = '\0';
@@ -18500,7 +18517,7 @@ static jerry_value_t js_lv_obj_set_user_data(const jerry_call_info_t* call_info_
         }
         else if (jerry_value_is_object(args[1])) {
             // 尝试从对象获取指针
-            arg_user_data = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+            arg_user_data = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[1])) {
             // 直接传递指针数值
@@ -18508,14 +18525,14 @@ static jerry_value_t js_lv_obj_set_user_data(const jerry_call_info_t* call_info_
             arg_user_data = (void*)ptr_num;
         }
         else {
-            if (arg_user_data_str) eos_free(arg_user_data_str);
-            return script_engine_throw_error("Argument 1 must be string, object or number");
+            return script_engine_throw_error("lv_obj_set_user_data: Argument 1 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_user_data_str);
     // 调用底层函数
     lv_obj_set_user_data(arg_obj, arg_user_data);
+
+    // 释放临时内存
+    if (arg_user_data_str) eos_free(arg_user_data_str);
 
     return jerry_undefined();
 }
@@ -18534,12 +18551,12 @@ static jerry_value_t js_lv_obj_set_width(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: w (int32_t)
     jerry_value_t js_arg_w = args[1];
     if (!jerry_value_is_number(js_arg_w)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_width: Argument 1 must be a number");
     }
 
     int32_t arg_w = (int32_t)jerry_value_as_number(js_arg_w);
@@ -18564,12 +18581,12 @@ static jerry_value_t js_lv_obj_set_x(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: x (int32_t)
     jerry_value_t js_arg_x = args[1];
     if (!jerry_value_is_number(js_arg_x)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_x: Argument 1 must be a number");
     }
 
     int32_t arg_x = (int32_t)jerry_value_as_number(js_arg_x);
@@ -18594,12 +18611,12 @@ static jerry_value_t js_lv_obj_set_y(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: y (int32_t)
     jerry_value_t js_arg_y = args[1];
     if (!jerry_value_is_number(js_arg_y)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_set_y: Argument 1 must be a number");
     }
 
     int32_t arg_y = (int32_t)jerry_value_as_number(js_arg_y);
@@ -18626,7 +18643,7 @@ static jerry_value_t js_lv_obj_style_get_selector_part(const jerry_call_info_t* 
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[0];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_obj_style_get_selector_part: Argument 0 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18657,7 +18674,7 @@ static jerry_value_t js_lv_obj_style_get_selector_state(const jerry_call_info_t*
     // 解析参数: selector (lv_style_selector_t)
     jerry_value_t js_arg_selector = args[0];
     if (!jerry_value_is_number(js_arg_selector)) {
-        return script_engine_throw_error("Argument 0 must be a number");
+        return script_engine_throw_error("lv_obj_style_get_selector_state: Argument 0 must be a number");
     }
 
     uint32_t arg_selector = (uint32_t)jerry_value_as_number(js_arg_selector);
@@ -18686,10 +18703,10 @@ static jerry_value_t js_lv_obj_swap(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj1 (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj1 = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: obj2 (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj2 = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_swap(arg_obj1, arg_obj2);
@@ -18711,15 +18728,15 @@ static jerry_value_t js_lv_obj_transform_point(const jerry_call_info_t* call_inf
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: p (lv_point_t*)
-    // 对象类型参数，支持null
-    void* arg_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_p = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 解析参数: flags (lv_obj_point_transform_flag_t)
     jerry_value_t js_arg_flags = args[2];
     if (!jerry_value_is_number(js_arg_flags)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_obj_transform_point: Argument 2 must be a number");
     }
 
     lv_obj_point_transform_flag_t arg_flags = (lv_obj_point_transform_flag_t)jerry_value_as_number(js_arg_flags);
@@ -18744,11 +18761,11 @@ static jerry_value_t js_lv_obj_tree_walk(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: start_obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_start_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: cb (lv_obj_tree_walk_cb_t)
     // 通用指针类型: lv_obj_tree_walk_cb_t，支持null
-    lv_obj_tree_walk_cb_t arg_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_COMMON_PTR);
+    lv_obj_tree_walk_cb_t arg_cb = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
 
     // 解析参数: user_data (void*)
     // void*/字符串 类型参数，支持null
@@ -18761,7 +18778,7 @@ static jerry_value_t js_lv_obj_tree_walk(const jerry_call_info_t* call_info_p,
             jerry_size_t arg_user_data_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
             arg_user_data_str = (char*)eos_malloc(arg_user_data_len + 1);
             if (!arg_user_data_str) {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("lv_obj_tree_walk: Failed to allocate memory for string argument");
             }
             jerry_string_to_buffer(args[2], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_user_data_str, arg_user_data_len);
             arg_user_data_str[arg_user_data_len] = '\0';
@@ -18769,7 +18786,7 @@ static jerry_value_t js_lv_obj_tree_walk(const jerry_call_info_t* call_info_p,
         }
         else if (jerry_value_is_object(args[2])) {
             // 尝试从对象获取指针
-            arg_user_data = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_COMMON_PTR);
+            arg_user_data = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
         }
         else if (jerry_value_is_number(args[2])) {
             // 直接传递指针数值
@@ -18777,14 +18794,14 @@ static jerry_value_t js_lv_obj_tree_walk(const jerry_call_info_t* call_info_p,
             arg_user_data = (void*)ptr_num;
         }
         else {
-            if (arg_user_data_str) eos_free(arg_user_data_str);
-            return script_engine_throw_error("Argument 2 must be string, object or number");
+            return script_engine_throw_error("lv_obj_tree_walk: Argument 2 must be string, object or number");
         }
     }
-
-    // 注意：需要在函数末尾添加 eos_free(arg_user_data_str);
     // 调用底层函数
     lv_obj_tree_walk(arg_start_obj, arg_cb, arg_user_data);
+
+    // 释放临时内存
+    if (arg_user_data_str) eos_free(arg_user_data_str);
 
     return jerry_undefined();
 }
@@ -18803,12 +18820,12 @@ static jerry_value_t js_lv_obj_update_flag(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: f (lv_obj_flag_t)
     jerry_value_t js_arg_f = args[1];
     if (!jerry_value_is_number(js_arg_f)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_update_flag: Argument 1 must be a number");
     }
 
     int arg_f = (int)jerry_value_as_number(js_arg_f);
@@ -18824,7 +18841,7 @@ static jerry_value_t js_lv_obj_update_flag(const jerry_call_info_t* call_info_p,
             arg_v = (jerry_value_as_number(args[2]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 2 must be boolean or number for bool");
+            return script_engine_throw_error("lv_obj_update_flag: Argument 2 must be boolean or number for bool");
         }
     }
 
@@ -18848,7 +18865,7 @@ static jerry_value_t js_lv_obj_update_layout(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_update_layout(arg_obj);
@@ -18870,12 +18887,12 @@ static jerry_value_t js_lv_obj_update_snap(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[1];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_obj_update_snap: Argument 1 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -18884,6 +18901,118 @@ static jerry_value_t js_lv_obj_update_snap(const jerry_call_info_t* call_info_p,
     lv_obj_update_snap(arg_obj, arg_anim_en);
 
     return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_palette_darken function
+ */
+static jerry_value_t js_lv_palette_darken(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_palette_darken: Insufficient arguments");
+    }
+
+    // 解析参数: p (lv_palette_t)
+    jerry_value_t js_arg_p = args[0];
+    if (!jerry_value_is_number(js_arg_p)) {
+        return script_engine_throw_error("lv_palette_darken: Argument 0 must be a number");
+    }
+
+    int arg_p = (int)jerry_value_as_number(js_arg_p);
+
+    // 解析参数: lvl (uint8_t)
+    jerry_value_t js_arg_lvl = args[1];
+    if (!jerry_value_is_number(js_arg_lvl)) {
+        return script_engine_throw_error("lv_palette_darken: Argument 1 must be a number");
+    }
+
+    uint8_t arg_lvl = (uint8_t)jerry_value_as_number(js_arg_lvl);
+
+    // 调用底层函数
+    lv_color_t ret_value = lv_palette_darken(arg_p, arg_lvl);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    // 转换为JS颜色对象
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief lv_palette_lighten function
+ */
+static jerry_value_t js_lv_palette_lighten(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_palette_lighten: Insufficient arguments");
+    }
+
+    // 解析参数: p (lv_palette_t)
+    jerry_value_t js_arg_p = args[0];
+    if (!jerry_value_is_number(js_arg_p)) {
+        return script_engine_throw_error("lv_palette_lighten: Argument 0 must be a number");
+    }
+
+    int arg_p = (int)jerry_value_as_number(js_arg_p);
+
+    // 解析参数: lvl (uint8_t)
+    jerry_value_t js_arg_lvl = args[1];
+    if (!jerry_value_is_number(js_arg_lvl)) {
+        return script_engine_throw_error("lv_palette_lighten: Argument 1 must be a number");
+    }
+
+    uint8_t arg_lvl = (uint8_t)jerry_value_as_number(js_arg_lvl);
+
+    // 调用底层函数
+    lv_color_t ret_value = lv_palette_lighten(arg_p, arg_lvl);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    // 转换为JS颜色对象
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief lv_palette_main function
+ */
+static jerry_value_t js_lv_palette_main(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_palette_main: Insufficient arguments");
+    }
+
+    // 解析参数: p (lv_palette_t)
+    jerry_value_t js_arg_p = args[0];
+    if (!jerry_value_is_number(js_arg_p)) {
+        return script_engine_throw_error("lv_palette_main: Argument 0 must be a number");
+    }
+
+    int arg_p = (int)jerry_value_as_number(js_arg_p);
+
+    // 调用底层函数
+    lv_color_t ret_value = lv_palette_main(arg_p);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    // 转换为JS颜色对象
+    js_result = lv_js_bridge_color_2_obj(&ret_value);
+
+    return js_result;
 }
 
 
@@ -18919,7 +19048,7 @@ static jerry_value_t js_lv_screen_load(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: scr (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_scr = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_screen_load(arg_scr);
@@ -18941,12 +19070,12 @@ static jerry_value_t js_lv_screen_load_anim(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: scr (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_scr = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: anim_type (lv_screen_load_anim_t)
     jerry_value_t js_arg_anim_type = args[1];
     if (!jerry_value_is_number(js_arg_anim_type)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_screen_load_anim: Argument 1 must be a number");
     }
 
     int arg_anim_type = (int)jerry_value_as_number(js_arg_anim_type);
@@ -18954,7 +19083,7 @@ static jerry_value_t js_lv_screen_load_anim(const jerry_call_info_t* call_info_p
     // 解析参数: time (uint32_t)
     jerry_value_t js_arg_time = args[2];
     if (!jerry_value_is_number(js_arg_time)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_screen_load_anim: Argument 2 must be a number");
     }
 
     uint32_t arg_time = (uint32_t)jerry_value_as_number(js_arg_time);
@@ -18962,7 +19091,7 @@ static jerry_value_t js_lv_screen_load_anim(const jerry_call_info_t* call_info_p
     // 解析参数: delay (uint32_t)
     jerry_value_t js_arg_delay = args[3];
     if (!jerry_value_is_number(js_arg_delay)) {
-        return script_engine_throw_error("Argument 3 must be a number");
+        return script_engine_throw_error("lv_screen_load_anim: Argument 3 must be a number");
     }
 
     uint32_t arg_delay = (uint32_t)jerry_value_as_number(js_arg_delay);
@@ -18978,7 +19107,7 @@ static jerry_value_t js_lv_screen_load_anim(const jerry_call_info_t* call_info_p
             arg_auto_del = (jerry_value_as_number(args[4]) != 0);
         }
         else {
-            return script_engine_throw_error("Argument 4 must be boolean or number for bool");
+            return script_engine_throw_error("lv_screen_load_anim: Argument 4 must be boolean or number for bool");
         }
     }
 
@@ -19002,17 +19131,17 @@ static jerry_value_t js_lv_slider_bind_value(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: subject (lv_subject_t*)
-    // 对象类型参数，支持null
-    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
+    // 指针类型参数，支持null
+    void* arg_subject = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
     // 调用底层函数
     lv_observer_t* ret_value = lv_slider_bind_value(arg_obj, arg_subject);
 
     // 处理返回值
     jerry_value_t js_result;
-    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_COMMON_PTR);
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
 
     return js_result;
 }
@@ -19031,7 +19160,7 @@ static jerry_value_t js_lv_slider_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_slider_create(arg_parent);
@@ -19058,7 +19187,7 @@ static jerry_value_t js_lv_slider_get_left_value(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_slider_get_left_value(arg_obj);
@@ -19084,7 +19213,7 @@ static jerry_value_t js_lv_slider_get_max_value(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_slider_get_max_value(arg_obj);
@@ -19110,7 +19239,7 @@ static jerry_value_t js_lv_slider_get_min_value(const jerry_call_info_t* call_in
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_slider_get_min_value(arg_obj);
@@ -19136,7 +19265,7 @@ static jerry_value_t js_lv_slider_get_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: slider (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_slider = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_slider_mode_t ret_value = lv_slider_get_mode(arg_slider);
@@ -19162,7 +19291,7 @@ static jerry_value_t js_lv_slider_get_value(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     int32_t ret_value = lv_slider_get_value(arg_obj);
@@ -19188,7 +19317,7 @@ static jerry_value_t js_lv_slider_is_dragged(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: obj (const lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_slider_is_dragged(arg_obj);
@@ -19214,7 +19343,7 @@ static jerry_value_t js_lv_slider_is_symmetrical(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     bool ret_value = lv_slider_is_symmetrical(arg_obj);
@@ -19240,12 +19369,12 @@ static jerry_value_t js_lv_slider_set_left_value(const jerry_call_info_t* call_i
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_slider_set_left_value: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -19253,7 +19382,7 @@ static jerry_value_t js_lv_slider_set_left_value(const jerry_call_info_t* call_i
     // 解析参数: anim (lv_anim_enable_t)
     jerry_value_t js_arg_anim = args[2];
     if (!jerry_value_is_number(js_arg_anim)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_slider_set_left_value: Argument 2 must be a number");
     }
 
     int arg_anim = (int)jerry_value_as_number(js_arg_anim);
@@ -19278,12 +19407,12 @@ static jerry_value_t js_lv_slider_set_mode(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: mode (lv_slider_mode_t)
     jerry_value_t js_arg_mode = args[1];
     if (!jerry_value_is_number(js_arg_mode)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_slider_set_mode: Argument 1 must be a number");
     }
 
     int arg_mode = (int)jerry_value_as_number(js_arg_mode);
@@ -19308,12 +19437,12 @@ static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: min (int32_t)
     jerry_value_t js_arg_min = args[1];
     if (!jerry_value_is_number(js_arg_min)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_slider_set_range: Argument 1 must be a number");
     }
 
     int32_t arg_min = (int32_t)jerry_value_as_number(js_arg_min);
@@ -19321,7 +19450,7 @@ static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t* call_info_p
     // 解析参数: max (int32_t)
     jerry_value_t js_arg_max = args[2];
     if (!jerry_value_is_number(js_arg_max)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_slider_set_range: Argument 2 must be a number");
     }
 
     int32_t arg_max = (int32_t)jerry_value_as_number(js_arg_max);
@@ -19346,12 +19475,12 @@ static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* call_info_p
     }
 
     // 解析参数: obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_obj = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: value (int32_t)
     jerry_value_t js_arg_value = args[1];
     if (!jerry_value_is_number(js_arg_value)) {
-        return script_engine_throw_error("Argument 1 must be a number");
+        return script_engine_throw_error("lv_slider_set_value: Argument 1 must be a number");
     }
 
     int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
@@ -19359,7 +19488,7 @@ static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* call_info_p
     // 解析参数: anim (lv_anim_enable_t)
     jerry_value_t js_arg_anim = args[2];
     if (!jerry_value_is_number(js_arg_anim)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_slider_set_value: Argument 2 must be a number");
     }
 
     int arg_anim = (int)jerry_value_as_number(js_arg_anim);
@@ -19384,7 +19513,7 @@ static jerry_value_t js_lv_switch_create(const jerry_call_info_t* call_info_p,
     }
 
     // 解析参数: parent (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_parent = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 调用底层函数
     lv_obj_t* ret_value = lv_switch_create(arg_parent);
@@ -19411,15 +19540,15 @@ static jerry_value_t js_lv_tileview_set_tile(const jerry_call_info_t* call_info_
     }
 
     // 解析参数: tv (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_tv = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_OBJ);
     // 解析参数: tile_obj (lv_obj_t*)
-    // 对象类型参数，支持null
+    // 指针类型参数，支持null
     void* arg_tile_obj = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_OBJ);
     // 解析参数: anim_en (lv_anim_enable_t)
     jerry_value_t js_arg_anim_en = args[2];
     if (!jerry_value_is_number(js_arg_anim_en)) {
-        return script_engine_throw_error("Argument 2 must be a number");
+        return script_engine_throw_error("lv_tileview_set_tile: Argument 2 must be a number");
     }
 
     int arg_anim_en = (int)jerry_value_as_number(js_arg_anim_en);
@@ -19432,9 +19561,406 @@ static jerry_value_t js_lv_tileview_set_tile(const jerry_call_info_t* call_info_
 
 
 
+/**
+ * @brief Create a new lv_timer pointer to the new timer
+ */
+static jerry_value_t js_lv_timer_create(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return script_engine_throw_error("lv_timer_create: Insufficient arguments");
+    }
+
+    // 解析参数: timer_xcb (lv_timer_cb_t)
+    // 通用指针类型: lv_timer_cb_t，支持null
+    lv_timer_cb_t arg_timer_xcb = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
+
+    // 解析参数: period (uint32_t)
+    jerry_value_t js_arg_period = args[1];
+    if (!jerry_value_is_number(js_arg_period)) {
+        return script_engine_throw_error("lv_timer_create: Argument 1 must be a number");
+    }
+
+    uint32_t arg_period = (uint32_t)jerry_value_as_number(js_arg_period);
+
+    // 解析参数: user_data (void*)
+    // void*/字符串 类型参数，支持null
+    void* arg_user_data = NULL;
+    char* arg_user_data_str = NULL;  // 用于字符串参数的临时存储
+
+    if (!jerry_value_is_undefined(args[2]) && !jerry_value_is_null(args[2])) {
+        if (jerry_value_is_string(args[2])) {
+            // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
+            jerry_size_t arg_user_data_len = jerry_string_size(args[2], JERRY_ENCODING_UTF8);
+            arg_user_data_str = (char*)eos_malloc(arg_user_data_len + 1);
+            if (!arg_user_data_str) {
+                return script_engine_throw_error("lv_timer_create: Failed to allocate memory for string argument");
+            }
+            jerry_string_to_buffer(args[2], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_user_data_str, arg_user_data_len);
+            arg_user_data_str[arg_user_data_len] = '\0';
+            arg_user_data = (void*)arg_user_data_str;
+        }
+        else if (jerry_value_is_object(args[2])) {
+            // 尝试从对象获取指针
+            arg_user_data = lv_js_bridge_obj_2_ptr(args[2],LV_TYPE_ANY);
+        }
+        else if (jerry_value_is_number(args[2])) {
+            // 直接传递指针数值
+            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[2]);
+            arg_user_data = (void*)ptr_num;
+        }
+        else {
+            return script_engine_throw_error("lv_timer_create: Argument 2 must be string, object or number");
+        }
+    }
+    // 调用底层函数
+    lv_timer_t* ret_value = lv_timer_create(arg_timer_xcb, arg_period, arg_user_data);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
+
+    // 释放临时内存
+    if (arg_user_data_str) eos_free(arg_user_data_str);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief Create an "empty" timer. It needs to be initialized with at least lv_timer_set_cb and lv_timer_set_period  pointer to the created timer
+ */
+static jerry_value_t js_lv_timer_create_basic(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 调用底层函数
+    lv_timer_t* ret_value = lv_timer_create_basic();
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = lv_js_bridge_ptr_2_obj(ret_value, LV_TYPE_ANY);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief Delete a lv_timer
+ */
+static jerry_value_t js_lv_timer_delete(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_delete: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    lv_timer_delete(arg_timer);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Get the pause state of a timer true: timer is paused; false: timer is running
+ */
+static jerry_value_t js_lv_timer_get_paused(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_get_paused: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    bool ret_value = lv_timer_get_paused(arg_timer);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = jerry_number(ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief Pause a timer.
+ */
+static jerry_value_t js_lv_timer_pause(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_pause: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    lv_timer_pause(arg_timer);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Make a lv_timer ready. It will not wait its period.
+ */
+static jerry_value_t js_lv_timer_ready(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_ready: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    lv_timer_ready(arg_timer);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Reset a lv_timer. It will be called the previously set period milliseconds later.
+ */
+static jerry_value_t js_lv_timer_reset(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_reset: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    lv_timer_reset(arg_timer);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Resume a timer.
+ */
+static jerry_value_t js_lv_timer_resume(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_timer_resume: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 调用底层函数
+    lv_timer_resume(arg_timer);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Set whether a lv_timer will be deleted automatically when it is called repeat_count times.
+ */
+static jerry_value_t js_lv_timer_set_auto_delete(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_timer_set_auto_delete: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 解析参数: auto_delete (bool)
+    // 布尔类型参数: auto_delete
+    bool arg_auto_delete = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_auto_delete = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_auto_delete = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_timer_set_auto_delete: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_timer_set_auto_delete(arg_timer, arg_auto_delete);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Set new period for a lv_timer
+ */
+static jerry_value_t js_lv_timer_set_period(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_timer_set_period: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 解析参数: period (uint32_t)
+    jerry_value_t js_arg_period = args[1];
+    if (!jerry_value_is_number(js_arg_period)) {
+        return script_engine_throw_error("lv_timer_set_period: Argument 1 must be a number");
+    }
+
+    uint32_t arg_period = (uint32_t)jerry_value_as_number(js_arg_period);
+
+    // 调用底层函数
+    lv_timer_set_period(arg_timer, arg_period);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief Set the number of times a timer will repeat.
+ */
+static jerry_value_t js_lv_timer_set_repeat_count(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_timer_set_repeat_count: Insufficient arguments");
+    }
+
+    // 解析参数: timer (lv_timer_t*)
+    // 指针类型参数，支持null
+    void* arg_timer = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_TIMER);
+    // 解析参数: repeat_count (int32_t)
+    jerry_value_t js_arg_repeat_count = args[1];
+    if (!jerry_value_is_number(js_arg_repeat_count)) {
+        return script_engine_throw_error("lv_timer_set_repeat_count: Argument 1 must be a number");
+    }
+
+    int32_t arg_repeat_count = (int32_t)jerry_value_as_number(js_arg_repeat_count);
+
+    // 调用底层函数
+    lv_timer_set_repeat_count(arg_timer, arg_repeat_count);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_trigo_cos function
+ */
+static jerry_value_t js_lv_trigo_cos(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_trigo_cos: Insufficient arguments");
+    }
+
+    // 解析参数: angle (int16_t)
+    jerry_value_t js_arg_angle = args[0];
+    if (!jerry_value_is_number(js_arg_angle)) {
+        return script_engine_throw_error("lv_trigo_cos: Argument 0 must be a number");
+    }
+
+    int16_t arg_angle = (int16_t)jerry_value_as_number(js_arg_angle);
+
+    // 调用底层函数
+    int32_t ret_value = lv_trigo_cos(arg_angle);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = jerry_number(ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief lv_trigo_sin function
+ */
+static jerry_value_t js_lv_trigo_sin(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_trigo_sin: Insufficient arguments");
+    }
+
+    // 解析参数: angle (int16_t)
+    jerry_value_t js_arg_angle = args[0];
+    if (!jerry_value_is_number(js_arg_angle)) {
+        return script_engine_throw_error("lv_trigo_sin: Argument 0 must be a number");
+    }
+
+    int16_t arg_angle = (int16_t)jerry_value_as_number(js_arg_angle);
+
+    // 调用底层函数
+    int32_t ret_value = lv_trigo_sin(arg_angle);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = jerry_number(ret_value);
+
+    return js_result;
+}
+
+
+
 const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "delay", "ms", js_lv_delay_ms },
+    { "timer", "createBasic", js_lv_timer_create_basic },
+    { "timer", "create", js_lv_timer_create },
+    { "timer", "delete", js_lv_timer_delete },
+    { "timer", "pause", js_lv_timer_pause },
+    { "timer", "resume", js_lv_timer_resume },
+    { "timer", "setPeriod", js_lv_timer_set_period },
+    { "timer", "ready", js_lv_timer_ready },
+    { "timer", "setRepeatCount", js_lv_timer_set_repeat_count },
+    { "timer", "setAutoDelete", js_lv_timer_set_auto_delete },
+    { "timer", "reset", js_lv_timer_reset },
+    { "timer", "getPaused", js_lv_timer_get_paused },
+    { "trigo", "sin", js_lv_trigo_sin },
+    { "trigo", "cos", js_lv_trigo_cos },
     { "color", "hex", js_lv_color_hex },
+    { "palette", "main", js_lv_palette_main },
+    { "palette", "lighten", js_lv_palette_lighten },
+    { "palette", "darken", js_lv_palette_darken },
     { "image", "bufFree", js_lv_image_buf_free },
     { "image", "cacheInit", js_lv_image_cache_init },
     { "image", "cacheResize", js_lv_image_cache_resize },
@@ -19997,6 +20523,7 @@ const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "obj", "clearState", js_lv_obj_remove_state },
     { "disp", "getScrAct", js_lv_display_get_screen_active },
     { "display", "getScreenActive", js_lv_display_get_screen_active },
+    { "timer", "del", js_lv_timer_delete },
     { "list", "setBtnText", js_lv_list_set_button_text },
     { "list", "getBtnText", js_lv_list_get_button_text },
     { "list", "addBtn", js_lv_list_add_button },
@@ -20037,7 +20564,7 @@ const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "button", "bindChecked", js_lv_obj_bind_checked }
 };
 
-const unsigned int lvgl_binding_funcs_count = 602;
+const unsigned int lvgl_binding_funcs_count = 619;
 
 static void register_lvgl_enums(jerry_value_t parent) {
 
@@ -20821,6 +21348,21 @@ static void register_lvgl_enums(jerry_value_t parent) {
 #ifdef LV_ANIM_PLAYTIME_INFINITE
         { "ANIM_PLAYTIME_INFINITE", LV_ANIM_PLAYTIME_INFINITE },
 #endif
+#ifdef LV_SIZE_CONTENT
+        { "SIZE_CONTENT", LV_SIZE_CONTENT },
+#endif
+#ifdef LV_TRIGO_SIN_MAX
+        { "TRIGO_SIN_MAX", LV_TRIGO_SIN_MAX },
+#endif
+#ifdef LV_TRIGO_SHIFT
+        { "TRIGO_SHIFT", LV_TRIGO_SHIFT },
+#endif
+#ifdef LV_BEZIER_VAL_SHIFT
+        { "BEZIER_VAL_SHIFT", LV_BEZIER_VAL_SHIFT },
+#endif
+#ifdef LV_BEZIER_VAL_MAX
+        { "BEZIER_VAL_MAX", LV_BEZIER_VAL_MAX },
+#endif
 #ifdef LV_LABEL_DOT_NUM
         { "LABEL_DOT_NUM", LV_LABEL_DOT_NUM },
 #endif
@@ -21055,5 +21597,8 @@ void lv_binding_init(jerry_value_t parent) {
                                      lvgl_binding_funcs,
                                      sizeof(lvgl_binding_funcs) / sizeof(script_engine_func_entry_t));
     lv_bindings_special_init(parent);
+    lv_bindings_anim_init(parent);
+    lv_bindings_event_init(parent);
+    lv_bindings_timer_init(parent);
     register_lvgl_enums(parent);
 }

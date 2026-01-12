@@ -1,12 +1,12 @@
 /**
- * @file lv_bindings_special.h
- * @brief 特殊绑定层
+ * @file lv_bindings_event.h
+ * @brief 事件绑定
  * @author Sab1e
- * @date 2025-12-25
+ * @date 2026-01-12
  */
 
-#ifndef LV_BINDINGS_SPECIAL_H
-#define LV_BINDINGS_SPECIAL_H
+#ifndef LV_BINDINGS_EVENT_H
+#define LV_BINDINGS_EVENT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,22 +15,16 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
-#include "lvgl.h"
 #include "jerryscript.h"
-
+#include "lvgl.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
-
-/**
- * @brief 初始化特殊绑定
- * @param parent 父对象
- */
-void lv_bindings_special_init(jerry_value_t parent);
+void lv_bindings_event_init(jerry_value_t parent);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* LV_BINDINGS_SPECIAL_H */
+#endif /* LV_BINDINGS_EVENT_H */

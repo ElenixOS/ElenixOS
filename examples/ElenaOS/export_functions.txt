@@ -15,3 +15,8 @@ lv_label_*
 lv_list_*
 lv_switch_*
 lv_slider_*
+
+lv_timer_*
+
+lv_palette_*
+lv_trigo_*

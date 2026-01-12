@@ -29,10 +29,31 @@ print_macro_info = False
 
 # TYPE_NAME
 
-TYPE_NAME_COMMON_PTR = "LV_TYPE_COMMON_PTR"
+TYPE_NAME_COMMON_PTR = "LV_TYPE_ANY"
 TYPE_NAME_OBJ = "LV_TYPE_OBJ"
 TYPE_NAME_FONT = "LV_TYPE_FONT"
+TYPE_NAME_ANIM = "LV_TYPE_ANIM"
+TYPE_NAME_TIMER = "LV_TYPE_TIMER"
+TYPE_NAME_EVENT = "LV_TYPE_EVENT"
 
+# LV_JS_BRIDGE 类型映射表
+BRIDGE_TYPE_MAP = {
+    "lv_obj_t*": TYPE_NAME_OBJ,
+    "const lv_obj_t*": TYPE_NAME_OBJ,
+    "lv_font_t*": TYPE_NAME_FONT,
+    "const lv_font_t*": TYPE_NAME_FONT,
+    "lv_anim_t*": TYPE_NAME_ANIM,
+    "lv_timer_t*": TYPE_NAME_TIMER,
+    "lv_event_t*": TYPE_NAME_EVENT,
+    "void*": TYPE_NAME_COMMON_PTR,
+    "const void*": TYPE_NAME_COMMON_PTR,
+    "lv_anim_t": TYPE_NAME_ANIM,  # for value types
+    "lv_event_t*": TYPE_NAME_EVENT,
+}
+
+def get_bridge_type(type_str):
+    """获取桥接类型"""
+    return BRIDGE_TYPE_MAP.get(type_str, TYPE_NAME_COMMON_PTR)
 
 # 目标代码的固定部分
 HEADER_CODE = r"""
@@ -51,6 +72,9 @@ HEADER_CODE = r"""
 /* ElenaOS header files ---------------------------------------*/
 #include "lv_bindings.h"
 #include "lv_bindings_special.h"
+#include "lv_bindings_anim.h"
+#include "lv_bindings_timer.h"
+#include "lv_bindings_event.h"
 #include "script_engine_core.h"
 #include "elena_os_mem.h"
 #include "lvgl_js_bridge.h"
@@ -62,10 +86,10 @@ HEADER_CODE = r"""
 
 /********************************** 宏定义处理辅助函数 **********************************/
 
-static void lvgl_binding_set_enum(jerry_value_t global, const char* key, int32_t val) {
+static void lvgl_binding_set_enum(jerry_value_t parent, const char* key, int32_t val) {
     jerry_value_t jkey = jerry_string_sz(key);
     jerry_value_t jval = jerry_number(val);
-    jerry_value_free(jerry_object_set(global, jkey, jval));
+    jerry_value_free(jerry_object_set(parent, jkey, jval));
     jerry_value_free(jkey);
     jerry_value_free(jval);
 }
@@ -83,6 +107,9 @@ void lv_binding_init(jerry_value_t parent) {
                                      lvgl_binding_funcs,
                                      sizeof(lvgl_binding_funcs) / sizeof(script_engine_func_entry_t));
     lv_bindings_special_init(parent);
+    lv_bindings_anim_init(parent);
+    lv_bindings_event_init(parent);
+    lv_bindings_timer_init(parent);
     register_lvgl_enums(parent);
 }
 """
@@ -106,6 +133,10 @@ def parse_type(type_info):
         if base_type == 'lv_font_t':
             return (f"{quals} lv_font_t*", {'is_font_pointer': True})
 
+        # 特殊处理 lv_anim_t*
+        if base_type == 'lv_anim_t':
+            return (f"{quals} lv_anim_t*", {'is_anim_pointer': True})
+
         if quals:
             return (f"{quals} {base_type}*", {'is_pointer': True, 'base_type': base_info})
         return (f"{base_type}*", {'is_pointer': True, 'base_type': base_info})
@@ -114,6 +145,9 @@ def parse_type(type_info):
         # 特殊处理 lv_font_t 非指针情况
         if type_info['name'] == 'lv_font_t':
             return ('lv_font_t', {'is_font': True})
+        # 特殊处理 lv_anim_t 非指针情况
+        if type_info['name'] == 'lv_anim_t':
+            return ('lv_anim_t', {'is_anim': True})
         # 特殊处理 lv_event_t 指针
         if type_info['name'] == 'lv_event_t' and type_info.get('json_type') == 'pointer':
             return ('lv_event_t*', {'is_event_pointer': True})
@@ -214,9 +248,9 @@ def get_typedef_base_type(typedef_name, typedefs_data):
 
     return None
 
-def generate_void_pointer_arg_parsing(index, name):
+def generate_void_pointer_arg_parsing(index, name, func_name):
     """生成void指针类型参数解析代码，支持字符串、对象和数值"""
-    return fr"""    // void*/字符串 类型参数，支持null
+    code = fr"""    // void*/字符串 类型参数，支持null
     void* {name} = NULL;
     char* {name}_str = NULL;  // 用于字符串参数的临时存储
 
@@ -226,7 +260,7 @@ def generate_void_pointer_arg_parsing(index, name):
             jerry_size_t {name}_len = jerry_string_size(args[{index}], JERRY_ENCODING_UTF8);
             {name}_str = (char*)eos_malloc({name}_len + 1);
             if (!{name}_str) {{
-                return script_engine_throw_error("Failed to allocate memory for string argument");
+                return script_engine_throw_error("{func_name}: Failed to allocate memory for string argument");
             }}
             jerry_string_to_buffer(args[{index}], JERRY_ENCODING_UTF8, (jerry_char_t*){name}_str, {name}_len);
             {name}_str[{name}_len] = '\0';
@@ -242,88 +276,108 @@ def generate_void_pointer_arg_parsing(index, name):
             {name} = (void*)ptr_num;
         }}
         else {{
-            if ({name}_str) eos_free({name}_str);
-            return script_engine_throw_error("Argument {index} must be string, object or number");
+            return script_engine_throw_error("{func_name}: Argument {index} must be string, object or number");
         }}
     }}
-
-    // 注意：需要在函数末尾添加 eos_free({name}_str);
 """
+    free_vars = [f"{name}_str"]
+    return code, free_vars
 
-def generate_generic_pointer_arg_parsing(index, name, type_str):
+def generate_generic_pointer_arg_parsing(index, name, type_str, bridge_type):
     """生成通用指针类型参数解析代码，支持null"""
-    return fr"""    // 通用指针类型: {type_str}，支持null
-    {type_str} {name} = lv_js_bridge_obj_2_ptr(args[{index}],{TYPE_NAME_COMMON_PTR});
+    code = fr"""    // 通用指针类型: {type_str}，支持null
+    {type_str} {name} = lv_js_bridge_obj_2_ptr(args[{index}],{bridge_type});
 
 """
+    free_vars = []
+    return code, free_vars
 
-def generate_object_arg_parsing(index, name):
-    """生成对象类型参数解析代码，支持null"""
-    return fr"""    // 对象类型参数，支持null
-    void* {name} = lv_js_bridge_obj_2_ptr(args[{index}],{TYPE_NAME_OBJ});
+def generate_pointer_arg_parsing(index, name, bridge_type):
+    """生成指针类型参数解析代码，支持null"""
+    code = fr"""    // 指针类型参数，支持null
+    void* {name} = lv_js_bridge_obj_2_ptr(args[{index}],{bridge_type});
 """
+    free_vars = []
+    return code, free_vars
 
-def generate_string_arg_parsing(index, name):
+def generate_string_arg_parsing(index, name, func_name):
     """生成字符串类型参数解析代码，支持null"""
-    return fr"""    // 字符串类型参数，支持null
+    code = fr"""    // 字符串类型参数，支持null
     char* {name} = NULL;
     if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
         jerry_value_t js_{name} = args[{index}];
         if (!jerry_value_is_string(js_{name})) {{
-            return script_engine_throw_error("Argument {index} must be a string or null");
+            return script_engine_throw_error("{func_name}: Argument {index} must be a string or null");
         }}
 
         jerry_size_t {name}_len = jerry_string_size(js_{name}, JERRY_ENCODING_UTF8);
         {name} = (char*)eos_malloc({name}_len + 1);
         if (!{name}) {{
-            return script_engine_throw_error("Out of memory");
+            return script_engine_throw_error("{func_name}: Out of memory");
         }}
         jerry_string_to_buffer(js_{name}, JERRY_ENCODING_UTF8, (jerry_char_t*){name}, {name}_len);
         {name}[{name}_len] = '\0';
     }}
 
 """
+    free_vars = [name]
+    return code, free_vars
 
-def generate_number_arg_parsing(index, name, type_str):
+def generate_number_arg_parsing(index, name, type_str, func_name):
     """生成数字类型参数解析代码"""
-    return fr"""    jerry_value_t js_{name} = args[{index}];
+    code = fr"""    jerry_value_t js_{name} = args[{index}];
     if (!jerry_value_is_number(js_{name})) {{
-        return script_engine_throw_error("Argument {index} must be a number");
+        return script_engine_throw_error("{func_name}: Argument {index} must be a number");
     }}
 
     {type_str} {name} = ({type_str})jerry_value_as_number(js_{name});
 
 """
+    free_vars = []
+    return code, free_vars
 
-def generate_bool_arg_parsing(index, name):
+def generate_bool_arg_parsing(index, name, func_name, arg_type=None):
     """生成布尔类型参数解析代码"""
-    return fr"""    jerry_value_t js_{name} = args[{index}];
+    code = fr"""    jerry_value_t js_{name} = args[{index}];
     if (!jerry_value_is_boolean(js_{name})) {{
-        return script_engine_throw_error("Argument {index} must be a boolean");
+        return script_engine_throw_error("{func_name}: Argument {index} must be a boolean");
     }}
 
     bool {name} = jerry_value_to_boolean(js_{name});
 
 """
+    free_vars = []
+    return code, free_vars
 
-def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
+def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data, func_name):
     """根据类型信息生成参数解析代码"""
     type_str_normalized = arg_type.replace(' ', '')
     var_name = f"arg_{name}"  # 添加arg_前缀避免冲突
 
     # 特殊处理lv_font_t指针
     if type_info.get('is_font_pointer'):
-        return fr"""    // lv_font_t* 类型参数处理
-    const lv_font_t* {var_name} = lv_js_bridge_obj_2_ptr(args[{index}], {TYPE_NAME_FONT});
+        bridge_type = get_bridge_type(arg_type)
+        code = fr"""    // lv_font_t* 类型参数处理
+    const lv_font_t* {var_name} = lv_js_bridge_obj_2_ptr(args[{index}], {bridge_type});
 """
+        free_vars = []
+        return code, free_vars
+    # 特殊处理lv_anim_t指针
+    if type_info.get('is_anim_pointer'):
+        bridge_type = get_bridge_type(arg_type)
+        code = fr"""    // lv_anim_t* 类型参数处理
+    lv_anim_t* {var_name} = lv_js_bridge_obj_2_ptr(args[{index}], {bridge_type});
+"""
+        free_vars = []
+        return code, free_vars
     # 特殊处理lv_event_t指针
     if type_info.get('is_event_pointer'):
-        return fr"""    // lv_event_t* 类型参数处理
+        code = fr"""    // lv_event_t* 类型参数处理
     lv_event_t* {var_name} = NULL;
     if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
         jerry_value_t js_{var_name} = args[{index}];
         if (!jerry_value_is_object(js_{var_name})) {{
-            return script_engine_throw_error("Argument {index} must be an event object");
+            return script_engine_throw_error("{func_name}: Argument {index} must be an event object");
         }}
 
         // 检查类型标记
@@ -338,7 +392,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
         jerry_value_free(type_val);
 
         if (strcmp(type_str, "lv_event") != 0) {{
-            return script_engine_throw_error("Argument {index} must be an event object");
+            return script_engine_throw_error("{func_name}: Argument {index} must be an event object");
         }}
 
         // 获取事件指针
@@ -348,7 +402,7 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
 
         if (!jerry_value_is_number(ptr_val)) {{
             jerry_value_free(ptr_val);
-            return script_engine_throw_error("Invalid event pointer");
+            return script_engine_throw_error("{func_name}: Invalid event pointer");
         }}
 
         uintptr_t ptr = (uintptr_t)jerry_value_as_number(ptr_val);
@@ -357,34 +411,51 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
     }}
 
 """
+        free_vars = []
+        return code, free_vars
     # 特殊处理lv_obj_t指针
     if is_lv_obj_pointer(type_str_normalized):
-        return generate_object_arg_parsing(index, var_name)
+        bridge_type = get_bridge_type(arg_type)
+        return generate_pointer_arg_parsing(index, var_name, bridge_type)
 
     # 处理基本类型
     if is_void_type(type_str_normalized):
-        return f"    // void 类型跳过解析\n"
+        code = f"    // void 类型跳过解析\n"
+        free_vars = []
+        return code, free_vars
 
     # 处理void指针
     if is_void_pointer(type_str_normalized):
-        return generate_void_pointer_arg_parsing(index, var_name)
+        return generate_void_pointer_arg_parsing(index, var_name, func_name)
 
     # 处理对象指针
     if is_object_pointer(type_str_normalized):
-        return generate_object_arg_parsing(index, var_name)
+        bridge_type = get_bridge_type(arg_type)
+        return generate_pointer_arg_parsing(index, var_name, bridge_type)
 
     # 处理字符串指针
     if is_string_pointer(type_str_normalized):
-        return generate_string_arg_parsing(index, var_name)
+        return generate_string_arg_parsing(index, var_name, func_name)
 
     # 处理lv_color_t
     if is_lv_color_t(type_str_normalized):
-        return f"    lv_color_t {var_name} = js_to_lv_color(args[{index}]);\n\n"
+        code = f"    lv_color_t {var_name} = lv_js_bridge_obj_2_color(args[{index}]);\n\n"
+        free_vars = []
+        return code, free_vars
+
+    # 处理lv_anim_t
+    if type_info.get('is_anim'):
+        bridge_type = get_bridge_type(arg_type)
+        code = fr"""    // lv_anim_t 类型参数处理（值类型）
+    lv_anim_t {var_name} = *lv_js_bridge_obj_2_ptr(args[{index}], {bridge_type});
+"""
+        free_vars = []
+        return code, free_vars
 
     # 处理布尔类型
     if type_str_normalized == 'bool' or (is_typedef_convertible_to_basic(type_info.get('type_name', ''), typedefs_data)
                              and get_typedef_base_type(type_info['type_name'], typedefs_data) == 'bool'):
-        return fr"""    // 布尔类型参数: {name}
+        code = fr"""    // 布尔类型参数: {name}
     bool {var_name} = false;
     if (!jerry_value_is_undefined(args[{index}])) {{
         if (jerry_value_is_boolean(args[{index}])) {{
@@ -394,15 +465,17 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
             {var_name} = (jerry_value_as_number(args[{index}]) != 0);
         }}
         else {{
-            return script_engine_throw_error("Argument {index} must be boolean or number for {arg_type}");
+            return script_engine_throw_error("{func_name}: Argument {index} must be boolean or number for {arg_type}");
         }}
     }}
 
 """
+        free_vars = []
+        return code, free_vars
 
     # 处理数字类型
     if is_number_type(type_str_normalized):
-        return generate_number_arg_parsing(index, var_name, arg_type)
+        return generate_number_arg_parsing(index, var_name, arg_type, func_name)
 
     # 检查typedef类型
     type_name = type_info.get('type_name', '')
@@ -410,12 +483,13 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data):
         base_type = get_typedef_base_type(type_name, typedefs_data)
         if base_type:
             if base_type == 'bool':
-                return generate_bool_arg_parsing(index, var_name)
+                return generate_bool_arg_parsing(index, var_name, func_name, base_type)
             elif is_number_type(base_type):
-                return generate_number_arg_parsing(index, var_name, base_type)
+                return generate_number_arg_parsing(index, var_name, base_type, func_name)
 
-    # 1默认处理为通用指针
-    return generate_generic_pointer_arg_parsing(index, var_name, arg_type)
+    # 默认处理为通用指针
+    bridge_type = get_bridge_type(arg_type)
+    return generate_generic_pointer_arg_parsing(index, var_name, arg_type, bridge_type)
 
 def find_real_function_definition(func_name, data):
     """
@@ -532,6 +606,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 
     # 参数解析
     string_vars = []  # 记录需要释放的字符串变量
+    all_free_vars = []  # 记录所有需要释放的变量
     arg_var_names = []  # 用于函数调用的参数名
 
     for i, arg in enumerate(args):
@@ -561,7 +636,7 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
     const char* {var_name} = NULL;
     if (!jerry_value_is_undefined(args[{i}]) && !jerry_value_is_null(args[{i}])) {{
         if (!jerry_value_is_string(args[{i}])) {{
-            return script_engine_throw_error("Argument {i} must be a string");
+            return script_engine_throw_error("{func_name}: Argument {i} must be a string");
         }}
         jerry_size_t {var_name}_len = jerry_string_size(args[{i}], JERRY_ENCODING_UTF8);
         {str_var} = (char*)eos_malloc({var_name}_len + 1);
@@ -573,7 +648,9 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 """
         else:
             # 其他类型使用通用解析
-            code += generate_arg_parsing(i, arg_name, arg_type, arg_type_info, typedefs_data)
+            parsing_code, free_vars = generate_arg_parsing(i, arg_name, arg_type, arg_type_info, typedefs_data, func_name)
+            code += parsing_code
+            all_free_vars.extend(free_vars)
 
         arg_var_names.append(var_name)
 
@@ -586,18 +663,26 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
         code += f"    {return_type} ret_value = {real_func_name}({', '.join(arg_var_names)});\n\n"
         code += "    // 处理返回值\n"
 
+        bridge_type = get_bridge_type(return_type)
+
         # 使用临时变量存储返回值
         code += "    jerry_value_t js_result;\n"
 
         if is_void_pointer(return_type):
             code += "    // 包装为通用指针对象\n"
-            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_COMMON_PTR});\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {bridge_type});\n"
         elif is_lv_color_t(return_type):
             code += "    // 转换为JS颜色对象\n"
-            code += "    js_result = lv_color_to_js(ret_value);\n"
+            code += "    js_result = lv_js_bridge_color_2_obj(&ret_value);\n"
         elif is_lv_obj_pointer(return_type):
             code += "    // 包装为LVGL对象\n"
-            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_OBJ});\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {bridge_type});\n"
+        elif return_type == 'lv_anim_t*':
+            code += "    // 包装为LVGL动画对象\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {bridge_type});\n"
+        elif return_type == 'lv_anim_t':
+            code += "    // 包装为LVGL动画对象（值类型）\n"
+            code += f"    js_result = lv_js_bridge_ptr_2_obj(&ret_value, {bridge_type});\n"
         elif is_string_pointer(return_type):
             code += "    if (ret_value == NULL) {\n"
             code += "        js_result = jerry_string_sz(\"\");\n"
@@ -612,10 +697,11 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
             # 默认处理为通用指针
             code += f"    js_result = lv_js_bridge_ptr_2_obj(ret_value, {TYPE_NAME_COMMON_PTR});\n"
 
-    # 释放临时字符串内存（确保在函数调用之后）
-    if string_vars:
-        code += "\n    // 释放临时字符串内存\n"
-        for var in string_vars:
+    # 释放临时内存（确保在函数调用之后）
+    all_vars_to_free = string_vars + all_free_vars
+    if all_vars_to_free:
+        code += "\n    // 释放临时内存\n"
+        for var in all_vars_to_free:
             code += f"    if ({var}) eos_free({var});\n"
 
     # 添加返回值

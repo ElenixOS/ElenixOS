@@ -34,8 +34,8 @@ typedef struct _event_node_t
 } event_node_t;
 /* Variables --------------------------------------------------*/
 static event_node_t *event_list_head = NULL; // 事件链表头
-static int g_broadcast_depth = 0;             // 嵌套广播计数（>0 表示正在广播）
-static bool g_event_list_modified = false;    // 在广播期间，如果链表被修改（节点被标记删除），置为 true
+static int g_broadcast_depth = 0;            // 嵌套广播计数（>0 表示正在广播）
+static bool g_event_list_modified = false;   // 在广播期间，如果链表被修改（节点被标记删除），置为 true
 
 /* Function Implementations -----------------------------------*/
 
@@ -68,7 +68,7 @@ static void _mark_node_deleted_by_predicate(bool (*pred)(event_node_t *, void *)
                 n->marked_for_delete = true;
                 g_event_list_modified = true;
                 EOS_LOG_D("Marked node [%p] obj[%p] event[%d] cb[%p] global[%d] for deletion",
-                         n, n->obj, (int)n->event, (void *)n->cb, n->is_global ? 1 : 0);
+                          n, n->obj, (int)n->event, (void *)n->cb, n->is_global ? 1 : 0);
             }
         }
     }
@@ -88,7 +88,7 @@ static void _cleanup_deleted_nodes(void)
             *curr = (*curr)->next;
 
             EOS_LOG_D("Freeing node [%p] obj[%p] event[%d] cb[%p] global[%d]",
-                     tmp, tmp->obj, (int)tmp->event, (void *)tmp->cb, tmp->is_global ? 1 : 0);
+                      tmp, tmp->obj, (int)tmp->event, (void *)tmp->cb, tmp->is_global ? 1 : 0);
 
             eos_free(tmp);
             g_event_list_modified = true;
@@ -114,7 +114,8 @@ static bool _pred_match_global_cb(event_node_t *n, void *ctx)
 
 static bool _pred_match_global_event_cb(event_node_t *n, void *ctx)
 {
-    struct {
+    struct
+    {
         lv_event_code_t event;
         lv_event_cb_t cb;
     } *params = ctx;
@@ -198,39 +199,47 @@ void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user
     EOS_LOG_D("Global event callback added successfully");
 }
 
-void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb)
+static void eos_event_remove_cb_ex(lv_obj_t *obj,
+                                   lv_event_code_t event,
+                                   lv_event_cb_t cb,
+                                   void *user_data)
 {
-    EOS_LOG_I("Remove callback manual: obj[%p] event[%d] cb[%p] broadcasting=%d",
-              (void *)obj, (int)event, (void *)cb, g_broadcast_depth);
+    EOS_LOG_I("Remove callback: obj[%p] event[%d] cb[%p] user_data[%p] broadcasting=%d",
+              (void *)obj, (int)event, (void *)cb, user_data, g_broadcast_depth);
 
     event_node_t **curr = &event_list_head;
 
     while (*curr)
     {
         event_node_t *n = *curr;
-        bool match = false;
+        bool match = true;
 
         if (obj == NULL)
         {
-            // 移除全局回调：匹配事件类型和回调函数
-            match = (n->is_global && n->event == event && n->cb == cb);
+            if (!n->is_global)
+                match = false;
         }
         else
         {
-            // 移除对象回调：匹配对象、事件类型和回调函数
-            match = (!n->is_global && n->obj == obj && n->event == event && n->cb == cb);
+            if (n->is_global || n->obj != obj)
+                match = false;
         }
+
+        // 事件 & 回调判断
+        if (match && (n->event != event || n->cb != cb))
+            match = false;
+
+        // user_data 判断：只有在 user_data != NULL 时才参与匹配
+        if (match && user_data != NULL && n->user_data != user_data)
+            match = false;
 
         if (match)
         {
             if (g_broadcast_depth > 0)
             {
-                // 正在广播：只标记删除
                 n->marked_for_delete = true;
                 g_event_list_modified = true;
-                EOS_LOG_D("Marked node [%p] for deletion (during broadcast)", n);
 
-                // 如果是对象回调，还需要从LVGL中移除
                 if (!n->is_global && n->obj)
                 {
                     lv_obj_remove_event_cb(n->obj, cb);
@@ -238,30 +247,50 @@ void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb)
             }
             else
             {
-                // 非广播：立即从链表移除并释放
                 *curr = n->next;
 
-                // 如果是对象回调，还需要从LVGL中移除
                 if (!n->is_global && n->obj)
                 {
                     lv_obj_remove_event_cb(n->obj, cb);
                 }
 
-                EOS_LOG_D("Immediately freeing node [%p] (manual remove)", n);
                 eos_free(n);
             }
             return;
         }
+
         curr = &(*curr)->next;
     }
 
-    EOS_LOG_W("Callback not found for removal: obj[%p] event[%d] cb[%p]",
-              (void *)obj, (int)event, (void *)cb);
+    EOS_LOG_W("Callback not found for removal");
 }
 
-inline void eos_event_remove_global_cb(lv_event_code_t event, lv_event_cb_t cb)
+void eos_event_remove_cb(lv_obj_t *obj,
+                         lv_event_code_t event,
+                         lv_event_cb_t cb)
 {
-    eos_event_remove_cb(NULL, event, cb);
+    eos_event_remove_cb_ex(obj, event, cb, NULL);
+}
+
+void eos_event_remove_cb_with_user_data(lv_obj_t *obj,
+                                        lv_event_code_t event,
+                                        lv_event_cb_t cb,
+                                        void *user_data)
+{
+    eos_event_remove_cb_ex(obj, event, cb, user_data);
+}
+
+inline void eos_event_remove_global_cb(lv_event_code_t event,
+                                       lv_event_cb_t cb)
+{
+    eos_event_remove_cb_ex(NULL, event, cb, NULL);
+}
+
+inline void eos_event_remove_global_cb_with_user_data(lv_event_code_t event,
+                                                      lv_event_cb_t cb,
+                                                      void *user_data)
+{
+    eos_event_remove_cb_ex(NULL, event, cb, user_data);
 }
 
 void eos_event_broadcast(lv_event_code_t event, void *param)
@@ -276,7 +305,7 @@ void eos_event_broadcast(lv_event_code_t event, void *param)
         event_node_t *next = curr->next;
 
         EOS_LOG_D("Broadcast visiting node [%p] obj[%p] event[%d] marked[%d] global[%d]",
-                 curr, curr->obj, (int)curr->event, curr->marked_for_delete ? 1 : 0, curr->is_global ? 1 : 0);
+                  curr, curr->obj, (int)curr->event, curr->marked_for_delete ? 1 : 0, curr->is_global ? 1 : 0);
 
         if (!curr->marked_for_delete && curr->event == event)
         {

@@ -12,7 +12,7 @@
  *
  * 1. 系统启动时需要调用`script_engine_init`初始化脚本引擎；
  * 1. 脚本启动时，会创建一个新的`realm`提供沙盒进行隔离；
- * 1. 新的`realm`会自动注册所有函数和符号到`script_engine_eos_obj`；
+ * 1. 新的`realm`会自动注册所有函数和符号；
  * 1. 在脚本内使用`eos.*`访问函数和符号；
  *
  * ## 脚本使用方法
@@ -64,6 +64,7 @@
 #include "elena_os_config.h"
 #include "elena_os_fs.h"
 #include "elena_os_mem.h"
+#include "elena_os_event.h"
 
 #include "lvgl_js_bridge.h"
 
@@ -71,7 +72,6 @@
 #include "script_engine_lv.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define SCRIPT_EOS_OBJ_KEY "eos"
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
 
 /**
@@ -86,7 +86,6 @@ typedef struct
     char *error_info;             /**< 上一次运行的错误信息 */
 } script_engine_context_t;
 /* Variables --------------------------------------------------*/
-jerry_value_t script_engine_eos_obj; /**< 通过此对象访问到所有已注册的函数 */
 static script_engine_context_t engine_ctx = {
     .state = SCRIPT_STATE_STOPPED,
     .current_script = NULL,
@@ -219,6 +218,15 @@ static script_engine_result_t _change_state(script_state_t new_state)
     EOS_LOG_D("State change: %s -> %s", _state_get_enum_str(engine_ctx.state), _state_get_enum_str(new_state));
 #endif /* EOS_COMPILE_MODE */
     engine_ctx.state = new_state;
+    switch (new_state)
+    {
+    case SCRIPT_STATE_STOPPED:
+        eos_event_broadcast(EOS_EVENT_SCRIPT_EXITED, NULL);
+        break;
+
+    default:
+        break;
+    }
     return SE_OK;
 }
 
@@ -601,9 +609,6 @@ script_engine_result_t script_engine_init(void)
     // 初始化 JerryScript VM
     jerry_init(SCRIPT_INIT_FLAGS);
 
-    // 创建EOS对象
-    script_engine_eos_obj = jerry_object();
-
     // 注册函数和初始化
     script_engine_lv_init();
     script_engine_eos_init();
@@ -702,6 +707,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
             {
                 _change_state(SCRIPT_STATE_SUSPEND);
             }
+            eos_event_broadcast(EOS_EVENT_SCRIPT_STARTED, NULL);
             result = SE_OK;
         }
 
@@ -737,12 +743,6 @@ script_engine_result_t script_engine_clean_up(void)
     if (engine_ctx.state != SCRIPT_STATE_STOPPED)
     {
         script_engine_request_stop();
-    }
-
-    if (jerry_value_is_object(script_engine_eos_obj))
-    {
-        jerry_value_free(script_engine_eos_obj);
-        script_engine_eos_obj = jerry_undefined();
     }
 
     jerry_cleanup();

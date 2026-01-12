@@ -654,8 +654,7 @@ static void _settings_screen_device_info(lv_event_t *e)
 
     eos_std_title_comment_create(list,
                                  current_lang[STR_ID_SETTINGS_GENERAL_EOS_VER],
-                                 eos_sys_cfg_get_string(
-                                     EOS_SYS_CFG_KEY_VERSION_STR, ELENA_OS_VERSION_FULL));
+                                 ELENA_OS_VERSION_FULL);
     eos_list_add_placeholder(list, 20);
 
     eos_std_title_comment_create(list,

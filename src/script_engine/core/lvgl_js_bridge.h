@@ -33,7 +33,8 @@ typedef enum{
     LV_TYPE_ANIM,
     LV_TYPE_TIMER,
     LV_TYPE_EVENT,
-    LV_TYPE_EVENT_DSC
+    LV_TYPE_EVENT_DSC,
+    LV_TYPE_STYLE,
 }lv_type_t;
 
 /* Public function prototypes --------------------------------*/
@@ -52,6 +53,13 @@ void *lv_js_bridge_obj_2_ptr(const jerry_value_t obj, lv_type_t type);
  * @return jerry_value_t 转换成功则返回 js 对象，否则返回`jerry_null()`
  */
 jerry_value_t lv_js_bridge_ptr_2_obj(void *ptr, lv_type_t type);
+/**
+ * @brief 设置 js 对象的指针
+ * @param obj 源对象
+ * @param ptr 指针
+ * @param type 指定此指针的类型
+ */
+void lv_js_bridge_obj_set_ptr(jerry_value_t obj, void *ptr, lv_type_t type);
 /**
  * @brief 获取指定对象的类型
  * @param obj 目标对象

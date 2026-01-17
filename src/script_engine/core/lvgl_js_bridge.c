@@ -279,6 +279,66 @@ jerry_value_t lv_js_bridge_ptr_2_obj(void *ptr, lv_type_t type)
     return js_obj;
 }
 
+void lv_js_bridge_obj_set_ptr(jerry_value_t obj, void *ptr, lv_type_t type)
+{
+    if (jerry_value_is_null(obj) || jerry_value_is_undefined(obj))
+    {
+        EOS_LOG_W("NULL obj");
+        return;
+    }
+
+    if (!jerry_value_is_object(obj))
+    {
+        script_engine_throw_error("obj must be an object");
+        return;
+    }
+
+    if (!ptr)
+    {
+        script_engine_throw_error("ptr is NULL");
+        return;
+    }
+
+    lv_js_handle_t *handle =
+        jerry_object_get_native_ptr(obj, &lv_js_native_info);
+
+    if (handle)
+    {
+        // 已经绑定过 native 对象，检查状态和类型
+        if (!handle->is_alive)
+        {
+            script_engine_throw_error("Object already deleted");
+            return;
+        }
+
+        if (handle->type != type &&
+            handle->type != LV_TYPE_ANY &&
+            type != LV_TYPE_ANY)
+        {
+            script_engine_throw_error("Type mismatch");
+            return;
+        }
+
+        // 从旧 ptr 映射中移除
+        lv_js_map_remove(handle->ptr);
+
+        // 更新 handle
+        handle->ptr  = ptr;
+        handle->type = type;
+
+        // 重新插入映射
+        lv_js_map_insert(ptr, obj, type);
+    }
+    else
+    {
+        // JS 对象还没有 native handle，新建一个
+        lv_js_handle_t *new_handle =
+            lv_js_map_insert(ptr, obj, type);
+
+        jerry_object_set_native_ptr(obj, &lv_js_native_info, new_handle);
+    }
+}
+
 lv_anim_t lv_js_bridge_obj_2_anim(jerry_value_t obj)
 {
     lv_anim_t a = {0};

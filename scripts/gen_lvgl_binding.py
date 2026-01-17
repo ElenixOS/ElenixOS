@@ -35,6 +35,7 @@ TYPE_NAME_FONT = "LV_TYPE_FONT"
 TYPE_NAME_ANIM = "LV_TYPE_ANIM"
 TYPE_NAME_TIMER = "LV_TYPE_TIMER"
 TYPE_NAME_EVENT = "LV_TYPE_EVENT"
+TYPE_NAME_STYLE = "LV_TYPE_STYLE"
 
 # LV_JS_BRIDGE 类型映射表
 BRIDGE_TYPE_MAP = {
@@ -47,8 +48,9 @@ BRIDGE_TYPE_MAP = {
     "lv_event_t*": TYPE_NAME_EVENT,
     "void*": TYPE_NAME_COMMON_PTR,
     "const void*": TYPE_NAME_COMMON_PTR,
-    "lv_anim_t": TYPE_NAME_ANIM,  # for value types
+    "lv_anim_t": TYPE_NAME_ANIM,
     "lv_event_t*": TYPE_NAME_EVENT,
+    "lv_style_t*": TYPE_NAME_STYLE,
 }
 
 def get_bridge_type(type_str):
@@ -75,6 +77,7 @@ HEADER_CODE = r"""
 #include "lv_bindings_anim.h"
 #include "lv_bindings_timer.h"
 #include "lv_bindings_event.h"
+#include "lv_bindings_style.h"
 #include "script_engine_core.h"
 #include "elena_os_mem.h"
 #include "lvgl_js_bridge.h"
@@ -110,6 +113,7 @@ void lv_binding_init(jerry_value_t parent) {
     lv_bindings_anim_init(parent);
     lv_bindings_event_init(parent);
     lv_bindings_timer_init(parent);
+    lv_bindings_style_init(parent);
     register_lvgl_enums(parent);
 }
 """

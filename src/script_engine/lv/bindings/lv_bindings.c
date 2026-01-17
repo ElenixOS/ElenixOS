@@ -3,7 +3,7 @@
  * @file lv_bindings.c
  * @brief 将 LVGL 绑定到 JerryScript 的实现文件，此文件使用脚本`gen_lvgl_binding.py`自动生成。
  * @author Sab1e
- * @date 2026-01-13
+ * @date 2026-01-18
  */
 
 /* Third party header files ---------------------------------------*/
@@ -17,6 +17,7 @@
 #include "lv_bindings_anim.h"
 #include "lv_bindings_timer.h"
 #include "lv_bindings_event.h"
+#include "lv_bindings_style.h"
 #include "script_engine_core.h"
 #include "elena_os_mem.h"
 #include "lvgl_js_bridge.h"
@@ -600,6 +601,125 @@ static jerry_value_t js_lv_slider_set_left_value(const jerry_call_info_t*, const
 static jerry_value_t js_lv_slider_set_mode(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_slider_set_range(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_is_const(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_is_empty(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_reset(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_anim(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_anim_duration(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_arc_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_arc_image_src(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_arc_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_arc_rounded(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_arc_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_base_dir(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_grad(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_grad_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_grad_dir(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_grad_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_grad_stop(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_image_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_image_recolor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_image_recolor_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_image_src(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_image_tiled(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_main_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_main_stop(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bg_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_bitmap_mask_src(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_blend_mode(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_border_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_border_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_border_post(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_border_side(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_border_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_clip_corner(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_color_filter_dsc(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_color_filter_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_flex_cross_place(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_flex_flow(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_flex_grow(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_flex_main_place(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_flex_track_place(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_column_pos(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_column_span(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_row_pos(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_row_span(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_x_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_cell_y_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_column_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_column_dsc_array(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_row_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_grid_row_dsc_array(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_height(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_image_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_image_recolor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_image_recolor_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_layout(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_length(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_dash_gap(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_dash_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_rounded(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_line_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_margin_bottom(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_margin_left(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_margin_right(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_margin_top(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_max_height(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_max_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_min_height(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_min_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_opa_layered(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_outline_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_outline_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_outline_pad(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_outline_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_all(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_bottom(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_column(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_gap(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_hor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_left(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_right(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_row(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_top(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_pad_ver(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_radius(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_rotary_sensitivity(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_offset_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_offset_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_spread(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_shadow_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_size(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_align(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_color(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_decor(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_font(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_letter_space(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_line_space(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_text_opa(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_height(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_pivot_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_pivot_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_rotation(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_scale(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_scale_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_scale_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_skew_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_skew_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transform_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_transition(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_translate_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_translate_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_width(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_x(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
+static jerry_value_t js_lv_style_set_y(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_switch_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_tileview_set_tile(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
 static jerry_value_t js_lv_timer_create(const jerry_call_info_t*, const jerry_value_t*, jerry_length_t);
@@ -12895,7 +13015,7 @@ static jerry_value_t js_lv_obj_report_style_change(const jerry_call_info_t* call
 
     // 解析参数: style (lv_style_t*)
     // 指针类型参数，支持null
-    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
     // 调用底层函数
     lv_obj_report_style_change(arg_style);
 
@@ -19502,6 +19622,3595 @@ static jerry_value_t js_lv_slider_set_value(const jerry_call_info_t* call_info_p
 
 
 /**
+ * @brief Check if a style is constant true: the style is constant
+ */
+static jerry_value_t js_lv_style_is_const(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_style_is_const: Insufficient arguments");
+    }
+
+    // 解析参数: style (const lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
+    // 调用底层函数
+    bool ret_value = lv_style_is_const(arg_style);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = jerry_number(ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief Checks if a style is empty (has no properties) true if the style is empty
+ */
+static jerry_value_t js_lv_style_is_empty(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_style_is_empty: Insufficient arguments");
+    }
+
+    // 解析参数: style (const lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_ANY);
+    // 调用底层函数
+    bool ret_value = lv_style_is_empty(arg_style);
+
+    // 处理返回值
+    jerry_value_t js_result;
+    js_result = jerry_number(ret_value);
+
+    return js_result;
+}
+
+
+
+/**
+ * @brief Clear all properties from a style and free all allocated memories.
+ */
+static jerry_value_t js_lv_style_reset(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 1) {
+        return script_engine_throw_error("lv_style_reset: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 调用底层函数
+    lv_style_reset(arg_style);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_align function
+ */
+static jerry_value_t js_lv_style_set_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_anim function
+ */
+static jerry_value_t js_lv_style_set_anim(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_anim: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value ( lv_anim_t*)
+    // lv_anim_t* 类型参数处理
+    lv_anim_t* arg_value = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_ANY);
+    // 调用底层函数
+    lv_style_set_anim(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_anim_duration function
+ */
+static jerry_value_t js_lv_style_set_anim_duration(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_anim_duration: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (uint32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_anim_duration: Argument 1 must be a number");
+    }
+
+    uint32_t arg_value = (uint32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_anim_duration(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_arc_color function
+ */
+static jerry_value_t js_lv_style_set_arc_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_arc_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_arc_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_arc_image_src function
+ */
+static jerry_value_t js_lv_style_set_arc_image_src(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_arc_image_src: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const void*)
+    // void*/字符串 类型参数，支持null
+    void* arg_value = NULL;
+    char* arg_value_str = NULL;  // 用于字符串参数的临时存储
+
+    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
+        if (jerry_value_is_string(args[1])) {
+            // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
+            jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
+            arg_value_str = (char*)eos_malloc(arg_value_len + 1);
+            if (!arg_value_str) {
+                return script_engine_throw_error("lv_style_set_arc_image_src: Failed to allocate memory for string argument");
+            }
+            jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
+            arg_value_str[arg_value_len] = '\0';
+            arg_value = (void*)arg_value_str;
+        }
+        else if (jerry_value_is_object(args[1])) {
+            // 尝试从对象获取指针
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            // 直接传递指针数值
+            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[1]);
+            arg_value = (void*)ptr_num;
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_arc_image_src: Argument 1 must be string, object or number");
+        }
+    }
+    // 调用底层函数
+    lv_style_set_arc_image_src(arg_style, arg_value);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_arc_opa function
+ */
+static jerry_value_t js_lv_style_set_arc_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_arc_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_arc_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_arc_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_arc_rounded function
+ */
+static jerry_value_t js_lv_style_set_arc_rounded(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_arc_rounded: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (bool)
+    // 布尔类型参数: value
+    bool arg_value = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_value = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_value = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_arc_rounded: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_style_set_arc_rounded(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_arc_width function
+ */
+static jerry_value_t js_lv_style_set_arc_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_arc_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_arc_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_arc_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_base_dir function
+ */
+static jerry_value_t js_lv_style_set_base_dir(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_base_dir: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_base_dir_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_base_dir: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_base_dir(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_color function
+ */
+static jerry_value_t js_lv_style_set_bg_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_bg_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_grad function
+ */
+static jerry_value_t js_lv_style_set_bg_grad(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_grad: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const lv_grad_dsc_t*)
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+    // 调用底层函数
+    lv_style_set_bg_grad(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_grad_color function
+ */
+static jerry_value_t js_lv_style_set_bg_grad_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_grad_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_bg_grad_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_grad_dir function
+ */
+static jerry_value_t js_lv_style_set_bg_grad_dir(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_grad_dir: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_grad_dir_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_grad_dir: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_grad_dir(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_grad_opa function
+ */
+static jerry_value_t js_lv_style_set_bg_grad_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_grad_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_grad_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_grad_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_grad_stop function
+ */
+static jerry_value_t js_lv_style_set_bg_grad_stop(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_grad_stop: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_grad_stop: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_grad_stop(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_image_opa function
+ */
+static jerry_value_t js_lv_style_set_bg_image_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_image_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_image_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_image_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_image_recolor function
+ */
+static jerry_value_t js_lv_style_set_bg_image_recolor(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_image_recolor: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_bg_image_recolor(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_image_recolor_opa function
+ */
+static jerry_value_t js_lv_style_set_bg_image_recolor_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_image_recolor_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_image_recolor_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_image_recolor_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_image_src function
+ */
+static jerry_value_t js_lv_style_set_bg_image_src(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_image_src: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const void*)
+    // void*/字符串 类型参数，支持null
+    void* arg_value = NULL;
+    char* arg_value_str = NULL;  // 用于字符串参数的临时存储
+
+    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
+        if (jerry_value_is_string(args[1])) {
+            // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
+            jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
+            arg_value_str = (char*)eos_malloc(arg_value_len + 1);
+            if (!arg_value_str) {
+                return script_engine_throw_error("lv_style_set_bg_image_src: Failed to allocate memory for string argument");
+            }
+            jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
+            arg_value_str[arg_value_len] = '\0';
+            arg_value = (void*)arg_value_str;
+        }
+        else if (jerry_value_is_object(args[1])) {
+            // 尝试从对象获取指针
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            // 直接传递指针数值
+            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[1]);
+            arg_value = (void*)ptr_num;
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_bg_image_src: Argument 1 must be string, object or number");
+        }
+    }
+    // 调用底层函数
+    lv_style_set_bg_image_src(arg_style, arg_value);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_image_tiled function
+ */
+static jerry_value_t js_lv_style_set_bg_image_tiled(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_image_tiled: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (bool)
+    // 布尔类型参数: value
+    bool arg_value = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_value = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_value = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_bg_image_tiled: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_style_set_bg_image_tiled(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_main_opa function
+ */
+static jerry_value_t js_lv_style_set_bg_main_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_main_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_main_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_main_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_main_stop function
+ */
+static jerry_value_t js_lv_style_set_bg_main_stop(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_main_stop: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_main_stop: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_main_stop(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bg_opa function
+ */
+static jerry_value_t js_lv_style_set_bg_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bg_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_bg_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_bg_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_bitmap_mask_src function
+ */
+static jerry_value_t js_lv_style_set_bitmap_mask_src(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_bitmap_mask_src: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const void*)
+    // void*/字符串 类型参数，支持null
+    void* arg_value = NULL;
+    char* arg_value_str = NULL;  // 用于字符串参数的临时存储
+
+    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1])) {
+        if (jerry_value_is_string(args[1])) {
+            // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
+            jerry_size_t arg_value_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
+            arg_value_str = (char*)eos_malloc(arg_value_len + 1);
+            if (!arg_value_str) {
+                return script_engine_throw_error("lv_style_set_bitmap_mask_src: Failed to allocate memory for string argument");
+            }
+            jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t*)arg_value_str, arg_value_len);
+            arg_value_str[arg_value_len] = '\0';
+            arg_value = (void*)arg_value_str;
+        }
+        else if (jerry_value_is_object(args[1])) {
+            // 尝试从对象获取指针
+            arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            // 直接传递指针数值
+            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[1]);
+            arg_value = (void*)ptr_num;
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_bitmap_mask_src: Argument 1 must be string, object or number");
+        }
+    }
+    // 调用底层函数
+    lv_style_set_bitmap_mask_src(arg_style, arg_value);
+
+    // 释放临时内存
+    if (arg_value_str) eos_free(arg_value_str);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_blend_mode function
+ */
+static jerry_value_t js_lv_style_set_blend_mode(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_blend_mode: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_blend_mode_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_blend_mode: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_blend_mode(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_border_color function
+ */
+static jerry_value_t js_lv_style_set_border_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_border_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_border_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_border_opa function
+ */
+static jerry_value_t js_lv_style_set_border_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_border_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_border_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_border_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_border_post function
+ */
+static jerry_value_t js_lv_style_set_border_post(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_border_post: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (bool)
+    // 布尔类型参数: value
+    bool arg_value = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_value = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_value = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_border_post: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_style_set_border_post(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_border_side function
+ */
+static jerry_value_t js_lv_style_set_border_side(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_border_side: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_border_side_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_border_side: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_border_side(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_border_width function
+ */
+static jerry_value_t js_lv_style_set_border_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_border_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_border_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_border_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_clip_corner function
+ */
+static jerry_value_t js_lv_style_set_clip_corner(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_clip_corner: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (bool)
+    // 布尔类型参数: value
+    bool arg_value = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_value = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_value = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_clip_corner: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_style_set_clip_corner(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_color_filter_dsc function
+ */
+static jerry_value_t js_lv_style_set_color_filter_dsc(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_color_filter_dsc: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const lv_color_filter_dsc_t*)
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+    // 调用底层函数
+    lv_style_set_color_filter_dsc(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_color_filter_opa function
+ */
+static jerry_value_t js_lv_style_set_color_filter_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_color_filter_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_color_filter_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_color_filter_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_flex_cross_place function
+ */
+static jerry_value_t js_lv_style_set_flex_cross_place(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_flex_cross_place: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_flex_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_flex_cross_place: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_flex_cross_place(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_flex_flow function
+ */
+static jerry_value_t js_lv_style_set_flex_flow(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_flex_flow: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_flex_flow_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_flex_flow: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_flex_flow(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_flex_grow function
+ */
+static jerry_value_t js_lv_style_set_flex_grow(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_flex_grow: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (uint8_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_flex_grow: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_flex_grow(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_flex_main_place function
+ */
+static jerry_value_t js_lv_style_set_flex_main_place(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_flex_main_place: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_flex_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_flex_main_place: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_flex_main_place(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_flex_track_place function
+ */
+static jerry_value_t js_lv_style_set_flex_track_place(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_flex_track_place: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_flex_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_flex_track_place: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_flex_track_place(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_column_pos function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_column_pos(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_column_pos: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_column_pos: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_column_pos(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_column_span function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_column_span(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_column_span: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_column_span: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_column_span(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_row_pos function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_row_pos(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_row_pos: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_row_pos: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_row_pos(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_row_span function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_row_span(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_row_span: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_row_span: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_row_span(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_x_align function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_x_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_x_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_grid_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_x_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_x_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_cell_y_align function
+ */
+static jerry_value_t js_lv_style_set_grid_cell_y_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_cell_y_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_grid_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_cell_y_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_cell_y_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_column_align function
+ */
+static jerry_value_t js_lv_style_set_grid_column_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_column_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_grid_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_column_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_column_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_column_dsc_array function
+ */
+static jerry_value_t js_lv_style_set_grid_column_dsc_array(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_column_dsc_array: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const int32_t*)
+    // 通用指针类型: const int32_t*，支持null
+    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+
+    // 调用底层函数
+    lv_style_set_grid_column_dsc_array(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_row_align function
+ */
+static jerry_value_t js_lv_style_set_grid_row_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_row_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_grid_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_grid_row_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_grid_row_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_grid_row_dsc_array function
+ */
+static jerry_value_t js_lv_style_set_grid_row_dsc_array(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_grid_row_dsc_array: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const int32_t*)
+    // 通用指针类型: const int32_t*，支持null
+    const int32_t* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+
+    // 调用底层函数
+    lv_style_set_grid_row_dsc_array(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_height function
+ */
+static jerry_value_t js_lv_style_set_height(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_height: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_height: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_height(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_image_opa function
+ */
+static jerry_value_t js_lv_style_set_image_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_image_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_image_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_image_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_image_recolor function
+ */
+static jerry_value_t js_lv_style_set_image_recolor(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_image_recolor: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_image_recolor(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_image_recolor_opa function
+ */
+static jerry_value_t js_lv_style_set_image_recolor_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_image_recolor_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_image_recolor_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_image_recolor_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_layout function
+ */
+static jerry_value_t js_lv_style_set_layout(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_layout: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (uint16_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_layout: Argument 1 must be a number");
+    }
+
+    uint16_t arg_value = (uint16_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_layout(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_length function
+ */
+static jerry_value_t js_lv_style_set_length(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_length: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_length: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_length(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_color function
+ */
+static jerry_value_t js_lv_style_set_line_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_line_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_dash_gap function
+ */
+static jerry_value_t js_lv_style_set_line_dash_gap(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_dash_gap: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_line_dash_gap: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_line_dash_gap(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_dash_width function
+ */
+static jerry_value_t js_lv_style_set_line_dash_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_dash_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_line_dash_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_line_dash_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_opa function
+ */
+static jerry_value_t js_lv_style_set_line_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_line_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_line_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_rounded function
+ */
+static jerry_value_t js_lv_style_set_line_rounded(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_rounded: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (bool)
+    // 布尔类型参数: value
+    bool arg_value = false;
+    if (!jerry_value_is_undefined(args[1])) {
+        if (jerry_value_is_boolean(args[1])) {
+            arg_value = jerry_value_to_boolean(args[1]);
+        }
+        else if (jerry_value_is_number(args[1])) {
+            arg_value = (jerry_value_as_number(args[1]) != 0);
+        }
+        else {
+            return script_engine_throw_error("lv_style_set_line_rounded: Argument 1 must be boolean or number for bool");
+        }
+    }
+
+    // 调用底层函数
+    lv_style_set_line_rounded(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_line_width function
+ */
+static jerry_value_t js_lv_style_set_line_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_line_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_line_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_line_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_margin_bottom function
+ */
+static jerry_value_t js_lv_style_set_margin_bottom(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_margin_bottom: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_margin_bottom: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_margin_bottom(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_margin_left function
+ */
+static jerry_value_t js_lv_style_set_margin_left(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_margin_left: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_margin_left: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_margin_left(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_margin_right function
+ */
+static jerry_value_t js_lv_style_set_margin_right(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_margin_right: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_margin_right: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_margin_right(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_margin_top function
+ */
+static jerry_value_t js_lv_style_set_margin_top(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_margin_top: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_margin_top: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_margin_top(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_max_height function
+ */
+static jerry_value_t js_lv_style_set_max_height(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_max_height: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_max_height: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_max_height(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_max_width function
+ */
+static jerry_value_t js_lv_style_set_max_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_max_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_max_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_max_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_min_height function
+ */
+static jerry_value_t js_lv_style_set_min_height(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_min_height: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_min_height: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_min_height(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_min_width function
+ */
+static jerry_value_t js_lv_style_set_min_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_min_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_min_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_min_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_opa function
+ */
+static jerry_value_t js_lv_style_set_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_opa_layered function
+ */
+static jerry_value_t js_lv_style_set_opa_layered(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_opa_layered: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_opa_layered: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_opa_layered(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_outline_color function
+ */
+static jerry_value_t js_lv_style_set_outline_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_outline_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_outline_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_outline_opa function
+ */
+static jerry_value_t js_lv_style_set_outline_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_outline_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_outline_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_outline_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_outline_pad function
+ */
+static jerry_value_t js_lv_style_set_outline_pad(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_outline_pad: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_outline_pad: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_outline_pad(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_outline_width function
+ */
+static jerry_value_t js_lv_style_set_outline_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_outline_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_outline_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_outline_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_all function
+ */
+static jerry_value_t js_lv_style_set_pad_all(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_all: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_all: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_all(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_bottom function
+ */
+static jerry_value_t js_lv_style_set_pad_bottom(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_bottom: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_bottom: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_bottom(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_column function
+ */
+static jerry_value_t js_lv_style_set_pad_column(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_column: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_column: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_column(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_gap function
+ */
+static jerry_value_t js_lv_style_set_pad_gap(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_gap: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_gap: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_gap(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_hor function
+ */
+static jerry_value_t js_lv_style_set_pad_hor(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_hor: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_hor: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_hor(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_left function
+ */
+static jerry_value_t js_lv_style_set_pad_left(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_left: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_left: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_left(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_right function
+ */
+static jerry_value_t js_lv_style_set_pad_right(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_right: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_right: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_right(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_row function
+ */
+static jerry_value_t js_lv_style_set_pad_row(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_row: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_row: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_row(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_top function
+ */
+static jerry_value_t js_lv_style_set_pad_top(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_top: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_top: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_top(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_pad_ver function
+ */
+static jerry_value_t js_lv_style_set_pad_ver(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_pad_ver: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_pad_ver: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_pad_ver(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_radius function
+ */
+static jerry_value_t js_lv_style_set_radius(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_radius: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_radius: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_radius(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_rotary_sensitivity function
+ */
+static jerry_value_t js_lv_style_set_rotary_sensitivity(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_rotary_sensitivity: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (uint32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_rotary_sensitivity: Argument 1 must be a number");
+    }
+
+    uint32_t arg_value = (uint32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_rotary_sensitivity(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_color function
+ */
+static jerry_value_t js_lv_style_set_shadow_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_shadow_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_offset_x function
+ */
+static jerry_value_t js_lv_style_set_shadow_offset_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_offset_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_shadow_offset_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_shadow_offset_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_offset_y function
+ */
+static jerry_value_t js_lv_style_set_shadow_offset_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_offset_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_shadow_offset_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_shadow_offset_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_opa function
+ */
+static jerry_value_t js_lv_style_set_shadow_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_shadow_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_shadow_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_spread function
+ */
+static jerry_value_t js_lv_style_set_shadow_spread(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_spread: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_shadow_spread: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_shadow_spread(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_shadow_width function
+ */
+static jerry_value_t js_lv_style_set_shadow_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_shadow_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_shadow_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_shadow_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_size function
+ */
+static jerry_value_t js_lv_style_set_size(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 3) {
+        return script_engine_throw_error("lv_style_set_size: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: width (int32_t)
+    jerry_value_t js_arg_width = args[1];
+    if (!jerry_value_is_number(js_arg_width)) {
+        return script_engine_throw_error("lv_style_set_size: Argument 1 must be a number");
+    }
+
+    int32_t arg_width = (int32_t)jerry_value_as_number(js_arg_width);
+
+    // 解析参数: height (int32_t)
+    jerry_value_t js_arg_height = args[2];
+    if (!jerry_value_is_number(js_arg_height)) {
+        return script_engine_throw_error("lv_style_set_size: Argument 2 must be a number");
+    }
+
+    int32_t arg_height = (int32_t)jerry_value_as_number(js_arg_height);
+
+    // 调用底层函数
+    lv_style_set_size(arg_style, arg_width, arg_height);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_align function
+ */
+static jerry_value_t js_lv_style_set_text_align(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_align: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_text_align_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_text_align: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_text_align(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_color function
+ */
+static jerry_value_t js_lv_style_set_text_color(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_color: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_color_t)
+    lv_color_t arg_value = lv_js_bridge_obj_2_color(args[1]);
+
+    // 调用底层函数
+    lv_style_set_text_color(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_decor function
+ */
+static jerry_value_t js_lv_style_set_text_decor(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_decor: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_text_decor_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_text_decor: Argument 1 must be a number");
+    }
+
+    int arg_value = (int)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_text_decor(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_font function
+ */
+static jerry_value_t js_lv_style_set_text_font(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_font: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value ( lv_font_t*)
+    // lv_font_t* 类型参数处理
+    const lv_font_t* arg_value = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_ANY);
+    // 调用底层函数
+    lv_style_set_text_font(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_letter_space function
+ */
+static jerry_value_t js_lv_style_set_text_letter_space(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_letter_space: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_text_letter_space: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_text_letter_space(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_line_space function
+ */
+static jerry_value_t js_lv_style_set_text_line_space(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_line_space: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_text_line_space: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_text_line_space(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_text_opa function
+ */
+static jerry_value_t js_lv_style_set_text_opa(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_text_opa: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (lv_opa_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_text_opa: Argument 1 must be a number");
+    }
+
+    uint8_t arg_value = (uint8_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_text_opa(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_height function
+ */
+static jerry_value_t js_lv_style_set_transform_height(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_height: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_height: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_height(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_pivot_x function
+ */
+static jerry_value_t js_lv_style_set_transform_pivot_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_pivot_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_pivot_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_pivot_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_pivot_y function
+ */
+static jerry_value_t js_lv_style_set_transform_pivot_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_pivot_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_pivot_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_pivot_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_rotation function
+ */
+static jerry_value_t js_lv_style_set_transform_rotation(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_rotation: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_rotation: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_rotation(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_scale function
+ */
+static jerry_value_t js_lv_style_set_transform_scale(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_scale: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_scale: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_scale(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_scale_x function
+ */
+static jerry_value_t js_lv_style_set_transform_scale_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_scale_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_scale_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_scale_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_scale_y function
+ */
+static jerry_value_t js_lv_style_set_transform_scale_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_scale_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_scale_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_scale_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_skew_x function
+ */
+static jerry_value_t js_lv_style_set_transform_skew_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_skew_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_skew_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_skew_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_skew_y function
+ */
+static jerry_value_t js_lv_style_set_transform_skew_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_skew_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_skew_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_skew_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transform_width function
+ */
+static jerry_value_t js_lv_style_set_transform_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transform_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_transform_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_transform_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_transition function
+ */
+static jerry_value_t js_lv_style_set_transition(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_transition: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (const lv_style_transition_dsc_t*)
+    // 指针类型参数，支持null
+    void* arg_value = lv_js_bridge_obj_2_ptr(args[1],LV_TYPE_ANY);
+    // 调用底层函数
+    lv_style_set_transition(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_translate_x function
+ */
+static jerry_value_t js_lv_style_set_translate_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_translate_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_translate_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_translate_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_translate_y function
+ */
+static jerry_value_t js_lv_style_set_translate_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_translate_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_translate_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_translate_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_width function
+ */
+static jerry_value_t js_lv_style_set_width(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_width: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_width: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_width(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_x function
+ */
+static jerry_value_t js_lv_style_set_x(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_x: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_x: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_x(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
+ * @brief lv_style_set_y function
+ */
+static jerry_value_t js_lv_style_set_y(const jerry_call_info_t* call_info_p,
+    const jerry_value_t args[],
+    const jerry_length_t argc) {
+    // 参数数量检查
+    if (argc < 2) {
+        return script_engine_throw_error("lv_style_set_y: Insufficient arguments");
+    }
+
+    // 解析参数: style (lv_style_t*)
+    // 指针类型参数，支持null
+    void* arg_style = lv_js_bridge_obj_2_ptr(args[0],LV_TYPE_STYLE);
+    // 解析参数: value (int32_t)
+    jerry_value_t js_arg_value = args[1];
+    if (!jerry_value_is_number(js_arg_value)) {
+        return script_engine_throw_error("lv_style_set_y: Argument 1 must be a number");
+    }
+
+    int32_t arg_value = (int32_t)jerry_value_as_number(js_arg_value);
+
+    // 调用底层函数
+    lv_style_set_y(arg_style, arg_value);
+
+    return jerry_undefined();
+}
+
+
+
+/**
  * @brief Create a switch object pointer to the created switch
  */
 static jerry_value_t js_lv_switch_create(const jerry_call_info_t* call_info_p,
@@ -19975,6 +23684,125 @@ const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "obj", "setFlexGrow", js_lv_obj_set_flex_grow },
     { "obj", "setGridAlign", js_lv_obj_set_grid_align },
     { "obj", "setGridCell", js_lv_obj_set_grid_cell },
+    { "style", "reset", js_lv_style_reset },
+    { "style", "isConst", js_lv_style_is_const },
+    { "style", "isEmpty", js_lv_style_is_empty },
+    { "style", "setWidth", js_lv_style_set_width },
+    { "style", "setMinWidth", js_lv_style_set_min_width },
+    { "style", "setMaxWidth", js_lv_style_set_max_width },
+    { "style", "setHeight", js_lv_style_set_height },
+    { "style", "setMinHeight", js_lv_style_set_min_height },
+    { "style", "setMaxHeight", js_lv_style_set_max_height },
+    { "style", "setLength", js_lv_style_set_length },
+    { "style", "setX", js_lv_style_set_x },
+    { "style", "setY", js_lv_style_set_y },
+    { "style", "setAlign", js_lv_style_set_align },
+    { "style", "setTransformWidth", js_lv_style_set_transform_width },
+    { "style", "setTransformHeight", js_lv_style_set_transform_height },
+    { "style", "setTranslateX", js_lv_style_set_translate_x },
+    { "style", "setTranslateY", js_lv_style_set_translate_y },
+    { "style", "setTransformScaleX", js_lv_style_set_transform_scale_x },
+    { "style", "setTransformScaleY", js_lv_style_set_transform_scale_y },
+    { "style", "setTransformRotation", js_lv_style_set_transform_rotation },
+    { "style", "setTransformPivotX", js_lv_style_set_transform_pivot_x },
+    { "style", "setTransformPivotY", js_lv_style_set_transform_pivot_y },
+    { "style", "setTransformSkewX", js_lv_style_set_transform_skew_x },
+    { "style", "setTransformSkewY", js_lv_style_set_transform_skew_y },
+    { "style", "setPadTop", js_lv_style_set_pad_top },
+    { "style", "setPadBottom", js_lv_style_set_pad_bottom },
+    { "style", "setPadLeft", js_lv_style_set_pad_left },
+    { "style", "setPadRight", js_lv_style_set_pad_right },
+    { "style", "setPadRow", js_lv_style_set_pad_row },
+    { "style", "setPadColumn", js_lv_style_set_pad_column },
+    { "style", "setMarginTop", js_lv_style_set_margin_top },
+    { "style", "setMarginBottom", js_lv_style_set_margin_bottom },
+    { "style", "setMarginLeft", js_lv_style_set_margin_left },
+    { "style", "setMarginRight", js_lv_style_set_margin_right },
+    { "style", "setBgColor", js_lv_style_set_bg_color },
+    { "style", "setBgOpa", js_lv_style_set_bg_opa },
+    { "style", "setBgGradColor", js_lv_style_set_bg_grad_color },
+    { "style", "setBgGradDir", js_lv_style_set_bg_grad_dir },
+    { "style", "setBgMainStop", js_lv_style_set_bg_main_stop },
+    { "style", "setBgGradStop", js_lv_style_set_bg_grad_stop },
+    { "style", "setBgMainOpa", js_lv_style_set_bg_main_opa },
+    { "style", "setBgGradOpa", js_lv_style_set_bg_grad_opa },
+    { "style", "setBgGrad", js_lv_style_set_bg_grad },
+    { "style", "setBgImageSrc", js_lv_style_set_bg_image_src },
+    { "style", "setBgImageOpa", js_lv_style_set_bg_image_opa },
+    { "style", "setBgImageRecolor", js_lv_style_set_bg_image_recolor },
+    { "style", "setBgImageRecolorOpa", js_lv_style_set_bg_image_recolor_opa },
+    { "style", "setBgImageTiled", js_lv_style_set_bg_image_tiled },
+    { "style", "setBorderColor", js_lv_style_set_border_color },
+    { "style", "setBorderOpa", js_lv_style_set_border_opa },
+    { "style", "setBorderWidth", js_lv_style_set_border_width },
+    { "style", "setBorderSide", js_lv_style_set_border_side },
+    { "style", "setBorderPost", js_lv_style_set_border_post },
+    { "style", "setOutlineWidth", js_lv_style_set_outline_width },
+    { "style", "setOutlineColor", js_lv_style_set_outline_color },
+    { "style", "setOutlineOpa", js_lv_style_set_outline_opa },
+    { "style", "setOutlinePad", js_lv_style_set_outline_pad },
+    { "style", "setShadowWidth", js_lv_style_set_shadow_width },
+    { "style", "setShadowOffsetX", js_lv_style_set_shadow_offset_x },
+    { "style", "setShadowOffsetY", js_lv_style_set_shadow_offset_y },
+    { "style", "setShadowSpread", js_lv_style_set_shadow_spread },
+    { "style", "setShadowColor", js_lv_style_set_shadow_color },
+    { "style", "setShadowOpa", js_lv_style_set_shadow_opa },
+    { "style", "setImageOpa", js_lv_style_set_image_opa },
+    { "style", "setImageRecolor", js_lv_style_set_image_recolor },
+    { "style", "setImageRecolorOpa", js_lv_style_set_image_recolor_opa },
+    { "style", "setLineWidth", js_lv_style_set_line_width },
+    { "style", "setLineDashWidth", js_lv_style_set_line_dash_width },
+    { "style", "setLineDashGap", js_lv_style_set_line_dash_gap },
+    { "style", "setLineRounded", js_lv_style_set_line_rounded },
+    { "style", "setLineColor", js_lv_style_set_line_color },
+    { "style", "setLineOpa", js_lv_style_set_line_opa },
+    { "style", "setArcWidth", js_lv_style_set_arc_width },
+    { "style", "setArcRounded", js_lv_style_set_arc_rounded },
+    { "style", "setArcColor", js_lv_style_set_arc_color },
+    { "style", "setArcOpa", js_lv_style_set_arc_opa },
+    { "style", "setArcImageSrc", js_lv_style_set_arc_image_src },
+    { "style", "setTextColor", js_lv_style_set_text_color },
+    { "style", "setTextOpa", js_lv_style_set_text_opa },
+    { "style", "setTextFont", js_lv_style_set_text_font },
+    { "style", "setTextLetterSpace", js_lv_style_set_text_letter_space },
+    { "style", "setTextLineSpace", js_lv_style_set_text_line_space },
+    { "style", "setTextDecor", js_lv_style_set_text_decor },
+    { "style", "setTextAlign", js_lv_style_set_text_align },
+    { "style", "setRadius", js_lv_style_set_radius },
+    { "style", "setClipCorner", js_lv_style_set_clip_corner },
+    { "style", "setOpa", js_lv_style_set_opa },
+    { "style", "setOpaLayered", js_lv_style_set_opa_layered },
+    { "style", "setColorFilterDsc", js_lv_style_set_color_filter_dsc },
+    { "style", "setColorFilterOpa", js_lv_style_set_color_filter_opa },
+    { "style", "setAnim", js_lv_style_set_anim },
+    { "style", "setAnimDuration", js_lv_style_set_anim_duration },
+    { "style", "setTransition", js_lv_style_set_transition },
+    { "style", "setBlendMode", js_lv_style_set_blend_mode },
+    { "style", "setLayout", js_lv_style_set_layout },
+    { "style", "setBaseDir", js_lv_style_set_base_dir },
+    { "style", "setBitmapMaskSrc", js_lv_style_set_bitmap_mask_src },
+    { "style", "setRotarySensitivity", js_lv_style_set_rotary_sensitivity },
+    { "style", "setFlexFlow", js_lv_style_set_flex_flow },
+    { "style", "setFlexMainPlace", js_lv_style_set_flex_main_place },
+    { "style", "setFlexCrossPlace", js_lv_style_set_flex_cross_place },
+    { "style", "setFlexTrackPlace", js_lv_style_set_flex_track_place },
+    { "style", "setFlexGrow", js_lv_style_set_flex_grow },
+    { "style", "setGridColumnDscArray", js_lv_style_set_grid_column_dsc_array },
+    { "style", "setGridColumnAlign", js_lv_style_set_grid_column_align },
+    { "style", "setGridRowDscArray", js_lv_style_set_grid_row_dsc_array },
+    { "style", "setGridRowAlign", js_lv_style_set_grid_row_align },
+    { "style", "setGridCellColumnPos", js_lv_style_set_grid_cell_column_pos },
+    { "style", "setGridCellXAlign", js_lv_style_set_grid_cell_x_align },
+    { "style", "setGridCellColumnSpan", js_lv_style_set_grid_cell_column_span },
+    { "style", "setGridCellRowPos", js_lv_style_set_grid_cell_row_pos },
+    { "style", "setGridCellYAlign", js_lv_style_set_grid_cell_y_align },
+    { "style", "setGridCellRowSpan", js_lv_style_set_grid_cell_row_span },
+    { "style", "setSize", js_lv_style_set_size },
+    { "style", "setPadAll", js_lv_style_set_pad_all },
+    { "style", "setPadHor", js_lv_style_set_pad_hor },
+    { "style", "setPadVer", js_lv_style_set_pad_ver },
+    { "style", "setPadGap", js_lv_style_set_pad_gap },
+    { "style", "setTransformScale", js_lv_style_set_transform_scale },
     { "image", "decoderGetInfo", js_lv_image_decoder_get_info },
     { "image", "decoderOpen", js_lv_image_decoder_open },
     { "image", "decoderGetArea", js_lv_image_decoder_get_area },
@@ -20555,6 +24383,17 @@ const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "obj", "setStyleBgImgSrc", js_lv_obj_set_style_bg_image_src },
     { "obj", "setStyleBgImgRecolor", js_lv_obj_set_style_bg_image_recolor },
     { "obj", "setStyleBgImgRecolorOpa", js_lv_obj_set_style_bg_image_recolor_opa },
+    { "style", "setAnimTime", js_lv_style_set_anim_duration },
+    { "style", "setImgOpa", js_lv_style_set_image_opa },
+    { "style", "setImgRecolor", js_lv_style_set_image_recolor },
+    { "style", "setImgRecolorOpa", js_lv_style_set_image_recolor_opa },
+    { "style", "setShadowOfsX", js_lv_style_set_shadow_offset_x },
+    { "style", "setShadowOfsY", js_lv_style_set_shadow_offset_y },
+    { "style", "setTransformAngle", js_lv_style_set_transform_rotation },
+    { "style", "setTransformZoom", js_lv_style_set_transform_scale },
+    { "style", "setBgImgSrc", js_lv_style_set_bg_image_src },
+    { "style", "setBgImgRecolor", js_lv_style_set_bg_image_recolor },
+    { "style", "setBgImgRecolorOpa", js_lv_style_set_bg_image_recolor_opa },
     { "image", "decoderBuiltInOpen", js_lv_bin_decoder_open },
     { "bin", "decoderOpen", js_lv_bin_decoder_open },
     { "image", "decoderBuiltInClose", js_lv_bin_decoder_close },
@@ -20564,7 +24403,7 @@ const script_engine_func_entry_t lvgl_binding_funcs[] = {
     { "button", "bindChecked", js_lv_obj_bind_checked }
 };
 
-const unsigned int lvgl_binding_funcs_count = 619;
+const unsigned int lvgl_binding_funcs_count = 749;
 
 static void register_lvgl_enums(jerry_value_t parent) {
 
@@ -21600,5 +25439,6 @@ void lv_binding_init(jerry_value_t parent) {
     lv_bindings_anim_init(parent);
     lv_bindings_event_init(parent);
     lv_bindings_timer_init(parent);
+    lv_bindings_style_init(parent);
     register_lvgl_enums(parent);
 }

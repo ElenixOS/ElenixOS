@@ -30,101 +30,6 @@
 
 /* Function Implementations -----------------------------------*/
 
-/********************************** 特殊 LVGL 函数 **********************************/
-/**
- * @brief 样式初始化
- */
-static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
-                                      const jerry_value_t args[],
-                                      const jerry_length_t argc)
-{
-    // 参数数量检查
-    if (argc < 1)
-    {
-        return script_engine_throw_error("Insufficient arguments");
-    }
-
-    // 检查参数是否为对象
-    if (!jerry_value_is_object(args[0]))
-    {
-        return script_engine_throw_error("Argument must be a style object");
-    }
-
-    // 检查对象是否已经分配了内存
-    jerry_value_t ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
-    jerry_value_free(ptr_prop);
-
-    lv_style_t *style = NULL;
-
-    if (jerry_value_is_number(ptr_val))
-    {
-        // 已有指针的情况
-        uintptr_t ptr = (uintptr_t)jerry_value_as_number(ptr_val);
-        style = (lv_style_t *)ptr;
-    }
-    else
-    {
-        // 没有指针的情况，分配新内存
-        style = (lv_style_t *)eos_malloc(sizeof(lv_style_t));
-        if (!style)
-        {
-            jerry_value_free(ptr_val);
-            return script_engine_throw_error("Failed to allocate memory for style");
-        }
-
-        // 将指针保存回JS对象
-        ptr_val = jerry_number((uintptr_t)style);
-        ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_free(jerry_object_set(args[0], ptr_prop, ptr_val));
-        jerry_value_free(ptr_prop);
-        jerry_value_free(ptr_val);
-
-        // 添加类型标记
-        jerry_value_t type_prop = jerry_string_sz("__type");
-        jerry_value_t type_val = jerry_string_sz("lv_style");
-        jerry_value_free(jerry_object_set(args[0], type_prop, type_val));
-        jerry_value_free(type_prop);
-        jerry_value_free(type_val);
-    }
-
-    // 调用初始化函数
-    lv_style_init(style);
-
-    // 返回JS对象本身，支持链式调用
-    return jerry_value_copy(args[0]);
-}
-/**
- * @brief 样式清除
- */
-static jerry_value_t js_lv_style_delete(const jerry_call_info_t *call_info_p,
-                                        const jerry_value_t args[],
-                                        const jerry_length_t argc)
-{
-    if (argc < 1 || !jerry_value_is_object(args[0]))
-    {
-        return script_engine_throw_error("Invalid arguments");
-    }
-
-    jerry_value_t ptr_prop = jerry_string_sz("__ptr");
-    jerry_value_t ptr_val = jerry_object_get(args[0], ptr_prop);
-    jerry_value_free(ptr_prop);
-
-    if (jerry_value_is_number(ptr_val))
-    {
-        lv_style_t *style = (lv_style_t *)(uintptr_t)jerry_value_as_number(ptr_val);
-        eos_free(style);
-
-        // 清除指针引用
-        ptr_prop = jerry_string_sz("__ptr");
-        jerry_value_free(jerry_object_set(args[0], ptr_prop, jerry_number(0)));
-        jerry_value_free(ptr_prop);
-    }
-
-    jerry_value_free(ptr_val);
-    return jerry_undefined();
-}
-
 /********************************** 字体系统 **********************************/
 static void register_lvgl_fonts(jerry_value_t parent)
 {
@@ -319,12 +224,26 @@ static jerry_value_t js_lv_tiny_ttf_create_file(const jerry_call_info_t *call_in
 #endif
 }
 
+/************************** 宏函数 **************************/
+
+static jerry_value_t js_lv_pct(const jerry_call_info_t *call_info_p,
+                               const jerry_value_t args[],
+                               const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1 || !jerry_value_is_number(args[0]))
+    {
+        return script_engine_throw_error("Usage: lv.pct(value)");
+    }
+
+    return jerry_number(LV_PCT(jerry_value_as_int32(args[0])));
+}
+
 /********************************** 绑定注册 **********************************/
 
 const script_engine_func_entry_t lvgl_binding_special_funcs[] = {
-    {"style", "init", js_lv_style_init},
-    {"style", "delete", js_lv_style_delete},
-    {"tinyTTF", "createFile", js_lv_tiny_ttf_create_file}};
+    {"tinyTTF", "createFile", js_lv_tiny_ttf_create_file},
+    {NULL, "pct", js_lv_pct}};
 
 /********************************** 初始化 **********************************/
 

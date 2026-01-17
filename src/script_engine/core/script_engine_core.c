@@ -418,6 +418,8 @@ void script_engine_register_functions(jerry_value_t parent,
         const char *class_name = entries[i].class_name;
         const char *method_name = entries[i].method_name;
 
+        EOS_ASSERT(method_name != NULL);
+
         jerry_value_t target_obj = parent;
 
         // 如果指定了 class_name，则获取或创建 class 对象

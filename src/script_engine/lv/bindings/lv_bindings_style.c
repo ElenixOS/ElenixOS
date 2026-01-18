@@ -50,12 +50,12 @@ static jerry_value_t js_lv_style_init(const jerry_call_info_t *call_info_p,
         return script_engine_throw_error("Usage: lv_style_init(style)");
     }
 
-    lv_style_t style;   // TODO: 不能栈分配
+    lv_style_t *style = eos_malloc(sizeof(lv_style_t));
 
     // 调用初始化函数
-    lv_style_init(&style);
+    lv_style_init(style);
 
-    lv_js_bridge_obj_set_ptr(args[0], &style, LV_TYPE_STYLE);
+    lv_js_bridge_obj_set_ptr(args[0], style, LV_TYPE_STYLE);
 
     return jerry_undefined();
 }

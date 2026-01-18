@@ -192,10 +192,24 @@ static void lv_js_handle_free_cb(void *native_p, struct jerry_object_native_info
     // 标记失效，避免 C 侧继续使用
     handle->is_alive = false;
 
+    // 特殊类型清理资源
+    switch (handle->type)
+    {
+    case LV_TYPE_STYLE:
+        if (!handle->ptr)
+            break;
+        lv_style_reset(handle->ptr);
+        eos_free(handle->ptr);
+        break;
+
+    default:
+        break;
+    }
+
     // 从 uthash 中移除
     HASH_DEL(lv_js_map, handle);
 
-    // 释放你分配的 handle
+    // 释放 handle
     eos_free(handle);
 
     EOS_LOG_D("handle freed: %p", handle);
@@ -323,7 +337,7 @@ void lv_js_bridge_obj_set_ptr(jerry_value_t obj, void *ptr, lv_type_t type)
         lv_js_map_remove(handle->ptr);
 
         // 更新 handle
-        handle->ptr  = ptr;
+        handle->ptr = ptr;
         handle->type = type;
 
         // 重新插入映射

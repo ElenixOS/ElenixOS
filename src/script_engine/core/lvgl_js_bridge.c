@@ -22,7 +22,6 @@
 #include "lv_bindings_anim.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define BINDING_OBJ script_engine_eos_obj
 
 typedef struct lv_js_handle
 {
@@ -34,7 +33,6 @@ typedef struct lv_js_handle
 } lv_js_handle_t;
 
 /* Variables --------------------------------------------------*/
-extern jerry_value_t script_engine_eos_obj;
 static lv_js_handle_t *lv_js_map = NULL;
 static void lv_js_handle_free_cb(void *native_p, struct jerry_object_native_info_t *info_p);
 static const jerry_object_native_info_t lv_js_native_info =

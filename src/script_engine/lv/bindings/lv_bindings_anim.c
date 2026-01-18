@@ -286,6 +286,9 @@ static jerry_value_t js_lv_anim_set_custom_exec_cb(const jerry_call_info_t *call
     // 对象类型参数，支持null
     lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
 
+    if (!arg_a)
+        return script_engine_throw_error("lv_anim_set_custom_exec_cb: Invalid parameter");
+
     // 调用底层函数
     lv_anim_set_custom_exec_cb(arg_a, lv_bindings_anim_custom_exec_cb_handler);
 
@@ -580,6 +583,13 @@ jerry_value_t js_lv_anim_create(const jerry_call_info_t *info,
     return obj;
 }
 
+jerry_value_t js_lv_anim_init(const jerry_call_info_t *info,
+                              const jerry_value_t args[],
+                              const jerry_length_t argc)
+{
+    // TODO
+    return jerry_undefined();
+}
 
 static void _script_exited_cb(lv_event_t *e)
 {
@@ -630,6 +640,7 @@ const script_engine_func_entry_t lvgl_binding_anim_funcs[] = {
     {"anim", "getUserData", js_lv_anim_get_user_data},
     {"anim", "setReadyCb", js_lv_anim_set_completed_cb},
     {"anim", "create", js_lv_anim_create},
+    {"anim", "init", js_lv_anim_init},
     {"anim", "start", js_lv_anim_start}};
 
 lv_anim_path_cb_t lv_bindings_anim_get_path_cb(uint32_t id)

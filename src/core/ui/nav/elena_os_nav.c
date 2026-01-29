@@ -10,7 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
+// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Navigation"
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
@@ -218,14 +218,7 @@ eos_result_t eos_nav_clean_up(void)
             if (lv_obj_is_valid(eos_nav.stack[i]))
             {
                 EOS_LOG_D("Screen[%p]-[%d] Clearing", eos_nav.stack[i], i);
-                if (i == 0)
-                {
-                    lv_obj_add_event_cb(eos_nav.stack[i], _screen_unloaded_event_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
-                }
-                else
-                {
-                    lv_obj_delete_async(eos_nav.stack[i]); // 彻底删除screen
-                }
+                lv_obj_delete_async(eos_nav.stack[i]); // 彻底删除screen
 
                 EOS_LOG_D("Screen[%p] Cleared", eos_nav.stack[i]);
             }
@@ -296,6 +289,13 @@ lv_obj_t *eos_nav_init(lv_obj_t *launcher_screen)
     }
 
     // 初始化动态栈
+    if (eos_nav.stack != NULL)
+    {
+        EOS_LOG_W("Nav stack not NULL during init, freeing existing stack.");
+        eos_free(eos_nav.stack);
+        eos_nav.stack = NULL;
+    }
+
     eos_nav.stack = eos_malloc(NAV_INITIAL_CAPACITY * sizeof(lv_obj_t *));
     if (eos_nav.stack == NULL)
     {

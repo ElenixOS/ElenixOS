@@ -38,11 +38,14 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_lang.h"
+#include "elena_os_config.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
+#if EOS_APP_HEADER_ENABLE
 
 void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering);
 /**
@@ -106,6 +109,71 @@ void eos_app_header_parent_reset(void);
  * @brief 判断应用头当前是否可见
  */
 bool eos_app_header_is_visible(void);
+#else
+
+static inline void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering)
+{
+	(void)current_scr;
+	(void)next_scr;
+	(void)is_anim_entering;
+}
+
+static inline void eos_app_header_set_title(lv_obj_t *scr, const char *title)
+{
+	(void)scr;
+	(void)title;
+}
+
+static inline void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
+{
+	(void)scr;
+	(void)id;
+}
+
+static inline void eos_app_header_hide(void)
+{
+}
+
+static inline void eos_app_header_show(void)
+{
+}
+
+static inline void eos_app_header_init(void)
+{
+}
+
+static inline void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
+{
+	(void)scr;
+	(void)title;
+}
+
+static inline void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
+{
+	(void)scr;
+	(void)id;
+}
+
+static inline void eos_app_header_set_title_color_once(lv_color_t title_text_color)
+{
+	(void)title_text_color;
+}
+
+static inline void eos_app_header_set_parent(lv_obj_t *parent)
+{
+	(void)parent;
+}
+
+static inline void eos_app_header_parent_reset(void)
+{
+}
+
+static inline bool eos_app_header_is_visible(void)
+{
+	return false;
+}
+
+#endif
 #ifdef __cplusplus
 }
 #endif

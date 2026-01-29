@@ -6,6 +6,9 @@
  */
 
 #include "elena_os_app_header.h"
+#include "elena_os_config.h"
+
+#if EOS_APP_HEADER_ENABLE
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -484,3 +487,5 @@ void eos_app_header_init(void)
 
     eos_event_add_global_cb(_nav_clean_up_reset_label_cb, EOS_EVENT_NAVIGATION_CLEAN_UP, NULL);
 }
+
+#endif /* EOS_APP_HEADER_ENABLE */

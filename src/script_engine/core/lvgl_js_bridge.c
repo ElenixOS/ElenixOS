@@ -149,7 +149,7 @@ static lv_js_handle_t *lv_js_map_insert(void *ptr, jerry_value_t js_obj, lv_type
     }
 
     handle->ptr = ptr;
-    handle->js_obj = jerry_value_copy(js_obj);
+    handle->js_obj = js_obj;
     handle->type = type;
     handle->is_alive = true;
 
@@ -175,7 +175,6 @@ static void lv_js_map_remove(void *ptr)
     }
 
     HASH_DEL(lv_js_map, handle);
-    jerry_value_free(handle->js_obj);
     eos_free(handle);
 }
 
@@ -332,14 +331,14 @@ void lv_js_bridge_obj_set_ptr(jerry_value_t obj, void *ptr, lv_type_t type)
         }
 
         // 从旧 ptr 映射中移除
-        lv_js_map_remove(handle->ptr);
+        HASH_DEL(lv_js_map, handle);
 
         // 更新 handle
         handle->ptr = ptr;
         handle->type = type;
 
         // 重新插入映射
-        lv_js_map_insert(ptr, obj, type);
+        HASH_ADD_PTR(lv_js_map, ptr, handle);
     }
     else
     {

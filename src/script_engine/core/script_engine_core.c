@@ -1,4 +1,4 @@
-﻿
+
 /**
  * @file script_engine_core.c
  * @brief 脚本引擎核心功能实现
@@ -470,13 +470,6 @@ static jerry_value_t _vm_exec_stop_callback(void *user_p)
     {
         EOS_LOG_D("Script execution stopped by request");
         return jerry_string_sz("Script terminated by request");
-    }
-
-    // 非请求停止的情况，可能是错误
-    if (engine_ctx.state == SCRIPT_STATE_RUNNING)
-    {
-        EOS_LOG_W("Script stopped unexpectedly");
-        _change_state(SCRIPT_STATE_ERROR);
     }
 
     return jerry_undefined();

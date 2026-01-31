@@ -243,28 +243,23 @@ static jerry_value_t js_lv_anim_set_completed_cb(const jerry_call_info_t *call_i
         return script_engine_throw_error("lv_anim_set_completed_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
 
     if (!jerry_value_is_function(args[1]))
     {
         return script_engine_throw_error("Argument 1 must be a function");
     }
 
-    // 获取 JS 对象
-    jerry_value_t js_obj = lv_js_bridge_ptr_2_obj(arg_a, LV_TYPE_ANIM);
-
-    // 设置回调属性
+    // 直接设置 JS 对象属性
     jerry_value_t key = jerry_string_sz("completedCb");
     jerry_value_t val = jerry_value_copy(args[1]);
-    jerry_value_free(jerry_object_set(js_obj, key, val));
+    jerry_value_free(jerry_object_set(args[0], key, val));
     jerry_value_free(val);
     jerry_value_free(key);
-
-    // 设置 C 回调
-    lv_anim_set_completed_cb(arg_a, lv_bindings_anim_completed_cb_handler);
-
-    jerry_value_free(js_obj);
 
     return jerry_undefined();
 }
@@ -282,15 +277,23 @@ static jerry_value_t js_lv_anim_set_custom_exec_cb(const jerry_call_info_t *call
         return script_engine_throw_error("lv_anim_set_custom_exec_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    // 对象类型参数，支持null
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
 
-    if (!arg_a)
-        return script_engine_throw_error("lv_anim_set_custom_exec_cb: Invalid parameter");
+    if (!jerry_value_is_function(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a function");
+    }
 
-    // 调用底层函数
-    lv_anim_set_custom_exec_cb(arg_a, lv_bindings_anim_custom_exec_cb_handler);
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("customExecCb");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
 
     return jerry_undefined();
 }
@@ -308,28 +311,23 @@ static jerry_value_t js_lv_anim_set_deleted_cb(const jerry_call_info_t *call_inf
         return script_engine_throw_error("lv_anim_set_deleted_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
 
     if (!jerry_value_is_function(args[1]))
     {
         return script_engine_throw_error("Argument 1 must be a function");
     }
 
-    // 获取 JS 对象
-    jerry_value_t js_obj = lv_js_bridge_ptr_2_obj(arg_a, LV_TYPE_ANIM);
-
-    // 设置回调属性
+    // 直接设置 JS 对象属性
     jerry_value_t key = jerry_string_sz("deletedCb");
     jerry_value_t val = jerry_value_copy(args[1]);
-    jerry_value_free(jerry_object_set(js_obj, key, val));
+    jerry_value_free(jerry_object_set(args[0], key, val));
     jerry_value_free(val);
     jerry_value_free(key);
-
-    // 设置 C 回调
-    lv_anim_set_deleted_cb(arg_a, lv_bindings_anim_deleted_cb_handler);
-
-    jerry_value_free(js_obj);
 
     return jerry_undefined();
 }
@@ -347,28 +345,23 @@ static jerry_value_t js_lv_anim_set_get_value_cb(const jerry_call_info_t *call_i
         return script_engine_throw_error("lv_anim_set_get_value_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
 
     if (!jerry_value_is_function(args[1]))
     {
         return script_engine_throw_error("Argument 1 must be a function");
     }
 
-    // 获取 JS 对象
-    jerry_value_t js_obj = lv_js_bridge_ptr_2_obj(arg_a, LV_TYPE_ANIM);
-
-    // 设置回调属性
+    // 直接设置 JS 对象属性
     jerry_value_t key = jerry_string_sz("getValue");
     jerry_value_t val = jerry_value_copy(args[1]);
-    jerry_value_free(jerry_object_set(js_obj, key, val));
+    jerry_value_free(jerry_object_set(args[0], key, val));
     jerry_value_free(val);
     jerry_value_free(key);
-
-    // 设置 C 回调
-    lv_anim_set_get_value_cb(arg_a, lv_bindings_anim_get_value_cb_handler);
-
-    jerry_value_free(js_obj);
 
     return jerry_undefined();
 }
@@ -386,47 +379,18 @@ static jerry_value_t js_lv_anim_set_path_cb(const jerry_call_info_t *call_info_p
         return script_engine_throw_error("lv_anim_set_path_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
-
-    if (!jerry_value_is_function(args[1]))
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
     {
-        return script_engine_throw_error("Argument 1 must be a function");
+        return script_engine_throw_error("Argument 0 must be an object");
     }
 
-    // 获取 JS 对象
-    jerry_value_t js_obj = lv_js_bridge_ptr_2_obj(arg_a, LV_TYPE_ANIM);
-
-    if (jerry_value_is_function(args[1]))
-    {
-        // 设置回调属性
-        jerry_value_t key = jerry_string_sz("pathCb");
-        jerry_value_t val = jerry_value_copy(args[1]);
-        jerry_value_free(jerry_object_set(js_obj, key, val));
-        jerry_value_free(val);
-        jerry_value_free(key);
-
-        // 设置 C 回调
-        lv_anim_set_path_cb(arg_a, lv_bindings_anim_path_cb_hander);
-    }
-    else if (jerry_value_is_number(args[1]))
-    {
-        uint32_t i = jerry_value_as_uint32(args[1]);
-        if (i > ANIM_PATH_NONE && i < ANIM_PATH_ENUM_MAX)
-        {
-            lv_anim_set_path_cb(arg_a, lv_anim_path_def[i]);
-        }
-        else
-        {
-            return script_engine_throw_error("Argument 1 is out of range");
-        }
-    }
-    else
-    {
-        return script_engine_throw_error("Argument 1 must be a function or a number");
-    }
-
-    jerry_value_free(js_obj);
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("pathCb");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
 
     return jerry_undefined();
 }
@@ -444,28 +408,23 @@ static jerry_value_t js_lv_anim_set_start_cb(const jerry_call_info_t *call_info_
         return script_engine_throw_error("lv_anim_set_start_cb: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
 
     if (!jerry_value_is_function(args[1]))
     {
         return script_engine_throw_error("Argument 1 must be a function");
     }
 
-    // 获取 JS 对象
-    jerry_value_t js_obj = lv_js_bridge_ptr_2_obj(arg_a, LV_TYPE_ANIM);
-
-    // 设置回调属性
+    // 直接设置 JS 对象属性
     jerry_value_t key = jerry_string_sz("startCb");
     jerry_value_t val = jerry_value_copy(args[1]);
-    jerry_value_free(jerry_object_set(js_obj, key, val));
+    jerry_value_free(jerry_object_set(args[0], key, val));
     jerry_value_free(val);
     jerry_value_free(key);
-
-    // 设置 C 回调
-    lv_anim_set_start_cb(arg_a, lv_bindings_anim_start_cb_handler);
-
-    jerry_value_free(js_obj);
 
     return jerry_undefined();
 }
@@ -483,51 +442,18 @@ static jerry_value_t js_lv_anim_set_user_data(const jerry_call_info_t *call_info
         return script_engine_throw_error("lv_anim_set_user_data: Insufficient arguments");
     }
 
-    // 解析参数: a (lv_anim_t*)
-    // 对象类型参数，支持null
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
-    // 解析参数: user_data (void*)
-    // void*/字符串 类型参数，支持null
-    void *arg_user_data = NULL;
-    char *arg_user_data_str = NULL; // 用于字符串参数的临时存储
-
-    if (!jerry_value_is_undefined(args[1]) && !jerry_value_is_null(args[1]))
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
     {
-        if (jerry_value_is_string(args[1]))
-        {
-            // 处理字符串类型的符号（如LV_SYMBOL_MINUS）
-            jerry_size_t arg_user_data_len = jerry_string_size(args[1], JERRY_ENCODING_UTF8);
-            arg_user_data_str = (char *)eos_malloc(arg_user_data_len + 1);
-            if (!arg_user_data_str)
-            {
-                return script_engine_throw_error("Failed to allocate memory for string argument");
-            }
-            jerry_string_to_buffer(args[1], JERRY_ENCODING_UTF8, (jerry_char_t *)arg_user_data_str, arg_user_data_len);
-            arg_user_data_str[arg_user_data_len] = '\0';
-            arg_user_data = (void *)arg_user_data_str;
-        }
-        else if (jerry_value_is_object(args[1]))
-        {
-            // 尝试从对象获取指针
-            arg_user_data = lv_js_bridge_obj_2_ptr(args[1], LV_TYPE_ANY);
-        }
-        else if (jerry_value_is_number(args[1]))
-        {
-            // 直接传递指针数值
-            uintptr_t ptr_num = (uintptr_t)jerry_value_as_number(args[1]);
-            arg_user_data = (void *)ptr_num;
-        }
-        else
-        {
-            return script_engine_throw_error("Argument 1 must be string, object or number");
-        }
+        return script_engine_throw_error("Argument 0 must be an object");
     }
-    // 调用底层函数
-    lv_anim_set_user_data(arg_a, arg_user_data);
 
-    // 释放临时内存
-    if (arg_user_data_str)
-        eos_free(arg_user_data_str);
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("userData");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
 
     return jerry_undefined();
 }
@@ -545,22 +471,822 @@ static jerry_value_t js_lv_anim_get_user_data(const jerry_call_info_t *call_info
         return script_engine_throw_error("lv_anim_get_user_data: Insufficient arguments");
     }
 
-    // 解析参数: a (const lv_anim_t*)
-    lv_anim_t *arg_a = lv_js_bridge_obj_2_ptr(args[0], LV_TYPE_ANIM);
-    // 调用底层函数
-    js_anim_user_data_t *ret_value = lv_anim_get_user_data(arg_a);
-
-    if (!ret_value || !ret_value->user_data)
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
     {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接获取 JS 对象属性
+    jerry_value_t key = jerry_string_sz("userData");
+    jerry_value_t val = jerry_object_get(args[0], key);
+    jerry_value_free(key);
+
+    // 如果属性不存在，返回 null
+    if (jerry_value_is_undefined(val))
+    {
+        jerry_value_free(val);
         return jerry_null();
     }
 
-    // 处理返回值
-    jerry_value_t js_result;
-    // 包装为通用指针对象
-    js_result = lv_js_bridge_ptr_2_obj(ret_value->user_data, LV_TYPE_ANY);
+    return val;
+}
 
-    return js_result;
+static jerry_value_t js_lv_anim_set_var(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args[],
+                                        const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_var: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("var");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_exec_cb(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args[],
+                                           const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_exec_cb: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_function(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a function");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("execCb");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_duration(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_duration: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("duration");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_time(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_time: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("actTime");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_delay(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args[],
+                                          const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_delay: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("delay");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_values(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args[],
+                                          const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 3)
+    {
+        return script_engine_throw_error("lv_anim_set_values: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]) || !jerry_value_is_number(args[2]))
+    {
+        return script_engine_throw_error("Arguments 1 and 2 must be numbers");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("startValue");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    key = jerry_string_sz("endValue");
+    val = jerry_value_copy(args[2]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_playback_duration(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args[],
+                                                     const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_playback_duration: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("playbackDuration");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_playback_time(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args[],
+                                                 const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_playback_time: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("playbackDuration");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_playback_delay(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args[],
+                                                  const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_playback_delay: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("playbackDelay");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_repeat_count(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args[],
+                                                const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_repeat_count: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("repeatCnt");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_repeat_delay(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args[],
+                                                const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_repeat_delay: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]))
+    {
+        return script_engine_throw_error("Argument 1 must be a number");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("repeatDelay");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_early_apply(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args[],
+                                               const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_set_early_apply: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接设置 JS 对象属性
+    jerry_value_t key = jerry_string_sz("earlyApply");
+    jerry_value_t val = jerry_boolean(jerry_value_is_true(args[1]));
+    jerry_value_free(jerry_object_set(args[0], key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_set_bezier3_param(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args[],
+                                                 const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 5)
+    {
+        return script_engine_throw_error("lv_anim_set_bezier3_param: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    if (!jerry_value_is_number(args[1]) || !jerry_value_is_number(args[2]) ||
+        !jerry_value_is_number(args[3]) || !jerry_value_is_number(args[4]))
+    {
+        return script_engine_throw_error("Arguments 1-4 must be numbers");
+    }
+
+    // 获取或创建 bezier3 对象
+    jerry_value_t bezier3_key = jerry_string_sz("bezier3");
+    jerry_value_t bezier3_obj = jerry_object_get(args[0], bezier3_key);
+
+    if (jerry_value_is_undefined(bezier3_obj))
+    {
+        jerry_value_free(bezier3_obj);
+        bezier3_obj = jerry_object();
+        jerry_value_free(jerry_object_set(args[0], bezier3_key, bezier3_obj));
+    }
+
+    jerry_value_free(bezier3_key);
+
+    // 设置 bezier3 参数
+    jerry_value_t key = jerry_string_sz("x1");
+    jerry_value_t val = jerry_value_copy(args[1]);
+    jerry_value_free(jerry_object_set(bezier3_obj, key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    key = jerry_string_sz("y1");
+    val = jerry_value_copy(args[2]);
+    jerry_value_free(jerry_object_set(bezier3_obj, key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    key = jerry_string_sz("x2");
+    val = jerry_value_copy(args[3]);
+    jerry_value_free(jerry_object_set(bezier3_obj, key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    key = jerry_string_sz("y2");
+    val = jerry_value_copy(args[4]);
+    jerry_value_free(jerry_object_set(bezier3_obj, key, val));
+    jerry_value_free(val);
+    jerry_value_free(key);
+
+    jerry_value_free(bezier3_obj);
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_get_delay(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_get_delay: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接获取 JS 对象属性
+    jerry_value_t key = jerry_string_sz("delay");
+    jerry_value_t val = jerry_object_get(args[0], key);
+    jerry_value_free(key);
+
+    // 如果属性不存在，返回 0
+    if (jerry_value_is_undefined(val))
+    {
+        jerry_value_free(val);
+        return jerry_number(0);
+    }
+
+    return val;
+}
+
+static jerry_value_t js_lv_anim_get_playtime(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_get_playtime: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接获取 JS 对象属性
+    jerry_value_t key = jerry_string_sz("duration");
+    jerry_value_t val = jerry_object_get(args[0], key);
+    jerry_value_free(key);
+
+    // 如果属性不存在，返回 0
+    if (jerry_value_is_undefined(val))
+    {
+        jerry_value_free(val);
+        return jerry_number(0);
+    }
+
+    return val;
+}
+
+static jerry_value_t js_lv_anim_get_time(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args[],
+                                        const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_get_time: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接获取 JS 对象属性
+    jerry_value_t key = jerry_string_sz("actTime");
+    jerry_value_t val = jerry_object_get(args[0], key);
+    jerry_value_free(key);
+
+    // 如果属性不存在，返回 0
+    if (jerry_value_is_undefined(val))
+    {
+        jerry_value_free(val);
+        return jerry_number(0);
+    }
+
+    return val;
+}
+
+static jerry_value_t js_lv_anim_get_repeat_count(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args[],
+                                               const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_get_repeat_count: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 直接获取 JS 对象属性
+    jerry_value_t key = jerry_string_sz("repeatCnt");
+    jerry_value_t val = jerry_object_get(args[0], key);
+    jerry_value_free(key);
+
+    // 如果属性不存在，返回 0
+    if (jerry_value_is_undefined(val))
+    {
+        jerry_value_free(val);
+        return jerry_number(0);
+    }
+
+    return val;
+}
+
+static jerry_value_t js_lv_anim_delete(const jerry_call_info_t *call_info_p,
+                                      const jerry_value_t args[],
+                                      const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_delete: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_object(args[0]))
+    {
+        return script_engine_throw_error("Argument 0 must be an object");
+    }
+
+    // 这里简化处理，实际删除动画的逻辑由底层处理
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_delete_all(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args[],
+                                          const jerry_length_t argc)
+{
+    // 调用底层函数删除所有动画
+    lv_anim_delete_all();
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_get(const jerry_call_info_t *call_info_p,
+                                   const jerry_value_t args[],
+                                   const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_get: Insufficient arguments");
+    }
+
+    // 简化处理，返回 null
+    return jerry_null();
+}
+
+static jerry_value_t js_lv_anim_get_timer(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
+{
+    // 调用底层函数获取动画定时器
+    lv_timer_t *timer = lv_anim_get_timer();
+
+    // 转换为 JS 对象
+    if (timer)
+    {
+        return lv_js_bridge_ptr_2_obj(timer, LV_TYPE_TIMER);
+    }
+    else
+    {
+        return jerry_null();
+    }
+}
+
+static jerry_value_t js_lv_anim_custom_delete(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args[],
+                                             const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_custom_delete: Insufficient arguments");
+    }
+
+    // 简化处理
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_custom_get(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args[],
+                                          const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 2)
+    {
+        return script_engine_throw_error("lv_anim_custom_get: Insufficient arguments");
+    }
+
+    // 简化处理，返回 null
+    return jerry_null();
+}
+
+static jerry_value_t js_lv_anim_count_running(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args[],
+                                             const jerry_length_t argc)
+{
+    // 调用底层函数获取运行中的动画数量
+    uint32_t count = lv_anim_count_running();
+    return jerry_number(count);
+}
+
+static jerry_value_t js_lv_anim_speed(const jerry_call_info_t *call_info_p,
+                                     const jerry_value_t args[],
+                                     const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 1)
+    {
+        return script_engine_throw_error("lv_anim_speed: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_number(args[0]))
+    {
+        return script_engine_throw_error("Arguments must be numbers");
+    }
+
+    // 调用底层函数计算动画速度
+    uint32_t speed = lv_anim_speed(jerry_value_as_number(args[0]));
+    return jerry_number(speed);
+}
+
+static jerry_value_t js_lv_anim_speed_clamped(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args[],
+                                             const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 3)
+    {
+        return script_engine_throw_error("lv_anim_speed_clamped: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_number(args[0]) || !jerry_value_is_number(args[1]) || !jerry_value_is_number(args[2]))
+    {
+        return script_engine_throw_error("Arguments must be numbers");
+    }
+
+    // 调用底层函数计算动画速度（带限制）
+    uint32_t speed = lv_anim_speed_clamped(jerry_value_as_number(args[0]),
+                                           jerry_value_as_number(args[1]),
+                                           jerry_value_as_number(args[2]));
+    return jerry_number(speed);
+}
+
+static jerry_value_t js_lv_anim_speed_to_time(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args[],
+                                             const jerry_length_t argc)
+{
+    // 参数数量检查
+    if (argc < 3)
+    {
+        return script_engine_throw_error("lv_anim_speed_to_time: Insufficient arguments");
+    }
+
+    // 检查参数类型
+    if (!jerry_value_is_number(args[0]) || !jerry_value_is_number(args[1]) || !jerry_value_is_number(args[2]))
+    {
+        return script_engine_throw_error("Arguments must be numbers");
+    }
+
+    // 调用底层函数将速度转换为时间
+    uint32_t time = lv_anim_speed_to_time(jerry_value_as_number(args[0]),
+                                         jerry_value_as_number(args[1]),
+                                         jerry_value_as_number(args[2]));
+    return jerry_number(time);
+}
+
+static jerry_value_t js_lv_anim_refr_now(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
+{
+    // 调用底层函数立即刷新动画
+    lv_anim_refr_now();
+
+    return jerry_undefined();
+}
+
+static jerry_value_t js_lv_anim_path_linear(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args[],
+                                           const jerry_length_t argc)
+{
+    // 返回线性路径 ID
+    return jerry_number(ANIM_PATH_LINEAR);
+}
+
+static jerry_value_t js_lv_anim_path_ease_in(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args[],
+                                            const jerry_length_t argc)
+{
+    // 返回 ease-in 路径 ID
+    return jerry_number(ANIM_PATH_EASE_IN);
+}
+
+static jerry_value_t js_lv_anim_path_ease_out(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args[],
+                                             const jerry_length_t argc)
+{
+    // 返回 ease-out 路径 ID
+    return jerry_number(ANIM_PATH_EASE_OUT);
+}
+
+static jerry_value_t js_lv_anim_path_ease_in_out(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args[],
+                                                const jerry_length_t argc)
+{
+    // 返回 ease-in-out 路径 ID
+    return jerry_number(ANIM_PATH_EASE_IN_OUT);
+}
+
+static jerry_value_t js_lv_anim_path_overshoot(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args[],
+                                              const jerry_length_t argc)
+{
+    // 返回 overshoot 路径 ID
+    return jerry_number(ANIM_PATH_OVERSHOOT);
+}
+
+static jerry_value_t js_lv_anim_path_bounce(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args[],
+                                           const jerry_length_t argc)
+{
+    // 返回 bounce 路径 ID
+    return jerry_number(ANIM_PATH_BOUNCE);
+}
+
+static jerry_value_t js_lv_anim_path_step(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args[],
+                                         const jerry_length_t argc)
+{
+    // 返回 step 路径 ID
+    return jerry_number(ANIM_PATH_STEP);
+}
+
+static jerry_value_t js_lv_anim_path_custom_bezier3(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args[],
+                                                  const jerry_length_t argc)
+{
+    // 返回自定义 bezier3 路径 ID
+    return jerry_number(ANIM_PATH_CUSTOM_BEZIER3);
 }
 
 jerry_value_t js_lv_anim_create(const jerry_call_info_t *info,
@@ -587,7 +1313,6 @@ jerry_value_t js_lv_anim_init(const jerry_call_info_t *info,
                               const jerry_value_t args[],
                               const jerry_length_t argc)
 {
-    // TODO
     return jerry_undefined();
 }
 
@@ -641,7 +1366,43 @@ const script_engine_func_entry_t lvgl_binding_anim_funcs[] = {
     {"anim", "setReadyCb", js_lv_anim_set_completed_cb},
     {"anim", "create", js_lv_anim_create},
     {"anim", "init", js_lv_anim_init},
-    {"anim", "start", js_lv_anim_start}};
+    {"anim", "start", js_lv_anim_start},
+    {"anim", "setVar", js_lv_anim_set_var},
+    {"anim", "setExecCb", js_lv_anim_set_exec_cb},
+    {"anim", "setDuration", js_lv_anim_set_duration},
+    {"anim", "setTime", js_lv_anim_set_time},
+    {"anim", "setDelay", js_lv_anim_set_delay},
+    {"anim", "setValues", js_lv_anim_set_values},
+    {"anim", "setPlaybackDuration", js_lv_anim_set_playback_duration},
+    {"anim", "setPlaybackTime", js_lv_anim_set_playback_time},
+    {"anim", "setPlaybackDelay", js_lv_anim_set_playback_delay},
+    {"anim", "setRepeatCount", js_lv_anim_set_repeat_count},
+    {"anim", "setRepeatDelay", js_lv_anim_set_repeat_delay},
+    {"anim", "setEarlyApply", js_lv_anim_set_early_apply},
+    {"anim", "setBezier3Param", js_lv_anim_set_bezier3_param},
+    {"anim", "getDelay", js_lv_anim_get_delay},
+    {"anim", "getPlaytime", js_lv_anim_get_playtime},
+    {"anim", "getTime", js_lv_anim_get_time},
+    {"anim", "getRepeatCount", js_lv_anim_get_repeat_count},
+    {"anim", "delete", js_lv_anim_delete},
+    {"anim", "deleteAll", js_lv_anim_delete_all},
+    {"anim", "get", js_lv_anim_get},
+    {"anim", "getTimer", js_lv_anim_get_timer},
+    {"anim", "customDelete", js_lv_anim_custom_delete},
+    {"anim", "customGet", js_lv_anim_custom_get},
+    {"anim", "countRunning", js_lv_anim_count_running},
+    {"anim", "speed", js_lv_anim_speed},
+    {"anim", "speedClamped", js_lv_anim_speed_clamped},
+    {"anim", "speedToTime", js_lv_anim_speed_to_time},
+    {"anim", "refrNow", js_lv_anim_refr_now},
+    {"anim", "pathLinear", js_lv_anim_path_linear},
+    {"anim", "pathEaseIn", js_lv_anim_path_ease_in},
+    {"anim", "pathEaseOut", js_lv_anim_path_ease_out},
+    {"anim", "pathEaseInOut", js_lv_anim_path_ease_in_out},
+    {"anim", "pathOvershoot", js_lv_anim_path_overshoot},
+    {"anim", "pathBounce", js_lv_anim_path_bounce},
+    {"anim", "pathStep", js_lv_anim_path_step},
+    {"anim", "pathCustomBezier3", js_lv_anim_path_custom_bezier3}};
 
 lv_anim_path_cb_t lv_bindings_anim_get_path_cb(uint32_t id)
 {

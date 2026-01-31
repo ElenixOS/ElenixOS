@@ -189,20 +189,6 @@ static void lv_js_handle_free_cb(void *native_p, struct jerry_object_native_info
     // 标记失效，避免 C 侧继续使用
     handle->is_alive = false;
 
-    // 特殊类型清理资源
-    switch (handle->type)
-    {
-    case LV_TYPE_STYLE:
-        if (!handle->ptr)
-            break;
-        lv_style_reset(handle->ptr);
-        eos_free(handle->ptr);
-        break;
-
-    default:
-        break;
-    }
-
     // 从 uthash 中移除
     HASH_DEL(lv_js_map, handle);
 

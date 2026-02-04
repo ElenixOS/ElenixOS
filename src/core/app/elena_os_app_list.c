@@ -224,9 +224,16 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
+    
+    // 设置脚本基础路径，用于解析相对路径的模块导入
+    char base_path[PATH_MAX];
+    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
+    pkg->base_path = eos_strdup(base_path);
+    
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
+        eos_free((void *)pkg->base_path);
         return;
     }
 

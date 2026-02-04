@@ -58,6 +58,7 @@ typedef struct {
     const char* author;           /**< 开发者名称 */
     const char* description;      /**< 简要说明 */
     const char* script_str;       /**< 主 JS 脚本字符串(UTF-8) */
+    const char* base_path;       /**< 脚本基础路径，用于解析相对路径的模块导入 */
 } script_pkg_t;
 
 /**

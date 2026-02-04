@@ -79,7 +79,8 @@ static void _crown_encoder_async_cb(void *user_data)
             eos_vibrator_tick();
             _scrollbar_set_focused();
         }
-        lv_obj_scroll_by_bounded(scrollable_obj, 0, dy, LV_ANIM_ON);
+        if (scrollable_obj && lv_obj_is_valid(scrollable_obj))
+            lv_obj_scroll_by_bounded(scrollable_obj, 0, dy, LV_ANIM_ON);
     }
 }
 
@@ -164,7 +165,8 @@ void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
     if (obj && lv_obj_is_valid(obj) && lv_obj_has_class(obj, &lv_obj_class))
     {
-        if(!lv_obj_get_parent(obj)){
+        if (!lv_obj_get_parent(obj))
+        {
             eos_crown_encoder_set_target_screen(obj);
             return;
         }

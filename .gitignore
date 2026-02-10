@@ -7,3 +7,7 @@ temp
 .vscode
 # MacOS
 .DS_Store
+# Temp files
+tmp/
+# Output files
+output/

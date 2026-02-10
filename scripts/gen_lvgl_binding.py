@@ -36,6 +36,7 @@ TYPE_NAME_ANIM = "LV_TYPE_ANIM"
 TYPE_NAME_TIMER = "LV_TYPE_TIMER"
 TYPE_NAME_EVENT = "LV_TYPE_EVENT"
 TYPE_NAME_STYLE = "LV_TYPE_STYLE"
+TYPE_NAME_POINT = "LV_TYPE_POINT"
 
 # LV_JS_BRIDGE 类型映射表
 BRIDGE_TYPE_MAP = {
@@ -51,6 +52,7 @@ BRIDGE_TYPE_MAP = {
     "lv_anim_t": TYPE_NAME_ANIM,
     "lv_event_t*": TYPE_NAME_EVENT,
     "lv_style_t*": TYPE_NAME_STYLE,
+    "lv_point_t*": TYPE_NAME_POINT,
 }
 
 def get_bridge_type(type_str):
@@ -376,44 +378,9 @@ def generate_arg_parsing(index, name, arg_type, type_info, typedefs_data, func_n
         return code, free_vars
     # 特殊处理lv_event_t指针
     if type_info.get('is_event_pointer'):
+        bridge_type = get_bridge_type(arg_type)
         code = fr"""    // lv_event_t* 类型参数处理
-    lv_event_t* {var_name} = NULL;
-    if (!jerry_value_is_undefined(args[{index}]) && !jerry_value_is_null(args[{index}])) {{
-        jerry_value_t js_{var_name} = args[{index}];
-        if (!jerry_value_is_object(js_{var_name})) {{
-            return script_engine_throw_error("{func_name}: Argument {index} must be an event object");
-        }}
-
-        // 检查类型标记
-        jerry_value_t type_prop = jerry_string_sz("__type");
-        jerry_value_t type_val = jerry_object_get(js_{var_name}, type_prop);
-        jerry_value_free(type_prop);
-
-        jerry_size_t type_len = jerry_string_size(type_val, JERRY_ENCODING_UTF8);
-        char type_str[32];
-        jerry_string_to_buffer(type_val, JERRY_ENCODING_UTF8, (jerry_char_t*)type_str, type_len);
-        type_str[type_len] = '\0';
-        jerry_value_free(type_val);
-
-        if (strcmp(type_str, "lv_event") != 0) {{
-            return script_engine_throw_error("{func_name}: Argument {index} must be an event object");
-        }}
-
-        // 获取事件指针
-        jerry_value_t ptr_prop = jerry_string_sz("__event_ptr");
-        jerry_value_t ptr_val = jerry_object_get(js_{var_name}, ptr_prop);
-        jerry_value_free(ptr_prop);
-
-        if (!jerry_value_is_number(ptr_val)) {{
-            jerry_value_free(ptr_val);
-            return script_engine_throw_error("{func_name}: Invalid event pointer");
-        }}
-
-        uintptr_t ptr = (uintptr_t)jerry_value_as_number(ptr_val);
-        jerry_value_free(ptr_val);
-        {var_name} = (lv_event_t*)ptr;
-    }}
-
+    lv_event_t* {var_name} = lv_js_bridge_obj_2_ptr(args[{index}], {bridge_type});
 """
         free_vars = []
         return code, free_vars
@@ -620,11 +587,6 @@ static jerry_value_t js_{func_name}(const jerry_call_info_t* call_info_p,
 
         if 'type' in arg:
             arg_type, arg_type_info = parse_type(arg['type'])
-
-        # 特殊处理lv_event_get_user_data函数的参数
-        if func_name == 'lv_event_get_user_data' and i == 0:
-            arg_type = 'lv_event_t*'
-            arg_type_info = {'is_event_pointer': True}
 
         code += f"    // 解析参数: {arg_name} ({arg_type})\n"
 

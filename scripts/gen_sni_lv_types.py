@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import sys
+import datetime
 
 # 类型映射字典
 type_mapping = {
@@ -222,7 +223,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     code.append(" * @file sni_lv_types.c")
     code.append(" * @brief LVGL 类型表")
     code.append(" * @author Auto-generated")
-    code.append(" * @date 2026-02-10")
+    code.append(f" * @date {datetime.datetime.now().strftime('%Y-%m-%d')}")
     code.append(" */")
     code.append("")
     code.append("#include \"sni_lv_types.h\"")

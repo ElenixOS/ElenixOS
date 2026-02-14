@@ -2,7 +2,7 @@
  * @file sni_lv_types.c
  * @brief LVGL 类型表
  * @author Auto-generated
- * @date 2026-02-10
+ * @date 2026-02-14
  */
 
 #include "sni_lv_types.h"
@@ -15,6 +15,54 @@
 #include "lvgl.h"
 
 /************************** 属性表 **************************/
+
+const sni_val_prop_t lv_sqrt_res_props[] = {
+    {
+        .name = "i",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_sqrt_res_t, i),
+    },
+    {
+        .name = "f",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_sqrt_res_t, f),
+    },
+};
+
+const sni_val_obj_t lv_sqrt_res_prop = {
+    .type = SNI_V_LV_SQRT_RES,
+    .prop_count = 2,
+    .props = lv_sqrt_res_props,
+};
+
+const sni_val_prop_t lv_anim_bezier3_para_props[] = {
+    {
+        .name = "x1",
+        .type = SNI_T_INT32,
+        .offset = offsetof(lv_anim_bezier3_para_t, x1),
+    },
+    {
+        .name = "y1",
+        .type = SNI_T_INT32,
+        .offset = offsetof(lv_anim_bezier3_para_t, y1),
+    },
+    {
+        .name = "x2",
+        .type = SNI_T_INT32,
+        .offset = offsetof(lv_anim_bezier3_para_t, x2),
+    },
+    {
+        .name = "y2",
+        .type = SNI_T_INT32,
+        .offset = offsetof(lv_anim_bezier3_para_t, y2),
+    },
+};
+
+const sni_val_obj_t lv_anim_bezier3_para_prop = {
+    .type = SNI_V_LV_ANIM_BEZIER3_PARA,
+    .prop_count = 4,
+    .props = lv_anim_bezier3_para_props,
+};
 
 const sni_val_prop_t lv_point_props[] = {
     {
@@ -33,6 +81,25 @@ const sni_val_obj_t lv_point_prop = {
     .type = SNI_V_LV_POINT,
     .prop_count = 2,
     .props = lv_point_props,
+};
+
+const sni_val_prop_t lv_point_precise_props[] = {
+    {
+        .name = "x",
+        .type = SNI_T_DOUBLE,
+        .offset = offsetof(lv_point_precise_t, x),
+    },
+    {
+        .name = "y",
+        .type = SNI_T_DOUBLE,
+        .offset = offsetof(lv_point_precise_t, y),
+    },
+};
+
+const sni_val_obj_t lv_point_precise_prop = {
+    .type = SNI_V_LV_POINT_PRECISE,
+    .prop_count = 2,
+    .props = lv_point_precise_props,
 };
 
 const sni_val_prop_t lv_area_props[] = {
@@ -64,33 +131,95 @@ const sni_val_obj_t lv_area_prop = {
     .props = lv_area_props,
 };
 
-const sni_val_prop_t lv_color32_props[] = {
+const sni_val_prop_t lv_grad_color_props[] = {
     {
         .name = "blue",
         .type = SNI_T_UINT32,
-        .offset = offsetof(lv_color32_t, blue),
+        .offset = offsetof(lv_grad_color_t, blue),
     },
     {
         .name = "green",
         .type = SNI_T_UINT32,
-        .offset = offsetof(lv_color32_t, green),
+        .offset = offsetof(lv_grad_color_t, green),
     },
     {
         .name = "red",
         .type = SNI_T_UINT32,
-        .offset = offsetof(lv_color32_t, red),
+        .offset = offsetof(lv_grad_color_t, red),
+    },
+};
+
+const sni_val_obj_t lv_grad_color_prop = {
+    .type = SNI_V_LV_GRAD_COLOR,
+    .prop_count = 3,
+    .props = lv_grad_color_props,
+};
+
+const sni_val_prop_t lv_color_hsv_props[] = {
+    {
+        .name = "h",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color_hsv_t, h),
+    },
+    {
+        .name = "s",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color_hsv_t, s),
+    },
+    {
+        .name = "v",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color_hsv_t, v),
+    },
+};
+
+const sni_val_obj_t lv_color_hsv_prop = {
+    .type = SNI_V_LV_COLOR_HSV,
+    .prop_count = 3,
+    .props = lv_color_hsv_props,
+};
+
+const sni_val_prop_t lv_color16a_props[] = {
+    {
+        .name = "lumi",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color16a_t, lumi),
     },
     {
         .name = "alpha",
         .type = SNI_T_UINT32,
-        .offset = offsetof(lv_color32_t, alpha),
+        .offset = offsetof(lv_color16a_t, alpha),
     },
 };
 
-const sni_val_obj_t lv_color32_prop = {
-    .type = SNI_V_LV_COLOR32,
-    .prop_count = 4,
-    .props = lv_color32_props,
+const sni_val_obj_t lv_color16a_prop = {
+    .type = SNI_V_LV_COLOR16A,
+    .prop_count = 2,
+    .props = lv_color16a_props,
+};
+
+const sni_val_prop_t lv_gradient_stop_props[] = {
+    {
+        .name = "color",
+        .type = SNI_V_LV_COLOR,
+        .offset = offsetof(lv_gradient_stop_t, color),
+    },
+    {
+        .name = "opa",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_gradient_stop_t, opa),
+    },
+    {
+        .name = "frac",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_gradient_stop_t, frac),
+    },
+};
+
+const sni_val_obj_t lv_gradient_stop_prop = {
+    .type = SNI_V_LV_GRADIENT_STOP,
+    .prop_count = 3,
+    .props = lv_gradient_stop_props,
 };
 
 /************************** 注册表 **************************/
@@ -98,9 +227,15 @@ const sni_val_obj_t lv_color32_prop = {
 const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);
 
 const sni_val_obj_t *sni_lv_types[] = {
+    &lv_sqrt_res_prop,
+    &lv_anim_bezier3_para_prop,
     &lv_point_prop,
+    &lv_point_precise_prop,
     &lv_area_prop,
-    &lv_color32_prop,
+    &lv_grad_color_prop,
+    &lv_color_hsv_prop,
+    &lv_color16a_prop,
+    &lv_gradient_stop_prop,
 };
 
 /************************** 初始化函数 **************************/

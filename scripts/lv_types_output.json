@@ -1163,6 +1163,10 @@
     {
       "name": "lv_fragment_manager_t",
       "object_type": ""
+    },
+    {
+      "name": "lv_draw_buf_handlers_t",
+      "object_type": ""
     }
   ]
 }

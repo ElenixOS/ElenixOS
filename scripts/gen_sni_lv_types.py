@@ -15,6 +15,7 @@ type_mapping = {
     'float': 'SNI_T_DOUBLE',
     'double': 'SNI_T_DOUBLE',
     'bool': 'SNI_T_BOOL',
+    'uint': 'SNI_T_UINT32',
 }
 
 
@@ -123,7 +124,7 @@ def extract_sni_value_types(sni_types_path):
     return set(matches)
 
 
-def find_underlying_type(type_name, type_definitions, visited=None):
+def find_underlying_type(type_name, type_definitions, lv_types_data=None, visited=None):
     """
     Find the underlying type of a given type name by recursively looking up typedefs
     Returns the SNI type if found in type_mapping, None otherwise
@@ -139,6 +140,21 @@ def find_underlying_type(type_name, type_definitions, visited=None):
     # Check if type is already in type_mapping
     if type_name in type_mapping:
         return type_mapping[type_name]
+
+    # Check if type exists in lv_types_data (for value_object and handle_object types)
+    if lv_types_data is not None and 'types' in lv_types_data:
+        for type_info in lv_types_data['types']:
+            if type_info.get('name') == type_name:
+                object_type = type_info.get('object_type', '')
+                if object_type == 'value_object':
+                    # Generate SNI_V_* type name
+                    base_name = type_name[:-2] if type_name.endswith('_t') else type_name
+                    return f"SNI_V_{base_name.upper()}"
+                elif object_type == 'handle_object':
+                    # Generate SNI_H_* type name
+                    base_name = type_name[:-2] if type_name.endswith('_t') else type_name
+                    return f"SNI_H_{base_name.upper()}"
+                break
 
     # Check if type exists in type_definitions
     if type_name not in type_definitions:
@@ -156,7 +172,7 @@ def find_underlying_type(type_name, type_definitions, visited=None):
             else:
                 return None
         # Recursively find the underlying type
-        return find_underlying_type(underlying_type, type_definitions, visited)
+        return find_underlying_type(underlying_type, type_definitions, lv_types_data, visited)
 
     return None
 
@@ -285,7 +301,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
                     field_type = ''
 
             # Find underlying type and map to SNI type
-            sni_type = find_underlying_type(field_type, type_definitions)
+            sni_type = find_underlying_type(field_type, type_definitions, types_data)
             if sni_type is None:
                 print(f"Error: Cannot find underlying type for field '{field_name}' with type '{field_type}' in type '{type_name}'", file=sys.stderr)
                 sys.exit(1)

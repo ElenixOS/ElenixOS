@@ -19,6 +19,22 @@ extern "C" {
 #include "uthash.h"
 /* Public macros ----------------------------------------------*/
 
+#define SNI_TYPE_IS_NUMBER(type) ((type) >= __SNI_TYPE_NUMBER_START && (type) <= __SNI_TYPE_NUMBER_END)
+#define SNI_TYPE_IS_HANDLE(type) ((type) >= __SNI_HANDLE_START && (type) <= __SNI_HANDLE_END)
+#define SNI_TYPE_IS_VALUE(type) ((type) >= __SNI_VALUE_START && (type) <= __SNI_VALUE_END)
+#define SNI_TYPE_IS_HANDLE_LC_EXTERNAL(type) ((type) >= __SNI_HANDLE_LC_EXTERNAL_START && (type) <= __SNI_HANDLE_LC_EXTERNAL_END)
+#define SNI_TYPE_IS_HANDLE_LC_REALM(type) ((type) >= __SNI_HANDLE_LC_REALM_START && (type) <= __SNI_HANDLE_LC_REALM_END)
+
+#define SNI_HANDLE_LC_EXTERNAL_COUNT \
+    (__SNI_HANDLE_LC_EXTERNAL_END - __SNI_HANDLE_LC_EXTERNAL_START - 1)
+
+#define SNI_HANDLE_LC_REALM_COUNT \
+    (__SNI_HANDLE_LC_REALM_END - __SNI_HANDLE_LC_REALM_START - 1)
+
+#define SNI_HANDLE_COUNT \
+    (SNI_HANDLE_LC_EXTERNAL_COUNT + SNI_HANDLE_LC_REALM_COUNT)
+
+
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
@@ -42,7 +58,24 @@ typedef enum
 	SNI_T_PTR,
 
 	__SNI_HANDLE_START,
+
+	/************************** 外部生命周期的 Handle 对象 **************************/
+	__SNI_HANDLE_LC_EXTERNAL_START,
+
+	SNI_H_LV_TIMER,
+	SNI_H_LV_STYLE,
+
+	__SNI_HANDLE_LC_EXTERNAL_END,
+
+	/************************** Realm 生命周期的 Handle 对象 **************************/
+
+	__SNI_HANDLE_LC_REALM_START,
+
 	SNI_H_LV_OBJ,
+	SNI_H_LV_ANIM,
+
+	__SNI_HANDLE_LC_REALM_END,
+
 	__SNI_HANDLE_END,
 
 	__SNI_VALUE_START,
@@ -91,6 +124,8 @@ typedef struct
     uint16_t prop_count;    /**< 属性数量 */
     const sni_val_prop_t *props;  /**< 属性数组指针 */
 } sni_val_obj_t;
+
+typedef void (*sni_handle_destroy_cb_t)(void *native_ptr);
 
 /**
  * @brief 句柄对象结构体

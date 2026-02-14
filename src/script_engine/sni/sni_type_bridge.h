@@ -29,8 +29,6 @@ extern "C" {
 
 #define sni_tb_c2js_string jerry_string_sz
 
-
-
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

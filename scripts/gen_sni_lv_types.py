@@ -212,7 +212,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     value_types = []
     if 'types' in types_data:
         for item in types_data['types']:
-            if 'name' in item and item.get('object_type', '') == 'value':
+            if 'name' in item and item.get('object_type', '') == 'value_object':
                 value_types.append(item['name'])
 
     # Generate code

@@ -155,6 +155,59 @@ const sni_val_obj_t lv_grad_color_prop = {
     .props = lv_grad_color_props,
 };
 
+const sni_val_prop_t lv_color16_props[] = {
+    {
+        .name = "blue",
+        .type = SNI_T_UINT32,
+        .offset = 5,
+    },
+    {
+        .name = "green",
+        .type = SNI_T_UINT32,
+        .offset = 6,
+    },
+    {
+        .name = "red",
+        .type = SNI_T_UINT32,
+        .offset = 5,
+    },
+};
+
+const sni_val_obj_t lv_color16_prop = {
+    .type = SNI_V_LV_COLOR16,
+    .prop_count = 3,
+    .props = lv_color16_props,
+};
+
+const sni_val_prop_t lv_color32_props[] = {
+    {
+        .name = "blue",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color32_t, blue),
+    },
+    {
+        .name = "green",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color32_t, green),
+    },
+    {
+        .name = "red",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color32_t, red),
+    },
+    {
+        .name = "alpha",
+        .type = SNI_T_UINT32,
+        .offset = offsetof(lv_color32_t, alpha),
+    },
+};
+
+const sni_val_obj_t lv_color32_prop = {
+    .type = SNI_V_LV_COLOR32,
+    .prop_count = 4,
+    .props = lv_color32_props,
+};
+
 const sni_val_prop_t lv_color_hsv_props[] = {
     {
         .name = "h",
@@ -233,6 +286,8 @@ const sni_val_obj_t *sni_lv_types[] = {
     &lv_point_precise_prop,
     &lv_area_prop,
     &lv_grad_color_prop,
+    &lv_color16_prop,
+    &lv_color32_prop,
     &lv_color_hsv_prop,
     &lv_color16a_prop,
     &lv_gradient_stop_prop,

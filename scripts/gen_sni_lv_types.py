@@ -291,6 +291,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
 
             field_name = field['name']
             field_type = field.get('type', '')
+            bitsize = field.get('bitsize', None)    # 添加了代码生成脚本对于位域成员的支持
 
             # Handle case where type is a dict
             if isinstance(field_type, dict):
@@ -310,7 +311,10 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
             code.append("    {")
             code.append(f"        .name = \"{field_name}\",")
             code.append(f"        .type = {sni_type},")
-            code.append(f"        .offset = offsetof({type_name}, {field_name}),")
+            if bitsize is not None:
+                code.append(f"        .offset = {bitsize},")
+            else:
+                code.append(f"        .offset = offsetof({type_name}, {field_name}),")
             code.append("    },")
 
         code.append("};")

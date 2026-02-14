@@ -378,11 +378,11 @@
     },
     {
       "name": "lv_color16_t",
-      "object_type": "undefined"
+      "object_type": "value_object"
     },
     {
       "name": "lv_color32_t",
-      "object_type": "undefined"
+      "object_type": "value_object"
     },
     {
       "name": "lv_color_hsv_t",

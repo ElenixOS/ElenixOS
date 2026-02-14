@@ -19,6 +19,14 @@
 
 /* Variables --------------------------------------------------*/
 static sni_val_obj_t sni_val_objs[__SNI_TYPE_MAX] = {0};
+static sni_handle_t *sni_map = NULL;
+static void sni_handle_free_cb(void *native_p, struct jerry_object_native_info_t *info_p);
+static const jerry_object_native_info_t sni_native_info =
+    {
+        .free_cb = sni_handle_free_cb,
+        .number_of_references = 0,
+        .offset_of_references = 0,
+};
 
 static void sni_tb_write_bitfield(void *ptr, uint8_t bit_offset, uint8_t bit_width, uint32_t value)
 {
@@ -46,6 +54,64 @@ static uint32_t sni_tb_read_bitfield(void *ptr, uint8_t bit_offset, uint8_t bit_
 }
 
 /* Function Implementations -----------------------------------*/
+
+/************************** Handle 管理函数 **************************/
+
+static sni_handle_t *sni_map_insert(void *ptr, jerry_value_t js_obj, sni_type_t type)
+{
+    sni_handle_t *handle = eos_malloc_zeroed(sizeof(sni_handle_t));
+    if (!handle)
+    {
+        return NULL;
+    }
+
+    handle->ptr = ptr;
+    handle->js_obj = js_obj;
+    handle->type = type;
+    handle->is_alive = true;
+
+    HASH_ADD_PTR(sni_map, ptr, handle);
+    return handle;
+}
+
+static sni_handle_t *sni_map_find(void *ptr)
+{
+    sni_handle_t *handle = NULL;
+    HASH_FIND_PTR(sni_map, &ptr, handle);
+    return handle;
+}
+
+static void sni_map_remove(void *ptr)
+{
+    sni_handle_t *handle = NULL;
+    HASH_FIND_PTR(sni_map, &ptr, handle);
+
+    if (!handle)
+    {
+        return;
+    }
+
+    HASH_DEL(sni_map, handle);
+    eos_free(handle);
+}
+
+static void sni_handle_free_cb(void *native_p, struct jerry_object_native_info_t *info_p)
+{
+    sni_handle_t *handle = (sni_handle_t *)native_p;
+
+    if (!handle)
+    {
+        return;
+    }
+
+    handle->is_alive = false;
+
+    HASH_DEL(sni_map, handle);
+
+    eos_free(handle);
+}
+
+/************************** 类型桥函数 **************************/
 
 const char *sni_tb_js2c_string(jerry_value_t js_val)
 {
@@ -208,7 +274,40 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         return true;
     }
 
-    // TODO: 解析Handle对象
+    if (type >= __SNI_HANDLE_START && type < __SNI_HANDLE_END)
+    {
+        if (jerry_value_is_null(js_val) || jerry_value_is_undefined(js_val))
+        {
+            *(void **)out_obj = NULL;
+            return true;
+        }
+
+        if (!jerry_value_is_object(js_val))
+        {
+            return false;
+        }
+
+        sni_handle_t *handle =
+            jerry_object_get_native_ptr(js_val, &sni_native_info);
+
+        if (!handle)
+        {
+            return false;
+        }
+
+        if (!handle->is_alive)
+        {
+            return false;
+        }
+
+        if (handle->type != type)
+        {
+            return false;
+        }
+
+        *(void **)out_obj = handle->ptr;
+        return true;
+    }
 
     return false;
 }
@@ -297,7 +396,28 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
         return js_obj;
     }
 
-    // TODO: 解析Handle对象
+    if (type >= __SNI_HANDLE_START && type < __SNI_HANDLE_END)
+    {
+        void *ptr = *(void **)c_val;
+        if (!ptr)
+        {
+            return jerry_null();
+        }
+
+        sni_handle_t *handle = sni_map_find(ptr);
+        if (handle)
+        {
+            return jerry_value_copy(handle->js_obj);
+        }
+
+        jerry_value_t js_obj = jerry_object();
+
+        sni_handle_t *new_handle =
+            sni_map_insert(ptr, js_obj, type);
+
+        jerry_object_set_native_ptr(js_obj, &sni_native_info, new_handle);
+        return js_obj;
+    }
 
     return jerry_undefined();
 }

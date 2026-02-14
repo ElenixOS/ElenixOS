@@ -291,7 +291,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
 
             field_name = field['name']
             field_type = field.get('type', '')
-            bitsize = field.get('bitsize', None)    # 添加了代码生成脚本对于位域成员的支持
+            bitsize = field.get('bitsize', None)
 
             # Handle case where type is a dict
             if isinstance(field_type, dict):

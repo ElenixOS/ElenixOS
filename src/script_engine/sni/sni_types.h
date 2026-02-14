@@ -81,6 +81,7 @@ typedef struct
 	const char *name;   /**< 属性名 */
 	sni_type_t type;    /**< 属性类型 */
     size_t offset;      /**< 属性在值对象结构体中的偏移量 */
+    uint8_t bit_width;  /**< 位域成员的位宽（非位域成员为0） */
 } sni_val_prop_t;
 
 
@@ -88,7 +89,7 @@ typedef struct
 {
     sni_type_t type;
     uint16_t prop_count;    /**< 属性数量 */
-    sni_val_prop_t *props;  /**< 属性数组指针 */
+    const sni_val_prop_t *props;  /**< 属性数组指针 */
 } sni_val_obj_t;
 
 /**

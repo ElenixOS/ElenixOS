@@ -16,6 +16,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "jerryscript.h"
+#include "sni_types.h"
 /* Public macros ----------------------------------------------*/
 
 #define sni_tb_c2js_number jerry_number

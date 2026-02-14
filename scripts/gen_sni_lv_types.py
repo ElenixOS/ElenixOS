@@ -285,6 +285,29 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
             if 'fields' in underlying_type:
                 fields = underlying_type['fields']
 
+        # Find the storage unit offset for bitfields
+        # Bitfields share the same storage unit if they are consecutive
+        # We need to find the offset of the first bitfield member
+        bitfield_storage_offset = None
+        for i, field in enumerate(fields):
+            bitsize = field.get('bitsize', None)
+            if bitsize is not None:
+                # This is a bitfield, find the offset of the storage unit
+                # Since offsetof doesn't work with bitfields, we need to find
+                # the previous non-bitfield field or use 0 for the first field
+                if i == 0:
+                    bitfield_storage_offset = "0"
+                else:
+                    # Look for the previous non-bitfield field
+                    for j in range(i - 1, -1, -1):
+                        prev_bitsize = fields[j].get('bitsize', None)
+                        if prev_bitsize is None:
+                            bitfield_storage_offset = f"offsetof({type_name}, {fields[j]['name']})"
+                            break
+                    if bitfield_storage_offset is None:
+                        bitfield_storage_offset = "0"
+                break
+
         for field in fields:
             if 'name' not in field:
                 continue
@@ -312,9 +335,12 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
             code.append(f"        .name = \"{field_name}\",")
             code.append(f"        .type = {sni_type},")
             if bitsize is not None:
-                code.append(f"        .offset = {bitsize},")
+                # Use the storage unit offset for bitfields
+                code.append(f"        .offset = {bitfield_storage_offset},")
+                code.append(f"        .bit_width = {bitsize},")
             else:
                 code.append(f"        .offset = offsetof({type_name}, {field_name}),")
+                code.append(f"        .bit_width = 0,")
             code.append("    },")
 
         code.append("};")
@@ -343,14 +369,15 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     # Generate registry
     code.append("/************************** 注册表 **************************/")
     code.append("")
-    code.append("const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);")
-    code.append("")
     code.append("const sni_val_obj_t *sni_lv_types[] = {")
 
     for value_obj in value_obj_descriptions:
         code.append(f"    &{value_obj},")
 
     code.append("};")
+    code.append("")
+
+    code.append("const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);")
     code.append("")
 
     # Generate initialization function

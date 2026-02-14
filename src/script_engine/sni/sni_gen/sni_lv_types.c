@@ -21,11 +21,13 @@ const sni_val_prop_t lv_sqrt_res_props[] = {
         .name = "i",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_sqrt_res_t, i),
+        .bit_width = 0,
     },
     {
         .name = "f",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_sqrt_res_t, f),
+        .bit_width = 0,
     },
 };
 
@@ -40,21 +42,25 @@ const sni_val_prop_t lv_anim_bezier3_para_props[] = {
         .name = "x1",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_anim_bezier3_para_t, x1),
+        .bit_width = 0,
     },
     {
         .name = "y1",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_anim_bezier3_para_t, y1),
+        .bit_width = 0,
     },
     {
         .name = "x2",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_anim_bezier3_para_t, x2),
+        .bit_width = 0,
     },
     {
         .name = "y2",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_anim_bezier3_para_t, y2),
+        .bit_width = 0,
     },
 };
 
@@ -69,11 +75,13 @@ const sni_val_prop_t lv_point_props[] = {
         .name = "x",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_point_t, x),
+        .bit_width = 0,
     },
     {
         .name = "y",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_point_t, y),
+        .bit_width = 0,
     },
 };
 
@@ -88,11 +96,13 @@ const sni_val_prop_t lv_point_precise_props[] = {
         .name = "x",
         .type = SNI_T_DOUBLE,
         .offset = offsetof(lv_point_precise_t, x),
+        .bit_width = 0,
     },
     {
         .name = "y",
         .type = SNI_T_DOUBLE,
         .offset = offsetof(lv_point_precise_t, y),
+        .bit_width = 0,
     },
 };
 
@@ -107,21 +117,25 @@ const sni_val_prop_t lv_area_props[] = {
         .name = "x1",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_area_t, x1),
+        .bit_width = 0,
     },
     {
         .name = "y1",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_area_t, y1),
+        .bit_width = 0,
     },
     {
         .name = "x2",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_area_t, x2),
+        .bit_width = 0,
     },
     {
         .name = "y2",
         .type = SNI_T_INT32,
         .offset = offsetof(lv_area_t, y2),
+        .bit_width = 0,
     },
 };
 
@@ -136,16 +150,19 @@ const sni_val_prop_t lv_grad_color_props[] = {
         .name = "blue",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_grad_color_t, blue),
+        .bit_width = 0,
     },
     {
         .name = "green",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_grad_color_t, green),
+        .bit_width = 0,
     },
     {
         .name = "red",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_grad_color_t, red),
+        .bit_width = 0,
     },
 };
 
@@ -159,17 +176,20 @@ const sni_val_prop_t lv_color16_props[] = {
     {
         .name = "blue",
         .type = SNI_T_UINT32,
-        .offset = 5,
+        .offset = 0,
+        .bit_width = 5,
     },
     {
         .name = "green",
         .type = SNI_T_UINT32,
-        .offset = 6,
+        .offset = 0,
+        .bit_width = 6,
     },
     {
         .name = "red",
         .type = SNI_T_UINT32,
-        .offset = 5,
+        .offset = 0,
+        .bit_width = 5,
     },
 };
 
@@ -184,21 +204,25 @@ const sni_val_prop_t lv_color32_props[] = {
         .name = "blue",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color32_t, blue),
+        .bit_width = 0,
     },
     {
         .name = "green",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color32_t, green),
+        .bit_width = 0,
     },
     {
         .name = "red",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color32_t, red),
+        .bit_width = 0,
     },
     {
         .name = "alpha",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color32_t, alpha),
+        .bit_width = 0,
     },
 };
 
@@ -213,16 +237,19 @@ const sni_val_prop_t lv_color_hsv_props[] = {
         .name = "h",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color_hsv_t, h),
+        .bit_width = 0,
     },
     {
         .name = "s",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color_hsv_t, s),
+        .bit_width = 0,
     },
     {
         .name = "v",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color_hsv_t, v),
+        .bit_width = 0,
     },
 };
 
@@ -237,11 +264,13 @@ const sni_val_prop_t lv_color16a_props[] = {
         .name = "lumi",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color16a_t, lumi),
+        .bit_width = 0,
     },
     {
         .name = "alpha",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_color16a_t, alpha),
+        .bit_width = 0,
     },
 };
 
@@ -256,16 +285,19 @@ const sni_val_prop_t lv_gradient_stop_props[] = {
         .name = "color",
         .type = SNI_V_LV_COLOR,
         .offset = offsetof(lv_gradient_stop_t, color),
+        .bit_width = 0,
     },
     {
         .name = "opa",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_gradient_stop_t, opa),
+        .bit_width = 0,
     },
     {
         .name = "frac",
         .type = SNI_T_UINT32,
         .offset = offsetof(lv_gradient_stop_t, frac),
+        .bit_width = 0,
     },
 };
 
@@ -276,8 +308,6 @@ const sni_val_obj_t lv_gradient_stop_prop = {
 };
 
 /************************** 注册表 **************************/
-
-const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);
 
 const sni_val_obj_t *sni_lv_types[] = {
     &lv_sqrt_res_prop,
@@ -292,6 +322,8 @@ const sni_val_obj_t *sni_lv_types[] = {
     &lv_color16a_prop,
     &lv_gradient_stop_prop,
 };
+
+const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);
 
 /************************** 初始化函数 **************************/
 void sni_lv_types_init(void)

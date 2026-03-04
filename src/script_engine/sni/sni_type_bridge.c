@@ -15,6 +15,7 @@
 #include "script_engine_core.h"
 #include "jerryscript.h"
 #include "sni_lv_types.h"
+#include "elena_os_event.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -27,6 +28,9 @@ static const jerry_object_native_info_t sni_native_info =
         .number_of_references = 0,
         .offset_of_references = 0,
 };
+static sni_handle_destroy_cb_t sni_handle_destroy_cb[SNI_HANDLE_LC_REALM_COUNT] = {0};
+
+/* Function Implementations -----------------------------------*/
 
 static void sni_tb_write_bitfield(void *ptr, uint8_t bit_offset, uint8_t bit_width, uint32_t value)
 {
@@ -52,8 +56,6 @@ static uint32_t sni_tb_read_bitfield(void *ptr, uint8_t bit_offset, uint8_t bit_
     uint32_t mask = (1U << bit_width) - 1;
     return (word_value >> bit_offset) & mask;
 }
-
-/* Function Implementations -----------------------------------*/
 
 /************************** Handle 管理函数 **************************/
 
@@ -145,7 +147,7 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         return false;
     }
 
-    if (type >= __SNI_VALUE_START && type < __SNI_VALUE_END)
+    if (SNI_TYPE_IS_VALUE(type))
     {
         return false;
     }
@@ -205,7 +207,7 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         break;
     }
 
-    if (type >= __SNI_VALUE_START && type < __SNI_VALUE_END)
+    if (SNI_TYPE_IS_VALUE(type))
     {
         if (!jerry_value_is_object(js_val))
         {
@@ -274,7 +276,7 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         return true;
     }
 
-    if (type >= __SNI_HANDLE_START && type < __SNI_HANDLE_END)
+    if (SNI_TYPE_IS_HANDLE(type))
     {
         if (jerry_value_is_null(js_val) || jerry_value_is_undefined(js_val))
         {
@@ -319,7 +321,7 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
         return jerry_undefined();
     }
 
-    if (type >= __SNI_VALUE_START && type < __SNI_VALUE_END)
+    if (SNI_TYPE_IS_VALUE(type))
     {
         return jerry_undefined();
     }
@@ -348,8 +350,7 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
         break;
     }
 
-    // TODO: 解析Value对象
-    if (type >= __SNI_VALUE_START && type < __SNI_VALUE_END)
+    if (SNI_TYPE_IS_VALUE(type))
     {
         const sni_val_obj_t *val_obj = &sni_val_objs[type];
         if (val_obj->prop_count == 0 || val_obj->props == NULL)
@@ -396,7 +397,7 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
         return js_obj;
     }
 
-    if (type >= __SNI_HANDLE_START && type < __SNI_HANDLE_END)
+    if (SNI_TYPE_IS_HANDLE(type))
     {
         void *ptr = *(void **)c_val;
         if (!ptr)
@@ -432,8 +433,38 @@ void sni_tb_register_val_obj(const sni_val_obj_t *val_obj)
     sni_val_objs[val_obj->type] = *val_obj;
     sni_val_objs[val_obj->type].props = val_obj->props;
 }
+
+void sni_tb_register_handle_destroy_cb(sni_type_t type, sni_handle_destroy_cb_t destroy_cb)
+{
+    if (SNI_TYPE_IS_HANDLE_LC_REALM(type))
+    {
+        sni_handle_destroy_cb[type - __SNI_HANDLE_LC_REALM_START - 1] = destroy_cb;
+    }
+}
+
+void _script_exited_cb(void)
+{
+    sni_handle_t *handle, *tmp;
+
+    HASH_ITER(hh, sni_map, handle, tmp)
+    {
+        if (SNI_TYPE_IS_HANDLE_LC_REALM(handle->type))
+        {
+            if (sni_handle_destroy_cb[handle->type - __SNI_HANDLE_LC_REALM_START - 1])
+            {
+                sni_handle_destroy_cb[handle->type - __SNI_HANDLE_LC_REALM_START - 1](handle->ptr);
+            }
+
+            HASH_DEL(sni_map, handle);
+            eos_free(handle);
+        }
+    }
+}
+
 void sni_tb_init(void)
 {
     // 初始化类型桥
     sni_lv_types_init();
+    // 注册脚本退出回调
+    eos_event_add_global_cb(EOS_EVENT_SCRIPT_EXITED, _script_exited_cb, NULL);
 }

@@ -39,6 +39,14 @@ Handle Object 的生命周期为**堆生命周期（Heap-Scoped）**。
 
 堆生命周期：由脚本逻辑显式创建，通过调用特定的销毁函数来释放底层资源。当所有对 Handle Object 的引用都被释放时，运行时会自动触发其销毁过程。在本系统中，堆生命周期的对象会在 Realm 结束时被统一销毁。
 
-## 函数绑定层（SNI Function Binding Layer）
+## API 暴露层（SNI API Exposure Layer）
 
-TODO
+负责构建并维护 API 对象，包括：
+
+- 函数注册
+- 枚举注册
+- 常量注册
+- 子命名空间注册
+- 类型构造器注册
+
+该层主要负责 API 结构组织。

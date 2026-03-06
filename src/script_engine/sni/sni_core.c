@@ -24,9 +24,7 @@ void sni_init(void)
     sni_tb_init();
 }
 
-void sni_attach(jerry_value_t js_realm)
+void sni_mount(jerry_value_t js_realm)
 {
-    // TODO：调用`sni_nn_attach()` 绑定原生命名空间到 realm
-    // sni_nn_attach(js_realm, sni_nn_create(NULL), "lvgl");
 
 }

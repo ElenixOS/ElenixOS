@@ -1,11 +1,11 @@
 /**
- * @file sni_api_exposure.c
- * @brief API 暴露层
+ * @file sni_api_export.c
+ * @brief API 导出层
  * @author Sab1e
- * @date 2026-03-05
+ * @date 2026-03-06
  */
 
-#include "sni_api_exposure.h"
+#include "sni_api_export.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -18,7 +18,7 @@
 
 /* Function Implementations -----------------------------------*/
 
-jerry_value_t sni_api_build(const sni_native_entry_t *entries)
+jerry_value_t sni_api_build(const sni_api_entry_t *entries)
 {
     if (entries == NULL)
     {
@@ -35,7 +35,7 @@ jerry_value_t sni_api_build(const sni_native_entry_t *entries)
     // 遍历注册项
     for (size_t i = 0; entries[i].name != NULL; i++)
     {
-        const sni_native_entry_t *entry = &entries[i];
+        const sni_api_entry_t *entry = &entries[i];
 
         jerry_value_t name = jerry_string_sz(entry->name);
         if (jerry_value_is_exception(name))
@@ -52,8 +52,16 @@ jerry_value_t sni_api_build(const sni_native_entry_t *entries)
             value = jerry_function_external(entry->value.function);
             break;
 
-        case SNI_ENTRY_CONSTANT:
-            value = jerry_create_number(entry->value.constant);
+        case SNI_ENTRY_CONSTANT_INT:
+            value = jerry_create_number(entry->value.constant.i);
+            break;
+
+        case SNI_ENTRY_CONSTANT_FLOAT:
+            value = jerry_create_number(entry->value.constant.f);
+            break;
+
+        case SNI_ENTRY_CONSTANT_STRING:
+            value = jerry_string_sz(entry->value.constant.s);
             break;
 
         case SNI_ENTRY_NAMESPACE:
@@ -90,7 +98,7 @@ jerry_value_t sni_api_build(const sni_native_entry_t *entries)
     return api_obj;
 }
 
-bool sni_api_install(jerry_value_t realm, jerry_value_t api_obj, const char *name)
+bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name)
 {
     if (name == NULL)
     {

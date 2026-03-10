@@ -46,14 +46,14 @@ const char *sni_tb_js2c_string(jerry_value_t js_val);
  * @brief 将 JerryScript 值转换为 C 值或值对象
  * @param js_val JerryScript 值
  * @param type 目标类型
- * @param out_obj 输出值指针
+ * @param out_obj 输出值指针（如果输出值是指针，则应该传入它的地址，即二级指针）
  * @return bool 转换是否成功
  */
 bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj);
 
 /**
  * @brief 将 C 值或值对象转换为 JerryScript 值
- * @param c_val C 值指针
+ * @param c_val C 值指针（如果输入值是指针，则应该传入它的地址，即二级指针）
  * @param type 源类型
  * @return jerry_value_t JerryScript 值
  */

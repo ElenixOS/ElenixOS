@@ -72,6 +72,8 @@
 #include "script_engine_eos.h"
 #include "script_engine_lv.h"
 
+#include "sni.h"
+
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
 #define SCRIPT_DEFAULT_CQUEUE_CAPACITY 10
@@ -904,9 +906,7 @@ script_engine_result_t script_engine_init(void)
     jerry_init(SCRIPT_INIT_FLAGS);
 
     // 注册函数和初始化
-    script_engine_lv_init();
-    script_engine_eos_init();
-    eos_icon_register();
+    sni_init();
 
     engine_ctx.initialized = true;
     EOS_LOG_I("Script engine initialized successfully");
@@ -947,9 +947,8 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
     jerry_value_t new_realm = jerry_realm();
     engine_ctx.old_realm = jerry_set_realm(new_realm);
 
-    // 挂载库
-    script_engine_lv_attach(new_realm);
-    script_engine_eos_attach(new_realm);
+    // 挂载 API
+    sni_mount(new_realm);
 
     // 设置停止回调和日志
     jerry_halt_handler(16, _vm_exec_stop_callback, NULL);

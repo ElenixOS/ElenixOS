@@ -53,11 +53,11 @@ jerry_value_t sni_api_build(const sni_api_entry_t *entries)
             break;
 
         case SNI_ENTRY_CONSTANT_INT:
-            value = jerry_create_number(entry->value.constant.i);
+            value = jerry_number((double)entry->value.constant.i);
             break;
 
         case SNI_ENTRY_CONSTANT_FLOAT:
-            value = jerry_create_number(entry->value.constant.f);
+            value = jerry_number((double)entry->value.constant.f);
             break;
 
         case SNI_ENTRY_CONSTANT_STRING:
@@ -131,4 +131,9 @@ bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name)
     jerry_value_free(result);
 
     return true;
+}
+
+jerry_value_t sni_api_throw_error(const char *message)
+{
+    return jerry_throw_value(jerry_error_sz(JERRY_ERROR_TYPE, message), true);
 }

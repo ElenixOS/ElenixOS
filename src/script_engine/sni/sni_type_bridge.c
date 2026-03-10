@@ -442,7 +442,7 @@ void sni_tb_register_handle_destroy_cb(sni_type_t type, sni_handle_destroy_cb_t 
     }
 }
 
-void _script_exited_cb(void)
+void _script_exited_cb(lv_event_t * e)
 {
     sni_handle_t *handle, *tmp;
 
@@ -466,5 +466,5 @@ void sni_tb_init(void)
     // 初始化类型桥
     sni_lv_types_init();
     // 注册脚本退出回调
-    eos_event_add_global_cb(EOS_EVENT_SCRIPT_EXITED, _script_exited_cb, NULL);
+    eos_event_add_global_cb(_script_exited_cb, EOS_EVENT_SCRIPT_EXITED, NULL);
 }

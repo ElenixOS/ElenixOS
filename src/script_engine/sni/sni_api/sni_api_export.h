@@ -68,6 +68,13 @@ jerry_value_t sni_api_build(const sni_api_entry_t *entries);
  */
 bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name);
 
+/**
+ * @brief 抛出一个错误异常
+ * @param message 错误信息
+ * @return jerry_value_t 错误异常对象
+ */
+jerry_value_t sni_api_throw_error(const char *message);
+
 #ifdef __cplusplus
 }
 #endif

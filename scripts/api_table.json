@@ -1,0 +1,10 @@
+{
+  "func": {
+    "whitelist": ["lv_obj_*", "lv_button_*","lv_screen_active"],
+    "blacklist": ["lv_draw*","*id*"]
+  },
+  "const": {
+    "whitelist": [],
+    "blacklist": ["*"]
+  }
+}

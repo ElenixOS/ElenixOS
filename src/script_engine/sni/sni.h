@@ -1,12 +1,12 @@
 /**
- * @file sni_core.h
- * @brief SNI 核心
+ * @file sni.h
+ * @brief SNI
  * @author Sab1e
- * @date 2026-02-16
+ * @date 2026-03-10
  */
 
-#ifndef SNI_CORE_H
-#define SNI_CORE_H
+#ifndef SNI_H
+#define SNI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,7 +15,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "jerryscript.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -27,8 +27,15 @@ extern "C" {
  */
 void sni_init(void);
 
+/**
+ * @brief 挂载 SNI 到指定的 JerryScript Realm
+ *
+ * @param js_realm 要挂载到的 JerryScript Realm 对象
+ */
+void sni_mount(jerry_value_t js_realm);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SNI_CORE_H */
+#endif /* SNI_H */

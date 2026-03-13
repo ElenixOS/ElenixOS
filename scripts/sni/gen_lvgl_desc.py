@@ -28,6 +28,7 @@ HEADER_TEXT = """/**
 
 #include "sni_api_lv.h"
 
+/* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
@@ -35,10 +36,11 @@ HEADER_TEXT = """/**
 #include "sni_types.h"
 #include "sni_api_export.h"
 #include "elena_os_log.h"
-
+/* Macros and Definitions -------------------------------------*/
 #define LV_API_NAME "lv"
-
+/* Variables --------------------------------------------------*/
 static jerry_value_t lv_api_obj;
+/* Function Implementations -----------------------------------*/
 """
 
 

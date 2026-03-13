@@ -321,11 +321,6 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
         return jerry_undefined();
     }
 
-    if (SNI_TYPE_IS_VALUE(type))
-    {
-        return jerry_undefined();
-    }
-
     switch (type)
     {
     case SNI_T_UINT32:
@@ -352,46 +347,12 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
 
     if (SNI_TYPE_IS_VALUE(type))
     {
-        const sni_val_obj_t *val_obj = &sni_val_objs[type];
-        if (val_obj->prop_count == 0 || val_obj->props == NULL)
-        {
-            return jerry_undefined();
-        }
-
         jerry_value_t js_obj = jerry_object();
 
-        uint8_t current_bit_offset = 0;
-        size_t last_offset = 0;
-
-        for (uint16_t i = 0; i < val_obj->prop_count; i++)
+        if (!sni_tb_c2js_set_object(c_val, type, js_obj))
         {
-            const sni_val_prop_t *prop = &val_obj->props[i];
-            void *field_ptr = (uint8_t *)c_val + prop->offset;
-
-            if (prop->offset != last_offset)
-            {
-                current_bit_offset = 0;
-                last_offset = prop->offset;
-            }
-
-            jerry_value_t js_prop;
-            if (prop->bit_width > 0)
-            {
-                uint32_t value = sni_tb_read_bitfield(field_ptr, current_bit_offset, prop->bit_width);
-                js_prop = jerry_number((double)value);
-                current_bit_offset += prop->bit_width;
-            }
-            else
-            {
-                js_prop = sni_tb_c2js(field_ptr, prop->type);
-            }
-
-            if (!jerry_value_is_undefined(js_prop) && !jerry_value_is_exception(js_prop))
-            {
-                jerry_object_set_sz(js_obj, prop->name, js_prop);
-            }
-
-            jerry_value_free(js_prop);
+            jerry_value_free(js_obj);
+            return jerry_undefined();
         }
 
         return js_obj;
@@ -421,6 +382,96 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
     }
 
     return jerry_undefined();
+}
+
+bool sni_tb_c2js_set_object(void *c_val, sni_type_t type, jerry_value_t js_obj)
+{
+    if (c_val == NULL || !jerry_value_is_object(js_obj))
+    {
+        return false;
+    }
+
+    if (SNI_TYPE_IS_VALUE(type))
+    {
+        const sni_val_obj_t *val_obj = &sni_val_objs[type];
+        if (val_obj->prop_count == 0 || val_obj->props == NULL)
+        {
+            return false;
+        }
+
+        uint8_t current_bit_offset = 0;
+        size_t last_offset = 0;
+
+        for (uint16_t i = 0; i < val_obj->prop_count; i++)
+        {
+            const sni_val_prop_t *prop = &val_obj->props[i];
+            void *field_ptr = (uint8_t *)c_val + prop->offset;
+
+            if (prop->offset != last_offset)
+            {
+                current_bit_offset = 0;
+                last_offset = prop->offset;
+            }
+
+            jerry_value_t js_prop;
+            if (prop->bit_width > 0)
+            {
+                uint32_t value = sni_tb_read_bitfield(field_ptr, current_bit_offset, prop->bit_width);
+                js_prop = jerry_number((double)value);
+                current_bit_offset += prop->bit_width;
+            }
+            else
+            {
+                js_prop = sni_tb_c2js(field_ptr, prop->type);
+            }
+
+            if (jerry_value_is_undefined(js_prop) || jerry_value_is_exception(js_prop))
+            {
+                jerry_value_free(js_prop);
+                return false;
+            }
+
+            jerry_value_t set_result = jerry_object_set_sz(js_obj, prop->name, js_prop);
+            jerry_value_free(js_prop);
+
+            if (jerry_value_is_exception(set_result))
+            {
+                jerry_value_free(set_result);
+                return false;
+            }
+
+            jerry_value_free(set_result);
+        }
+
+        return true;
+    }
+
+    if (SNI_TYPE_IS_HANDLE(type))
+    {
+        void *ptr = *(void **)c_val;
+        if (!ptr)
+        {
+            return false;
+        }
+
+        if (sni_map_find(ptr) != NULL)
+        {
+            return false;
+        }
+
+        sni_handle_t *new_handle =
+            sni_map_insert(ptr, jerry_value_copy(js_obj), type);
+
+        if (!new_handle)
+        {
+            return false;
+        }
+
+        jerry_object_set_native_ptr(js_obj, &sni_native_info, new_handle);
+        return true;
+    }
+
+    return false;
 }
 
 void sni_tb_register_val_obj(const sni_val_obj_t *val_obj)

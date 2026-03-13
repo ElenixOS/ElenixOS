@@ -60,6 +60,15 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj);
 jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type);
 
 /**
+ * @brief 将 C 值对象或句柄写入现有 JerryScript 对象
+ * @param c_val C 值指针（如果输入值是指针，则应该传入它的地址，即二级指针）
+ * @param type 源类型
+ * @param js_obj 目标 JerryScript 对象
+ * @return bool 写入是否成功
+ */
+bool sni_tb_c2js_set_object(void *c_val, sni_type_t type, jerry_value_t js_obj);
+
+/**
  * @brief 注册值对象
  * @param val_obj 值对象指针
  */

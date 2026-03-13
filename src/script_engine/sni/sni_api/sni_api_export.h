@@ -20,44 +20,62 @@ extern "C" {
 
 /* Public typedefs --------------------------------------------*/
 
-/**
- * @brief API 描述表中条目类型枚举
- */
 typedef enum
 {
-    SNI_ENTRY_FUNCTION,
-    SNI_ENTRY_CONSTANT_INT,
-    SNI_ENTRY_CONSTANT_FLOAT,
-    SNI_ENTRY_CONSTANT_STRING,
-    SNI_ENTRY_NAMESPACE
-} sni_entry_type_t;
+    SNI_CONST_INT,
+    SNI_CONST_FLOAT,
+    SNI_CONST_STRING,
+} sni_constant_type_t;
 
-/**
- * @brief API 描述表中的条目结构体
- */
-typedef struct sni_api_entry_t
+typedef struct
 {
-    const char *name;                                   /**< 条目名称 */
-    sni_entry_type_t type;
+    const char *name;
+    jerry_external_handler_t handler;
+} sni_method_desc_t;
+
+typedef struct
+{
+    const char *name;
+    jerry_external_handler_t getter;
+    jerry_external_handler_t setter;
+} sni_property_desc_t;
+
+typedef struct
+{
+    const char *name;
+    sni_constant_type_t type;
     union {
-        jerry_external_handler_t function;              /**< 函数 */
-        union {
-            int32_t i;                                  /**< 整数常量 */
-            double f;                                   /**< 浮点数常量 */
-            const char *s;                              /**< 字符串常量 */
-        } constant;
-        const struct sni_api_entry_t *sub_entries;      /**< 子条目 */
+        int32_t i;
+        double f;
+        const char *s;
     } value;
-} sni_api_entry_t;
+} sni_constant_desc_t;
+
+typedef struct sni_class_desc_t sni_class_desc_t;
+
+struct sni_class_desc_t
+{
+    const char *name;
+
+    jerry_external_handler_t constructor;   /**< 构造函数；为 NULL 时该类按静态类导出 */
+
+    const sni_class_desc_t *base_class;
+
+    const sni_method_desc_t *methods;       /**< 实例方法 */
+    const sni_property_desc_t *properties;  /**< 属性 */
+
+    const sni_method_desc_t *static_methods;
+    const sni_constant_desc_t *constants;
+};
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 根据描述表创建一个 API 对象
- * @param entries 描述表，最后一个条目的名称必须是 NULL 以表示命名空间结束
+ * @brief 根据类描述表创建一个 API 对象
+ * @param classes 类描述表指针数组，最后一个元素必须为 NULL
  * @return jerry_value_t API 对象
  */
-jerry_value_t sni_api_build(const sni_api_entry_t *entries);
+jerry_value_t sni_api_build(const sni_class_desc_t *const classes[]);
 
 /**
  * @brief 将 API 对象挂载到指定的 realm 中

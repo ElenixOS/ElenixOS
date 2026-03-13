@@ -1,10 +1,46 @@
 {
-  "func": {
-    "whitelist": ["lv_obj_*", "lv_button_*","lv_screen_active"],
-    "blacklist": ["lv_draw*","*id*"]
+  "classes": {
+    "obj": {
+      "c_type": "lv_obj_t",
+      "constructor": "lv_obj_create",
+      "base": null,
+      "methods": [
+        "lv_obj_center"
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "button": {
+      "c_type": "lv_button_t",
+      "constructor": "lv_button_create",
+      "base": "obj",
+      "methods": [],
+      "static_methods": [],
+      "constants": []
+    },
+    "label": {
+      "c_type": "lv_label_t",
+      "constructor": "lv_label_create",
+      "base": "obj",
+      "methods": [],
+      "static_methods": [],
+      "constants": []
+    },
+    "screen": {
+      "c_type": "lv_obj_t",
+      "constructor": null,
+      "base": "obj",
+      "methods": [],
+      "static_methods": ["lv_screen_active"],
+      "constants": []
+    }
   },
-  "const": {
-    "whitelist": [],
-    "blacklist": ["*"]
+  "scan": {
+    "function": {
+      "blacklist": [
+        "lv_label_set_text_fmt",
+        "*_id*"
+      ]
+    }
   }
 }

@@ -22,6 +22,53 @@
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
 /* Variables --------------------------------------------------*/
 static jerry_value_t eos_api_obj;
+
+typedef enum
+{
+    EOS_CONSOLE_LEVEL_LOG,
+    EOS_CONSOLE_LEVEL_ERROR,
+    EOS_CONSOLE_LEVEL_WARN,
+    EOS_CONSOLE_LEVEL_DEBUG,
+} eos_console_level_t;
+
+static jerry_value_t sni_api_eos_console_write(const jerry_value_t args_p[],
+                                               const jerry_length_t args_count,
+                                               eos_console_level_t level)
+{
+    if (args_count < 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (jerry_value_is_string(args_p[0]))
+    {
+        const char *str;
+        if (!sni_tb_js2c(args_p[0], SNI_T_STRING, &str))
+        {
+            return sni_api_throw_error("Failed to convert argument");
+        }
+
+        switch (level)
+        {
+            case EOS_CONSOLE_LEVEL_LOG:
+                EOS_LOG_I("[%s] %s", CONSOLE_LOG_TAG, str);
+                break;
+            case EOS_CONSOLE_LEVEL_ERROR:
+                EOS_LOG_E("[%s] %s", CONSOLE_LOG_TAG, str);
+                break;
+            case EOS_CONSOLE_LEVEL_WARN:
+                EOS_LOG_W("[%s] %s", CONSOLE_LOG_TAG, str);
+                break;
+            case EOS_CONSOLE_LEVEL_DEBUG:
+                EOS_LOG_D("[%s] %s", CONSOLE_LOG_TAG, str);
+                break;
+            default:
+                return sni_api_throw_error("Invalid console log level");
+        }
+    }
+
+    return jerry_undefined();
+}
 /* Function Implementations -----------------------------------*/
 
 jerry_value_t sni_api_eos_screen_active(const jerry_call_info_t *call_info_p,
@@ -45,25 +92,7 @@ jerry_value_t sni_api_eos_console_log(const jerry_call_info_t *call_info_p,
 {
     (void)call_info_p;
 
-    if (args_count < 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (jerry_value_is_string(args_p[0]))
-    {
-        const char *str;
-        if (sni_tb_js2c(args_p[0], SNI_T_STRING, &str))
-        {
-            EOS_LOG_I("[%s] %s", CONSOLE_LOG_TAG, str);
-        }
-        else
-        {
-            return sni_api_throw_error("Failed to convert argument");
-        }
-    }
-
-    return jerry_undefined();
+    return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_LOG);
 }
 
 jerry_value_t sni_api_eos_console_error(const jerry_call_info_t *call_info_p,
@@ -72,25 +101,25 @@ jerry_value_t sni_api_eos_console_error(const jerry_call_info_t *call_info_p,
 {
     (void)call_info_p;
 
-    if (args_count < 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
+    return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_ERROR);
+}
 
-    if (jerry_value_is_string(args_p[0]))
-    {
-        const char *str;
-        if (sni_tb_js2c(args_p[0], SNI_T_STRING, &str))
-        {
-            EOS_LOG_E("[%s] %s", CONSOLE_LOG_TAG, str);
-        }
-        else
-        {
-            return sni_api_throw_error("Failed to convert argument");
-        }
-    }
+jerry_value_t sni_api_eos_console_warn(const jerry_call_info_t *call_info_p,
+                                      const jerry_value_t args_p[],
+                                      const jerry_length_t args_count)
+{
+    (void)call_info_p;
 
-    return jerry_undefined();
+    return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_WARN);
+}
+
+jerry_value_t sni_api_eos_console_debug(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    (void)call_info_p;
+
+    return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_DEBUG);
 }
 
 const sni_method_desc_t eos_class_static_methods_screen[] = {
@@ -101,6 +130,9 @@ const sni_method_desc_t eos_class_static_methods_screen[] = {
 const sni_method_desc_t eos_class_static_methods_console[] = {
     {.name = "log", .handler = sni_api_eos_console_log},
     {.name = "error", .handler = sni_api_eos_console_error},
+    {.name = "warn", .handler = sni_api_eos_console_warn},
+    {.name = "info", .handler = sni_api_eos_console_log},
+    {.name = "debug", .handler = sni_api_eos_console_debug},
     {.name = NULL, .handler = NULL},
 };
 

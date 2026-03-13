@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generate LVGL SNI class descriptor C source from JSON metadata."""
+"""
+@file gen_lvgl_desc.py
+@brief 从 lvgl.json 中提取 API 描述信息，输出为 JSON 格式
+"""
 
 from __future__ import annotations
 

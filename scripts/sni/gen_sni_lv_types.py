@@ -2,6 +2,10 @@
 import json
 import sys
 import datetime
+"""
+@file gen_sni_lv_types.py
+@brief 从 lv_types_output.json 和 lvgl.json 生成 sni_lv_types.c 文件
+"""
 
 # 类型映射字典
 type_mapping = {

@@ -12,10 +12,10 @@ type_mapping = {
     'int': 'SNI_T_INT32',
     'int32_t': 'SNI_T_INT32',
     'uint32_t': 'SNI_T_UINT32',
-    'int16_t': 'SNI_T_INT32',
-    'uint16_t': 'SNI_T_UINT32',
-    'int8_t': 'SNI_T_INT32',
-    'uint8_t': 'SNI_T_UINT32',
+    'int16_t': 'SNI_T_INT16',
+    'uint16_t': 'SNI_T_UINT16',
+    'int8_t': 'SNI_T_INT8',
+    'uint8_t': 'SNI_T_UINT8',
     'float': 'SNI_T_DOUBLE',
     'double': 'SNI_T_DOUBLE',
     'bool': 'SNI_T_BOOL',
@@ -228,7 +228,14 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
             if 'name' in typedef:
                 type_definitions[typedef['name']] = typedef
 
+    # Compatibility fallback for lvgl.json alias rename behavior.
+    alias_fallbacks = types_data.get('alias_fallbacks', {})
+    for expected_name, alias_name in alias_fallbacks.items():
+        if expected_name not in type_definitions and alias_name in type_definitions:
             aliased = dict(type_definitions[alias_name])
+            aliased['name'] = expected_name
+            type_definitions[expected_name] = aliased
+
     # Extract value types from lv_types_output.json
     value_types = []
     if 'types' in types_data:

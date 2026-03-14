@@ -83,6 +83,120 @@ jerry_value_t sni_api_lv_obj_center(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_lv_obj_set_size(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_w;
+    arg_w = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_h;
+    arg_h = sni_tb_js2c_int32(args_p[1]);
+
+    lv_obj_set_size(self_obj, arg_w, arg_h);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_x;
+    arg_x = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_y;
+    arg_y = sni_tb_js2c_int32(args_p[1]);
+
+    lv_obj_set_pos(self_obj, arg_x, arg_y);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_obj_set_style_bg_color(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_color_t arg_value;
+    if (!sni_tb_js2c(args_p[0], SNI_V_LV_COLOR, &arg_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_style_selector_t arg_selector;
+    arg_selector = sni_tb_js2c_uint32(args_p[1]);
+
+    lv_obj_set_style_bg_color(self_obj, arg_value, arg_selector);
+    return jerry_undefined();
+}
+
 jerry_value_t sni_api_prop_set_obj_align(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -1049,7 +1163,7 @@ jerry_value_t sni_api_prop_get_obj_state(const jerry_call_info_t *call_info_p,
     }
 
     lv_state_t result = lv_obj_get_state(self_obj);
-    return sni_tb_c2js(&result, SNI_V_LV_STATE);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
 jerry_value_t sni_api_prop_get_obj_user_data(const jerry_call_info_t *call_info_p,
@@ -1706,8 +1820,33 @@ jerry_value_t sni_api_lv_screen_active(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_c;
+    arg_c = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_color_t result = lv_color_hex(arg_c);
+    return sni_tb_c2js(&result, SNI_V_LV_COLOR);
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "center", .handler = sni_api_lv_obj_center},
+    {.name = "setSize", .handler = sni_api_lv_obj_set_size},
+    {.name = "setPos", .handler = sni_api_lv_obj_set_pos},
+    {.name = "setStyleBgColor", .handler = sni_api_lv_obj_set_style_bg_color},
     {.name = NULL, .handler = NULL},
 };
 
@@ -1717,42 +1856,42 @@ const sni_method_desc_t lv_class_static_methods_obj[] = {
 
 const sni_property_desc_t lv_class_properties_obj[] = {
     {.name = "align", .getter = NULL, .setter = sni_api_prop_set_obj_align},
-    {.name = "child_count", .getter = sni_api_prop_get_obj_child_count, .setter = NULL},
+    {.name = "childCount", .getter = sni_api_prop_get_obj_child_count, .setter = NULL},
     {.name = "class", .getter = sni_api_prop_get_obj_class, .setter = NULL},
-    {.name = "content_height", .getter = sni_api_prop_get_obj_content_height, .setter = sni_api_prop_set_obj_content_height},
-    {.name = "content_width", .getter = sni_api_prop_get_obj_content_width, .setter = sni_api_prop_set_obj_content_width},
+    {.name = "contentHeight", .getter = sni_api_prop_get_obj_content_height, .setter = sni_api_prop_set_obj_content_height},
+    {.name = "contentWidth", .getter = sni_api_prop_get_obj_content_width, .setter = sni_api_prop_set_obj_content_width},
     {.name = "display", .getter = sni_api_prop_get_obj_display, .setter = NULL},
-    {.name = "event_count", .getter = sni_api_prop_get_obj_event_count, .setter = NULL},
-    {.name = "ext_click_area", .getter = NULL, .setter = sni_api_prop_set_obj_ext_click_area},
-    {.name = "flex_flow", .getter = NULL, .setter = sni_api_prop_set_obj_flex_flow},
-    {.name = "flex_grow", .getter = NULL, .setter = sni_api_prop_set_obj_flex_grow},
+    {.name = "eventCount", .getter = sni_api_prop_get_obj_event_count, .setter = NULL},
+    {.name = "extClickArea", .getter = NULL, .setter = sni_api_prop_set_obj_ext_click_area},
+    {.name = "flexFlow", .getter = NULL, .setter = sni_api_prop_set_obj_flex_flow},
+    {.name = "flexGrow", .getter = NULL, .setter = sni_api_prop_set_obj_flex_grow},
     {.name = "group", .getter = sni_api_prop_get_obj_group, .setter = NULL},
     {.name = "height", .getter = sni_api_prop_get_obj_height, .setter = sni_api_prop_set_obj_height},
     {.name = "index", .getter = sni_api_prop_get_obj_index, .setter = NULL},
     {.name = "layout", .getter = NULL, .setter = sni_api_prop_set_obj_layout},
     {.name = "parent", .getter = sni_api_prop_get_obj_parent, .setter = sni_api_prop_set_obj_parent},
     {.name = "screen", .getter = sni_api_prop_get_obj_screen, .setter = NULL},
-    {.name = "scroll_bottom", .getter = sni_api_prop_get_obj_scroll_bottom, .setter = NULL},
-    {.name = "scroll_dir", .getter = sni_api_prop_get_obj_scroll_dir, .setter = sni_api_prop_set_obj_scroll_dir},
-    {.name = "scroll_left", .getter = sni_api_prop_get_obj_scroll_left, .setter = NULL},
-    {.name = "scroll_right", .getter = sni_api_prop_get_obj_scroll_right, .setter = NULL},
-    {.name = "scroll_snap_x", .getter = sni_api_prop_get_obj_scroll_snap_x, .setter = sni_api_prop_set_obj_scroll_snap_x},
-    {.name = "scroll_snap_y", .getter = sni_api_prop_get_obj_scroll_snap_y, .setter = sni_api_prop_set_obj_scroll_snap_y},
-    {.name = "scroll_top", .getter = sni_api_prop_get_obj_scroll_top, .setter = NULL},
-    {.name = "scroll_x", .getter = sni_api_prop_get_obj_scroll_x, .setter = NULL},
-    {.name = "scroll_y", .getter = sni_api_prop_get_obj_scroll_y, .setter = NULL},
-    {.name = "scrollbar_mode", .getter = sni_api_prop_get_obj_scrollbar_mode, .setter = sni_api_prop_set_obj_scrollbar_mode},
-    {.name = "self_height", .getter = sni_api_prop_get_obj_self_height, .setter = NULL},
-    {.name = "self_width", .getter = sni_api_prop_get_obj_self_width, .setter = NULL},
+    {.name = "scrollBottom", .getter = sni_api_prop_get_obj_scroll_bottom, .setter = NULL},
+    {.name = "scrollDir", .getter = sni_api_prop_get_obj_scroll_dir, .setter = sni_api_prop_set_obj_scroll_dir},
+    {.name = "scrollLeft", .getter = sni_api_prop_get_obj_scroll_left, .setter = NULL},
+    {.name = "scrollRight", .getter = sni_api_prop_get_obj_scroll_right, .setter = NULL},
+    {.name = "scrollSnapX", .getter = sni_api_prop_get_obj_scroll_snap_x, .setter = sni_api_prop_set_obj_scroll_snap_x},
+    {.name = "scrollSnapY", .getter = sni_api_prop_get_obj_scroll_snap_y, .setter = sni_api_prop_set_obj_scroll_snap_y},
+    {.name = "scrollTop", .getter = sni_api_prop_get_obj_scroll_top, .setter = NULL},
+    {.name = "scrollX", .getter = sni_api_prop_get_obj_scroll_x, .setter = NULL},
+    {.name = "scrollY", .getter = sni_api_prop_get_obj_scroll_y, .setter = NULL},
+    {.name = "scrollbarMode", .getter = sni_api_prop_get_obj_scrollbar_mode, .setter = sni_api_prop_set_obj_scrollbar_mode},
+    {.name = "selfHeight", .getter = sni_api_prop_get_obj_self_height, .setter = NULL},
+    {.name = "selfWidth", .getter = sni_api_prop_get_obj_self_width, .setter = NULL},
     {.name = "state", .getter = sni_api_prop_get_obj_state, .setter = NULL},
-    {.name = "user_data", .getter = sni_api_prop_get_obj_user_data, .setter = sni_api_prop_set_obj_user_data},
+    {.name = "userData", .getter = sni_api_prop_get_obj_user_data, .setter = sni_api_prop_set_obj_user_data},
     {.name = "width", .getter = sni_api_prop_get_obj_width, .setter = sni_api_prop_set_obj_width},
     {.name = "x", .getter = sni_api_prop_get_obj_x, .setter = sni_api_prop_set_obj_x},
     {.name = "x2", .getter = sni_api_prop_get_obj_x2, .setter = NULL},
-    {.name = "x_aligned", .getter = sni_api_prop_get_obj_x_aligned, .setter = NULL},
+    {.name = "xAligned", .getter = sni_api_prop_get_obj_x_aligned, .setter = NULL},
     {.name = "y", .getter = sni_api_prop_get_obj_y, .setter = sni_api_prop_set_obj_y},
     {.name = "y2", .getter = sni_api_prop_get_obj_y2, .setter = NULL},
-    {.name = "y_aligned", .getter = sni_api_prop_get_obj_y_aligned, .setter = NULL},
+    {.name = "yAligned", .getter = sni_api_prop_get_obj_y_aligned, .setter = NULL},
     {.name = NULL, .getter = NULL, .setter = NULL},
 };
 
@@ -1785,11 +1924,11 @@ const sni_method_desc_t lv_class_static_methods_label[] = {
 };
 
 const sni_property_desc_t lv_class_properties_label[] = {
-    {.name = "long_mode", .getter = sni_api_prop_get_label_long_mode, .setter = sni_api_prop_set_label_long_mode},
+    {.name = "longMode", .getter = sni_api_prop_get_label_long_mode, .setter = sni_api_prop_set_label_long_mode},
     {.name = "text", .getter = sni_api_prop_get_label_text, .setter = sni_api_prop_set_label_text},
-    {.name = "text_selection_end", .getter = sni_api_prop_get_label_text_selection_end, .setter = sni_api_prop_set_label_text_selection_end},
-    {.name = "text_selection_start", .getter = sni_api_prop_get_label_text_selection_start, .setter = sni_api_prop_set_label_text_selection_start},
-    {.name = "text_static", .getter = NULL, .setter = sni_api_prop_set_label_text_static},
+    {.name = "textSelectionEnd", .getter = sni_api_prop_get_label_text_selection_end, .setter = sni_api_prop_set_label_text_selection_end},
+    {.name = "textSelectionStart", .getter = sni_api_prop_get_label_text_selection_start, .setter = sni_api_prop_set_label_text_selection_start},
+    {.name = "textStatic", .getter = NULL, .setter = sni_api_prop_set_label_text_static},
     {.name = NULL, .getter = NULL, .setter = NULL},
 };
 
@@ -1811,6 +1950,23 @@ const sni_property_desc_t lv_class_properties_screen[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_screen[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_color[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_color[] = {
+    {.name = "hex", .handler = sni_api_lv_color_hex},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_color[] = {
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_color[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -1854,11 +2010,22 @@ const sni_class_desc_t lv_class_desc_screen = {
     .constants = lv_class_constants_screen,
 };
 
+const sni_class_desc_t lv_class_desc_color = {
+    .name = "color",
+    .constructor = NULL,
+    .base_class = NULL,
+    .methods = NULL,
+    .properties = NULL,
+    .static_methods = lv_class_static_methods_color,
+    .constants = lv_class_constants_color,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
     &lv_class_desc_label,
     &lv_class_desc_screen,
+    &lv_class_desc_color,
     NULL,
 };
 

@@ -147,11 +147,6 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         return false;
     }
 
-    if (SNI_TYPE_IS_VALUE(type))
-    {
-        return false;
-    }
-
     if (jerry_value_is_undefined(js_val) || jerry_value_is_null(js_val))
     {
         return false;
@@ -159,6 +154,38 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
 
     switch (type)
     {
+    case SNI_T_UINT8:
+        if (!jerry_value_is_number(js_val))
+        {
+            return false;
+        }
+        *(uint8_t *)out_obj = (uint8_t)jerry_value_as_number(js_val);
+        return true;
+
+    case SNI_T_INT8:
+        if (!jerry_value_is_number(js_val))
+        {
+            return false;
+        }
+        *(int8_t *)out_obj = (int8_t)jerry_value_as_number(js_val);
+        return true;
+
+    case SNI_T_UINT16:
+        if (!jerry_value_is_number(js_val))
+        {
+            return false;
+        }
+        *(uint16_t *)out_obj = (uint16_t)jerry_value_as_number(js_val);
+        return true;
+
+    case SNI_T_INT16:
+        if (!jerry_value_is_number(js_val))
+        {
+            return false;
+        }
+        *(int16_t *)out_obj = (int16_t)jerry_value_as_number(js_val);
+        return true;
+
     case SNI_T_UINT32:
         if (!jerry_value_is_number(js_val))
         {
@@ -323,6 +350,18 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
 
     switch (type)
     {
+    case SNI_T_UINT8:
+        return jerry_number((double)*(uint8_t *)c_val);
+
+    case SNI_T_INT8:
+        return jerry_number((double)*(int8_t *)c_val);
+
+    case SNI_T_UINT16:
+        return jerry_number((double)*(uint16_t *)c_val);
+
+    case SNI_T_INT16:
+        return jerry_number((double)*(int16_t *)c_val);
+
     case SNI_T_UINT32:
         return jerry_number((double)*(uint32_t *)c_val);
 

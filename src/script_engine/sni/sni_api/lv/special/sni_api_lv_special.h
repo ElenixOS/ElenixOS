@@ -12,9 +12,14 @@
 extern "C" {
 #endif
 
+/* Includes ---------------------------------------------------*/
 #include "jerryscript.h"
 
-/* obj */
+/* Macros and Definitions -------------------------------------*/
+
+/* Function Declarations --------------------------------------*/
+
+/* obj --------------------------------------------------------*/
 jerry_value_t sni_api_lv_obj_add_event_cb(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count);
@@ -31,7 +36,7 @@ jerry_value_t sni_api_lv_obj_remove_event_cb_with_user_data(const jerry_call_inf
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count);
 
-/* timer */
+/* timer ------------------------------------------------------*/
 jerry_value_t sni_api_ctor_timer(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],
                                  const jerry_length_t args_count);
@@ -48,7 +53,7 @@ jerry_value_t sni_api_prop_set_timer_cb(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
 
-/* anim */
+/* anim -------------------------------------------------------*/
 jerry_value_t sni_api_ctor_anim(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count);
@@ -97,7 +102,7 @@ jerry_value_t sni_api_lv_anim_set_path_cb(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count);
 
-/* buttonmatrix */
+/* buttonmatrix -----------------------------------------------*/
 jerry_value_t sni_api_ctor_buttonmatrix(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);

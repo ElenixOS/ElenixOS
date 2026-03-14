@@ -130,6 +130,38 @@
       ],
       "static_methods": [],
       "constants": []
+    },
+    "buttonmatrix": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_buttonmatrix_create",
+      "methods": [
+        {
+          "name": "lv_buttonmatrix_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": [
+        "LV_BUTTONMATRIX_CTRL_HIDDEN",
+        "LV_BUTTONMATRIX_CTRL_NO_REPEAT",
+        "LV_BUTTONMATRIX_CTRL_DISABLED",
+        "LV_BUTTONMATRIX_CTRL_CHECKABLE",
+        "LV_BUTTONMATRIX_CTRL_CHECKED",
+        "LV_BUTTONMATRIX_CTRL_CLICK_TRIG",
+        "LV_BUTTONMATRIX_CTRL_POPOVER",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_1",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_2",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_3",
+        "LV_BUTTONMATRIX_CTRL_CUSTOM_1",
+        "LV_BUTTONMATRIX_CTRL_CUSTOM_2"
+      ]
     }
   },
   "scan": {
@@ -137,9 +169,12 @@
       "blacklist": [
         "*_fmt",
         "*_id*",
+        "lv_anim_custom_*",
         "lv_anim_set_exec_cb",
         "lv_anim_set_user_data",
         "lv_anim_get_user_data",
+        "lv_buttonmatrix_get_map",
+        "lv_buttonmatrix_set_button_draw_cb",
         "lv_timer_set_user_data",
         "lv_timer_get_user_data",
         "lv_timer_create_basic"

@@ -49,6 +49,7 @@ static jerry_value_t lv_api_obj;
 SPECIAL_CONSTRUCTOR_WRAPPERS: Dict[str, str] = {
     "timer": "sni_api_ctor_timer",
     "anim": "sni_api_ctor_anim",
+    "buttonmatrix": "sni_api_ctor_buttonmatrix",
 }
 
 
@@ -70,6 +71,8 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_anim_set_deleted_cb": "sni_api_lv_anim_set_deleted_cb",
     "lv_anim_set_get_value_cb": "sni_api_lv_anim_set_get_value_cb",
     "lv_anim_set_path_cb": "sni_api_lv_anim_set_path_cb",
+    "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
+    "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
 }
 
 
@@ -124,10 +127,15 @@ class FilterStats:
 
 
 class SkipFunctionError(Exception):
-    def __init__(self, func_name: str, reason: str):
+    def __init__(self, func_name: str, reason: str, add_to_blacklist: bool = True):
         super().__init__(reason)
         self.func_name = func_name
         self.reason = reason
+        self.add_to_blacklist = add_to_blacklist
+
+
+SKIP_BLACKLIST_FUNCTION = "__BLACKLIST_FUNCTION__"
+SKIP_ONCE_FUNCTION = "__SKIP_ONCE_FUNCTION__"
 
 
 SPECIAL_PROPERTY_SETTER_FUNCTIONS: Set[str] = {item[2] for item in SPECIAL_PROPERTY_SETTER_WRAPPERS.keys()}
@@ -1222,8 +1230,11 @@ def make_default_type_map() -> Dict[str, str]:
     return {
         "bool": "SNI_T_BOOL",
         "char*": "SNI_T_STRING",
+        "char**": "SNI_T_PTR",
         "char const*": "SNI_T_STRING",
+        "char const**": "SNI_T_PTR",
         "const char*": "SNI_T_STRING",
+        "const char**": "SNI_T_PTR",
         "double": "SNI_T_DOUBLE",
         "float": "SNI_T_FLOAT",
         "int": "SNI_T_INT32",
@@ -1275,6 +1286,7 @@ def prompt_object_type(type_name: str, context: str, func_name: Optional[str] = 
         print("[选项] 2) value_object")
         print("[选项] 3) primitive(<type>) 例如 primitive(int)")
         print("[选项] 4) blacklist 当前函数并跳过")
+        print("[选项] 5) skip 仅跳过当前函数(不加入黑名单)")
         value = input("请输入选项编号或直接输入 object_type: ").strip()
 
         if value == "1" or value == "handle_object":
@@ -1282,7 +1294,9 @@ def prompt_object_type(type_name: str, context: str, func_name: Optional[str] = 
         if value == "2" or value == "value_object":
             return "value_object"
         if value == "4" or value.lower() in {"blacklist", "b"}:
-            return "__BLACKLIST_FUNCTION__"
+            return SKIP_BLACKLIST_FUNCTION
+        if value == "5" or value.lower() in {"skip", "s"}:
+            return SKIP_ONCE_FUNCTION
         if value == "3":
             typed = input("请输入 primitive(<type>)：").strip()
             if re.fullmatch(r"primitive\([^()]+\)", typed):
@@ -1337,6 +1351,11 @@ def add_function_to_blacklist(
         runtime_blacklist.append(func_name)
 
 
+def handle_skip_exception(exc: SkipFunctionError, runtime_blacklist: List[str]) -> None:
+    if exc.add_to_blacklist:
+        add_function_to_blacklist(exc.func_name, runtime_blacklist)
+
+
 def build_bridge_from_type(
     c_type: str,
     lv_type_entries: Dict[str, str],
@@ -1377,8 +1396,10 @@ def build_bridge_from_type(
     if object_type == "" and allow_prompt:
         prompt_key = base_name if base_name in lv_type_entries else normalized
         object_type = prompt_object_type(prompt_key, context, func_name)
-        if object_type == "__BLACKLIST_FUNCTION__":
-            raise SkipFunctionError(func_name, f"用户选择将函数加入黑名单: {context}")
+        if object_type == SKIP_BLACKLIST_FUNCTION:
+            raise SkipFunctionError(func_name, f"用户选择将函数加入黑名单: {context}", add_to_blacklist=True)
+        if object_type == SKIP_ONCE_FUNCTION:
+            raise SkipFunctionError(func_name, f"用户选择仅跳过当前函数: {context}", add_to_blacklist=False)
         lv_type_entries[prompt_key] = object_type
         pending_updates[prompt_key] = object_type
 
@@ -1489,10 +1510,10 @@ def collect_functions(
                     name,
                 )
                 args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
-        except SkipFunctionError:
-            if name not in blacklist:
-                blacklist.append(name)
-            stats.blacklisted += 1
+        except SkipFunctionError as exc:
+            handle_skip_exception(exc, blacklist)
+            if exc.add_to_blacklist:
+                stats.blacklisted += 1
             stats.skipped_by_user += 1
             continue
 
@@ -1805,7 +1826,7 @@ def main() -> None:
                     func_blacklist,
                 )
             except SkipFunctionError as exc:
-                add_function_to_blacklist(exc.func_name, func_blacklist)
+                handle_skip_exception(exc, func_blacklist)
                 raise SystemExit(f"[错误] 类 {cls.name} 的构造函数被用户跳过，无法继续生成: {exc.func_name}") from exc
 
             for selector in cls.methods:
@@ -1825,8 +1846,11 @@ def main() -> None:
                             func_blacklist,
                         )
                     except SkipFunctionError as exc:
-                        add_function_to_blacklist(exc.func_name, func_blacklist)
-                        velog(f"[提示] 实例方法 {exc.func_name} 已被用户跳过，忽略")
+                        handle_skip_exception(exc, func_blacklist)
+                        if exc.add_to_blacklist:
+                            velog(f"[提示] 实例方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                        else:
+                            velog(f"[提示] 实例方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
                         continue
 
                     if method_func.name not in method_names:
@@ -1854,8 +1878,11 @@ def main() -> None:
                         func_blacklist,
                     )
                 except SkipFunctionError as exc:
-                    add_function_to_blacklist(exc.func_name, func_blacklist)
-                    velog(f"[提示] 静态方法 {exc.func_name} 已被用户跳过，忽略")
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 静态方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 静态方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
                     continue
                 static_funcs.append(static_func)
 
@@ -1879,8 +1906,11 @@ def main() -> None:
                         func_blacklist,
                     )
                 except SkipFunctionError as exc:
-                    add_function_to_blacklist(exc.func_name, func_blacklist)
-                    velog(f"[提示] 属性 getter {exc.func_name} 已被用户跳过，忽略")
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 属性 getter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 属性 getter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
                     getter_func = None
 
                 if getter_func is not None and len(getter_func.args) == 1 and getter_func.return_bridge.c2js_mode != "void":
@@ -1902,8 +1932,11 @@ def main() -> None:
                         func_blacklist,
                     )
                 except SkipFunctionError as exc:
-                    add_function_to_blacklist(exc.func_name, func_blacklist)
-                    velog(f"[提示] 属性 setter {exc.func_name} 已被用户跳过，忽略")
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 属性 setter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 属性 setter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
                     setter_func = None
 
                 if setter_func is not None and len(setter_func.args) == 2:

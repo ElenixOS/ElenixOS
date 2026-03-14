@@ -2,7 +2,7 @@
  * @file sni_api_lv.c
  * @brief LVGL API 导出
  * @author Auto Generated
- * @date 2026-03-14
+ * @date 2026-03-15
  */
 
 #include "sni_api_lv.h"
@@ -17674,6 +17674,526 @@ jerry_value_t sni_api_prop_set_anim_var(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_lv_buttonmatrix_set_selected_button(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_buttonmatrix_set_selected_button(self_obj, arg_btn_id);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t arg_ctrl;
+    arg_ctrl = sni_tb_js2c_int32(args_p[1]);
+
+    lv_buttonmatrix_set_button_ctrl(self_obj, arg_btn_id, arg_ctrl);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t arg_ctrl;
+    arg_ctrl = sni_tb_js2c_int32(args_p[1]);
+
+    lv_buttonmatrix_clear_button_ctrl(self_obj, arg_btn_id, arg_ctrl);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl_all(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t arg_ctrl;
+    arg_ctrl = sni_tb_js2c_int32(args_p[0]);
+
+    lv_buttonmatrix_set_button_ctrl_all(self_obj, arg_ctrl);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl_all(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t arg_ctrl;
+    arg_ctrl = sni_tb_js2c_int32(args_p[0]);
+
+    lv_buttonmatrix_clear_button_ctrl_all(self_obj, arg_ctrl);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_set_button_width(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_width;
+    arg_width = sni_tb_js2c_uint32(args_p[1]);
+
+    lv_buttonmatrix_set_button_width(self_obj, arg_btn_id, arg_width);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_set_one_checked(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_buttonmatrix_set_one_checked(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_get_selected_button(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_buttonmatrix_get_selected_button(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_get_button_text(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    const char* result = lv_buttonmatrix_get_button_text(self_obj, arg_btn_id);
+    return sni_tb_c2js_string(result);
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_has_button_ctrl(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_btn_id;
+    arg_btn_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t arg_ctrl;
+    arg_ctrl = sni_tb_js2c_int32(args_p[1]);
+
+    bool result = lv_buttonmatrix_has_button_ctrl(self_obj, arg_btn_id, arg_ctrl);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_lv_buttonmatrix_get_one_checked(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_buttonmatrix_get_one_checked(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_prop_set_buttonmatrix_button_ctrl_all(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_buttonmatrix_ctrl_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_buttonmatrix_set_button_ctrl_all(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_buttonmatrix_ctrl_map(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    void* prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_buttonmatrix_set_ctrl_map(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_buttonmatrix_map(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    const const char** prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_buttonmatrix_set_map(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_buttonmatrix_get_one_checked(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_prop_set_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_buttonmatrix_set_one_checked(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_buttonmatrix_selected_button(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_buttonmatrix_get_selected_button(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_prop_set_buttonmatrix_selected_button(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_buttonmatrix_set_selected_button(self_obj, prop_value);
+    return jerry_undefined();
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -18372,6 +18892,52 @@ const sni_property_desc_t lv_class_properties_anim[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_anim[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_buttonmatrix[] = {
+    {.name = "setMap", .handler = sni_api_lv_buttonmatrix_set_map},
+    {.name = "setCtrlMap", .handler = sni_api_lv_buttonmatrix_set_ctrl_map},
+    {.name = "setSelectedButton", .handler = sni_api_lv_buttonmatrix_set_selected_button},
+    {.name = "setButtonCtrl", .handler = sni_api_lv_buttonmatrix_set_button_ctrl},
+    {.name = "clearButtonCtrl", .handler = sni_api_lv_buttonmatrix_clear_button_ctrl},
+    {.name = "setButtonCtrlAll", .handler = sni_api_lv_buttonmatrix_set_button_ctrl_all},
+    {.name = "clearButtonCtrlAll", .handler = sni_api_lv_buttonmatrix_clear_button_ctrl_all},
+    {.name = "setButtonWidth", .handler = sni_api_lv_buttonmatrix_set_button_width},
+    {.name = "setOneChecked", .handler = sni_api_lv_buttonmatrix_set_one_checked},
+    {.name = "getSelectedButton", .handler = sni_api_lv_buttonmatrix_get_selected_button},
+    {.name = "getButtonText", .handler = sni_api_lv_buttonmatrix_get_button_text},
+    {.name = "hasButtonCtrl", .handler = sni_api_lv_buttonmatrix_has_button_ctrl},
+    {.name = "getOneChecked", .handler = sni_api_lv_buttonmatrix_get_one_checked},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_buttonmatrix[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_buttonmatrix[] = {
+    {.name = "buttonCtrlAll", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_button_ctrl_all},
+    {.name = "ctrlMap", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_ctrl_map},
+    {.name = "map", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_map},
+    {.name = "oneChecked", .getter = sni_api_prop_get_buttonmatrix_one_checked, .setter = sni_api_prop_set_buttonmatrix_one_checked},
+    {.name = "selectedButton", .getter = sni_api_prop_get_buttonmatrix_selected_button, .setter = sni_api_prop_set_buttonmatrix_selected_button},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_buttonmatrix[] = {
+    {.name = "LV_BUTTONMATRIX_CTRL_HIDDEN", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "LV_BUTTONMATRIX_CTRL_NO_REPEAT", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "LV_BUTTONMATRIX_CTRL_DISABLED", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "LV_BUTTONMATRIX_CTRL_CHECKABLE", .type = SNI_CONST_INT, .value.i = 128},
+    {.name = "LV_BUTTONMATRIX_CTRL_CHECKED", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "LV_BUTTONMATRIX_CTRL_CLICK_TRIG", .type = SNI_CONST_INT, .value.i = 512},
+    {.name = "LV_BUTTONMATRIX_CTRL_POPOVER", .type = SNI_CONST_INT, .value.i = 1024},
+    {.name = "LV_BUTTONMATRIX_CTRL_RESERVED_1", .type = SNI_CONST_INT, .value.i = 2048},
+    {.name = "LV_BUTTONMATRIX_CTRL_RESERVED_2", .type = SNI_CONST_INT, .value.i = 4096},
+    {.name = "LV_BUTTONMATRIX_CTRL_RESERVED_3", .type = SNI_CONST_INT, .value.i = 8192},
+    {.name = "LV_BUTTONMATRIX_CTRL_CUSTOM_1", .type = SNI_CONST_INT, .value.i = 16384},
+    {.name = "LV_BUTTONMATRIX_CTRL_CUSTOM_2", .type = SNI_CONST_INT, .value.i = 32768},
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -19558,6 +20124,16 @@ const sni_class_desc_t lv_class_desc_anim = {
     .constants = lv_class_constants_anim,
 };
 
+const sni_class_desc_t lv_class_desc_buttonmatrix = {
+    .name = "buttonmatrix",
+    .constructor = sni_api_ctor_buttonmatrix,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_buttonmatrix,
+    .properties = lv_class_properties_buttonmatrix,
+    .static_methods = lv_class_static_methods_buttonmatrix,
+    .constants = lv_class_constants_buttonmatrix,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -19568,6 +20144,7 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_color,
     &lv_class_desc_timer,
     &lv_class_desc_anim,
+    &lv_class_desc_buttonmatrix,
     NULL,
 };
 

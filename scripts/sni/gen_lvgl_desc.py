@@ -497,6 +497,11 @@ def sanitize_ident(text: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_]", "_", text)
 
 
+def snake_to_camel(text: str) -> str:
+    parts = text.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
+
+
 def discover_class_properties(
     cls: ApiClass,
     function_index: Dict[str, Dict[str, Any]],
@@ -1133,6 +1138,9 @@ def build_bridge_from_type(
     if object_type == "int":
         return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", "SNI_T_INT32", "bridge", None)
 
+    if object_type == "uint":
+        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", "SNI_T_UINT32", "bridge", None)
+
     if object_type == "handle_object":
         return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_H_{c_type_to_base_name(normalized)}", "bridge", None)
 
@@ -1224,7 +1232,8 @@ def entry_name(func_name: str) -> str:
     parts = rest.split("_")
     if len(parts) <= 1:
         return rest
-    return "_".join(parts[1:])
+    remaining = "_".join(parts[1:])
+    return snake_to_camel(remaining)
 
 
 def render_entries(
@@ -1290,7 +1299,7 @@ def render_entries(
                 wrappers.append(render_property_setter_wrapper(cls, prop, setter_func))
                 setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
 
-            prop_items.append((prop.name, getter_name, setter_name))
+            prop_items.append((snake_to_camel(prop.name), getter_name, setter_name))
 
         prop_array_name = f"lv_class_properties_{cls_id}"
         property_array_names[cls.name] = prop_array_name

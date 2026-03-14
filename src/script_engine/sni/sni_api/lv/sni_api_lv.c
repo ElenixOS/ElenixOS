@@ -16631,6 +16631,1049 @@ jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_lv_anim_init(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_anim_init(self_obj);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_var(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    void* arg_var;
+    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &arg_var))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_anim_set_var(self_obj, arg_var);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_duration;
+    arg_duration = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_time(self_obj, arg_duration);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_playback_duration(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_duration;
+    arg_duration = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_duration(self_obj, arg_duration);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_playback_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_duration;
+    arg_duration = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_time(self_obj, arg_duration);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_playback_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_delay;
+    arg_delay = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_delay(self_obj, arg_delay);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_repeat_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_delay;
+    arg_delay = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_repeat_delay(self_obj, arg_delay);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_early_apply(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_anim_set_early_apply(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_set_bezier3_param(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 4)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int16_t arg_x1;
+    arg_x1 = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int16_t arg_y1;
+    arg_y1 = sni_tb_js2c_int32(args_p[1]);
+
+    if (!jerry_value_is_number(args_p[2]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int16_t arg_x2;
+    arg_x2 = sni_tb_js2c_int32(args_p[2]);
+
+    if (!jerry_value_is_number(args_p[3]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int16_t arg_y2;
+    arg_y2 = sni_tb_js2c_int32(args_p[3]);
+
+    lv_anim_set_bezier3_param(self_obj, arg_x1, arg_y1, arg_x2, arg_y2);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_anim_get_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_delay(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_lv_anim_get_playtime(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_playtime(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_lv_anim_get_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_time(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_lv_anim_get_repeat_count(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_repeat_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_linear(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_linear(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_ease_in(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_ease_in(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_ease_out(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_ease_out(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_ease_in_out(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_ease_in_out(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_overshoot(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_overshoot(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_bounce(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_bounce(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_step(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_step(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_anim_path_custom_bezier3(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_anim_path_custom_bezier3(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_anim_completed_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_completed_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_completed_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_custom_exec_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_custom_exec_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_custom_exec_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_anim_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_delay(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_prop_set_anim_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    uint32_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_delay(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_deleted_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_deleted_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_deleted_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_duration(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    uint32_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_duration(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_early_apply(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_anim_set_early_apply(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_get_value_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_get_value_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_get_value_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_path_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_path_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_path_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_playback_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_delay(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_playback_duration(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_duration(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_playback_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_playback_time(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_anim_playtime(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_playtime(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_prop_get_anim_repeat_count(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_repeat_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_prop_set_anim_repeat_count(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    uint32_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_repeat_count(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_repeat_delay(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_repeat_delay(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_start_cb(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_anim_t* self_obj;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_start_cb_t prop_value;
+    return sni_api_throw_error("Unsupported argument conversion");
+
+    lv_anim_set_start_cb(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_anim_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_anim_get_time(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+jerry_value_t sni_api_prop_set_anim_time(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_anim_set_time(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_anim_var(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    void* prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_anim_set_var(self_obj, prop_value);
+    return jerry_undefined();
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -17264,6 +18307,71 @@ const sni_property_desc_t lv_class_properties_timer[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_timer[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_anim[] = {
+    {.name = "init", .handler = sni_api_lv_anim_init},
+    {.name = "setVar", .handler = sni_api_lv_anim_set_var},
+    {.name = "setDuration", .handler = sni_api_lv_anim_set_duration},
+    {.name = "setTime", .handler = sni_api_lv_anim_set_time},
+    {.name = "setDelay", .handler = sni_api_lv_anim_set_delay},
+    {.name = "setValues", .handler = sni_api_lv_anim_set_values},
+    {.name = "setCustomExecCb", .handler = sni_api_lv_anim_set_custom_exec_cb},
+    {.name = "setPathCb", .handler = sni_api_lv_anim_set_path_cb},
+    {.name = "setStartCb", .handler = sni_api_lv_anim_set_start_cb},
+    {.name = "setGetValueCb", .handler = sni_api_lv_anim_set_get_value_cb},
+    {.name = "setCompletedCb", .handler = sni_api_lv_anim_set_completed_cb},
+    {.name = "setDeletedCb", .handler = sni_api_lv_anim_set_deleted_cb},
+    {.name = "setPlaybackDuration", .handler = sni_api_lv_anim_set_playback_duration},
+    {.name = "setPlaybackTime", .handler = sni_api_lv_anim_set_playback_time},
+    {.name = "setPlaybackDelay", .handler = sni_api_lv_anim_set_playback_delay},
+    {.name = "setRepeatCount", .handler = sni_api_lv_anim_set_repeat_count},
+    {.name = "setRepeatDelay", .handler = sni_api_lv_anim_set_repeat_delay},
+    {.name = "setEarlyApply", .handler = sni_api_lv_anim_set_early_apply},
+    {.name = "setBezier3Param", .handler = sni_api_lv_anim_set_bezier3_param},
+    {.name = "start", .handler = sni_api_lv_anim_start},
+    {.name = "getDelay", .handler = sni_api_lv_anim_get_delay},
+    {.name = "getPlaytime", .handler = sni_api_lv_anim_get_playtime},
+    {.name = "getTime", .handler = sni_api_lv_anim_get_time},
+    {.name = "getRepeatCount", .handler = sni_api_lv_anim_get_repeat_count},
+    {.name = "pathLinear", .handler = sni_api_lv_anim_path_linear},
+    {.name = "pathEaseIn", .handler = sni_api_lv_anim_path_ease_in},
+    {.name = "pathEaseOut", .handler = sni_api_lv_anim_path_ease_out},
+    {.name = "pathEaseInOut", .handler = sni_api_lv_anim_path_ease_in_out},
+    {.name = "pathOvershoot", .handler = sni_api_lv_anim_path_overshoot},
+    {.name = "pathBounce", .handler = sni_api_lv_anim_path_bounce},
+    {.name = "pathStep", .handler = sni_api_lv_anim_path_step},
+    {.name = "pathCustomBezier3", .handler = sni_api_lv_anim_path_custom_bezier3},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_anim[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_anim[] = {
+    {.name = "completedCb", .getter = NULL, .setter = sni_api_prop_set_anim_completed_cb},
+    {.name = "customExecCb", .getter = NULL, .setter = sni_api_prop_set_anim_custom_exec_cb},
+    {.name = "delay", .getter = sni_api_prop_get_anim_delay, .setter = sni_api_prop_set_anim_delay},
+    {.name = "deletedCb", .getter = NULL, .setter = sni_api_prop_set_anim_deleted_cb},
+    {.name = "duration", .getter = NULL, .setter = sni_api_prop_set_anim_duration},
+    {.name = "earlyApply", .getter = NULL, .setter = sni_api_prop_set_anim_early_apply},
+    {.name = "getValueCb", .getter = NULL, .setter = sni_api_prop_set_anim_get_value_cb},
+    {.name = "pathCb", .getter = NULL, .setter = sni_api_prop_set_anim_path_cb},
+    {.name = "playbackDelay", .getter = NULL, .setter = sni_api_prop_set_anim_playback_delay},
+    {.name = "playbackDuration", .getter = NULL, .setter = sni_api_prop_set_anim_playback_duration},
+    {.name = "playbackTime", .getter = NULL, .setter = sni_api_prop_set_anim_playback_time},
+    {.name = "playtime", .getter = sni_api_prop_get_anim_playtime, .setter = NULL},
+    {.name = "repeatCount", .getter = sni_api_prop_get_anim_repeat_count, .setter = sni_api_prop_set_anim_repeat_count},
+    {.name = "repeatDelay", .getter = NULL, .setter = sni_api_prop_set_anim_repeat_delay},
+    {.name = "startCb", .getter = NULL, .setter = sni_api_prop_set_anim_start_cb},
+    {.name = "time", .getter = sni_api_prop_get_anim_time, .setter = sni_api_prop_set_anim_time},
+    {.name = "var", .getter = NULL, .setter = sni_api_prop_set_anim_var},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_anim[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -18440,6 +19548,16 @@ const sni_class_desc_t lv_class_desc_timer = {
     .constants = lv_class_constants_timer,
 };
 
+const sni_class_desc_t lv_class_desc_anim = {
+    .name = "anim",
+    .constructor = sni_api_ctor_anim,
+    .base_class = NULL,
+    .methods = lv_class_methods_anim,
+    .properties = lv_class_properties_anim,
+    .static_methods = lv_class_static_methods_anim,
+    .constants = lv_class_constants_anim,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -18449,6 +19567,7 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_screen,
     &lv_class_desc_color,
     &lv_class_desc_timer,
+    &lv_class_desc_anim,
     NULL,
 };
 

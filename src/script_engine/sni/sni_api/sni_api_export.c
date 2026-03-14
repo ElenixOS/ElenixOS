@@ -155,6 +155,19 @@ static bool sni_register_properties(const sni_property_desc_t *properties, jerry
             return false;
         }
 
+        /* Skip property if a method with the same name was already registered.
+         * Methods are explicit user-configured entries and always take precedence
+         * over auto-discovered property accessors when names conflict. */
+        jerry_value_t has_own = jerry_object_has_own(prototype, prop_name);
+        if (jerry_value_is_true(has_own))
+        {
+            jerry_value_free(has_own);
+            jerry_value_free(prop_name);
+            jerry_property_descriptor_free(&desc);
+            continue;
+        }
+        jerry_value_free(has_own);
+
         jerry_value_t result = jerry_object_define_own_prop(prototype, prop_name, &desc);
         jerry_value_free(prop_name);
         jerry_property_descriptor_free(&desc);

@@ -48,6 +48,7 @@ static jerry_value_t lv_api_obj;
 
 SPECIAL_CONSTRUCTOR_WRAPPERS: Dict[str, str] = {
     "timer": "sni_api_ctor_timer",
+    "anim": "sni_api_ctor_anim",
 }
 
 
@@ -58,6 +59,17 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_obj_remove_event_cb_with_user_data": "sni_api_lv_obj_remove_event_cb_with_user_data",
     "lv_timer_set_cb": "sni_api_lv_timer_set_cb",
     "lv_timer_delete": "sni_api_lv_timer_delete",
+    "lv_anim_set_values": "sni_api_lv_anim_set_values",
+    "lv_anim_set_duration": "sni_api_lv_anim_set_duration",
+    "lv_anim_set_delay": "sni_api_lv_anim_set_delay",
+    "lv_anim_set_repeat_count": "sni_api_lv_anim_set_repeat_count",
+    "lv_anim_start": "sni_api_lv_anim_start",
+    "lv_anim_set_custom_exec_cb": "sni_api_lv_anim_set_custom_exec_cb",
+    "lv_anim_set_start_cb": "sni_api_lv_anim_set_start_cb",
+    "lv_anim_set_completed_cb": "sni_api_lv_anim_set_completed_cb",
+    "lv_anim_set_deleted_cb": "sni_api_lv_anim_set_deleted_cb",
+    "lv_anim_set_get_value_cb": "sni_api_lv_anim_set_get_value_cb",
+    "lv_anim_set_path_cb": "sni_api_lv_anim_set_path_cb",
 }
 
 
@@ -116,6 +128,17 @@ class SkipFunctionError(Exception):
         super().__init__(reason)
         self.func_name = func_name
         self.reason = reason
+
+
+SPECIAL_PROPERTY_SETTER_FUNCTIONS: Set[str] = {item[2] for item in SPECIAL_PROPERTY_SETTER_WRAPPERS.keys()}
+
+
+def should_skip_manual_signature_bridges(func_name: str, context: str) -> bool:
+    if func_name in SPECIAL_METHOD_WRAPPERS or func_name in SPECIAL_PROPERTY_SETTER_FUNCTIONS:
+        return True
+
+    match = re.fullmatch(r"classes\.([^.]+)\.constructor", context)
+    return bool(match and match.group(1) in SPECIAL_CONSTRUCTOR_WRAPPERS)
 
 
 def eprint(msg: str) -> None:
@@ -793,6 +816,7 @@ def build_api_function(
     if function_blacklist and is_matched(name, function_blacklist):
         raise SkipFunctionError(name, f"函数命中 scan.function.blacklist: {name}")
 
+    manual_signature = should_skip_manual_signature_bridges(name, context)
     ret_type = normalize_c_type(item.get("type"))
     ret_bridge = build_bridge_from_type(ret_type, lv_type_entries, pending_updates, True, f"{context} 返回值", name)
 
@@ -801,14 +825,20 @@ def build_api_function(
     for idx, arg in enumerate(args_raw):
         arg_name = str(arg.get("name") or f"arg{idx}")
         arg_type = normalize_c_type(arg.get("type"))
-        arg_bridge = build_bridge_from_type(
-            arg_type,
-            lv_type_entries,
-            pending_updates,
-            True,
-            f"{context} 参数 #{idx} ({arg_name})",
-            name,
-        )
+        if arg_type in {"ellipsis", "..."} or arg_name == "...":
+            raise SkipFunctionError(name, f"暂不支持变参函数: {name}")
+
+        if manual_signature:
+            arg_bridge = TypeBridge(arg_type, "", "none", None, None, "none", None)
+        else:
+            arg_bridge = build_bridge_from_type(
+                arg_type,
+                lv_type_entries,
+                pending_updates,
+                True,
+                f"{context} 参数 #{idx} ({arg_name})",
+                name,
+            )
         args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
 
     return ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args)

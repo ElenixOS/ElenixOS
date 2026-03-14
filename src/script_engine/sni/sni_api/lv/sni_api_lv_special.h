@@ -46,6 +46,54 @@ jerry_value_t sni_api_prop_set_timer_cb(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
 
+jerry_value_t sni_api_ctor_anim(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_values(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_duration(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_delay(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_repeat_count(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_start(const jerry_call_info_t *call_info_p,
+                                    const jerry_value_t args_p[],
+                                    const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_custom_exec_cb(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_start_cb(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_completed_cb(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_deleted_cb(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_get_value_cb(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_anim_set_path_cb(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count);
+
 #ifdef __cplusplus
 }
 #endif

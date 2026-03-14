@@ -111,6 +111,25 @@
       ],
       "static_methods": [],
       "constants": []
+    },
+    "anim": {
+      "c_type": "lv_anim_t",
+      "base": null,
+      "constructor": "lv_anim_init",
+      "methods": [
+        {
+          "name": "lv_anim_*",
+          "arg_match": [
+            {
+              "name": "a",
+              "nth": 1,
+              "type": "lv_anim_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {
@@ -118,6 +137,9 @@
       "blacklist": [
         "*_fmt",
         "*_id*",
+        "lv_anim_set_exec_cb",
+        "lv_anim_set_user_data",
+        "lv_anim_get_user_data",
         "lv_timer_set_user_data",
         "lv_timer_get_user_data",
         "lv_timer_create_basic"

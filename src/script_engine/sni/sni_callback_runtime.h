@@ -102,6 +102,58 @@ bool sni_cb_timer_set_cb(lv_timer_t *timer, jerry_value_t js_cb);
  */
 void sni_cb_timer_delete(lv_timer_t *timer);
 
+/* Anim Callback API -----------------------------------------*/
+
+typedef enum
+{
+    SNI_ANIM_CB_SLOT_CUSTOM_EXEC = 0,
+    SNI_ANIM_CB_SLOT_START,
+    SNI_ANIM_CB_SLOT_COMPLETED,
+    SNI_ANIM_CB_SLOT_DELETED,
+    SNI_ANIM_CB_SLOT_GET_VALUE,
+    SNI_ANIM_CB_SLOT_PATH,
+    SNI_ANIM_CB_SLOT_COUNT,
+} sni_anim_cb_slot_t;
+
+typedef enum
+{
+    SNI_ANIM_PATH_KIND_NONE = 0,
+    SNI_ANIM_PATH_KIND_BUILTIN,
+    SNI_ANIM_PATH_KIND_JS,
+} sni_anim_path_kind_t;
+
+typedef enum
+{
+    SNI_ANIM_PATH_NONE = 0,
+    SNI_ANIM_PATH_LINEAR = 1,
+    SNI_ANIM_PATH_EASE_IN,
+    SNI_ANIM_PATH_EASE_OUT,
+    SNI_ANIM_PATH_EASE_IN_OUT,
+    SNI_ANIM_PATH_OVERSHOOT,
+    SNI_ANIM_PATH_BOUNCE,
+    SNI_ANIM_PATH_STEP,
+    SNI_ANIM_PATH_CUSTOM_BEZIER3,
+    SNI_ANIM_PATH_ENUM_MAX,
+} sni_anim_path_builtin_t;
+
+typedef struct sni_anim_callback_ctx
+{
+    lv_anim_t pre_anim;
+    lv_anim_t *active_anim;
+    jerry_value_t cb_slots[SNI_ANIM_CB_SLOT_COUNT];
+    sni_anim_path_kind_t path_kind;
+    lv_anim_path_cb_t builtin_path_fn;
+    bool js_refs_freed;
+    bool lvgl_alive;
+} sni_anim_callback_ctx_t;
+
+bool sni_cb_anim_create(sni_anim_callback_ctx_t **out_ctx);
+bool sni_cb_anim_set_cb(sni_anim_callback_ctx_t *ctx, sni_anim_cb_slot_t slot, jerry_value_t js_cb);
+bool sni_cb_anim_set_path_builtin(sni_anim_callback_ctx_t *ctx, sni_anim_path_builtin_t path_kind);
+bool sni_cb_anim_set_path_js(sni_anim_callback_ctx_t *ctx, jerry_value_t js_cb);
+bool sni_cb_anim_start(sni_anim_callback_ctx_t *ctx);
+lv_anim_t *sni_cb_anim_get_lv_anim(sni_anim_callback_ctx_t *ctx);
+
 #ifdef __cplusplus
 }
 #endif

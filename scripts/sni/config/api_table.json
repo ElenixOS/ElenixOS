@@ -58,7 +58,8 @@
       "c_type": "lv_bar_t",
       "constructor": "lv_bar_create",
       "base": "obj",
-      "methods": [{
+      "methods": [
+        {
           "name": "lv_bar_*",
           "arg_match": [
             {
@@ -67,7 +68,8 @@
               "type": "lv_obj_t*"
             }
           ]
-      }],
+        }
+      ],
       "static_methods": [],
       "constants": []
     },
@@ -90,13 +92,35 @@
         "lv_color_hex"
       ],
       "constants": []
+    },
+    "timer": {
+      "c_type": "lv_timer_t",
+      "base": null,
+      "constructor": "lv_timer_create",
+      "methods": [
+        {
+          "name": "lv_timer_*",
+          "arg_match": [
+            {
+              "name": "timer",
+              "nth": 1,
+              "type": "lv_timer_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {
     "function": {
       "blacklist": [
         "*_fmt",
-        "*_id*"
+        "*_id*",
+        "lv_timer_set_user_data",
+        "lv_timer_get_user_data",
+        "lv_timer_create_basic"
       ]
     },
     "constant": {

@@ -35,6 +35,8 @@ HEADER_TEXT = """/**
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_api_export.h"
+#include "sni_callback_runtime.h"
+#include "sni_api_lv_special.h"
 #include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 #define LV_API_NAME "lv"
@@ -42,6 +44,26 @@ HEADER_TEXT = """/**
 static jerry_value_t lv_api_obj;
 /* Function Implementations -----------------------------------*/
 """
+
+
+SPECIAL_CONSTRUCTOR_WRAPPERS: Dict[str, str] = {
+    "timer": "sni_api_ctor_timer",
+}
+
+
+SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
+    "lv_obj_add_event_cb": "sni_api_lv_obj_add_event_cb",
+    "lv_obj_remove_event_cb": "sni_api_lv_obj_remove_event_cb",
+    "lv_obj_remove_event_dsc": "sni_api_lv_obj_remove_event_dsc",
+    "lv_obj_remove_event_cb_with_user_data": "sni_api_lv_obj_remove_event_cb_with_user_data",
+    "lv_timer_set_cb": "sni_api_lv_timer_set_cb",
+    "lv_timer_delete": "sni_api_lv_timer_delete",
+}
+
+
+SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
+    ("timer", "cb", "lv_timer_set_cb"): "sni_api_prop_set_timer_cb",
+}
 
 
 VERBOSE = False
@@ -903,6 +925,18 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     return "\n".join(lines)
 
 
+def get_special_constructor_wrapper_name(cls: "ApiClass") -> "Optional[str]":
+    return SPECIAL_CONSTRUCTOR_WRAPPERS.get(cls.name)
+
+
+def get_special_method_wrapper_name(func: ApiFunction) -> Optional[str]:
+    return SPECIAL_METHOD_WRAPPERS.get(func.name)
+
+
+def get_special_property_setter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
+    return SPECIAL_PROPERTY_SETTER_WRAPPERS.get((cls.name, prop.name, func.name))
+
+
 def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
@@ -1130,6 +1164,7 @@ def render_class_block(
     init_mount = """
 void sni_api_lv_init(void)
 {
+    sni_cb_runtime_init();
     lv_api_obj = sni_api_build(lv_api_classes);
     if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
     {
@@ -1472,16 +1507,24 @@ def render_entries(
 
         ctor_func = class_constructors[cls.name]
         if ctor_func is not None:
-            ctor_wrapper = f"sni_api_ctor_{cls_id}"
-            constructor_wrapper_names[cls.name] = ctor_wrapper
-            wrappers.append(render_constructor_wrapper(cls, ctor_func))
+            special_ctor = get_special_constructor_wrapper_name(cls)
+            if special_ctor is not None:
+                constructor_wrapper_names[cls.name] = special_ctor
+            else:
+                ctor_wrapper = f"sni_api_ctor_{cls_id}"
+                constructor_wrapper_names[cls.name] = ctor_wrapper
+                wrappers.append(render_constructor_wrapper(cls, ctor_func))
         else:
             constructor_wrapper_names[cls.name] = "NULL"
 
         instance_items: List[Tuple[str, str]] = []
         for method_func in class_methods[cls.name]:
-            wrappers.append(render_method_wrapper(cls, method_func))
-            instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
+            special_method = get_special_method_wrapper_name(method_func)
+            if special_method is not None:
+                instance_items.append((entry_name(method_func.name), special_method))
+            else:
+                wrappers.append(render_method_wrapper(cls, method_func))
+                instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
 
         method_array_name = f"lv_class_methods_{cls_id}"
         method_array_names[cls.name] = method_array_name
@@ -1508,8 +1551,12 @@ def render_entries(
 
             if prop.setter:
                 setter_func = property_setters[(cls.name, prop.name)]
-                wrappers.append(render_property_setter_wrapper(cls, prop, setter_func))
-                setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
+                special_setter = get_special_property_setter_wrapper_name(cls, prop, setter_func)
+                if special_setter is not None:
+                    setter_name = special_setter
+                else:
+                    wrappers.append(render_property_setter_wrapper(cls, prop, setter_func))
+                    setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
 
             prop_items.append((snake_to_camel(prop.name), getter_name, setter_name))
 
@@ -1576,9 +1623,8 @@ def collect_encountered_sni_types_from_model(
     return collect_encountered_sni_types(all_funcs)
 
 
-def export_encountered_sni_types(output_dir: Path, functions: List[ApiFunction]) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / "encountered_sni_types.txt"
+def export_encountered_sni_types(output_file: Path, functions: List[ApiFunction]) -> Path:
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     types = collect_encountered_sni_types(functions)
     lines = [f"{item}," for item in types]
     output_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1669,7 +1715,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--export-sni-types",
         required=False,
-        help="Optional output directory for encountered SNI_H_*/SNI_V_* (one per line)",
+        help="Optional output file path for encountered SNI_H_*/SNI_V_* (one per line)",
     )
     parser.add_argument(
         "--verbose",
@@ -1860,8 +1906,7 @@ def main() -> None:
     func_stats.blacklisted = 0
     func_stats.whitelist_miss = 0
 
-    script_dir = Path(__file__).resolve().parent
-    lv_types_output_path = script_dir / "lv_types_output.json"
+    lv_types_output_path = lv_types_path
     update_lv_types_output(lv_types_output_path, pending_updates)
 
     table_text = render_entries(
@@ -1886,15 +1931,16 @@ def main() -> None:
 
     export_file: Optional[Path] = None
     if args.export_sni_types:
-        export_dir = Path(args.export_sni_types)
+        export_file = Path(args.export_sni_types)
+        if export_file.exists() and export_file.is_dir():
+            raise SystemExit(f"[错误] --export-sni-types 必须是文件路径，当前是目录: {export_file}")
         all_types = collect_encountered_sni_types_from_model(
             class_methods,
             class_static_methods,
             property_getters,
             property_setters,
         )
-        export_dir.mkdir(parents=True, exist_ok=True)
-        export_file = export_dir / "encountered_sni_types.txt"
+        export_file.parent.mkdir(parents=True, exist_ok=True)
         export_file.write_text("\n".join(f"{item}," for item in all_types) + "\n", encoding="utf-8")
         velog(f"[统计] 已导出遇到的 SNI_H_*/SNI_V_*: {export_file}")
 

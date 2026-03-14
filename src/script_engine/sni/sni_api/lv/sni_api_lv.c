@@ -14,6 +14,8 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_api_export.h"
+#include "sni_callback_runtime.h"
+#include "sni_api_lv_special.h"
 #include "elena_os_log.h"
 /* Macros and Definitions -------------------------------------*/
 #define LV_API_NAME "lv"
@@ -12109,56 +12111,6 @@ jerry_value_t sni_api_lv_obj_send_event(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
-jerry_value_t sni_api_lv_obj_add_event_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 3)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_cb_t arg_event_cb;
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_EVENT_CB, &arg_event_cb))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_number(args_p[1]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_code_t arg_filter;
-    arg_filter = sni_tb_js2c_int32(args_p[1]);
-
-    if (!jerry_value_is_object(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    void* arg_user_data;
-    if (!sni_tb_js2c(args_p[2], SNI_T_PTR, &arg_user_data))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_event_dsc_t* result = lv_obj_add_event_cb(self_obj, arg_event_cb, arg_filter, arg_user_data);
-    return sni_tb_c2js(&result, SNI_H_LV_EVENT_DSC);
-}
-
 jerry_value_t sni_api_lv_obj_get_event_count(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -12240,115 +12192,6 @@ jerry_value_t sni_api_lv_obj_remove_event(const jerry_call_info_t *call_info_p,
 
     bool result = lv_obj_remove_event(self_obj, arg_index);
     return sni_tb_c2js_boolean(result);
-}
-
-jerry_value_t sni_api_lv_obj_remove_event_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_cb_t arg_event_cb;
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_EVENT_CB, &arg_event_cb))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    bool result = lv_obj_remove_event_cb(self_obj, arg_event_cb);
-    return sni_tb_c2js_boolean(result);
-}
-
-jerry_value_t sni_api_lv_obj_remove_event_dsc(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_dsc_t* arg_dsc;
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_EVENT_DSC, &arg_dsc))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    bool result = lv_obj_remove_event_dsc(self_obj, arg_dsc);
-    return sni_tb_c2js_boolean(result);
-}
-
-jerry_value_t sni_api_lv_obj_remove_event_cb_with_user_data(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 2)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_cb_t arg_event_cb;
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_EVENT_CB, &arg_event_cb))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[1]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    void* arg_user_data;
-    if (!sni_tb_js2c(args_p[1], SNI_T_PTR, &arg_user_data))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    uint32_t result = lv_obj_remove_event_cb_with_user_data(self_obj, arg_event_cb, arg_user_data);
-    return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
 jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
@@ -16422,6 +16265,372 @@ jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_pause(self_obj);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_resume(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_resume(self_obj);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_set_period(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_period;
+    arg_period = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_timer_set_period(self_obj, arg_period);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_ready(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_ready(self_obj);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_set_repeat_count(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_repeat_count;
+    arg_repeat_count = sni_tb_js2c_int32(args_p[0]);
+
+    lv_timer_set_repeat_count(self_obj, arg_repeat_count);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_set_auto_delete(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_auto_delete;
+    arg_auto_delete = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_timer_set_auto_delete(self_obj, arg_auto_delete);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_reset(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_reset(self_obj);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_timer_get_next(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_t* result = lv_timer_get_next(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_TIMER);
+}
+
+jerry_value_t sni_api_lv_timer_get_paused(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_timer_get_paused(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_prop_set_timer_auto_delete(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_timer_set_auto_delete(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_timer_next(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_timer_t* result = lv_timer_get_next(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_TIMER);
+}
+
+jerry_value_t sni_api_prop_get_timer_paused(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_timer_get_paused(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_prop_set_timer_period(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_timer_set_period(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_timer_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_TIMER, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_timer_set_repeat_count(self_obj, prop_value);
+    return jerry_undefined();
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -17022,6 +17231,39 @@ const sni_property_desc_t lv_class_properties_color[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_color[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_timer[] = {
+    {.name = "delete", .handler = sni_api_lv_timer_delete},
+    {.name = "pause", .handler = sni_api_lv_timer_pause},
+    {.name = "resume", .handler = sni_api_lv_timer_resume},
+    {.name = "setCb", .handler = sni_api_lv_timer_set_cb},
+    {.name = "setPeriod", .handler = sni_api_lv_timer_set_period},
+    {.name = "ready", .handler = sni_api_lv_timer_ready},
+    {.name = "setRepeatCount", .handler = sni_api_lv_timer_set_repeat_count},
+    {.name = "setAutoDelete", .handler = sni_api_lv_timer_set_auto_delete},
+    {.name = "reset", .handler = sni_api_lv_timer_reset},
+    {.name = "getNext", .handler = sni_api_lv_timer_get_next},
+    {.name = "getPaused", .handler = sni_api_lv_timer_get_paused},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_timer[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_timer[] = {
+    {.name = "autoDelete", .getter = NULL, .setter = sni_api_prop_set_timer_auto_delete},
+    {.name = "cb", .getter = NULL, .setter = sni_api_prop_set_timer_cb},
+    {.name = "next", .getter = sni_api_prop_get_timer_next, .setter = NULL},
+    {.name = "paused", .getter = sni_api_prop_get_timer_paused, .setter = NULL},
+    {.name = "period", .getter = NULL, .setter = sni_api_prop_set_timer_period},
+    {.name = "repeatCount", .getter = NULL, .setter = sni_api_prop_set_timer_repeat_count},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_timer[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -18188,6 +18430,16 @@ const sni_class_desc_t lv_class_desc_color = {
     .constants = lv_class_constants_color,
 };
 
+const sni_class_desc_t lv_class_desc_timer = {
+    .name = "timer",
+    .constructor = sni_api_ctor_timer,
+    .base_class = NULL,
+    .methods = lv_class_methods_timer,
+    .properties = lv_class_properties_timer,
+    .static_methods = lv_class_static_methods_timer,
+    .constants = lv_class_constants_timer,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -18196,11 +18448,13 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_bar,
     &lv_class_desc_screen,
     &lv_class_desc_color,
+    &lv_class_desc_timer,
     NULL,
 };
 
 void sni_api_lv_init(void)
 {
+    sni_cb_runtime_init();
     lv_api_obj = sni_api_build(lv_api_classes);
     if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
     {

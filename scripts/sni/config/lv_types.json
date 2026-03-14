@@ -1129,8 +1129,12 @@
       "object_type": ""
     },
     {
-      "name": "lv_timer_t",
+      "name": "lv_timer_cb_t",
       "object_type": ""
+    },
+    {
+      "name": "lv_timer_t",
+      "object_type": "handle_object"
     },
     {
       "name": "lv_uintptr_t",

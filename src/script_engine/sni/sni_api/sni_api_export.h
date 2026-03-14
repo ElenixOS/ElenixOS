@@ -87,6 +87,14 @@ jerry_value_t sni_api_build(const sni_class_desc_t *const classes[]);
 bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name);
 
 /**
+ * @brief 将常量描述数组注册到目标对象
+ * @param constants 常量描述数组（以 name == NULL 结尾）
+ * @param target 目标对象
+ * @return bool 是否注册成功
+ */
+bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_value_t target);
+
+/**
  * @brief 抛出一个错误异常
  * @param message 错误信息
  * @return jerry_value_t 错误异常对象

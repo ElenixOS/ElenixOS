@@ -332,8 +332,10 @@ def parse_string_constant(value_text: str) -> Optional[str]:
     if not text:
         return None
 
-    if text.startswith('"') and text.endswith('"'):
-        return text
+    # Accept C string literals even when followed by comments, e.g. "..." /* ... */
+    match = re.match(r'^"([^"\\]|\\.)*"', text)
+    if match:
+        return match.group(0)
     return None
 
 
@@ -387,6 +389,22 @@ def collect_constants(
                 constants[name] = ApiConstant(name=name, kind=kind, value=val)
 
     return [constants[name] for name in sorted(constants.keys())]
+
+
+def build_root_constants_with_aliases(constants: List[ApiConstant], blacklist: List[str]) -> List[ApiConstant]:
+    result: Dict[str, ApiConstant] = {}
+
+    for item in constants:
+        export_name = item.name
+        if item.name.startswith("LV_") and len(item.name) > 3:
+            export_name = item.name[3:]
+
+        if blacklist and (is_matched(item.name, blacklist) or is_matched(export_name, blacklist)):
+            continue
+
+        result[export_name] = ApiConstant(name=export_name, kind=item.kind, value=item.value)
+
+    return [result[name] for name in sorted(result.keys())]
 
 
 def build_constant_index(lvgl_data: Dict[str, Any]) -> Dict[str, ApiConstant]:
@@ -879,6 +897,7 @@ def render_class_block(
     property_array_names: Dict[str, str],
     static_method_array_names: Dict[str, str],
     constant_array_names: Dict[str, str],
+    root_constant_array_name: str,
 ) -> str:
     lines: List[str] = []
 
@@ -912,6 +931,10 @@ def render_class_block(
 void sni_api_lv_init(void)
 {
     lv_api_obj = sni_api_build(lv_api_classes);
+    if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
+    {
+        EOS_LOG_E("Failed to register LV root constants");
+    }
 }
 
 void sni_api_lv_mount(jerry_value_t realm)
@@ -1245,6 +1268,7 @@ def render_entries(
     property_getters: Dict[Tuple[str, str], ApiFunction],
     property_setters: Dict[Tuple[str, str], ApiFunction],
     class_constants: Dict[str, List[ApiConstant]],
+    root_constants: List[ApiConstant],
 ) -> str:
     wrappers: List[str] = []
     blocks: List[str] = []
@@ -1309,6 +1333,9 @@ def render_entries(
         constant_array_names[cls.name] = const_array_name
         blocks.append(render_constant_array(const_array_name, class_constants[cls.name]))
 
+    root_constant_array_name = "lv_root_constants"
+    blocks.append(render_constant_array(root_constant_array_name, root_constants))
+
     blocks.append(
         render_class_block(
             classes,
@@ -1317,6 +1344,7 @@ def render_entries(
             property_array_names,
             static_method_array_names,
             constant_array_names,
+            root_constant_array_name,
         )
     )
 
@@ -1405,6 +1433,7 @@ def print_summary(
     class_static_methods: Dict[str, List[ApiFunction]],
     class_properties: Dict[str, List[ApiProperty]],
     class_constants: Dict[str, List[ApiConstant]],
+    root_constants: List[ApiConstant],
     output_path: Path,
     pending_updates: Dict[str, str],
     pending_blacklist_updates: Set[str],
@@ -1416,13 +1445,15 @@ def print_summary(
     dynamic_method_total = sum(len(items) for items in class_methods.values())
     static_method_total = sum(len(items) for items in class_static_methods.values())
     property_total = sum(len(items) for items in class_properties.values())
-    constant_total = sum(len(items) for items in class_constants.values())
+    class_constant_total = sum(len(items) for items in class_constants.values())
+    root_constant_total = len(root_constants)
 
     rows: List[Tuple[str, str]] = [
         ("类", f"{class_total}个（静态类{static_class_total}个）"),
         ("动态方法", f"{dynamic_method_total}个"),
         ("静态方法", f"{static_method_total}个"),
-        ("常数", f"{constant_total}个"),
+        ("类常数", f"{class_constant_total}个"),
+        ("全局常数", f"{root_constant_total}个"),
         ("属性", f"{property_total}个"),
         ("构造函数", f"{constructor_total}个"),
     ]
@@ -1611,6 +1642,7 @@ def main() -> None:
         class_constants[cls.name] = const_items
 
     constants = collect_constants(lvgl_data, filters["constant"], const_stats)
+    root_constants = build_root_constants_with_aliases(constants, filters["constant"].get("blacklist", []))
     func_stats.included = sum(len(items) for items in class_methods.values()) + sum(len(items) for items in class_static_methods.values())
     func_stats.total = len(function_index)
     func_stats.blacklisted = 0
@@ -1633,6 +1665,7 @@ def main() -> None:
         property_getters,
         property_setters,
         class_constants,
+        root_constants,
     )
 
     generated = (
@@ -1671,6 +1704,7 @@ def main() -> None:
         class_static_methods,
         class_properties,
         class_constants,
+        root_constants,
         output_path,
         pending_updates,
         pending_blacklist_updates,

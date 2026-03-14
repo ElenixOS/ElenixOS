@@ -11,7 +11,17 @@
         "lv_obj_set_style_bg_color"
       ],
       "static_methods": [],
-      "constants": []
+      "constants": [
+        "LV_PART_MAIN",
+        "LV_PART_SCROLLBAR",
+        "LV_PART_INDICATOR",
+        "LV_PART_KNOB",
+        "LV_PART_SELECTED",
+        "LV_PART_ITEMS",
+        "LV_PART_CURSOR",
+        "LV_PART_CUSTOM_FIRST",
+        "LV_PART_ANY"
+      ]
     },
     "button": {
       "c_type": "lv_button_t",
@@ -51,6 +61,14 @@
       "blacklist": [
         "lv_label_set_text_fmt",
         "*_id*"
+      ]
+    },
+    "constant": {
+      "whitelist": [
+        "*"
+      ],
+      "blacklist": [
+        "STR_SYMBOL_*"
       ]
     }
   }

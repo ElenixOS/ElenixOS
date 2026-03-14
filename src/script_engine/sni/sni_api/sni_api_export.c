@@ -62,7 +62,7 @@ static bool sni_register_methods(const sni_method_desc_t *methods, jerry_value_t
     return true;
 }
 
-static bool sni_register_constants(const sni_constant_desc_t *constants, jerry_value_t target)
+bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_value_t target)
 {
     if (constants == NULL)
     {
@@ -313,7 +313,7 @@ jerry_value_t sni_api_build(const sni_class_desc_t *const classes[])
             break;
         }
 
-        if (!sni_register_constants(desc->constants, class_entries[i]))
+        if (!sni_api_register_constants(desc->constants, class_entries[i]))
         {
             ok = false;
             break;

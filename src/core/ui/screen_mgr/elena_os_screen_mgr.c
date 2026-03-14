@@ -200,6 +200,17 @@ void eos_screen_load(lv_obj_t *scr)
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
 }
 
+void eos_screen_load_without_anim(lv_obj_t *scr)
+{
+    EOS_LOG_D("eos_screen_load_without_anim scr[%p]", scr);
+    if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
+        return;
+
+    scr_to_load = scr;
+    lv_screen_load(scr);
+    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
+}
+
 lv_obj_t *eos_screen_create(void)
 {
     lv_obj_t *scr = lv_obj_create(NULL);

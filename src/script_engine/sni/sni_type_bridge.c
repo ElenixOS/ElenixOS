@@ -210,6 +210,14 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
         *(double *)out_obj = jerry_value_as_number(js_val);
         return true;
 
+    case SNI_T_FLOAT:
+        if (!jerry_value_is_number(js_val))
+        {
+            return false;
+        }
+        *(float *)out_obj = (float)jerry_value_as_number(js_val);
+        return true;
+
     case SNI_T_BOOL:
         *(bool *)out_obj = jerry_value_to_boolean(js_val);
         return true;
@@ -370,6 +378,9 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
 
     case SNI_T_DOUBLE:
         return jerry_number(*(double *)c_val);
+
+    case SNI_T_FLOAT:
+        return jerry_number((double)*(float *)c_val);
 
     case SNI_T_BOOL:
         return jerry_boolean(*(bool *)c_val);

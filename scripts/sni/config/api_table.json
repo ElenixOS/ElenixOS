@@ -5,10 +5,16 @@
       "constructor": "lv_obj_create",
       "base": null,
       "methods": [
-        "lv_obj_center",
-        "lv_obj_set_size",
-        "lv_obj_set_pos",
-        "lv_obj_set_style_bg_color"
+        {
+          "name": "lv_obj_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "name": "obj",
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
       ],
       "static_methods": [],
       "constants": []
@@ -25,7 +31,43 @@
       "c_type": "lv_label_t",
       "constructor": "lv_label_create",
       "base": "obj",
+      "methods": [
+        {
+          "name": "lv_label_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "name": "obj",
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "arc": {
+      "c_type": "lv_arc_t",
+      "constructor": "lv_arc_create",
+      "base": "obj",
       "methods": [],
+      "static_methods": [],
+      "constants": []
+    },
+    "bar": {
+      "c_type": "lv_bar_t",
+      "constructor": "lv_bar_create",
+      "base": "obj",
+      "methods": [{
+          "name": "lv_bar_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "name": "obj",
+              "type": "lv_obj_t*"
+            }
+          ]
+      }],
       "static_methods": [],
       "constants": []
     },
@@ -34,7 +76,9 @@
       "constructor": null,
       "base": "obj",
       "methods": [],
-      "static_methods": ["lv_screen_active"],
+      "static_methods": [
+        "lv_screen_active"
+      ],
       "constants": []
     },
     "color": {
@@ -42,14 +86,16 @@
       "constructor": null,
       "base": null,
       "methods": [],
-      "static_methods": ["lv_color_hex"],
+      "static_methods": [
+        "lv_color_hex"
+      ],
       "constants": []
     }
   },
   "scan": {
     "function": {
       "blacklist": [
-        "lv_label_set_text_fmt",
+        "*_fmt",
         "*_id*"
       ]
     },

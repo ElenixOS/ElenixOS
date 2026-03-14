@@ -1138,7 +1138,7 @@
     },
     {
       "name": "lv_value_precise_t",
-      "object_type": "double"
+      "object_type": "float"
     },
     {
       "name": "lv_vector_draw_dsc_t",

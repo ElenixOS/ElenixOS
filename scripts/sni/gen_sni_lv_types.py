@@ -228,6 +228,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
             if 'name' in typedef:
                 type_definitions[typedef['name']] = typedef
 
+            aliased = dict(type_definitions[alias_name])
     # Extract value types from lv_types_output.json
     value_types = []
     if 'types' in types_data:

@@ -1180,5 +1180,8 @@
       "name": "lv_yuv_plane_t",
       "object_type": "undefined"
     }
-  ]
+  ],
+  "alias_fallbacks": {
+    "lv_color_t": "lv_grad_color_t"
+  }
 }

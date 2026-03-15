@@ -17499,6 +17499,197 @@ jerry_value_t sni_api_prop_set_buttonmatrix_selected_button(const jerry_call_inf
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_ctor_calendar(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t* arg_parent;
+    if (jerry_value_is_null(args_p[0]))
+    {
+        arg_parent = NULL;
+    }
+    else if (jerry_value_is_object(args_p[0]))
+    {
+        if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arg_parent))
+        {
+            return sni_api_throw_error("Failed to convert argument");
+        }
+    }
+    else
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+
+    lv_obj_t* native_obj = lv_calendar_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_calendar_set_today_date(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 3)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_year;
+    arg_year = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_month;
+    arg_month = sni_tb_js2c_uint32(args_p[1]);
+
+    if (!jerry_value_is_number(args_p[2]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_day;
+    arg_day = sni_tb_js2c_uint32(args_p[2]);
+
+    lv_calendar_set_today_date(self_obj, arg_year, arg_month, arg_day);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_calendar_set_showed_date(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_year;
+    arg_year = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_month;
+    arg_month = sni_tb_js2c_uint32(args_p[1]);
+
+    lv_calendar_set_showed_date(self_obj, arg_year, arg_month);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_calendar_get_btnmatrix(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t* result = lv_calendar_get_btnmatrix(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+jerry_value_t sni_api_prop_get_calendar_btnmatrix(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t* result = lv_calendar_get_btnmatrix(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+jerry_value_t sni_api_prop_get_calendar_highlighted_dates_num(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    size_t result = lv_calendar_get_highlighted_dates_num(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -18241,6 +18432,31 @@ const sni_constant_desc_t lv_class_constants_buttonmatrix[] = {
     {.name = "LV_BUTTONMATRIX_CTRL_RESERVED_3", .type = SNI_CONST_INT, .value.i = 8192},
     {.name = "LV_BUTTONMATRIX_CTRL_CUSTOM_1", .type = SNI_CONST_INT, .value.i = 16384},
     {.name = "LV_BUTTONMATRIX_CTRL_CUSTOM_2", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_calendar[] = {
+    {.name = "setTodayDate", .handler = sni_api_lv_calendar_set_today_date},
+    {.name = "setShowedDate", .handler = sni_api_lv_calendar_set_showed_date},
+    {.name = "setHighlightedDates", .handler = sni_api_lv_calendar_set_highlighted_dates},
+    {.name = "setDayNames", .handler = sni_api_lv_calendar_set_day_names},
+    {.name = "getBtnmatrix", .handler = sni_api_lv_calendar_get_btnmatrix},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_calendar[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_calendar[] = {
+    {.name = "btnmatrix", .getter = sni_api_prop_get_calendar_btnmatrix, .setter = NULL},
+    {.name = "dayNames", .getter = NULL, .setter = sni_api_lv_calendar_set_day_names},
+    {.name = "highlightedDatesNum", .getter = sni_api_prop_get_calendar_highlighted_dates_num, .setter = NULL},
+    {.name = "chineseMode", .getter = NULL, .setter = sni_api_lv_calendar_set_chinese_mode},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_calendar[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -19437,6 +19653,16 @@ const sni_class_desc_t lv_class_desc_buttonmatrix = {
     .constants = lv_class_constants_buttonmatrix,
 };
 
+const sni_class_desc_t lv_class_desc_calendar = {
+    .name = "calendar",
+    .constructor = sni_api_ctor_calendar,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_calendar,
+    .properties = lv_class_properties_calendar,
+    .static_methods = lv_class_static_methods_calendar,
+    .constants = lv_class_constants_calendar,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -19448,6 +19674,7 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_timer,
     &lv_class_desc_anim,
     &lv_class_desc_buttonmatrix,
+    &lv_class_desc_calendar,
     NULL,
 };
 

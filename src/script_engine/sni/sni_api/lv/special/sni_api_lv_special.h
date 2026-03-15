@@ -123,6 +123,19 @@ jerry_value_t sni_api_lv_buttonmatrix_set_ctrl_map(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count);
 
+/* calendar -----------------------------------------------*/
+jerry_value_t sni_api_lv_calendar_set_day_names(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_calendar_set_highlighted_dates(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_calendar_set_chinese_mode(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count);
+
 #ifdef __cplusplus
 }
 #endif

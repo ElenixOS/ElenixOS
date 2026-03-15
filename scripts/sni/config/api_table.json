@@ -162,6 +162,25 @@
         "LV_BUTTONMATRIX_CTRL_CUSTOM_1",
         "LV_BUTTONMATRIX_CTRL_CUSTOM_2"
       ]
+    },
+    "calendar": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_calendar_create",
+      "methods": [
+        {
+          "name": "lv_calendar_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {
@@ -178,7 +197,10 @@
         "lv_buttonmatrix_set_button_draw_cb",
         "lv_timer_set_user_data",
         "lv_timer_get_user_data",
-        "lv_timer_create_basic"
+        "lv_timer_create_basic",
+        "lv_calendar_get_highlighted_dates",
+        "lv_calendar_get_showed_date",
+        "lv_calendar_get_today_date"
       ]
     },
     "constant": {

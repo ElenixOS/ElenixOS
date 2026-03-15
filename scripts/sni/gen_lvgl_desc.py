@@ -82,6 +82,8 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_anim_set_var": "sni_api_lv_anim_set_var",
     "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
     "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
+    "lv_calendar_set_day_names": "sni_api_lv_calendar_set_day_names",
+    "lv_calendar_set_highlighted_dates": "sni_api_lv_calendar_set_highlighted_dates",
 }
 
 
@@ -105,6 +107,14 @@ SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
     ("anim", "path_cb", "lv_anim_set_path_cb"): "sni_api_lv_anim_set_path_cb",
     ("buttonmatrix", "map", "lv_buttonmatrix_set_map"): "sni_api_lv_buttonmatrix_set_map",
     ("buttonmatrix", "ctrl_map", "lv_buttonmatrix_set_ctrl_map"): "sni_api_lv_buttonmatrix_set_ctrl_map",
+    ("calendar", "day_names", "lv_calendar_set_day_names"): "sni_api_lv_calendar_set_day_names",
+}
+
+
+SPECIAL_EXTRA_PROPERTIES: Dict[str, List[Tuple[str, Optional[str], Optional[str]]]] = {
+    "calendar": [
+        ("chineseMode", None, "sni_api_lv_calendar_set_chinese_mode"),
+    ],
 }
 
 
@@ -1741,6 +1751,13 @@ def render_entries(
                     setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
 
             prop_items.append((snake_to_camel(prop.name), getter_name, setter_name))
+
+        extra_props = SPECIAL_EXTRA_PROPERTIES.get(cls.name, [])
+        if extra_props:
+            existing_prop_names = {name for name, _, _ in prop_items}
+            for extra_name, extra_getter, extra_setter in extra_props:
+                if extra_name not in existing_prop_names:
+                    prop_items.append((extra_name, extra_getter, extra_setter))
 
         prop_array_name = f"lv_class_properties_{cls_id}"
         property_array_names[cls.name] = prop_array_name

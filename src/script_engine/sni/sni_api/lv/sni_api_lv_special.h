@@ -137,6 +137,14 @@ jerry_value_t sni_api_lv_anim_set_path_cb(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count);
 
+jerry_value_t sni_api_lv_anim_set_var(const jerry_call_info_t *call_info_p,
+                                      const jerry_value_t args_p[],
+                                      const jerry_length_t args_count);
+
+jerry_value_t sni_api_prop_set_anim_var(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count);
+
 /* buttonmatrix */
 jerry_value_t sni_api_ctor_buttonmatrix(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],

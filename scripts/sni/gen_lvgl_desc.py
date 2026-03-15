@@ -79,6 +79,7 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_anim_set_deleted_cb": "sni_api_lv_anim_set_deleted_cb",
     "lv_anim_set_get_value_cb": "sni_api_lv_anim_set_get_value_cb",
     "lv_anim_set_path_cb": "sni_api_lv_anim_set_path_cb",
+    "lv_anim_set_var": "sni_api_lv_anim_set_var",
     "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
     "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
 }
@@ -92,6 +93,16 @@ SPECIAL_PROPERTY_GETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
 SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
     ("timer", "cb", "lv_timer_set_cb"): "sni_api_prop_set_timer_cb",
     ("obj", "user_data", "lv_obj_set_user_data"): "sni_api_prop_set_obj_user_data",
+    ("anim", "var", "lv_anim_set_var"): "sni_api_prop_set_anim_var",
+    ("anim", "delay", "lv_anim_set_delay"): "sni_api_lv_anim_set_delay",
+    ("anim", "duration", "lv_anim_set_duration"): "sni_api_lv_anim_set_duration",
+    ("anim", "repeat_count", "lv_anim_set_repeat_count"): "sni_api_lv_anim_set_repeat_count",
+    ("anim", "custom_exec_cb", "lv_anim_set_custom_exec_cb"): "sni_api_lv_anim_set_custom_exec_cb",
+    ("anim", "start_cb", "lv_anim_set_start_cb"): "sni_api_lv_anim_set_start_cb",
+    ("anim", "completed_cb", "lv_anim_set_completed_cb"): "sni_api_lv_anim_set_completed_cb",
+    ("anim", "deleted_cb", "lv_anim_set_deleted_cb"): "sni_api_lv_anim_set_deleted_cb",
+    ("anim", "get_value_cb", "lv_anim_set_get_value_cb"): "sni_api_lv_anim_set_get_value_cb",
+    ("anim", "path_cb", "lv_anim_set_path_cb"): "sni_api_lv_anim_set_path_cb",
 }
 
 

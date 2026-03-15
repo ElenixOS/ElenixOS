@@ -16234,39 +16234,6 @@ jerry_value_t sni_api_lv_anim_init(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
-jerry_value_t sni_api_lv_anim_set_var(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_anim_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    void* arg_var;
-    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &arg_var))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_anim_set_var(self_obj, arg_var);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_lv_anim_set_time(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -16774,44 +16741,6 @@ jerry_value_t sni_api_lv_anim_path_custom_bezier3(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
-jerry_value_t sni_api_prop_set_anim_completed_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_completed_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_completed_cb(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_custom_exec_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_custom_exec_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_custom_exec_cb(self_obj, prop_value);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_prop_get_anim_delay(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -16834,63 +16763,6 @@ jerry_value_t sni_api_prop_get_anim_delay(const jerry_call_info_t *call_info_p,
 
     uint32_t result = lv_anim_get_delay(self_obj);
     return sni_tb_c2js(&result, SNI_T_UINT32);
-}
-
-jerry_value_t sni_api_prop_set_anim_delay(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    uint32_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_delay(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_deleted_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_deleted_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_deleted_cb(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_duration(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    uint32_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_duration(self_obj, prop_value);
-    return jerry_undefined();
 }
 
 jerry_value_t sni_api_prop_set_anim_early_apply(const jerry_call_info_t *call_info_p,
@@ -16920,44 +16792,6 @@ jerry_value_t sni_api_prop_set_anim_early_apply(const jerry_call_info_t *call_in
     prop_value = sni_tb_js2c_boolean(args_p[0]);
 
     lv_anim_set_early_apply(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_get_value_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_get_value_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_get_value_cb(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_path_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_path_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_path_cb(self_obj, prop_value);
     return jerry_undefined();
 }
 
@@ -17099,25 +16933,6 @@ jerry_value_t sni_api_prop_get_anim_repeat_count(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
-jerry_value_t sni_api_prop_set_anim_repeat_count(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    uint32_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_repeat_count(self_obj, prop_value);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_prop_set_anim_repeat_delay(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -17145,25 +16960,6 @@ jerry_value_t sni_api_prop_set_anim_repeat_delay(const jerry_call_info_t *call_i
     prop_value = sni_tb_js2c_uint32(args_p[0]);
 
     lv_anim_set_repeat_delay(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_start_cb(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_anim_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_start_cb_t prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_anim_set_start_cb(self_obj, prop_value);
     return jerry_undefined();
 }
 
@@ -17218,39 +17014,6 @@ jerry_value_t sni_api_prop_set_anim_time(const jerry_call_info_t *call_info_p,
     prop_value = sni_tb_js2c_uint32(args_p[0]);
 
     lv_anim_set_time(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_anim_var(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_anim_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_ANIM, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    void* prop_value;
-    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &prop_value))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_anim_set_var(self_obj, prop_value);
     return jerry_undefined();
 }
 
@@ -18449,21 +18212,21 @@ const sni_method_desc_t lv_class_static_methods_anim[] = {
 };
 
 const sni_property_desc_t lv_class_properties_anim[] = {
-    {.name = "completedCb", .getter = NULL, .setter = sni_api_prop_set_anim_completed_cb},
-    {.name = "customExecCb", .getter = NULL, .setter = sni_api_prop_set_anim_custom_exec_cb},
-    {.name = "delay", .getter = sni_api_prop_get_anim_delay, .setter = sni_api_prop_set_anim_delay},
-    {.name = "deletedCb", .getter = NULL, .setter = sni_api_prop_set_anim_deleted_cb},
-    {.name = "duration", .getter = NULL, .setter = sni_api_prop_set_anim_duration},
+    {.name = "completedCb", .getter = NULL, .setter = sni_api_lv_anim_set_completed_cb},
+    {.name = "customExecCb", .getter = NULL, .setter = sni_api_lv_anim_set_custom_exec_cb},
+    {.name = "delay", .getter = sni_api_prop_get_anim_delay, .setter = sni_api_lv_anim_set_delay},
+    {.name = "deletedCb", .getter = NULL, .setter = sni_api_lv_anim_set_deleted_cb},
+    {.name = "duration", .getter = NULL, .setter = sni_api_lv_anim_set_duration},
     {.name = "earlyApply", .getter = NULL, .setter = sni_api_prop_set_anim_early_apply},
-    {.name = "getValueCb", .getter = NULL, .setter = sni_api_prop_set_anim_get_value_cb},
-    {.name = "pathCb", .getter = NULL, .setter = sni_api_prop_set_anim_path_cb},
+    {.name = "getValueCb", .getter = NULL, .setter = sni_api_lv_anim_set_get_value_cb},
+    {.name = "pathCb", .getter = NULL, .setter = sni_api_lv_anim_set_path_cb},
     {.name = "playbackDelay", .getter = NULL, .setter = sni_api_prop_set_anim_playback_delay},
     {.name = "playbackDuration", .getter = NULL, .setter = sni_api_prop_set_anim_playback_duration},
     {.name = "playbackTime", .getter = NULL, .setter = sni_api_prop_set_anim_playback_time},
     {.name = "playtime", .getter = sni_api_prop_get_anim_playtime, .setter = NULL},
-    {.name = "repeatCount", .getter = sni_api_prop_get_anim_repeat_count, .setter = sni_api_prop_set_anim_repeat_count},
+    {.name = "repeatCount", .getter = sni_api_prop_get_anim_repeat_count, .setter = sni_api_lv_anim_set_repeat_count},
     {.name = "repeatDelay", .getter = NULL, .setter = sni_api_prop_set_anim_repeat_delay},
-    {.name = "startCb", .getter = NULL, .setter = sni_api_prop_set_anim_start_cb},
+    {.name = "startCb", .getter = NULL, .setter = sni_api_lv_anim_set_start_cb},
     {.name = "time", .getter = sni_api_prop_get_anim_time, .setter = sni_api_prop_set_anim_time},
     {.name = "var", .getter = NULL, .setter = sni_api_prop_set_anim_var},
     {.name = NULL, .getter = NULL, .setter = NULL},

@@ -17391,44 +17391,6 @@ jerry_value_t sni_api_prop_set_buttonmatrix_button_ctrl_all(const jerry_call_inf
     return jerry_undefined();
 }
 
-jerry_value_t sni_api_prop_set_buttonmatrix_ctrl_map(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_obj_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    void* prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_buttonmatrix_set_ctrl_map(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_buttonmatrix_map(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    lv_obj_t* self_obj;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    const const char** prop_value;
-    return sni_api_throw_error("Unsupported argument conversion");
-
-    lv_buttonmatrix_set_map(self_obj, prop_value);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_prop_get_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -18259,8 +18221,8 @@ const sni_method_desc_t lv_class_static_methods_buttonmatrix[] = {
 
 const sni_property_desc_t lv_class_properties_buttonmatrix[] = {
     {.name = "buttonCtrlAll", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_button_ctrl_all},
-    {.name = "ctrlMap", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_ctrl_map},
-    {.name = "map", .getter = NULL, .setter = sni_api_prop_set_buttonmatrix_map},
+    {.name = "ctrlMap", .getter = NULL, .setter = sni_api_lv_buttonmatrix_set_ctrl_map},
+    {.name = "map", .getter = NULL, .setter = sni_api_lv_buttonmatrix_set_map},
     {.name = "oneChecked", .getter = sni_api_prop_get_buttonmatrix_one_checked, .setter = sni_api_prop_set_buttonmatrix_one_checked},
     {.name = "selectedButton", .getter = sni_api_prop_get_buttonmatrix_selected_button, .setter = sni_api_prop_set_buttonmatrix_selected_button},
     {.name = NULL, .getter = NULL, .setter = NULL},

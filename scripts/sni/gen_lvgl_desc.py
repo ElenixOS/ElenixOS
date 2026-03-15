@@ -103,6 +103,8 @@ SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
     ("anim", "deleted_cb", "lv_anim_set_deleted_cb"): "sni_api_lv_anim_set_deleted_cb",
     ("anim", "get_value_cb", "lv_anim_set_get_value_cb"): "sni_api_lv_anim_set_get_value_cb",
     ("anim", "path_cb", "lv_anim_set_path_cb"): "sni_api_lv_anim_set_path_cb",
+    ("buttonmatrix", "map", "lv_buttonmatrix_set_map"): "sni_api_lv_buttonmatrix_set_map",
+    ("buttonmatrix", "ctrl_map", "lv_buttonmatrix_set_ctrl_map"): "sni_api_lv_buttonmatrix_set_ctrl_map",
 }
 
 

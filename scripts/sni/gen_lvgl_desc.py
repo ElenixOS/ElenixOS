@@ -58,6 +58,14 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_obj_remove_event_cb": "sni_api_lv_obj_remove_event_cb",
     "lv_obj_remove_event_dsc": "sni_api_lv_obj_remove_event_dsc",
     "lv_obj_remove_event_cb_with_user_data": "sni_api_lv_obj_remove_event_cb_with_user_data",
+    "lv_obj_send_event": "sni_api_lv_obj_send_event",
+    "lv_obj_set_user_data": "sni_api_lv_obj_set_user_data",
+    "lv_obj_get_user_data": "sni_api_lv_obj_get_user_data",
+    "lv_obj_get_coords": "sni_api_lv_obj_get_coords",
+    "lv_obj_get_content_coords": "sni_api_lv_obj_get_content_coords",
+    "lv_obj_get_click_area": "sni_api_lv_obj_get_click_area",
+    "lv_obj_get_scroll_end": "sni_api_lv_obj_get_scroll_end",
+    "lv_obj_get_scrollbar_area": "sni_api_lv_obj_get_scrollbar_area",
     "lv_timer_set_cb": "sni_api_lv_timer_set_cb",
     "lv_timer_delete": "sni_api_lv_timer_delete",
     "lv_anim_set_values": "sni_api_lv_anim_set_values",
@@ -76,8 +84,14 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
 }
 
 
+SPECIAL_PROPERTY_GETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
+    ("obj", "user_data", "lv_obj_get_user_data"): "sni_api_prop_get_obj_user_data",
+}
+
+
 SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
     ("timer", "cb", "lv_timer_set_cb"): "sni_api_prop_set_timer_cb",
+    ("obj", "user_data", "lv_obj_set_user_data"): "sni_api_prop_set_obj_user_data",
 }
 
 
@@ -108,6 +122,12 @@ class ApiFunction:
     return_type: str
     return_bridge: TypeBridge
     args: List[FuncArg]
+
+
+@dataclass
+class ArgRenderResult:
+    call_expr: str
+    post_lines: List[str]
 
 
 @dataclass
@@ -218,6 +238,38 @@ def c_type_to_base_name(c_type: str) -> str:
     if base.endswith("_t"):
         base = base[:-2]
     return base.upper()
+
+
+def is_const_pointer_type(c_type: str) -> bool:
+    normalized = normalize_type_key(c_type)
+    return normalized.startswith("const ") and normalized.endswith("*")
+
+
+def get_pointer_pointee_type(c_type: str) -> str:
+    normalized = normalize_type_key(c_type)
+    if not normalized.endswith("*"):
+        return normalized
+    pointee = normalized[:-1].strip()
+    if pointee.startswith("const "):
+        pointee = pointee[len("const "):].strip()
+    return pointee
+
+
+def is_value_pointer_arg(arg: FuncArg) -> bool:
+    return (
+        arg.bridge.js2c_mode == "bridge"
+        and arg.bridge.sni_type is not None
+        and arg.bridge.sni_type.startswith("SNI_V_")
+        and normalize_type_key(arg.c_type).endswith("*")
+    )
+
+
+def should_treat_as_output_only_value_arg(func: ApiFunction, arg: FuncArg) -> bool:
+    if not is_value_pointer_arg(arg):
+        return False
+    if is_const_pointer_type(arg.c_type):
+        return False
+    return "_get_" in func.name
 
 
 def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str]]]:
@@ -852,7 +904,14 @@ def build_api_function(
     return ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args)
 
 
-def render_arg_conversion(lines: List[str], arg_expr: str, arg: FuncArg, c_var_name: str, allow_null: bool = False) -> None:
+def render_arg_conversion(
+    lines: List[str],
+    arg_expr: str,
+    arg: FuncArg,
+    c_var_name: str,
+    allow_null: bool = False,
+    output_only_value_arg: bool = False,
+) -> ArgRenderResult:
     # Nullable pointer handle types (SNI_H_* or SNI_T_PTR) accept JS null → C NULL
     is_nullable_ptr = (
         allow_null
@@ -861,6 +920,7 @@ def render_arg_conversion(lines: List[str], arg_expr: str, arg: FuncArg, c_var_n
         and (arg.bridge.sni_type.startswith("SNI_H_") or arg.bridge.sni_type == "SNI_T_PTR")
     )
     if is_nullable_ptr:
+        post_lines: List[str] = []
         lines.append(f"    {arg.c_type} {c_var_name};")
         lines.append(f"    if (jerry_value_is_null({arg_expr}))")
         lines.append("    {")
@@ -877,7 +937,36 @@ def render_arg_conversion(lines: List[str], arg_expr: str, arg: FuncArg, c_var_n
         lines.append("    {")
         lines.append('        return sni_api_throw_error("Invalid argument type");')
         lines.append("    }")
-        return
+        return ArgRenderResult(call_expr=c_var_name, post_lines=post_lines)
+
+    if is_value_pointer_arg(arg):
+        if not output_only_value_arg:
+            check = arg.bridge.js_check
+            if check:
+                lines.append(f"    if (!{check}({arg_expr}))")
+                lines.append("    {")
+                lines.append('        return sni_api_throw_error("Invalid argument type");')
+                lines.append("    }")
+
+        value_var = f"{c_var_name}_value"
+        value_c_type = get_pointer_pointee_type(arg.c_type)
+        if output_only_value_arg:
+            lines.append(f"    {value_c_type} {value_var} = {{0}};")
+        else:
+            lines.append(f"    {value_c_type} {value_var};")
+            lines.append(f"    if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{value_var}))")
+            lines.append("    {")
+            lines.append('        return sni_api_throw_error("Failed to convert argument");')
+            lines.append("    }")
+
+        post_lines: List[str] = []
+        if not is_const_pointer_type(arg.c_type):
+            post_lines.append(f"    if (!sni_tb_c2js_set_object(&{value_var}, {arg.bridge.sni_type}, {arg_expr}))")
+            post_lines.append("    {")
+            post_lines.append('        return sni_api_throw_error("Failed to convert return argument");')
+            post_lines.append("    }")
+
+        return ArgRenderResult(call_expr=f"&{value_var}", post_lines=post_lines)
 
     check = arg.bridge.js_check
     if check:
@@ -899,6 +988,8 @@ def render_arg_conversion(lines: List[str], arg_expr: str, arg: FuncArg, c_var_n
         lines.append("    }")
     else:
         lines.append('    return sni_api_throw_error("Unsupported argument conversion");')
+
+    return ArgRenderResult(call_expr=c_var_name, post_lines=[])
 
 
 def render_return_conversion(lines: List[str], func: ApiFunction, result_var: str) -> None:
@@ -943,8 +1034,8 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     call_args: List[str] = []
     for idx, arg in enumerate(ctor_func.args):
         c_var = f"arg_{arg.name}"
-        render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, allow_null=True)
-        call_args.append(c_var)
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, allow_null=True)
+        call_args.append(render_result.call_expr)
         lines.append("")
 
     call_text = ", ".join(call_args)
@@ -975,6 +1066,10 @@ def get_special_property_setter_wrapper_name(cls: ApiClass, prop: ApiProperty, f
     return SPECIAL_PROPERTY_SETTER_WRAPPERS.get((cls.name, prop.name, func.name))
 
 
+def get_special_property_getter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
+    return SPECIAL_PROPERTY_GETTER_WRAPPERS.get((cls.name, prop.name, func.name))
+
+
 def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
@@ -995,24 +1090,31 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     lines.append("    }")
     lines.append("")
 
-    render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
     lines.append("")
 
-    call_args: List[str] = ["self_obj"]
+    call_args: List[str] = [self_render.call_expr]
+    post_call_lines: List[str] = []
     for idx, arg in enumerate(func.args[1:]):
         c_var = f"arg_{arg.name}"
-        render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var)
-        call_args.append(c_var)
+        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
+        call_args.append(render_result.call_expr)
+        post_call_lines.extend(render_result.post_lines)
         lines.append("")
 
     call_text = ", ".join(call_args)
     if func.return_bridge.c2js_mode == "void":
         lines.append(f"    {func.name}({call_text});")
+        if post_call_lines:
+            lines.extend(post_call_lines)
         lines.append("    return jerry_undefined();")
         lines.append("}")
         return "\n".join(lines)
 
     lines.append(f"    {func.return_type} result = {func.name}({call_text});")
+    if post_call_lines:
+        lines.extend(post_call_lines)
     render_return_conversion(lines, func, "result")
     lines.append("}")
     return "\n".join(lines)
@@ -1035,20 +1137,27 @@ def render_static_wrapper(func: ApiFunction) -> str:
     lines.append("")
 
     call_args: List[str] = []
+    post_call_lines: List[str] = []
     for idx, arg in enumerate(func.args):
         c_var = f"arg_{arg.name}"
-        render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var)
-        call_args.append(c_var)
+        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
+        call_args.append(render_result.call_expr)
+        post_call_lines.extend(render_result.post_lines)
         lines.append("")
 
     call_text = ", ".join(call_args)
     if func.return_bridge.c2js_mode == "void":
         lines.append(f"    {func.name}({call_text});" if call_text else f"    {func.name}();")
+        if post_call_lines:
+            lines.extend(post_call_lines)
         lines.append("    return jerry_undefined();")
         lines.append("}")
         return "\n".join(lines)
 
     lines.append(f"    {func.return_type} result = {func.name}({call_text});" if call_text else f"    {func.return_type} result = {func.name}();")
+    if post_call_lines:
+        lines.extend(post_call_lines)
     render_return_conversion(lines, func, "result")
     lines.append("}")
     return "\n".join(lines)
@@ -1074,13 +1183,13 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("    }")
     lines.append("")
 
-    render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
     lines.append("")
 
     if func.return_bridge.c2js_mode == "void":
         raise SystemExit(f"[错误] 属性 getter {func.name} 不能返回 void")
 
-    lines.append(f"    {func.return_type} result = {func.name}(self_obj);")
+    lines.append(f"    {func.return_type} result = {func.name}({self_render.call_expr});")
     render_return_conversion(lines, func, "result")
     lines.append("}")
     return "\n".join(lines)
@@ -1106,11 +1215,13 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("    }")
     lines.append("")
 
-    render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
     lines.append("")
-    render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
+    value_render = render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
     lines.append("")
-    lines.append(f"    {func.name}(self_obj, prop_value);")
+    lines.append(f"    {func.name}({self_render.call_expr}, {value_render.call_expr});")
+    if value_render.post_lines:
+        lines.extend(value_render.post_lines)
     lines.append("    return jerry_undefined();")
     lines.append("}")
     return "\n".join(lines)
@@ -1439,7 +1550,10 @@ def build_bridge_from_type(
         return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_H_{c_type_to_base_name(normalized)}", "bridge", None)
 
     if object_type == "value_object":
-        return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
+        js_check = ""
+        if c_type_to_base_name(normalized) != "LV_COLOR":
+            js_check = "jerry_value_is_object"
+        return TypeBridge(c_type, js_check, "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
 
     if object_type:
         raise SystemExit(f"[错误] 类型 '{normalized}' 的 object_type 无效: {object_type}")
@@ -1597,8 +1711,12 @@ def render_entries(
 
             if prop.getter:
                 getter_func = property_getters[(cls.name, prop.name)]
-                wrappers.append(render_property_getter_wrapper(cls, prop, getter_func))
-                getter_name = f"sni_api_prop_get_{cls_id}_{sanitize_ident(prop.name)}"
+                special_getter = get_special_property_getter_wrapper_name(cls, prop, getter_func)
+                if special_getter is not None:
+                    getter_name = special_getter
+                else:
+                    wrappers.append(render_property_getter_wrapper(cls, prop, getter_func))
+                    getter_name = f"sni_api_prop_get_{cls_id}_{sanitize_ident(prop.name)}"
 
             if prop.setter:
                 setter_func = property_setters[(cls.name, prop.name)]

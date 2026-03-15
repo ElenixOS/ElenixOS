@@ -10,6 +10,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include "lvgl.h"
 #include "sni_types.h"
 #include "elena_os_mem.h"
 #include "script_engine_core.h"
@@ -83,6 +84,37 @@ static sni_handle_t *sni_map_find(void *ptr)
     return handle;
 }
 
+static void sni_obj_deleted_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    sni_handle_t *handle;
+
+    if (!obj)
+    {
+        return;
+    }
+
+    handle = sni_map_find(obj);
+    if (!handle)
+    {
+        return;
+    }
+
+    HASH_DEL(sni_map, handle);
+    handle->ptr = NULL;
+    handle->is_alive = false;
+}
+
+static void sni_attach_obj_delete_hook(void *ptr, sni_type_t type)
+{
+    if (type != SNI_H_LV_OBJ || ptr == NULL)
+    {
+        return;
+    }
+
+    lv_obj_add_event_cb((lv_obj_t *)ptr, sni_obj_deleted_cb, LV_EVENT_DELETE, NULL);
+}
+
 static void sni_map_remove(void *ptr)
 {
     sni_handle_t *handle = NULL;
@@ -101,6 +133,8 @@ static void sni_handle_free_cb(void *native_p, struct jerry_object_native_info_t
 {
     sni_handle_t *handle = (sni_handle_t *)native_p;
 
+    (void)info_p;
+
     if (!handle)
     {
         return;
@@ -108,7 +142,14 @@ static void sni_handle_free_cb(void *native_p, struct jerry_object_native_info_t
 
     handle->is_alive = false;
 
-    HASH_DEL(sni_map, handle);
+    if (handle->ptr != NULL)
+    {
+        sni_handle_t *mapped = sni_map_find(handle->ptr);
+        if (mapped == handle)
+        {
+            HASH_DEL(sni_map, handle);
+        }
+    }
 
     eos_free(handle);
 }
@@ -240,6 +281,15 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
 
     default:
         break;
+    }
+
+    if (type == SNI_V_LV_COLOR)
+    {
+        if (jerry_value_is_number(js_val))
+        {
+            *(lv_color_t *)out_obj = lv_color_hex(sni_tb_js2c_uint32(js_val));
+            return true;
+        }
     }
 
     if (SNI_TYPE_IS_VALUE(type))
@@ -428,6 +478,7 @@ jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
             sni_map_insert(ptr, js_obj, type);
 
         jerry_object_set_native_ptr(js_obj, &sni_native_info, new_handle);
+        sni_attach_obj_delete_hook(ptr, type);
         return js_obj;
     }
 
@@ -518,6 +569,7 @@ bool sni_tb_c2js_set_object(void *c_val, sni_type_t type, jerry_value_t js_obj)
         }
 
         jerry_object_set_native_ptr(js_obj, &sni_native_info, new_handle);
+        sni_attach_obj_delete_hook(ptr, type);
         return true;
     }
 
@@ -547,6 +599,8 @@ void _script_exited_cb(lv_event_t * e)
 {
     sni_handle_t *handle, *tmp;
 
+    LV_UNUSED(e);
+
     HASH_ITER(hh, sni_map, handle, tmp)
     {
         if (SNI_TYPE_IS_HANDLE_LC_REALM(handle->type))
@@ -557,7 +611,8 @@ void _script_exited_cb(lv_event_t * e)
             }
 
             HASH_DEL(sni_map, handle);
-            eos_free(handle);
+            handle->ptr = NULL;
+            handle->is_alive = false;
         }
     }
 }

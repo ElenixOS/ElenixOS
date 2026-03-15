@@ -31,6 +31,46 @@ jerry_value_t sni_api_lv_obj_remove_event_cb_with_user_data(const jerry_call_inf
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count);
 
+jerry_value_t sni_api_lv_obj_send_event(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_set_user_data(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_user_data(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_coords(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_content_coords(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_click_area(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_scroll_end(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_get_scrollbar_area(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count);
+
+jerry_value_t sni_api_prop_get_obj_user_data(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count);
+
+jerry_value_t sni_api_prop_set_obj_user_data(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count);
+
 /* timer */
 jerry_value_t sni_api_ctor_timer(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],

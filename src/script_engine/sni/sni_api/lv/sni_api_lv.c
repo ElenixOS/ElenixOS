@@ -14051,36 +14051,6 @@ jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
-jerry_value_t sni_api_lv_label_set_text_static(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_string(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const char* arg_text;
-    arg_text = sni_tb_js2c_string(args_p[0]);
-
-    lv_label_set_text_static(self_obj, arg_text);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_lv_label_set_long_mode(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -14699,36 +14669,6 @@ jerry_value_t sni_api_prop_set_label_text_selection_start(const jerry_call_info_
     prop_value = sni_tb_js2c_uint32(args_p[0]);
 
     lv_label_set_text_selection_start(self_obj, prop_value);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_prop_set_label_text_static(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_string(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const char* prop_value;
-    prop_value = sni_tb_js2c_string(args_p[0]);
-
-    lv_label_set_text_static(self_obj, prop_value);
     return jerry_undefined();
 }
 
@@ -18304,7 +18244,6 @@ const sni_constant_desc_t lv_class_constants_button[] = {
 
 const sni_method_desc_t lv_class_methods_label[] = {
     {.name = "setText", .handler = sni_api_lv_label_set_text},
-    {.name = "setTextStatic", .handler = sni_api_lv_label_set_text_static},
     {.name = "setLongMode", .handler = sni_api_lv_label_set_long_mode},
     {.name = "setTextSelectionStart", .handler = sni_api_lv_label_set_text_selection_start},
     {.name = "setTextSelectionEnd", .handler = sni_api_lv_label_set_text_selection_end},
@@ -18330,7 +18269,6 @@ const sni_property_desc_t lv_class_properties_label[] = {
     {.name = "text", .getter = sni_api_prop_get_label_text, .setter = sni_api_prop_set_label_text},
     {.name = "textSelectionEnd", .getter = sni_api_prop_get_label_text_selection_end, .setter = sni_api_prop_set_label_text_selection_end},
     {.name = "textSelectionStart", .getter = sni_api_prop_get_label_text_selection_start, .setter = sni_api_prop_set_label_text_selection_start},
-    {.name = "textStatic", .getter = NULL, .setter = sni_api_prop_set_label_text_static},
     {.name = NULL, .getter = NULL, .setter = NULL},
 };
 

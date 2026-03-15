@@ -169,6 +169,7 @@
       "blacklist": [
         "*_fmt",
         "*_id*",
+        "*_text_static",
         "lv_anim_custom_*",
         "lv_anim_set_exec_cb",
         "lv_anim_set_user_data",

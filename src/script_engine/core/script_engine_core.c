@@ -110,6 +110,19 @@ static script_engine_context_t engine_ctx = {
 
 static eos_cqueue_t *g_module_queue = NULL;
 
+static void _cleanup_module_task(module_task_t *task)
+{
+    if (!task)
+    {
+        return;
+    }
+
+    jerry_value_free(task->specifier);
+    jerry_value_free(task->user_value);
+    jerry_value_free(task->promise);
+    eos_free(task);
+}
+
 /* Function Implementations -----------------------------------*/
 
 static jerry_value_t _module_import_cb(const jerry_value_t specifier,
@@ -322,6 +335,7 @@ static void _process_module_queue(void)
         {
             EOS_LOG_E("Failed to parse module: %s", (const char *)specifier_buffer);
             jerry_value_free(module_value);
+            _cleanup_module_task(task);
             continue;
         }
 
@@ -331,6 +345,7 @@ static void _process_module_queue(void)
             EOS_LOG_E("Failed to link module: %s", (const char *)specifier_buffer);
             jerry_value_free(link_result);
             jerry_value_free(module_value);
+            _cleanup_module_task(task);
             continue;
         }
         jerry_value_free(link_result);
@@ -341,6 +356,7 @@ static void _process_module_queue(void)
             EOS_LOG_E("Failed to evaluate module: %s", (const char *)specifier_buffer);
             jerry_value_free(eval_result);
             jerry_value_free(module_value);
+            _cleanup_module_task(task);
             continue;
         }
         jerry_value_free(eval_result);
@@ -362,10 +378,7 @@ static void _process_module_queue(void)
         jerry_value_free(module_value);
 
         // 清理任务资源
-        jerry_value_free(task->specifier);
-        jerry_value_free(task->user_value);
-        jerry_value_free(task->promise);
-        eos_free(task);
+        _cleanup_module_task(task);
     }
 }
 
@@ -998,7 +1011,6 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
             _script_engine_exception_handler("Module Link", link_result);
             _change_state(SCRIPT_STATE_ERROR);
             jerry_value_free(link_result);
-            jerry_value_free(parsed_code);
             result = -SE_ERR_JERRY_EXCEPTION;
         }
         else

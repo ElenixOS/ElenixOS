@@ -18090,6 +18090,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "bindChecked", .handler = sni_api_lv_obj_bind_checked},
     {.name = "moveForeground", .handler = sni_api_lv_obj_move_foreground},
     {.name = "moveBackground", .handler = sni_api_lv_obj_move_background},
+    {.name = "setFontSize", .handler = sni_api_eos_label_set_font_size},
     {.name = NULL, .handler = NULL},
 };
 

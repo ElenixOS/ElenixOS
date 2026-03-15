@@ -13,6 +13,7 @@
 #include "sni_callback_runtime.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
+#include "elena_os_font.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -405,4 +406,24 @@ jerry_value_t sni_api_prop_set_obj_user_data(const jerry_call_info_t *call_info_
                                              const jerry_length_t args_count)
 {
     return sni_api_lv_obj_set_user_data(call_info_p, args_p, args_count);
+}
+
+jerry_value_t sni_api_eos_label_set_font_size(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1 || !jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("setFontSize: requires a numeric size argument");
+    }
+
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("setFontSize: invalid object");
+    }
+
+    eos_font_size_t size = (eos_font_size_t)(uint32_t)jerry_value_as_number(args_p[0]);
+    eos_label_set_font_size(self_obj, size);
+    return jerry_undefined();
 }

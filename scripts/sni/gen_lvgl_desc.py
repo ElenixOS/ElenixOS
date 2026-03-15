@@ -117,6 +117,14 @@ SPECIAL_EXTRA_PROPERTIES: Dict[str, List[Tuple[str, Optional[str], Optional[str]
     ],
 }
 
+# Extra methods (not in lvgl.json) to inject per class.
+# Format: { class_name: [(js_method_name, c_wrapper_name), ...] }
+SPECIAL_EXTRA_METHODS: Dict[str, List[Tuple[str, str]]] = {
+    "obj": [
+        ("setFontSize", "sni_api_eos_label_set_font_size"),
+    ],
+}
+
 
 VERBOSE = False
 
@@ -1713,6 +1721,13 @@ def render_entries(
             else:
                 wrappers.append(render_method_wrapper(cls, method_func))
                 instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
+
+        extra_methods = SPECIAL_EXTRA_METHODS.get(cls.name, [])
+        if extra_methods:
+            existing_method_names = {name for name, _ in instance_items}
+            for extra_js_name, extra_c_name in extra_methods:
+                if extra_js_name not in existing_method_names:
+                    instance_items.append((extra_js_name, extra_c_name))
 
         method_array_name = f"lv_class_methods_{cls_id}"
         method_array_names[cls.name] = method_array_name

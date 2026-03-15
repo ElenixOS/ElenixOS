@@ -12,9 +12,14 @@
 extern "C" {
 #endif
 
+/* Includes ---------------------------------------------------*/
 #include "jerryscript.h"
 
-/* obj */
+/* Macros and Definitions -------------------------------------*/
+
+/* Function Declarations --------------------------------------*/
+
+/* obj --------------------------------------------------------*/
 jerry_value_t sni_api_lv_obj_add_event_cb(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count);
@@ -71,7 +76,11 @@ jerry_value_t sni_api_prop_set_obj_user_data(const jerry_call_info_t *call_info_
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count);
 
-/* timer */
+jerry_value_t sni_api_eos_label_set_font_size(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count);
+
+/* timer ------------------------------------------------------*/
 jerry_value_t sni_api_ctor_timer(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],
                                  const jerry_length_t args_count);
@@ -88,7 +97,7 @@ jerry_value_t sni_api_prop_set_timer_cb(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
 
-/* anim */
+/* anim -------------------------------------------------------*/
 jerry_value_t sni_api_ctor_anim(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count);
@@ -145,7 +154,7 @@ jerry_value_t sni_api_prop_set_anim_var(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
 
-/* buttonmatrix */
+/* buttonmatrix -----------------------------------------------*/
 jerry_value_t sni_api_ctor_buttonmatrix(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
@@ -158,7 +167,7 @@ jerry_value_t sni_api_lv_buttonmatrix_set_ctrl_map(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count);
 
-/* calendar */
+/* calendar -----------------------------------------------*/
 jerry_value_t sni_api_lv_calendar_set_day_names(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count);

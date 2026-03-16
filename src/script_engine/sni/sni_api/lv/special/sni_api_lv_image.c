@@ -176,6 +176,193 @@ static char *sni_image_resolve_asset_path(const char *src)
     return sni_image_resolve_under_root(root_dir, candidate);
 }
 
+typedef enum
+{
+    SNI_IMAGEBUTTON_SRC_LEFT = 0,
+    SNI_IMAGEBUTTON_SRC_MIDDLE = 1,
+    SNI_IMAGEBUTTON_SRC_RIGHT = 2,
+} sni_imagebutton_src_slot_t;
+
+typedef struct sni_imagebutton_src_store
+{
+    lv_obj_t *obj;
+    char *paths[LV_IMAGEBUTTON_STATE_NUM][3];
+    struct sni_imagebutton_src_store *next;
+} sni_imagebutton_src_store_t;
+
+static sni_imagebutton_src_store_t *sni_imagebutton_src_store_head = NULL;
+
+static sni_imagebutton_src_store_t *sni_imagebutton_find_store(lv_obj_t *obj)
+{
+    sni_imagebutton_src_store_t *cursor = sni_imagebutton_src_store_head;
+
+    while (cursor)
+    {
+        if (cursor->obj == obj)
+            return cursor;
+        cursor = cursor->next;
+    }
+
+    return NULL;
+}
+
+static void sni_imagebutton_free_store(sni_imagebutton_src_store_t *store)
+{
+    int state;
+    int slot;
+
+    if (!store)
+        return;
+
+    for (state = 0; state < LV_IMAGEBUTTON_STATE_NUM; state++)
+    {
+        for (slot = 0; slot < 3; slot++)
+        {
+            if (store->paths[state][slot])
+            {
+                eos_free(store->paths[state][slot]);
+                store->paths[state][slot] = NULL;
+            }
+        }
+    }
+
+    eos_free(store);
+}
+
+static void sni_imagebutton_detach_store(lv_obj_t *obj)
+{
+    sni_imagebutton_src_store_t *cursor = sni_imagebutton_src_store_head;
+    sni_imagebutton_src_store_t *prev = NULL;
+
+    while (cursor)
+    {
+        if (cursor->obj == obj)
+        {
+            if (prev)
+                prev->next = cursor->next;
+            else
+                sni_imagebutton_src_store_head = cursor->next;
+
+            sni_imagebutton_free_store(cursor);
+            return;
+        }
+        prev = cursor;
+        cursor = cursor->next;
+    }
+}
+
+static void sni_imagebutton_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *obj = lv_event_get_target(e);
+    sni_imagebutton_detach_store(obj);
+}
+
+static sni_imagebutton_src_store_t *sni_imagebutton_ensure_store(lv_obj_t *obj)
+{
+    sni_imagebutton_src_store_t *store = sni_imagebutton_find_store(obj);
+
+    if (store)
+        return store;
+
+    store = eos_malloc_zeroed(sizeof(*store));
+    if (!store)
+        return NULL;
+
+    store->obj = obj;
+    store->next = sni_imagebutton_src_store_head;
+    sni_imagebutton_src_store_head = store;
+    lv_obj_add_event_cb(obj, sni_imagebutton_delete_cb, LV_EVENT_DELETE, NULL);
+    return store;
+}
+
+static void sni_imagebutton_replace_owned_src(lv_obj_t *obj,
+                                              lv_imagebutton_state_t state,
+                                              sni_imagebutton_src_slot_t slot,
+                                              char *owned_path)
+{
+    sni_imagebutton_src_store_t *store;
+
+    if (state < 0 || state >= LV_IMAGEBUTTON_STATE_NUM)
+    {
+        if (owned_path)
+            eos_free(owned_path);
+        return;
+    }
+
+    store = sni_imagebutton_find_store(obj);
+    if (!store && !owned_path)
+        return;
+
+    if (!store)
+        store = sni_imagebutton_ensure_store(obj);
+
+    if (!store)
+    {
+        if (owned_path)
+            eos_free(owned_path);
+        return;
+    }
+
+    if (store->paths[state][slot])
+    {
+        eos_free(store->paths[state][slot]);
+        store->paths[state][slot] = NULL;
+    }
+
+    store->paths[state][slot] = owned_path;
+}
+
+static bool sni_image_js_to_src(const jerry_value_t value,
+                                const void **out_src,
+                                char **out_owned_path)
+{
+    if (!out_src || !out_owned_path)
+        return false;
+
+    *out_src = NULL;
+    *out_owned_path = NULL;
+
+    if (jerry_value_is_null(value))
+        return true;
+
+    if (jerry_value_is_string(value))
+    {
+        const char *raw_src = sni_tb_js2c_string(value);
+
+        if (!raw_src)
+            return false;
+
+        *out_owned_path = sni_image_resolve_asset_path(raw_src);
+        eos_free((void *)raw_src);
+
+        if (!*out_owned_path)
+            return false;
+
+        *out_src = *out_owned_path;
+        return true;
+    }
+
+    if (jerry_value_is_object(value))
+    {
+        lv_image_dsc_t *arg_src_dsc = NULL;
+        if (sni_tb_js2c(value, SNI_H_LV_IMAGE_DSC, &arg_src_dsc))
+        {
+            *out_src = arg_src_dsc;
+            return true;
+        }
+
+        const void *arg_src_ptr = NULL;
+        sni_type_t actual_type = SNI_T_UNKNOWN;
+        if (sni_tb_js2c_any_handle(value, &arg_src_ptr, &actual_type))
+        {
+            *out_src = arg_src_ptr;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 jerry_value_t sni_api_lv_image_set_src(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -254,4 +441,118 @@ jerry_value_t sni_api_prop_set_image_src(const jerry_call_info_t *call_info_p,
                                          const jerry_length_t args_count)
 {
     return sni_api_lv_image_set_src(call_info_p, args_p, args_count);
+}
+
+jerry_value_t sni_api_lv_imagebutton_set_src(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    lv_obj_t *self_obj = NULL;
+    lv_imagebutton_state_t state;
+    const void *src_left = NULL;
+    const void *src_mid = NULL;
+    const void *src_right = NULL;
+    char *owned_left = NULL;
+    char *owned_mid = NULL;
+    char *owned_right = NULL;
+
+    if (args_count != 4)
+        return sni_api_throw_error("Invalid argument count");
+
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+        return sni_api_throw_error("Failed to convert argument");
+
+    if (!jerry_value_is_number(args_p[0]))
+        return sni_api_throw_error("Invalid argument type");
+
+    state = sni_tb_js2c_int32(args_p[0]);
+    if (state < 0 || state >= LV_IMAGEBUTTON_STATE_NUM)
+        return sni_api_throw_error("Invalid imagebutton state");
+
+    if (!sni_image_js_to_src(args_p[1], &src_left, &owned_left) ||
+        !sni_image_js_to_src(args_p[2], &src_mid, &owned_mid) ||
+        !sni_image_js_to_src(args_p[3], &src_right, &owned_right))
+    {
+        if (owned_left)
+            eos_free(owned_left);
+        if (owned_mid)
+            eos_free(owned_mid);
+        if (owned_right)
+            eos_free(owned_right);
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if ((owned_left || owned_mid || owned_right) && !sni_imagebutton_ensure_store(self_obj))
+    {
+        if (owned_left)
+            eos_free(owned_left);
+        if (owned_mid)
+            eos_free(owned_mid);
+        if (owned_right)
+            eos_free(owned_right);
+        return sni_api_throw_error("Out of memory");
+    }
+
+    sni_imagebutton_replace_owned_src(self_obj, state, SNI_IMAGEBUTTON_SRC_LEFT, owned_left);
+    sni_imagebutton_replace_owned_src(self_obj, state, SNI_IMAGEBUTTON_SRC_MIDDLE, owned_mid);
+    sni_imagebutton_replace_owned_src(self_obj, state, SNI_IMAGEBUTTON_SRC_RIGHT, owned_right);
+
+    lv_imagebutton_set_src(self_obj, state, src_left, src_mid, src_right);
+    return jerry_undefined();
+}
+
+static jerry_value_t sni_api_lv_imagebutton_get_src_common(const jerry_call_info_t *call_info_p,
+                                                           const jerry_value_t args_p[],
+                                                           const jerry_length_t args_count,
+                                                           const void *(*getter)(lv_obj_t *, lv_imagebutton_state_t))
+{
+    lv_obj_t *self_obj = NULL;
+    lv_imagebutton_state_t state;
+    const void *result;
+
+    if (args_count != 1)
+        return sni_api_throw_error("Invalid argument count");
+
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+        return sni_api_throw_error("Failed to convert argument");
+
+    if (!jerry_value_is_number(args_p[0]))
+        return sni_api_throw_error("Invalid argument type");
+
+    state = sni_tb_js2c_int32(args_p[0]);
+    if (state < 0 || state >= LV_IMAGEBUTTON_STATE_NUM)
+        return sni_api_throw_error("Invalid imagebutton state");
+
+    result = getter(self_obj, state);
+    return sni_tb_c2js(&result, SNI_T_PTR);
+}
+
+jerry_value_t sni_api_lv_imagebutton_get_src_left(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    return sni_api_lv_imagebutton_get_src_common(call_info_p,
+                                                 args_p,
+                                                 args_count,
+                                                 lv_imagebutton_get_src_left);
+}
+
+jerry_value_t sni_api_lv_imagebutton_get_src_middle(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    return sni_api_lv_imagebutton_get_src_common(call_info_p,
+                                                 args_p,
+                                                 args_count,
+                                                 lv_imagebutton_get_src_middle);
+}
+
+jerry_value_t sni_api_lv_imagebutton_get_src_right(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    return sni_api_lv_imagebutton_get_src_common(call_info_p,
+                                                 args_p,
+                                                 args_count,
+                                                 lv_imagebutton_get_src_right);
 }

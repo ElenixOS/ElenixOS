@@ -274,6 +274,24 @@
       ],
       "static_methods": [],
       "constants": []
+    },
+    "imagebutton": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_imagebutton_create",
+      "methods": [
+        {
+          "name": "lv_imagebutton_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {

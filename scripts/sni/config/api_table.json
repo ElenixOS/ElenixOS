@@ -181,6 +181,25 @@
       ],
       "static_methods": [],
       "constants": []
+    },
+    "chart": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_chart_create",
+      "methods": [
+        {
+          "name": "lv_chart_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {

@@ -162,11 +162,11 @@
     },
     {
       "name": "lv_chart_cursor_t",
-      "object_type": ""
+      "object_type": "handle_object"
     },
     {
       "name": "lv_chart_series_t",
-      "object_type": ""
+      "object_type": "handle_object"
     },
     {
       "name": "lv_chart_t",

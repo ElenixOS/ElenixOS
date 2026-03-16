@@ -84,6 +84,7 @@ SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
     "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
     "lv_calendar_set_day_names": "sni_api_lv_calendar_set_day_names",
     "lv_calendar_set_highlighted_dates": "sni_api_lv_calendar_set_highlighted_dates",
+    "lv_dropdown_set_symbol": "sni_api_lv_dropdown_set_symbol",
     "lv_canvas_set_px": "sni_api_lv_canvas_set_px",
     "lv_canvas_get_px": "sni_api_lv_canvas_get_px",
     "lv_canvas_init_buffer": "sni_api_lv_canvas_init_buffer",
@@ -112,6 +113,7 @@ SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
     ("buttonmatrix", "map", "lv_buttonmatrix_set_map"): "sni_api_lv_buttonmatrix_set_map",
     ("buttonmatrix", "ctrl_map", "lv_buttonmatrix_set_ctrl_map"): "sni_api_lv_buttonmatrix_set_ctrl_map",
     ("calendar", "day_names", "lv_calendar_set_day_names"): "sni_api_lv_calendar_set_day_names",
+    ("dropdown", "symbol", "lv_dropdown_set_symbol"): "sni_api_prop_set_dropdown_symbol",
 }
 
 

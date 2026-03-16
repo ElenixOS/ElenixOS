@@ -238,6 +238,25 @@
       ],
       "static_methods": [],
       "constants": []
+    },
+    "dropdown": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_dropdown_create",
+      "methods": [
+        {
+          "name": "lv_dropdown_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
     }
   },
   "scan": {

@@ -27,7 +27,70 @@
 static lv_obj_t *scr_to_load = NULL;
 static bool is_app_header_visible_before_anim = false;
 static lv_point_t last_clicked_point;
+static void _pending_screen_lifecycle_cb(lv_event_t *e);
 /* Function Implementations -----------------------------------*/
+
+static void _detach_pending_screen_callbacks(lv_obj_t *scr)
+{
+    if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
+        return;
+
+    lv_obj_remove_event_cb(scr, _pending_screen_lifecycle_cb);
+}
+
+static void _clear_pending_screen(lv_obj_t *scr)
+{
+    if (scr && scr_to_load != scr)
+        return;
+
+    if (scr_to_load && lv_obj_is_valid(scr_to_load) && lv_obj_has_class(scr_to_load, &lv_obj_class))
+    {
+        _detach_pending_screen_callbacks(scr_to_load);
+    }
+
+    scr_to_load = NULL;
+}
+
+static void _pending_screen_lifecycle_cb(lv_event_t *e)
+{
+    lv_obj_t *scr = lv_event_get_target(e);
+    lv_event_code_t code = lv_event_get_code(e);
+
+    if (scr != scr_to_load)
+        return;
+
+    switch (code)
+    {
+    case LV_EVENT_SCREEN_LOADED:
+    case LV_EVENT_SCREEN_UNLOAD_START:
+    case LV_EVENT_DELETE:
+        EOS_LOG_D("Clear pending screen[%p] by event %d", scr, code);
+        _clear_pending_screen(scr);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void _set_pending_screen(lv_obj_t *scr)
+{
+    if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
+    {
+        _clear_pending_screen(NULL);
+        return;
+    }
+
+    if (scr_to_load == scr)
+        return;
+
+    _clear_pending_screen(NULL);
+
+    lv_obj_add_event_cb(scr, _pending_screen_lifecycle_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    lv_obj_add_event_cb(scr, _pending_screen_lifecycle_cb, LV_EVENT_SCREEN_UNLOAD_START, NULL);
+    lv_obj_add_event_cb(scr, _pending_screen_lifecycle_cb, LV_EVENT_DELETE, NULL);
+    scr_to_load = scr;
+}
 
 static void _snapshot_obj_delete_cb(lv_event_t *e)
 {
@@ -38,12 +101,19 @@ static void _snapshot_obj_delete_cb(lv_event_t *e)
 
 static void _anim_complete_cb(lv_anim_t *a)
 {
+    lv_obj_t *pending_scr = (lv_obj_t *)a->user_data;
+
     lv_obj_delete_async((lv_obj_t *)a->var);
-    if (!scr_to_load)
+    if (!(pending_scr && lv_obj_is_valid(pending_scr) && lv_obj_has_class(pending_scr, &lv_obj_class)))
+    {
+        _clear_pending_screen(pending_scr);
+        eos_anim_blocker_hide();
         return;
-    lv_screen_load(scr_to_load);
+    }
+
+    lv_screen_load(pending_scr);
     eos_anim_blocker_hide();
-    if (scr_to_load == eos_app_list_get_screen())
+    if (pending_scr == eos_app_list_get_screen())
     {
         eos_app_header_hide();
     }
@@ -147,7 +217,18 @@ lv_obj_t *eos_screen_active(void)
 
 static void _enter_app_anim_async_cb(void *user_data)
 {
-    _play_zoom_anim(scr_to_load,
+    lv_obj_t *pending_scr = (lv_obj_t *)user_data;
+
+    if (pending_scr != scr_to_load)
+        return;
+
+    if (!(pending_scr && lv_obj_is_valid(pending_scr) && lv_obj_has_class(pending_scr, &lv_obj_class)))
+    {
+        _clear_pending_screen(pending_scr);
+        return;
+    }
+
+    _play_zoom_anim(pending_scr,
                     _ENTER_APP_ANIM_SCALE_START,
                     _ENTER_APP_ANIM_SCALE_END,
                     EOS_SCREEN_ENTER_APP_ANIM_DURATION,
@@ -159,7 +240,10 @@ void eos_screen_load(lv_obj_t *scr)
     EOS_LOG_D("eos_screen_load scr[%p]", scr);
     if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
         return;
-    scr_to_load = scr;
+
+    _set_pending_screen(scr);
+    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
+
     if (eos_nav_get_state() == EOS_NAV_STATE_ENTER_NEXT_SCREEN && eos_nav_is_state_completed())
     {
         EOS_LOG_D("Play ENTER_NEXT anim");
@@ -176,7 +260,7 @@ void eos_screen_load(lv_obj_t *scr)
         if (eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_APP_LIST) || eos_secne_is_equal(EOS_SCENE_NAVIGATION, EOS_SCENE_WATCHFACE))
         {
             // 必须异步调用，让scr渲染一帧以便截图
-            lv_async_call(_enter_app_anim_async_cb, NULL);
+            lv_async_call(_enter_app_anim_async_cb, scr);
         }
         else if (eos_secne_is_equal(EOS_SCENE_APP_LIST, EOS_SCENE_NAVIGATION) || eos_secne_is_equal(EOS_SCENE_WATCHFACE, EOS_SCENE_NAVIGATION))
         {
@@ -206,7 +290,8 @@ void eos_screen_load_without_anim(lv_obj_t *scr)
     if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
         return;
 
-    scr_to_load = scr;
+    _set_pending_screen(scr);
+    eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOAD_START, scr);
     lv_screen_load(scr);
     eos_event_broadcast(EOS_EVENT_GLOBAL_SCREEN_LOADED, scr);
 }

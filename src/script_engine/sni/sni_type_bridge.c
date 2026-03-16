@@ -399,6 +399,42 @@ bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj)
     return false;
 }
 
+bool sni_tb_js2c_any_handle(jerry_value_t js_val, void *out_obj, sni_type_t *out_type)
+{
+    if (out_obj == NULL)
+    {
+        return false;
+    }
+
+    if (jerry_value_is_null(js_val) || jerry_value_is_undefined(js_val))
+    {
+        *(void **)out_obj = NULL;
+        if (out_type)
+        {
+            *out_type = SNI_T_UNKNOWN;
+        }
+        return true;
+    }
+
+    if (!jerry_value_is_object(js_val))
+    {
+        return false;
+    }
+
+    sni_handle_t *handle = jerry_object_get_native_ptr(js_val, &sni_native_info);
+    if (!handle || !handle->is_alive)
+    {
+        return false;
+    }
+
+    *(void **)out_obj = handle->ptr;
+    if (out_type)
+    {
+        *out_type = handle->type;
+    }
+    return true;
+}
+
 jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type)
 {
     if (c_val == NULL)

@@ -189,6 +189,15 @@ jerry_value_t sni_api_prop_set_dropdown_symbol(const jerry_call_info_t *call_inf
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count);
 
+/* image */
+jerry_value_t sni_api_lv_image_set_src(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count);
+
+jerry_value_t sni_api_prop_set_image_src(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count);
+
 /* canvas */
 jerry_value_t sni_api_lv_canvas_set_px(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],

@@ -443,6 +443,39 @@ jerry_value_t sni_api_lv_obj_set_parent(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_lv_obj_swap(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* arg_obj2;
+    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arg_obj2))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_swap(self_obj, arg_obj2);
+    return jerry_undefined();
+}
+
 jerry_value_t sni_api_lv_obj_move_to_index(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -792,6 +825,72 @@ jerry_value_t sni_api_lv_obj_get_index_by_type(const jerry_call_info_t *call_inf
 
     int32_t result = lv_obj_get_index_by_type(self_obj, arg_class_p);
     return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_obj_tree_walk(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_tree_walk_cb_t arg_cb;
+    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ_TREE_WALK_CB, &arg_cb))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    void* arg_user_data;
+    if (!sni_tb_js2c(args_p[1], SNI_T_PTR, &arg_user_data))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_tree_walk(self_obj, arg_cb, arg_user_data);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_obj_dump_tree(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_dump_tree(self_obj);
+    return jerry_undefined();
 }
 
 jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
@@ -11751,6 +11850,29 @@ jerry_value_t sni_api_lv_obj_remove_event(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+jerry_value_t sni_api_lv_obj_create(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t* result = lv_obj_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
 jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -12214,6 +12336,29 @@ jerry_value_t sni_api_lv_obj_is_valid(const jerry_call_info_t *call_info_p,
 
     bool result = lv_obj_is_valid(self_obj);
     return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_lv_obj_null_on_delete(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t** self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_null_on_delete(self_obj);
+    return jerry_undefined();
 }
 
 jerry_value_t sni_api_lv_obj_remove_from_subject(const jerry_call_info_t *call_info_p,
@@ -19244,39 +19389,6 @@ jerry_value_t sni_api_lv_dropdown_set_dir(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
-jerry_value_t sni_api_lv_dropdown_set_symbol_auto_generated_unused(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const void* arg_symbol;
-    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &arg_symbol))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_dropdown_set_symbol(self_obj, arg_symbol);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_lv_dropdown_set_selected_highlight(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -19955,39 +20067,6 @@ jerry_value_t sni_api_prop_get_dropdown_symbol(const jerry_call_info_t *call_inf
     return sni_tb_c2js_string(result);
 }
 
-jerry_value_t sni_api_prop_set_dropdown_symbol_auto_generated_unused(const jerry_call_info_t *call_info_p,
-                                const jerry_value_t args_p[],
-                                const jerry_length_t args_count)
-{
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t* self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_object(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const void* prop_value;
-    if (!sni_tb_js2c(args_p[0], SNI_T_PTR, &prop_value))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_dropdown_set_symbol(self_obj, prop_value);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_prop_get_dropdown_text(const jerry_call_info_t *call_info_p,
                                 const jerry_value_t args_p[],
                                 const jerry_length_t args_count)
@@ -20042,6 +20121,1257 @@ jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+jerry_value_t sni_api_ctor_image(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t* arg_parent;
+    if (jerry_value_is_null(args_p[0]))
+    {
+        arg_parent = NULL;
+    }
+    else if (jerry_value_is_object(args_p[0]))
+    {
+        if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arg_parent))
+        {
+            return sni_api_throw_error("Failed to convert argument");
+        }
+    }
+    else
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+
+    lv_obj_t* native_obj = lv_image_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_create(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t* result = lv_image_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+jerry_value_t sni_api_lv_image_set_offset_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_x;
+    arg_x = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_offset_x(self_obj, arg_x);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_offset_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_y;
+    arg_y = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_offset_y(self_obj, arg_y);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_rotation(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_angle;
+    arg_angle = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_rotation(self_obj, arg_angle);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_pivot(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_x;
+    arg_x = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_y;
+    arg_y = sni_tb_js2c_int32(args_p[1]);
+
+    lv_image_set_pivot(self_obj, arg_x, arg_y);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_scale(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_zoom;
+    arg_zoom = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale(self_obj, arg_zoom);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_scale_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_zoom;
+    arg_zoom = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale_x(self_obj, arg_zoom);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_scale_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_zoom;
+    arg_zoom = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale_y(self_obj, arg_zoom);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_blend_mode(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_blend_mode_t arg_blend_mode;
+    arg_blend_mode = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_blend_mode(self_obj, arg_blend_mode);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_antialias(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_antialias;
+    arg_antialias = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_image_set_antialias(self_obj, arg_antialias);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_inner_align(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_image_align_t arg_align;
+    arg_align = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_inner_align(self_obj, arg_align);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_set_bitmap_map_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_image_dsc_t* arg_src;
+    if (!sni_tb_js2c(args_p[0], SNI_H_LV_IMAGE_DSC, &arg_src))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_image_set_bitmap_map_src(self_obj, arg_src);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_get_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const void* result = lv_image_get_src(self_obj);
+    return sni_tb_c2js(&result, SNI_T_PTR);
+}
+
+jerry_value_t sni_api_lv_image_get_offset_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_offset_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_offset_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_offset_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_rotation(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_rotation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_pivot(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_point_t arg_pivot_value = {0};
+
+    lv_image_get_pivot(self_obj, &arg_pivot_value);
+    if (!sni_tb_c2js_set_object(&arg_pivot_value, SNI_V_LV_POINT, args_p[0]))
+    {
+        return sni_api_throw_error("Failed to convert return argument");
+    }
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_image_get_scale(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_scale_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_scale_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_blend_mode(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_blend_mode_t result = lv_image_get_blend_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_antialias(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_image_get_antialias(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_lv_image_get_inner_align(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_image_align_t result = lv_image_get_inner_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_lv_image_get_bitmap_map_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const lv_image_dsc_t* result = lv_image_get_bitmap_map_src(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_IMAGE_DSC);
+}
+
+jerry_value_t sni_api_prop_get_image_antialias(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_image_get_antialias(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+jerry_value_t sni_api_prop_set_image_antialias(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_image_set_antialias(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_bitmap_map_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const lv_image_dsc_t* result = lv_image_get_bitmap_map_src(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_IMAGE_DSC);
+}
+
+jerry_value_t sni_api_prop_set_image_bitmap_map_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_image_dsc_t* prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_H_LV_IMAGE_DSC, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_image_set_bitmap_map_src(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_blend_mode(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_blend_mode_t result = lv_image_get_blend_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_blend_mode(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_blend_mode_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_blend_mode(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_inner_align(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_image_align_t result = lv_image_get_inner_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_inner_align(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_image_align_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_inner_align(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_offset_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_offset_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_offset_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_offset_x(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_offset_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_offset_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_offset_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_offset_y(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_rotation(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_rotation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_rotation(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_image_set_rotation(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_scale(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_scale(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_scale_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_scale_x(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale_x(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_scale_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_image_get_scale_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+jerry_value_t sni_api_prop_set_image_scale_y(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_image_set_scale_y(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_prop_get_image_src(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const void* result = lv_image_get_src(self_obj);
+    return sni_tb_c2js(&result, SNI_T_PTR);
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -20054,6 +21384,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "deleteDelayed", .handler = sni_api_lv_obj_delete_delayed},
     {.name = "deleteAsync", .handler = sni_api_lv_obj_delete_async},
     {.name = "setParent", .handler = sni_api_lv_obj_set_parent},
+    {.name = "swap", .handler = sni_api_lv_obj_swap},
     {.name = "moveToIndex", .handler = sni_api_lv_obj_move_to_index},
     {.name = "getScreen", .handler = sni_api_lv_obj_get_screen},
     {.name = "getDisplay", .handler = sni_api_lv_obj_get_display},
@@ -20066,6 +21397,8 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "getChildCountByType", .handler = sni_api_lv_obj_get_child_count_by_type},
     {.name = "getIndex", .handler = sni_api_lv_obj_get_index},
     {.name = "getIndexByType", .handler = sni_api_lv_obj_get_index_by_type},
+    {.name = "treeWalk", .handler = sni_api_lv_obj_tree_walk},
+    {.name = "dumpTree", .handler = sni_api_lv_obj_dump_tree},
     {.name = "setPos", .handler = sni_api_lv_obj_set_pos},
     {.name = "setX", .handler = sni_api_lv_obj_set_x},
     {.name = "setY", .handler = sni_api_lv_obj_set_y},
@@ -20411,6 +21744,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "removeEventCb", .handler = sni_api_lv_obj_remove_event_cb},
     {.name = "removeEventDsc", .handler = sni_api_lv_obj_remove_event_dsc},
     {.name = "removeEventCbWithUserData", .handler = sni_api_lv_obj_remove_event_cb_with_user_data},
+    {.name = "create", .handler = sni_api_lv_obj_create},
     {.name = "addFlag", .handler = sni_api_lv_obj_add_flag},
     {.name = "removeFlag", .handler = sni_api_lv_obj_remove_flag},
     {.name = "updateFlag", .handler = sni_api_lv_obj_update_flag},
@@ -20429,6 +21763,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "hasClass", .handler = sni_api_lv_obj_has_class},
     {.name = "getClass", .handler = sni_api_lv_obj_get_class},
     {.name = "isValid", .handler = sni_api_lv_obj_is_valid},
+    {.name = "nullOnDelete", .handler = sni_api_lv_obj_null_on_delete},
     {.name = "removeFromSubject", .handler = sni_api_lv_obj_remove_from_subject},
     {.name = "bindFlagIfEq", .handler = sni_api_lv_obj_bind_flag_if_eq},
     {.name = "bindFlagIfNotEq", .handler = sni_api_lv_obj_bind_flag_if_not_eq},
@@ -20943,6 +22278,58 @@ const sni_property_desc_t lv_class_properties_dropdown[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_dropdown[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_image[] = {
+    {.name = "create", .handler = sni_api_lv_image_create},
+    {.name = "setSrc", .handler = sni_api_lv_image_set_src},
+    {.name = "setOffsetX", .handler = sni_api_lv_image_set_offset_x},
+    {.name = "setOffsetY", .handler = sni_api_lv_image_set_offset_y},
+    {.name = "setRotation", .handler = sni_api_lv_image_set_rotation},
+    {.name = "setPivot", .handler = sni_api_lv_image_set_pivot},
+    {.name = "setScale", .handler = sni_api_lv_image_set_scale},
+    {.name = "setScaleX", .handler = sni_api_lv_image_set_scale_x},
+    {.name = "setScaleY", .handler = sni_api_lv_image_set_scale_y},
+    {.name = "setBlendMode", .handler = sni_api_lv_image_set_blend_mode},
+    {.name = "setAntialias", .handler = sni_api_lv_image_set_antialias},
+    {.name = "setInnerAlign", .handler = sni_api_lv_image_set_inner_align},
+    {.name = "setBitmapMapSrc", .handler = sni_api_lv_image_set_bitmap_map_src},
+    {.name = "getSrc", .handler = sni_api_lv_image_get_src},
+    {.name = "getOffsetX", .handler = sni_api_lv_image_get_offset_x},
+    {.name = "getOffsetY", .handler = sni_api_lv_image_get_offset_y},
+    {.name = "getRotation", .handler = sni_api_lv_image_get_rotation},
+    {.name = "getPivot", .handler = sni_api_lv_image_get_pivot},
+    {.name = "getScale", .handler = sni_api_lv_image_get_scale},
+    {.name = "getScaleX", .handler = sni_api_lv_image_get_scale_x},
+    {.name = "getScaleY", .handler = sni_api_lv_image_get_scale_y},
+    {.name = "getBlendMode", .handler = sni_api_lv_image_get_blend_mode},
+    {.name = "getAntialias", .handler = sni_api_lv_image_get_antialias},
+    {.name = "getInnerAlign", .handler = sni_api_lv_image_get_inner_align},
+    {.name = "getBitmapMapSrc", .handler = sni_api_lv_image_get_bitmap_map_src},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_image[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_image[] = {
+    {.name = "antialias", .getter = sni_api_prop_get_image_antialias, .setter = sni_api_prop_set_image_antialias},
+    {.name = "bitmapMapSrc", .getter = sni_api_prop_get_image_bitmap_map_src, .setter = sni_api_prop_set_image_bitmap_map_src},
+    {.name = "blendMode", .getter = sni_api_prop_get_image_blend_mode, .setter = sni_api_prop_set_image_blend_mode},
+    {.name = "innerAlign", .getter = sni_api_prop_get_image_inner_align, .setter = sni_api_prop_set_image_inner_align},
+    {.name = "offsetX", .getter = sni_api_prop_get_image_offset_x, .setter = sni_api_prop_set_image_offset_x},
+    {.name = "offsetY", .getter = sni_api_prop_get_image_offset_y, .setter = sni_api_prop_set_image_offset_y},
+    {.name = "rotation", .getter = sni_api_prop_get_image_rotation, .setter = sni_api_prop_set_image_rotation},
+    {.name = "scale", .getter = sni_api_prop_get_image_scale, .setter = sni_api_prop_set_image_scale},
+    {.name = "scaleX", .getter = sni_api_prop_get_image_scale_x, .setter = sni_api_prop_set_image_scale_x},
+    {.name = "scaleY", .getter = sni_api_prop_get_image_scale_y, .setter = sni_api_prop_set_image_scale_y},
+    {.name = "src", .getter = sni_api_prop_get_image_src, .setter = sni_api_prop_set_image_src},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_image[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -22189,6 +23576,16 @@ const sni_class_desc_t lv_class_desc_dropdown = {
     .constants = lv_class_constants_dropdown,
 };
 
+const sni_class_desc_t lv_class_desc_image = {
+    .name = "image",
+    .constructor = sni_api_ctor_image,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_image,
+    .properties = lv_class_properties_image,
+    .static_methods = lv_class_static_methods_image,
+    .constants = lv_class_constants_image,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -22205,6 +23602,7 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_canvas,
     &lv_class_desc_checkbox,
     &lv_class_desc_dropdown,
+    &lv_class_desc_image,
     NULL,
 };
 

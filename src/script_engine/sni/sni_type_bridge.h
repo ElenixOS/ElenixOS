@@ -52,6 +52,15 @@ const char *sni_tb_js2c_string(jerry_value_t js_val);
 bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj);
 
 /**
+ * @brief 从任意 Handle 对象中提取原始指针和实际类型
+ * @param js_val JerryScript handle 对象
+ * @param out_obj 输出原始指针
+ * @param out_type 输出句柄实际类型，可为 NULL
+ * @return bool 提取是否成功
+ */
+bool sni_tb_js2c_any_handle(jerry_value_t js_val, void *out_obj, sni_type_t *out_type);
+
+/**
  * @brief 将 C 值或值对象转换为 JerryScript 值
  * @param c_val C 值指针（如果输入值是指针，则应该传入它的地址，即二级指针）
  * @param type 源类型

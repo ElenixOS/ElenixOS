@@ -10,7 +10,6 @@
           "arg_match": [
             {
               "nth": 1,
-              "name": "obj",
               "type": "lv_obj_t*"
             }
           ]
@@ -249,6 +248,24 @@
           "arg_match": [
             {
               "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "image": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_image_create",
+      "methods": [
+        {
+          "name": "lv_image_*",
+          "arg_match": [
+            {
               "nth": 1,
               "type": "lv_obj_t*"
             }

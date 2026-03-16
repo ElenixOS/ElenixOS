@@ -15945,7 +15945,10 @@ jerry_value_t sni_api_lv_timer_set_auto_delete(const jerry_call_info_t *call_inf
     bool arg_auto_delete;
     arg_auto_delete = sni_tb_js2c_boolean(args_p[0]);
 
-    lv_timer_set_auto_delete(self_obj, arg_auto_delete);
+    if (!sni_cb_timer_set_auto_delete(self_obj, arg_auto_delete))
+    {
+        return sni_api_throw_error("Failed to set timer auto delete");
+    }
     return jerry_undefined();
 }
 
@@ -16044,7 +16047,10 @@ jerry_value_t sni_api_prop_set_timer_auto_delete(const jerry_call_info_t *call_i
     bool prop_value;
     prop_value = sni_tb_js2c_boolean(args_p[0]);
 
-    lv_timer_set_auto_delete(self_obj, prop_value);
+    if (!sni_cb_timer_set_auto_delete(self_obj, prop_value))
+    {
+        return sni_api_throw_error("Failed to set timer auto delete");
+    }
     return jerry_undefined();
 }
 
@@ -23766,6 +23772,10 @@ void sni_api_lv_init(void)
 {
     sni_cb_runtime_init();
     lv_api_obj = sni_api_build(lv_api_classes);
+    if (!jerry_value_is_object(lv_api_obj))
+    {
+        EOS_LOG_E("Failed to build LV API object");
+    }
     if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
     {
         EOS_LOG_E("Failed to register LV root constants");

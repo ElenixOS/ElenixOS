@@ -17,6 +17,7 @@
 #include "elena_os_log.h"
 #include "elena_os_screen_mgr.h"
 #include "script_engine_core.h"
+#include "elena_os_font.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_API_NAME "eos"
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
@@ -50,20 +51,20 @@ static jerry_value_t sni_api_eos_console_write(const jerry_value_t args_p[],
 
         switch (level)
         {
-            case EOS_CONSOLE_LEVEL_LOG:
-                EOS_LOG_I("[%s] %s", CONSOLE_LOG_TAG, str);
-                break;
-            case EOS_CONSOLE_LEVEL_ERROR:
-                EOS_LOG_E("[%s] %s", CONSOLE_LOG_TAG, str);
-                break;
-            case EOS_CONSOLE_LEVEL_WARN:
-                EOS_LOG_W("[%s] %s", CONSOLE_LOG_TAG, str);
-                break;
-            case EOS_CONSOLE_LEVEL_DEBUG:
-                EOS_LOG_D("[%s] %s", CONSOLE_LOG_TAG, str);
-                break;
-            default:
-                return sni_api_throw_error("Invalid console log level");
+        case EOS_CONSOLE_LEVEL_LOG:
+            EOS_LOG_I("[%s] %s", CONSOLE_LOG_TAG, str);
+            break;
+        case EOS_CONSOLE_LEVEL_ERROR:
+            EOS_LOG_E("[%s] %s", CONSOLE_LOG_TAG, str);
+            break;
+        case EOS_CONSOLE_LEVEL_WARN:
+            EOS_LOG_W("[%s] %s", CONSOLE_LOG_TAG, str);
+            break;
+        case EOS_CONSOLE_LEVEL_DEBUG:
+            EOS_LOG_D("[%s] %s", CONSOLE_LOG_TAG, str);
+            break;
+        default:
+            return sni_api_throw_error("Invalid console log level");
         }
     }
 
@@ -96,8 +97,8 @@ jerry_value_t sni_api_eos_console_log(const jerry_call_info_t *call_info_p,
 }
 
 jerry_value_t sni_api_eos_console_error(const jerry_call_info_t *call_info_p,
-                                       const jerry_value_t args_p[],
-                                       const jerry_length_t args_count)
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
 {
     (void)call_info_p;
 
@@ -105,8 +106,8 @@ jerry_value_t sni_api_eos_console_error(const jerry_call_info_t *call_info_p,
 }
 
 jerry_value_t sni_api_eos_console_warn(const jerry_call_info_t *call_info_p,
-                                      const jerry_value_t args_p[],
-                                      const jerry_length_t args_count)
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
 {
     (void)call_info_p;
 
@@ -114,8 +115,8 @@ jerry_value_t sni_api_eos_console_warn(const jerry_call_info_t *call_info_p,
 }
 
 jerry_value_t sni_api_eos_console_debug(const jerry_call_info_t *call_info_p,
-                                       const jerry_value_t args_p[],
-                                       const jerry_length_t args_count)
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
 {
     (void)call_info_p;
 
@@ -162,9 +163,27 @@ const sni_class_desc_t *const eos_api_classes[] = {
     NULL,
 };
 
+const sni_constant_desc_t eos_root_constants[] = {
+    {.name = "FONT_SIZE_LARGE", .type = SNI_CONST_INT, .value.i = EOS_FONT_SIZE_LARGE},
+    {.name = "FONT_SIZE_MEDIUM", .type = SNI_CONST_INT, .value.i = EOS_FONT_SIZE_MEDIUM},
+    {.name = "FONT_SIZE_SMALL", .type = SNI_CONST_INT, .value.i = EOS_FONT_SIZE_SMALL},
+    {.name = "DISPLAY_WIDTH", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_WIDTH},
+    {.name = "DISPLAY_HEIGHT", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_HEIGHT},
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
 void sni_api_eos_init(void)
 {
     eos_api_obj = sni_api_build(eos_api_classes);
+    if (!jerry_value_is_object(eos_api_obj))
+    {
+        EOS_LOG_E("Failed to build ElenaOS API object");
+        return;
+    }
+    if (!sni_api_register_constants(eos_root_constants, eos_api_obj))
+    {
+        EOS_LOG_E("Failed to register ElenaOS API constants");
+    }
 }
 
 void sni_api_eos_mount(jerry_value_t realm)

@@ -67,9 +67,6 @@ typedef struct
     lv_obj_t *launcher_screen;
     lv_obj_t *list_screen;
     lv_obj_t *debug_bar;
-    lv_coord_t debug_bar_x;
-    lv_coord_t debug_bar_y;
-    bool debug_bar_pos_valid;
     char *current_app_id;
     bool debug_active;
     bool global_cb_registered;
@@ -141,15 +138,62 @@ static const symbol_t lv_symbols[] = {
 };
 
 static test_app_debug_ctx_t s_test_app_debug = {0};
+static lv_coord_t s_debug_bar_global_x = 0;
+static lv_coord_t s_debug_bar_global_y = 0;
+static bool s_debug_bar_global_pos_valid = false;
+
+#define TEST_APP_DEBUG_BAR_W 220
+#define TEST_APP_DEBUG_BAR_H 64
+
+static void _test_app_debug_clamp_bar_pos(int32_t *x, int32_t *y, int32_t w, int32_t h)
+{
+    if (!(x && y))
+        return;
+
+    if (*x < 0) *x = 0;
+    if (*y < 0) *y = 0;
+    if (*x + w > EOS_DISPLAY_WIDTH) *x = EOS_DISPLAY_WIDTH - w;
+    if (*y + h > EOS_DISPLAY_HEIGHT) *y = EOS_DISPLAY_HEIGHT - h;
+    if (*x < 0) *x = 0;
+    if (*y < 0) *y = 0;
+}
+
+static void _test_app_debug_set_global_bar_pos(int32_t x, int32_t y, int32_t w, int32_t h)
+{
+    _test_app_debug_clamp_bar_pos(&x, &y, w, h);
+    s_debug_bar_global_x = x;
+    s_debug_bar_global_y = y;
+    s_debug_bar_global_pos_valid = true;
+}
 
 static void _test_app_debug_save_bar_pos(lv_obj_t *bar)
 {
     if (!(bar && lv_obj_is_valid(bar)))
         return;
 
-    s_test_app_debug.debug_bar_x = lv_obj_get_x(bar);
-    s_test_app_debug.debug_bar_y = lv_obj_get_y(bar);
-    s_test_app_debug.debug_bar_pos_valid = true;
+    int32_t x = lv_obj_get_x(bar);
+    int32_t y = lv_obj_get_y(bar);
+    int32_t w = lv_obj_get_width(bar);
+    int32_t h = lv_obj_get_height(bar);
+    if (w <= 0) w = TEST_APP_DEBUG_BAR_W;
+    if (h <= 0) h = TEST_APP_DEBUG_BAR_H;
+
+    _test_app_debug_set_global_bar_pos(x, y, w, h);
+}
+
+static void _test_app_debug_sync_bar_pos(void)
+{
+    lv_obj_t *bar = s_test_app_debug.debug_bar;
+    if (!(bar && lv_obj_is_valid(bar) && s_debug_bar_global_pos_valid))
+        return;
+
+    int32_t x = s_debug_bar_global_x;
+    int32_t y = s_debug_bar_global_y;
+    _test_app_debug_clamp_bar_pos(&x, &y, lv_obj_get_width(bar), lv_obj_get_height(bar));
+
+    lv_obj_set_pos(bar, x, y);
+    s_debug_bar_global_x = x;
+    s_debug_bar_global_y = y;
 }
 
 static void _test_app_debug_clear_current_app_id(void)
@@ -161,14 +205,22 @@ static void _test_app_debug_clear_current_app_id(void)
     }
 }
 
-static void _test_app_debug_destroy_bar(void)
+static void _test_app_debug_destroy_bar_internal(bool save_pos)
 {
     if (s_test_app_debug.debug_bar && lv_obj_is_valid(s_test_app_debug.debug_bar))
     {
-        _test_app_debug_save_bar_pos(s_test_app_debug.debug_bar);
+        if (save_pos)
+        {
+            _test_app_debug_save_bar_pos(s_test_app_debug.debug_bar);
+        }
         lv_obj_delete_async(s_test_app_debug.debug_bar);
     }
     s_test_app_debug.debug_bar = NULL;
+}
+
+static void _test_app_debug_destroy_bar(void)
+{
+    _test_app_debug_destroy_bar_internal(true);
 }
 
 static void _test_app_debug_create_bar(void);
@@ -180,7 +232,8 @@ static void _test_app_debug_script_exited_cb(lv_event_t *e)
     if (!s_test_app_debug.debug_active)
         return;
 
-    _test_app_debug_destroy_bar();
+    /* Do not overwrite persisted position in script-exit timing path. */
+    _test_app_debug_destroy_bar_internal(false);
     s_test_app_debug.debug_active = false;
     _test_app_debug_clear_current_app_id();
 }
@@ -196,6 +249,7 @@ static void _test_app_debug_global_screen_loaded_cb(lv_event_t *e)
     eos_app_header_hide();
     if (s_test_app_debug.debug_bar && lv_obj_is_valid(s_test_app_debug.debug_bar))
     {
+        _test_app_debug_sync_bar_pos();
         lv_obj_move_foreground(s_test_app_debug.debug_bar);
     }
 }
@@ -284,6 +338,18 @@ static void _test_app_debug_show_error(lv_obj_t *scr, const char *app_id, script
     eos_list_add_comment(list, info_str);
 }
 
+static void _test_app_debug_restore_after_error(const char *app_id)
+{
+    if (!app_id)
+        return;
+
+    s_test_app_debug.debug_active = true;
+    _test_app_debug_clear_current_app_id();
+    s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
+    _test_app_debug_create_bar();
+    _test_app_debug_sync_bar_pos();
+}
+
 static script_engine_result_t _test_app_debug_start_internal(const char *app_id)
 {
     if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
@@ -320,6 +386,7 @@ static script_engine_result_t _test_app_debug_start_internal(const char *app_id)
     if (ret != SE_OK)
     {
         _test_app_debug_show_error(scr, app_id, ret);
+        _test_app_debug_restore_after_error(app_id);
     }
 
     return ret;
@@ -414,12 +481,13 @@ static void _test_app_debug_drag_handle_cb(lv_event_t *e)
         if (new_y + bar_h > EOS_DISPLAY_HEIGHT) new_y = EOS_DISPLAY_HEIGHT - bar_h;
 
         lv_obj_set_pos(bar, new_x, new_y);
-        _test_app_debug_save_bar_pos(bar);
+        _test_app_debug_set_global_bar_pos(new_x, new_y, bar_w, bar_h);
     } else if (code == LV_EVENT_PRESSED) {
         lv_obj_set_style_bg_color(handle, lv_color_hex(0x3A4550), 0);
         lv_obj_set_style_bg_opa(handle, LV_OPA_COVER, 0);
         lv_obj_set_style_text_color(handle, lv_color_hex(0xFFFFFF), 0);
     } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        _test_app_debug_save_bar_pos(bar);
         lv_obj_set_style_bg_opa(handle, LV_OPA_TRANSP, 0);
         lv_obj_set_style_text_color(handle, lv_color_hex(0x8090A0), 0);
     }
@@ -433,21 +501,18 @@ static void _test_app_debug_create_bar(void)
     s_test_app_debug.debug_bar = bar;
     lv_obj_remove_style_all(bar);
 
-    const int32_t bar_w = 220;
-    const int32_t bar_h = 64;
+    const int32_t bar_w = TEST_APP_DEBUG_BAR_W;
+    const int32_t bar_h = TEST_APP_DEBUG_BAR_H;
     int32_t bar_x = (EOS_DISPLAY_WIDTH - bar_w) / 2;
     int32_t bar_y = 18;
 
-    if (s_test_app_debug.debug_bar_pos_valid)
+    if (s_debug_bar_global_pos_valid)
     {
-        bar_x = s_test_app_debug.debug_bar_x;
-        bar_y = s_test_app_debug.debug_bar_y;
+        bar_x = s_debug_bar_global_x;
+        bar_y = s_debug_bar_global_y;
     }
 
-    if (bar_x < 0) bar_x = 0;
-    if (bar_y < 0) bar_y = 0;
-    if (bar_x + bar_w > EOS_DISPLAY_WIDTH) bar_x = EOS_DISPLAY_WIDTH - bar_w;
-    if (bar_y + bar_h > EOS_DISPLAY_HEIGHT) bar_y = EOS_DISPLAY_HEIGHT - bar_h;
+    _test_app_debug_clamp_bar_pos(&bar_x, &bar_y, bar_w, bar_h);
 
     lv_obj_set_size(bar, bar_w, bar_h);
     lv_obj_set_pos(bar, bar_x, bar_y);
@@ -464,7 +529,7 @@ static void _test_app_debug_create_bar(void)
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
 
-    _test_app_debug_save_bar_pos(bar);
+    _test_app_debug_set_global_bar_pos(bar_x, bar_y, bar_w, bar_h);
 
     /* 拖动柄（左侧） */
     lv_obj_t *drag_handle = lv_obj_create(bar);

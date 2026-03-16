@@ -18849,6 +18849,152 @@ jerry_value_t sni_api_prop_get_canvas_image(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_H_LV_IMAGE_DSC);
 }
 
+jerry_value_t sni_api_ctor_checkbox(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t* arg_parent;
+    if (jerry_value_is_null(args_p[0]))
+    {
+        arg_parent = NULL;
+    }
+    else if (jerry_value_is_object(args_p[0]))
+    {
+        if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arg_parent))
+        {
+            return sni_api_throw_error("Failed to convert argument");
+        }
+    }
+    else
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+
+    lv_obj_t* native_obj = lv_checkbox_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char* arg_txt;
+    arg_txt = sni_tb_js2c_string(args_p[0]);
+
+    lv_checkbox_set_text(self_obj, arg_txt);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_checkbox_get_text(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char* result = lv_checkbox_get_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+jerry_value_t sni_api_prop_get_checkbox_text(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char* result = lv_checkbox_get_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t* self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char* prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+
+    lv_checkbox_set_text(self_obj, prop_value);
+    return jerry_undefined();
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -19684,6 +19830,25 @@ const sni_property_desc_t lv_class_properties_canvas[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_canvas[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_checkbox[] = {
+    {.name = "setText", .handler = sni_api_lv_checkbox_set_text},
+    {.name = "getText", .handler = sni_api_lv_checkbox_get_text},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_checkbox[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_checkbox[] = {
+    {.name = "text", .getter = sni_api_prop_get_checkbox_text, .setter = sni_api_prop_set_checkbox_text},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_checkbox[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -20910,6 +21075,16 @@ const sni_class_desc_t lv_class_desc_canvas = {
     .constants = lv_class_constants_canvas,
 };
 
+const sni_class_desc_t lv_class_desc_checkbox = {
+    .name = "checkbox",
+    .constructor = sni_api_ctor_checkbox,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_checkbox,
+    .properties = lv_class_properties_checkbox,
+    .static_methods = lv_class_static_methods_checkbox,
+    .constants = lv_class_constants_checkbox,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_obj,
     &lv_class_desc_button,
@@ -20924,6 +21099,7 @@ const sni_class_desc_t *const lv_api_classes[] = {
     &lv_class_desc_calendar,
     &lv_class_desc_chart,
     &lv_class_desc_canvas,
+    &lv_class_desc_checkbox,
     NULL,
 };
 

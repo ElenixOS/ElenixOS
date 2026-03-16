@@ -67,6 +67,13 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse);
+static void _app_list_sys_app_async_cb(void *user_data);
+static void _app_list_icon_launch_async_cb(void *user_data);
+
+typedef struct
+{
+    const char *app_id;
+} app_launch_ctx_t;
 
 /**
  * @brief 系统内置应用点击回调
@@ -76,11 +83,18 @@ static void _app_list_sys_app_cb(lv_event_t *e)
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
 
+    lv_async_call(_app_list_sys_app_async_cb, (void *)app_id);
+}
+
+static void _app_list_sys_app_async_cb(void *user_data)
+{
+    const char *app_id = (const char *)user_data;
+    EOS_CHECK_PTR_RETURN(app_id);
+
     for (int i = 0; i < EOS_SYS_APP_LAST; i++)
     {
         if (strcmp(app_id, eos_sys_app_id_list[i]) == 0)
         {
-            // 调用系统内置应用的入口函数
             if (eos_sys_app_entry_list[i])
                 eos_sys_app_entry_list[i]();
             return;
@@ -196,24 +210,52 @@ static void _app_list_refresh(lv_obj_t *container)
  */
 static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
-    lv_obj_t *icon = lv_event_get_target(e);
+    const char *app_id = (const char *)lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(app_id);
+
+    app_launch_ctx_t *ctx = eos_malloc_zeroed(sizeof(app_launch_ctx_t));
+    if (!ctx)
+        return;
+
+    ctx->app_id = app_id;
+
+    lv_async_call(_app_list_icon_launch_async_cb, ctx);
+}
+
+static void _app_list_icon_launch_async_cb(void *user_data)
+{
+    app_launch_ctx_t *ctx = (app_launch_ctx_t *)user_data;
+    if (!(ctx && ctx->app_id))
+    {
+        if (ctx)
+            eos_free(ctx);
+        return;
+    }
+
+    const char *app_id = ctx->app_id;
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
         EOS_LOG_E("Another script running");
+        eos_free(ctx);
         return;
     }
-    const char *app_id = (const char *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(app_id);
 
     // 获取清单文件
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
     script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
+    if (!pkg)
+    {
+        eos_free(ctx);
+        return;
+    }
     pkg->type = SCRIPT_TYPE_APPLICATION;
     if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
     {
         EOS_LOG_E("Read manifest failed: %s", manifest_path);
+        eos_free(pkg);
+        eos_free(ctx);
         return;
     }
     EOS_LOG_D("App Info:\n"
@@ -224,16 +266,18 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
-    
+
     // 设置脚本基础路径，用于解析相对路径的模块导入
     char base_path[PATH_MAX];
     snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
     pkg->base_path = eos_strdup(base_path);
-    
+
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_free((void *)pkg->base_path);
+        eos_free(pkg);
+        eos_free(ctx);
         return;
     }
 
@@ -262,6 +306,8 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_nav_clean_up_cb, NULL);
         EOS_LOG_E("Application encounter a fatal error");
     }
+
+    eos_free(ctx);
 }
 
 /**

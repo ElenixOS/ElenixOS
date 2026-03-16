@@ -42,8 +42,10 @@ static void _scrollable_obj_scrolled_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
+static void _clear_scrollable_obj_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(lv_anim_t *a);
+static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
 /* Function Implementations -----------------------------------*/
 
 static void _scrollbar_schedule_hide(void)
@@ -149,7 +151,17 @@ static void _clear_scrollable_obj(void)
 
 static void _clear_scrollable_obj_cb(lv_event_t *e)
 {
-    LV_UNUSED(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    lv_async_call(_clear_scrollable_obj_async_cb, target);
+}
+
+static void _clear_scrollable_obj_async_cb(void *user_data)
+{
+    lv_obj_t *target = (lv_obj_t *)user_data;
+    /* Ignore stale deferred cleanup from previous screens/objects. */
+    if (target != scrollable_obj && target != scrollable_screen)
+        return;
+
     _clear_scrollable_obj();
 }
 
@@ -307,6 +319,34 @@ static void _apply_scrollable_obj(lv_obj_t *obj)
     lv_obj_add_event_cb(screen, _clear_scrollable_obj_cb, LV_EVENT_DELETE, NULL);
 }
 
+static lv_obj_t *_find_scrollable_obj(lv_obj_t *root)
+{
+    if (!(root && lv_obj_is_valid(root)))
+        return NULL;
+
+    /* Keep legacy preference: bind to list first when present. */
+    lv_obj_t *list = lv_obj_get_child_by_type(root, 0, &lv_list_class);
+    if (list && lv_obj_is_valid(list))
+        return list;
+
+    uint32_t child_cnt = lv_obj_get_child_count(root);
+    for (uint32_t i = 0; i < child_cnt; i++)
+    {
+        lv_obj_t *child = lv_obj_get_child(root, i);
+        if (!(child && lv_obj_is_valid(child)))
+            continue;
+
+        if (lv_obj_has_flag(child, LV_OBJ_FLAG_SCROLLABLE))
+            return child;
+
+        lv_obj_t *nested = _find_scrollable_obj(child);
+        if (nested)
+            return nested;
+    }
+
+    return NULL;
+}
+
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
     if (obj && lv_obj_is_valid(obj) && lv_obj_has_class(obj, &lv_obj_class))
@@ -328,11 +368,11 @@ void eos_crown_encoder_set_target_screen(lv_obj_t *screen)
 {
     if (screen && lv_obj_is_valid(screen) && lv_obj_has_class(screen, &lv_obj_class))
     {
-        lv_obj_t *list = lv_obj_get_child_by_type(screen, 0, &lv_list_class);
-        EOS_LOG_D("List=%p", list);
-        if (list)
+        lv_obj_t *target = _find_scrollable_obj(screen);
+        EOS_LOG_D("Scrollable target=%p", target);
+        if (target)
         {
-            _apply_scrollable_obj(list);
+            _apply_scrollable_obj(target);
             return;
         }
     }

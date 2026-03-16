@@ -15945,10 +15945,7 @@ jerry_value_t sni_api_lv_timer_set_auto_delete(const jerry_call_info_t *call_inf
     bool arg_auto_delete;
     arg_auto_delete = sni_tb_js2c_boolean(args_p[0]);
 
-    if (!sni_cb_timer_set_auto_delete(self_obj, arg_auto_delete))
-    {
-        return sni_api_throw_error("Failed to set timer auto delete");
-    }
+    lv_timer_set_auto_delete(self_obj, arg_auto_delete);
     return jerry_undefined();
 }
 
@@ -16047,10 +16044,7 @@ jerry_value_t sni_api_prop_set_timer_auto_delete(const jerry_call_info_t *call_i
     bool prop_value;
     prop_value = sni_tb_js2c_boolean(args_p[0]);
 
-    if (!sni_cb_timer_set_auto_delete(self_obj, prop_value))
-    {
-        return sni_api_throw_error("Failed to set timer auto delete");
-    }
+    lv_timer_set_auto_delete(self_obj, prop_value);
     return jerry_undefined();
 }
 

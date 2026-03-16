@@ -1362,6 +1362,10 @@ void sni_api_lv_init(void)
 {
     sni_cb_runtime_init();
     lv_api_obj = sni_api_build(lv_api_classes);
+    if (!jerry_value_is_object(lv_api_obj))
+    {
+        EOS_LOG_E("Failed to build LV API object");
+    }
     if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
     {
         EOS_LOG_E("Failed to register LV root constants");

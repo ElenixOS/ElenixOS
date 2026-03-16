@@ -282,7 +282,7 @@
     },
     {
       "name": "lv_draw_buf_t",
-      "object_type": ""
+      "object_type": "handle_object"
     },
     {
       "name": "lv_draw_dsc_base_t",
@@ -663,6 +663,10 @@
     {
       "name": "lv_image_decoder_t",
       "object_type": ""
+    },
+    {
+      "name": "lv_image_dsc_t*",
+      "object_type": "handle_object"
     },
     {
       "name": "lv_image_flags_t",

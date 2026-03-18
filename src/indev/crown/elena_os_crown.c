@@ -132,15 +132,25 @@ static void _clear_scrollable_obj(void)
 {
     if (scrollable_obj && lv_obj_is_valid(scrollable_obj))
     {
-        lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scrolled_cb);
-        lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scroll_start_cb);
-        lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scroll_end_cb);
-        lv_obj_remove_event_cb(scrollable_obj, _clear_scrollable_obj_cb);
+        while (lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scrolled_cb))
+        {
+        }
+        while (lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scroll_start_cb))
+        {
+        }
+        while (lv_obj_remove_event_cb(scrollable_obj, _scrollable_obj_scroll_end_cb))
+        {
+        }
+        while (lv_obj_remove_event_cb(scrollable_obj, _clear_scrollable_obj_cb))
+        {
+        }
     }
 
     if (scrollable_screen && lv_obj_is_valid(scrollable_screen))
     {
-        lv_obj_remove_event_cb(scrollable_screen, _clear_scrollable_obj_cb);
+        while (lv_obj_remove_event_cb(scrollable_screen, _clear_scrollable_obj_cb))
+        {
+        }
     }
 
     scrollable_obj = NULL;

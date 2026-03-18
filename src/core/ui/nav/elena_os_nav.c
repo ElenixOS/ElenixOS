@@ -405,15 +405,16 @@ static void _prev_screen_loaded_event_cb(lv_event_t *e)
 {
     lv_obj_t *prev_scr = lv_event_get_target(e);
     lv_obj_t *scr_to_del = lv_event_get_user_data(e);
+    if (prev_scr && lv_obj_is_valid(prev_scr))
+    {
+        uint32_t removed_count = lv_obj_remove_event_cb_with_user_data(prev_scr, _prev_screen_loaded_event_cb, scr_to_del);
+        EOS_LOG_D("Deleted callbacks: %d", removed_count);
+    }
+
     if (scr_to_del && lv_obj_is_valid(scr_to_del) && lv_obj_has_class(scr_to_del, &lv_obj_class))
     {
         lv_obj_delete_async(scr_to_del);
         EOS_LOG_D("Deleted screen at %p", scr_to_del);
-        if (prev_scr && lv_obj_is_valid(prev_scr))
-        {
-            uint32_t removed_count = lv_obj_remove_event_cb_with_user_data(prev_scr, _prev_screen_loaded_event_cb, scr_to_del);
-            EOS_LOG_D("Deleted callbacks: %d", removed_count);
-        }
     }
 }
 
@@ -447,7 +448,9 @@ eos_result_t eos_nav_back_clean(void)
     }
 
     if (eos_nav.top > 0)
+    {
         eos_app_header_set_title_anim(eos_nav.stack[eos_nav.top], eos_nav.stack[eos_nav.top - 1], false);
+    }
 
     // 如果当前在home_screen（top==0），则清理整个栈
     if (eos_nav.top == NAV_HOME_SCREEN_INDEX)

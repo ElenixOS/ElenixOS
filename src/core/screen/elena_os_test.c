@@ -259,13 +259,24 @@ static void _test_app_debug_register_global_cb(void)
     if (s_test_app_debug.global_cb_registered)
         return;
 
-    eos_event_add_global_cb(_test_app_debug_global_screen_loaded_cb,
-                            EOS_EVENT_GLOBAL_SCREEN_LOADED,
-                            NULL);
+    // eos_event_add_global_cb(_test_app_debug_global_screen_loaded_cb,
+    //                         EOS_EVENT_GLOBAL_SCREEN_LOADED,
+    //                         NULL);
     eos_event_add_global_cb(_test_app_debug_script_exited_cb,
                             EOS_EVENT_SCRIPT_EXITED,
                             NULL);
     s_test_app_debug.global_cb_registered = true;
+}
+
+static void _test_app_debug_unregister_global_cb(void)
+{
+    if (!s_test_app_debug.global_cb_registered)
+        return;
+
+    eos_event_remove_all_global_cbs(_test_app_debug_global_screen_loaded_cb);
+    eos_event_remove_all_global_cbs(_test_app_debug_script_exited_cb);
+    eos_event_cleanup_now();
+    s_test_app_debug.global_cb_registered = false;
 }
 
 static script_engine_result_t _test_app_debug_create_pkg(const char *app_id, script_pkg_t **out_pkg)
@@ -352,44 +363,44 @@ static void _test_app_debug_restore_after_error(const char *app_id)
 
 static script_engine_result_t _test_app_debug_start_internal(const char *app_id)
 {
-    if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
-        return -SE_ERR_NULL_PACKAGE;
+    // if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
+    //     return -SE_ERR_NULL_PACKAGE;
 
-    if (script_engine_get_state() != SCRIPT_STATE_STOPPED &&
-        script_engine_get_state() != SCRIPT_STATE_ERROR)
-    {
-        script_engine_request_stop();
-    }
+    // if (script_engine_get_state() != SCRIPT_STATE_STOPPED &&
+    //     script_engine_get_state() != SCRIPT_STATE_ERROR)
+    // {
+    //     script_engine_request_stop();
+    // }
 
-    _test_app_debug_register_global_cb();
-    _test_app_debug_clear_current_app_id();
-    s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
-    s_test_app_debug.debug_active = true;
+    // _test_app_debug_register_global_cb();
+    // _test_app_debug_clear_current_app_id();
+    // s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
+    // s_test_app_debug.debug_active = true;
 
-    lv_obj_t *scr = eos_nav_init(s_test_app_debug.list_screen);
-    if (!scr)
-    {
-        s_test_app_debug.debug_active = false;
-        return -SE_FAILED;
-    }
+    // lv_obj_t *scr = eos_nav_init(s_test_app_debug.list_screen);
+    // if (!scr)
+    // {
+    //     s_test_app_debug.debug_active = false;
+    //     return -SE_FAILED;
+    // }
 
-    script_pkg_t *pkg = NULL;
-    script_engine_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
-    if (ret != SE_OK)
-    {
-        s_test_app_debug.debug_active = false;
-        return ret;
-    }
+    // script_pkg_t *pkg = NULL;
+    // script_engine_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
+    // if (ret != SE_OK)
+    // {
+    //     s_test_app_debug.debug_active = false;
+    //     return ret;
+    // }
 
-    eos_screen_load_without_anim(scr);
-    ret = script_engine_run(pkg);
-    if (ret != SE_OK)
-    {
-        _test_app_debug_show_error(scr, app_id, ret);
-        _test_app_debug_restore_after_error(app_id);
-    }
+    // eos_screen_load_without_anim(scr);
+    // ret = script_engine_run(pkg);
+    // if (ret != SE_OK)
+    // {
+    //     _test_app_debug_show_error(scr, app_id, ret);
+    //     _test_app_debug_restore_after_error(app_id);
+    // }
 
-    return ret;
+    // return ret;
 }
 
 static void _test_app_debug_safe_nav_cleanup(void)
@@ -419,6 +430,7 @@ static void _test_app_debug_exit_current_app(void)
     s_test_app_debug.debug_active = false;
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
+    _test_app_debug_unregister_global_cb();
 
     _test_app_debug_safe_nav_cleanup();
 }
@@ -616,6 +628,7 @@ static void _test_app_debug_list_delete_cb(lv_event_t *e)
     }
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
+    _test_app_debug_unregister_global_cb();
     s_test_app_debug.debug_active = false;
 }
 
@@ -626,6 +639,7 @@ static void _test_app_debug_back_to_test_cb(lv_event_t *e)
 
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
+    _test_app_debug_unregister_global_cb();
     s_test_app_debug.debug_active = false;
 
     if (launcher_screen && lv_obj_is_valid(launcher_screen))

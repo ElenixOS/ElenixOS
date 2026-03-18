@@ -30,12 +30,23 @@ static lv_point_t last_clicked_point;
 static void _pending_screen_lifecycle_cb(lv_event_t *e);
 /* Function Implementations -----------------------------------*/
 
+static void _detach_pending_screen_callbacks_async_cb(void *user_data)
+{
+    lv_obj_t *scr = (lv_obj_t *)user_data;
+    if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
+        return;
+
+    while (lv_obj_remove_event_cb(scr, _pending_screen_lifecycle_cb))
+    {
+    }
+}
+
 static void _detach_pending_screen_callbacks(lv_obj_t *scr)
 {
     if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
         return;
 
-    lv_obj_remove_event_cb(scr, _pending_screen_lifecycle_cb);
+    lv_async_call(_detach_pending_screen_callbacks_async_cb, scr);
 }
 
 static void _clear_pending_screen(lv_obj_t *scr)

@@ -18,9 +18,9 @@ extern "C" {
 #include <stdbool.h>
 
 /* Public macros ----------------------------------------------*/
-typedef struct eos_darray_t eos_darray_t;
-/* Public typedefs --------------------------------------------*/
 
+/* Public typedefs --------------------------------------------*/
+typedef struct eos_darray_t eos_darray_t;
 /* Public function prototypes --------------------------------*/
 
 /**

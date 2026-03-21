@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "cJSON.h"
-#include "elena_os_nav.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "AppList"
 #include "elena_os_log.h"
@@ -39,12 +38,12 @@
 #include "elena_os_icon.h"
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
+#include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
 #define _APP_ICON_ANIM_DELAY 75 * EOS_ANIM_PLAY_COEFFICIENT
 /* Variables --------------------------------------------------*/
-static lv_obj_t *app_list_screen = NULL;
 static lv_obj_t *last_clicked_icon = NULL;
 static bool needs_reset_anim = false;
 
@@ -68,12 +67,6 @@ static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse);
 static void _app_list_sys_app_async_cb(void *user_data);
-static void _app_list_icon_launch_async_cb(void *user_data);
-
-typedef struct
-{
-    const char *app_id;
-} app_launch_ctx_t;
 
 /**
  * @brief 系统内置应用点击回调
@@ -213,30 +206,12 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
 
-    app_launch_ctx_t *ctx = eos_malloc_zeroed(sizeof(app_launch_ctx_t));
-    if (!ctx)
-        return;
+    eos_activity_t *a = eos_activity_create(NULL, NULL);
+    lv_obj_t *app_view = eos_activity_get_view(a);
 
-    ctx->app_id = app_id;
-
-    lv_async_call(_app_list_icon_launch_async_cb, ctx);
-}
-
-static void _app_list_icon_launch_async_cb(void *user_data)
-{
-    app_launch_ctx_t *ctx = (app_launch_ctx_t *)user_data;
-    if (!(ctx && ctx->app_id))
-    {
-        if (ctx)
-            eos_free(ctx);
-        return;
-    }
-
-    const char *app_id = ctx->app_id;
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
         EOS_LOG_E("Another script running");
-        eos_free(ctx);
         return;
     }
 
@@ -244,25 +219,15 @@ static void _app_list_icon_launch_async_cb(void *user_data)
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
-    script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
-    if (!pkg)
-    {
-        eos_free(ctx);
-        return;
-    }
-    pkg->type = SCRIPT_TYPE_APPLICATION;
-    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
+    script_pkg_t pkg = {0};
+
+    pkg.type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
     {
         EOS_LOG_E("Read manifest failed: %s", manifest_path);
-        eos_free(pkg);
-        eos_free(ctx);
+        eos_pkg_free(&pkg);
         return;
     }
-    EOS_LOG_D("App Info:\n"
-              "id=%s | name=%s | version=%s |\n"
-              "author:%s | description:%s",
-              pkg->id, pkg->name, pkg->version,
-              pkg->author, pkg->description);
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
@@ -270,32 +235,30 @@ static void _app_list_icon_launch_async_cb(void *user_data)
     // 设置脚本基础路径，用于解析相对路径的模块导入
     char base_path[PATH_MAX];
     snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
-    pkg->base_path = eos_strdup(base_path);
+    pkg.base_path = eos_strdup(base_path);
 
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
-        eos_free((void *)pkg->base_path);
-        eos_free(pkg);
-        eos_free(ctx);
+        eos_pkg_free(&pkg);
         return;
     }
 
-    pkg->script_str = eos_fs_read_file(script_path);
-    // 无需清理字符串，脚本运行结束后自动清理
-    lv_obj_t *scr = eos_nav_init(app_list_screen);
-    eos_app_header_bind_screen(scr, pkg->name);
+    pkg.script_str = eos_fs_read_file(script_path);
+    lv_obj_t *scr = NULL;
+    eos_app_header_bind_screen(scr, pkg.name);
     eos_screen_load(scr);
-    script_engine_result_t ret = script_engine_run(pkg);
+    // 进入应用页面
+    eos_activity_enter(a);
+    script_engine_result_t ret = script_engine_run(&pkg);
     if (ret != SE_OK)
     {
-        lv_obj_t *home_scr = eos_nav_get_home_screen();
-        lv_obj_clean(home_scr);
-        lv_obj_remove_style_all(home_scr);
-        eos_app_header_bind_screen_str_id(home_scr, STR_ID_ERROR);
+        lv_obj_clean(app_view);
+        lv_obj_remove_style_all(app_view);
+        eos_app_header_bind_screen_str_id(app_view, STR_ID_ERROR);
         eos_app_header_set_title_color_once(EOS_COLOR_RED);
         lv_obj_t *list = eos_std_info_create(
-            home_scr,
+            app_view,
             EOS_COLOR_RED,
             RI_BUG_LINE,
             current_lang[STR_ID_APP_RUN_ERR_TITLE],
@@ -303,11 +266,11 @@ static void _app_list_icon_launch_async_cb(void *user_data)
         char info_str[1024];
         snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s", ret, app_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_nav_clean_up_cb, NULL);
+        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_activity_back_cb, NULL);
         EOS_LOG_E("Application encounter a fatal error");
     }
 
-    eos_free(ctx);
+    eos_pkg_free(&pkg);
 }
 
 /**
@@ -349,12 +312,12 @@ static void _app_list_play_icon_anim(lv_obj_t *obj, bool reverse)
         needs_reset_anim = true;
         delay = 0;
     }
-    lv_obj_set_style_transform_pivot_x(app_list_screen, x, 0);
-    lv_obj_set_style_transform_pivot_y(app_list_screen, y, 0);
-    eos_lite_anim_transform_scale_start(app_list_screen,
-                                        scale_start, scale_end,
-                                        _APP_ICON_ANIM_DURATION, delay,
-                                        NULL, NULL);
+    // lv_obj_set_style_transform_pivot_x(app_list_screen, x, 0);
+    // lv_obj_set_style_transform_pivot_y(app_list_screen, y, 0);
+    // eos_lite_anim_transform_scale_start(app_list_screen,
+    //                                     scale_start, scale_end,
+    //                                     _APP_ICON_ANIM_DURATION, delay,
+    //                                     NULL, NULL);
     eos_lite_anim_fade_layered_start(obj,
                                      fade_start, fade_end,
                                      _APP_ICON_ANIM_DURATION, delay,
@@ -411,31 +374,25 @@ static void _container_delete_cb(lv_event_t *e)
     eos_event_remove_cb(container, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
 }
 
-lv_obj_t *eos_app_list_get_screen(void)
-{
-    return app_list_screen;
-}
-
 static void _screen_loaded_cb(lv_event_t *e)
 {
     if (needs_reset_anim)
     {
         _app_list_play_icon_anim(last_clicked_icon, true);
     }
-    eos_crown_encoder_set_target_obj(app_list_screen);
+    // eos_crown_encoder_set_target_obj(app_list_screen);
 }
 
-void eos_app_list_create(void)
+eos_activity_t *eos_app_list_create(void)
 {
-    if (app_list_screen)
+    eos_activity_t *a = eos_activity_create(NULL, NULL);
+    if (!a)
     {
-        lv_obj_delete_async(app_list_screen);
+        EOS_LOG_E("Failed to create activity");
+        return NULL;
     }
-    app_list_screen = eos_screen_create();
-    // 创建新的页面用于绘制应用列表
-    eos_screen_load(app_list_screen);
 
-    lv_obj_t *container = app_list_screen;
+    lv_obj_t *container = eos_activity_get_view(a);
     lv_obj_set_style_pad_all(container, 20, 0);
     lv_obj_set_style_pad_column(container, 20, 0); // 列间距
     lv_obj_set_style_pad_row(container, 20, 0);
@@ -451,5 +408,6 @@ void eos_app_list_create(void)
     eos_event_add_cb(container, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)container);
 
     _app_list_refresh(container);
-    lv_obj_add_event_cb(app_list_screen, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    // lv_obj_add_event_cb(container, _screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    return a;
 }

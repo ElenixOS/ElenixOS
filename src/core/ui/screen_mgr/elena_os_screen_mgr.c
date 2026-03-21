@@ -112,29 +112,29 @@ static void _snapshot_obj_delete_cb(lv_event_t *e)
 
 static void _anim_complete_cb(lv_anim_t *a)
 {
-    lv_obj_t *pending_scr = (lv_obj_t *)a->user_data;
+    // lv_obj_t *pending_scr = (lv_obj_t *)a->user_data;
 
-    lv_obj_delete_async((lv_obj_t *)a->var);
-    if (!(pending_scr && lv_obj_is_valid(pending_scr) && lv_obj_has_class(pending_scr, &lv_obj_class)))
-    {
-        _clear_pending_screen(pending_scr);
-        eos_anim_blocker_hide();
-        return;
-    }
+    // lv_obj_delete_async((lv_obj_t *)a->var);
+    // if (!(pending_scr && lv_obj_is_valid(pending_scr) && lv_obj_has_class(pending_scr, &lv_obj_class)))
+    // {
+    //     _clear_pending_screen(pending_scr);
+    //     eos_anim_blocker_hide();
+    //     return;
+    // }
 
-    lv_screen_load(pending_scr);
-    eos_anim_blocker_hide();
-    if (pending_scr == eos_app_list_get_screen())
-    {
-        eos_app_header_hide();
-    }
-    else
-    {
-        if (is_app_header_visible_before_anim)
-            eos_app_header_show();
-        else
-            eos_app_header_hide();
-    }
+    // lv_screen_load(pending_scr);
+    // eos_anim_blocker_hide();
+    // if (pending_scr == eos_app_list_get_screen())
+    // {
+    //     eos_app_header_hide();
+    // }
+    // else
+    // {
+    //     if (is_app_header_visible_before_anim)
+    //         eos_app_header_show();
+    //     else
+    //         eos_app_header_hide();
+    // }
 }
 
 static void _anim_exec_cb(void *var, int32_t value)
@@ -311,7 +311,7 @@ lv_obj_t *eos_screen_create(void)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
     EOS_LOG_D("eos_screen_create scr[%p]", scr);
-    lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
+    // lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
     lv_obj_set_style_clip_corner(scr, true, 0);
     return scr;
 }

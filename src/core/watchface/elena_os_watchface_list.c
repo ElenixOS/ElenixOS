@@ -27,11 +27,11 @@
 #include "elena_os_scene.h"
 #include "elena_os_fs.h"
 #include "elena_os_screen_mgr.h"
-
+#include "elena_os_activity.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
-static lv_obj_t *watchface_list_screen = NULL;
+
 /* Function Implementations -----------------------------------*/
 
 /**
@@ -47,21 +47,18 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
     eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, watchface_id);
-    eos_scene_switch(EOS_SCENE_WATCHFACE);
+    eos_activity_back();
 }
 
-void eos_watchface_list_create(void)
+eos_activity_t *eos_watchface_list_create(void)
 {
-    if (watchface_list_screen)
-    {
-        lv_obj_delete_async(watchface_list_screen);
-    }
     // 创建新的页面用于绘制应用列表
-    watchface_list_screen = eos_screen_create();
-    eos_screen_load(watchface_list_screen);
+    eos_activity_t *a = eos_activity_create(NULL, NULL);
+    lv_obj_t *wf_list_view = eos_activity_get_view(a);
+    eos_screen_load(wf_list_view);
     size_t watchface_list_size = eos_watchface_list_size();
 
-    lv_obj_t *cont = lv_list_create(watchface_list_screen);
+    lv_obj_t *cont = lv_list_create(wf_list_view);
     lv_obj_set_style_pad_all(cont, 24, 0);
     lv_obj_set_size(cont, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(cont, 0, 0);
@@ -123,7 +120,8 @@ void eos_watchface_list_create(void)
         if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
         {
             EOS_LOG_E("Read manifest failed: %s", manifest_path);
-            return;
+            eos_pkg_free(&pkg);
+            continue;
         }
         lv_obj_t *label = lv_label_create(item);
         lv_label_set_text(label, pkg.name);
@@ -131,4 +129,5 @@ void eos_watchface_list_create(void)
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     }
     lv_obj_update_snap(cont, LV_ANIM_OFF);
+    return a;
 }

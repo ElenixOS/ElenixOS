@@ -19,7 +19,6 @@
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
 #include "elena_os_test.h"
@@ -43,7 +42,6 @@
 #include "elena_os_log.h"
 #include "elena_os_sensor.h"
 #include "elena_os_dispatcher.h"
-#include "elena_os_scene.h"
 #include "elena_os_anim.h"
 #include "elena_os_control_center.h"
 #include "elena_os_fs.h"
@@ -153,11 +151,10 @@ void eos_run(void)
     eos_services_start();
     eos_msg_list_init();
     eos_control_center_init();
-    if (logo)
+    if (logo && lv_obj_is_valid(logo))
         lv_obj_delete_async(logo);
     eos_pm_init();
     /************************** 系统启动 **************************/
-    eos_scene_init(eos_watchface_create, eos_watchface_delete, eos_app_list_create, eos_watchface_list_create);
     // 开始绘制
     while (1)
     {

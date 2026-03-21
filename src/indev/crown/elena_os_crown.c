@@ -20,6 +20,8 @@
 #include "elena_os_theme.h"
 #include "elena_os_touch.h"
 #include "elena_os_anim.h"
+#include "elena_os_activity.h"
+#include "elena_os_app_list.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
@@ -208,7 +210,15 @@ static void _crown_button_async_cb(void *user_data)
     switch (state)
     {
     case EOS_BUTTON_STATE_CLICKED:
-        eos_scene_auto_switch();
+        if(eos_activity_get_current() == eos_activity_get_watchface())
+        {
+            // 进入应用列表
+            eos_activity_enter(eos_app_list_create());
+        }
+        else
+        {
+            eos_activity_back();
+        }
     default:
         break;
     }

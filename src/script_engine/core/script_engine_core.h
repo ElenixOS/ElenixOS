@@ -144,10 +144,10 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
 script_engine_result_t script_engine_init(void);
 /**
  * @brief 运行指定应用，如果当前已有应用在运行则自动清除
- * @param script_package 脚本包
+ * @param script_package 脚本包（只读借用，函数内部会深拷贝并管理其生命周期）
  * @return script_engine_result_t 返回操作结果
  */
-script_engine_result_t script_engine_run(script_pkg_t* script_package);
+script_engine_result_t script_engine_run(const script_pkg_t* script_package);
 
 /**
  * @brief 获取脚本引擎当前状态

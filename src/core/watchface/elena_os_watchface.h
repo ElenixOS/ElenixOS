@@ -78,23 +78,10 @@ eos_result_t eos_watchface_install(const char *eapk_path);
  */
 eos_result_t eos_watchface_uninstall(const char *watchface_id);
 /**
- * @brief 创建表盘页面
- */
-void eos_watchface_create(void);
-/**
  * @brief 初始化表盘系统
  * @return eos_result_t 初始化结果
  */
 eos_result_t eos_watchface_init(void);
-/**
- * @brief 获取表盘的 Screen 对象
- * @return lv_obj_t* Screen 对象
- */
-lv_obj_t *eos_watchface_get_screen(void);
-/**
- * @brief 删除表盘页面
- */
-void eos_watchface_delete(void);
 #ifdef __cplusplus
 }
 #endif

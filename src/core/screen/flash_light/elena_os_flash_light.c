@@ -110,7 +110,7 @@ static void _flash_light_clicked_cb(lv_event_t *e)
 {
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
     _flash_light_delete(ud);
-    _flash_light_create(eos_watchface_get_screen());
+    // _flash_light_create(eos_watchface_get_screen());
 }
 
 static void _screen_delete_cb(lv_event_t *e)
@@ -217,5 +217,5 @@ void _flash_light_create(lv_obj_t *launcher_screen)
 
 void eos_flash_light_create(void)
 {
-    _flash_light_create(eos_app_list_get_screen());
+    // _flash_light_create(eos_app_list_get_screen());
 }

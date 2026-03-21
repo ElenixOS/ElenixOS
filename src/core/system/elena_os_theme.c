@@ -20,8 +20,8 @@
 #define _DEBOUNCE_PERIOD 200
 /************************** Text **************************/
 #define TEXT_COLOR EOS_COLOR_WHITE
-/************************** Screen **************************/
-#define SCREEN_BG_COLOR EOS_COLOR_BLACK
+/************************** View **************************/
+#define VIEW_BG_COLOR EOS_COLOR_BLACK
 /************************** List **************************/
 #define LIST_BG_COLOR EOS_COLOR_BLACK
 /************************** Switch **************************/
@@ -32,7 +32,7 @@
 
 /* Variables --------------------------------------------------*/
 static lv_style_t style_button;
-static lv_style_t style_screen;
+static lv_style_t style_view;
 static lv_style_t style_label;
 static lv_style_t style_list;
 
@@ -75,14 +75,15 @@ void _init_style_button(void)
     lv_style_set_radius(&style_button, LV_RADIUS_CIRCLE);
 }
 
-void _init_style_screen(void)
+void _init_style_view(void)
 {
-    lv_style_init(&style_screen);
-    lv_style_set_bg_color(&style_screen, SCREEN_BG_COLOR);
-    lv_style_set_bg_opa(&style_screen, LV_OPA_COVER);
-    // lv_style_set_radius(&style_screen, EOS_DISPLAY_RADIUS > 0 ? EOS_DISPLAY_RADIUS - 2 : EOS_DISPLAY_RADIUS);
-    // lv_style_set_size(&style_screen, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
-    // lv_style_set_clip_corner(&style_screen, true);
+    lv_style_init(&style_view);
+    lv_style_set_bg_color(&style_view, VIEW_BG_COLOR);
+    lv_style_set_bg_opa(&style_view, LV_OPA_COVER);
+    lv_style_set_size(&style_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    lv_style_set_x(&style_view, 0);
+    lv_style_set_y(&style_view, 0);
+    lv_style_set_border_width(&style_view, 0);
 }
 
 void _init_style_label(void)
@@ -196,9 +197,9 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     }
 }
 
-lv_style_t *eos_theme_get_screen_style(void)
+lv_style_t *eos_theme_get_view_style(void)
 {
-    return &style_screen;
+    return &style_view;
 }
 
 lv_style_t *eos_theme_get_label_style(void)
@@ -211,7 +212,7 @@ void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font
     global_font = font;
 
     _init_style_button();
-    _init_style_screen();
+    _init_style_view();
     _init_style_label();
     _init_style_list();
     _init_style_switch();

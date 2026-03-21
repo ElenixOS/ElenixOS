@@ -332,7 +332,7 @@ static void _test_app_debug_show_error(lv_obj_t *scr, const char *app_id, script
 {
     lv_obj_clean(scr);
     lv_obj_remove_style_all(scr);
-    lv_obj_add_style(scr, eos_theme_get_screen_style(), 0);
+    // lv_obj_add_style(scr, eos_theme_get_view_style(), 0);
 
     lv_obj_t *list = eos_std_info_create(
         scr,

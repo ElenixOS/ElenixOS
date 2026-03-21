@@ -447,6 +447,60 @@ static void _clear_error_info(void)
     }
 }
 
+static void _script_pkg_destroy(script_pkg_t *pkg)
+{
+    if (!pkg)
+    {
+        return;
+    }
+
+    if (pkg->base_path)
+    {
+        eos_free((void *)pkg->base_path);
+        pkg->base_path = NULL;
+    }
+
+    eos_pkg_free(pkg);
+    eos_free(pkg);
+}
+
+static script_pkg_t *_script_pkg_clone(const script_pkg_t *source)
+{
+    if (!source)
+    {
+        return NULL;
+    }
+
+    script_pkg_t *copy = eos_malloc_zeroed(sizeof(script_pkg_t));
+    if (!copy)
+    {
+        return NULL;
+    }
+
+    copy->type = source->type;
+    copy->id = eos_strdup(source->id);
+    copy->name = eos_strdup(source->name);
+    copy->version = eos_strdup(source->version);
+    copy->author = eos_strdup(source->author);
+    copy->description = eos_strdup(source->description);
+    copy->script_str = eos_strdup(source->script_str);
+    copy->base_path = eos_strdup(source->base_path);
+
+    if ((source->id && !copy->id) ||
+        (source->name && !copy->name) ||
+        (source->version && !copy->version) ||
+        (source->author && !copy->author) ||
+        (source->description && !copy->description) ||
+        (source->script_str && !copy->script_str) ||
+        (source->base_path && !copy->base_path))
+    {
+        _script_pkg_destroy(copy);
+        return NULL;
+    }
+
+    return copy;
+}
+
 #if EOS_COMPILE_MODE == DEUBG
 
 static char *_state_get_enum_str(script_state_t state)
@@ -833,9 +887,10 @@ static script_engine_result_t _script_engine_stop_and_cleanup(void)
     // 释放脚本包
     if (engine_ctx.current_script)
     {
-        eos_pkg_free(engine_ctx.current_script);
+        _script_pkg_destroy(engine_ctx.current_script);
         engine_ctx.current_script = NULL;
     }
+    engine_ctx.base_path = NULL;
 
     _change_state(SCRIPT_STATE_STOPPED);
     _check_mem();
@@ -928,7 +983,7 @@ script_engine_result_t script_engine_init(void)
     return SE_OK;
 }
 
-script_engine_result_t script_engine_run(script_pkg_t *script_package)
+script_engine_result_t script_engine_run(const script_pkg_t *script_package)
 {
     if (!script_package || !script_package->script_str)
     {
@@ -949,12 +1004,19 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
         return -SE_ERR_INVALID_STATE;
     }
 
+    script_pkg_t *owned_script = _script_pkg_clone(script_package);
+    if (!owned_script)
+    {
+        EOS_LOG_E("Failed to clone script package");
+        return -SE_ERR_MALLOC;
+    }
+
     // 设置当前脚本
-    engine_ctx.current_script = script_package;
+    engine_ctx.current_script = owned_script;
     _change_state(SCRIPT_STATE_RUNNING);
 
     // 设置基础路径
-    engine_ctx.base_path = script_package->base_path ? script_package->base_path : "/";
+    engine_ctx.base_path = engine_ctx.current_script->base_path ? engine_ctx.current_script->base_path : "/";
 
     // 创建新realm
     jerry_value_t new_realm = jerry_realm();
@@ -969,7 +1031,7 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
 
     // 设置全局script_info变量
     jerry_value_t global = jerry_current_realm();
-    jerry_value_t script_info = _script_engine_create_info(script_package);
+    jerry_value_t script_info = _script_engine_create_info(engine_ctx.current_script);
     jerry_value_t key = jerry_string_sz("scriptInfo");
     jerry_value_free(jerry_object_set(global, key, script_info));
     jerry_value_free(key);
@@ -986,16 +1048,16 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
     parse_options.user_value = jerry_string_sz(engine_ctx.base_path);
 
     jerry_value_t parsed_code = jerry_parse(
-        (const jerry_char_t *)script_package->script_str,
-        strlen(script_package->script_str),
+        (const jerry_char_t *)engine_ctx.current_script->script_str,
+        strlen(engine_ctx.current_script->script_str),
         &parse_options);
 
     jerry_value_free(parse_options.source_name);
     jerry_value_free(parse_options.user_value);
 
     // 清理脚本字符串
-    eos_free((void *)script_package->script_str);
-    script_package->script_str = NULL;
+    eos_free((void *)engine_ctx.current_script->script_str);
+    engine_ctx.current_script->script_str = NULL;
 
     script_engine_result_t result = SE_OK;
 
@@ -1077,9 +1139,10 @@ script_engine_result_t script_engine_run(script_pkg_t *script_package)
         _engine_cleanup();
         if (engine_ctx.current_script)
         {
-            eos_pkg_free(engine_ctx.current_script);
+            _script_pkg_destroy(engine_ctx.current_script);
             engine_ctx.current_script = NULL;
         }
+        engine_ctx.base_path = NULL;
         _change_state(SCRIPT_STATE_STOPPED);
     }
 

@@ -18,6 +18,7 @@
 #include "elena_os_screen_mgr.h"
 #include "script_engine_core.h"
 #include "elena_os_font.h"
+#include "elena_os_activity.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_API_NAME "eos"
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
@@ -83,7 +84,7 @@ jerry_value_t sni_api_eos_screen_active(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Invalid argument count");
     }
 
-    lv_obj_t *result = eos_screen_active();
+    lv_obj_t *result = eos_view_active();
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 

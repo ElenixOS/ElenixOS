@@ -19,7 +19,6 @@
 #include "elena_os_img.h"
 #include "elena_os_msg_list.h"
 #include "elena_os_lang.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
 #include "elena_os_test.h"
@@ -42,11 +41,11 @@
 #include "elena_os_radio_list.h"
 #include "elena_os_lang.h"
 #include "elena_os_anim_effects.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_vibrator.h"
+#include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BRIGHTNESS_SMOOTH_DURATION 200
@@ -78,6 +77,16 @@ lv_obj_t *_auto_get_config_switch_create(lv_obj_t *list, const char *txt, const 
     return sw;
 }
 
+lv_obj_t *_create_and_enter_activity_with_header(lang_string_id_t id)
+{
+    eos_activity_t *a = eos_activity_create(NULL);
+    lv_obj_t *view = eos_activity_get_view(a);
+    eos_activity_set_title_id(a, id);
+    eos_app_header_show(NULL);
+    eos_activity_enter(a);
+    return view;
+}
+
 /************************** 蓝牙 **************************/
 static void _bluetooth_enable_switch_cb(lv_event_t *e)
 {
@@ -95,14 +104,10 @@ static void _bluetooth_enable_switch_cb(lv_event_t *e)
     }
 }
 
-static void _settings_screen_bluetooth(lv_event_t *e)
+static void _settings_view_bluetooth(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_BLUETOOTH);
-    eos_screen_load(scr);
-
-    lv_obj_t *list = eos_list_create(scr);
-
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_BLUETOOTH);
+    lv_obj_t *list = eos_list_create(view);
     lv_obj_t *bt_sw = _auto_get_config_switch_create(
         list, current_lang[STR_ID_SETTINGS_BLUETOOTH_ENABLE], EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -199,7 +204,7 @@ static void _wake_duration_radio_list_selection_changed_cb(lv_event_t *e)
 
 static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
 {
-    eos_radio_list_t *rl = eos_radio_list_create(current_lang[STR_ID_SETTINGS_WAKE_DURATION]);
+    eos_radio_list_t *rl = eos_radio_list_enter(current_lang[STR_ID_SETTINGS_WAKE_DURATION]);
     char str[32];
     snprintf(str, sizeof(str), current_lang[STR_ID_SETTINGS_WAKE_FOR_N_SECONDS], 15);
     uint32_t timeout_15_item_index = eos_radio_list_add_item(rl, str);
@@ -219,13 +224,11 @@ static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
     }
 }
 
-static void _settings_screen_display(lv_event_t *e)
+static void _settings_view_display(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_DISPLAY);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_DISPLAY);
 
-    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_t *list = eos_list_create(view);
 
     eos_list_slider_t *ls = eos_list_add_slider(list, current_lang[STR_ID_SETTINGS_DISPLAY_BRIGHTNESS]);
     lv_label_set_text(ls->minus_label, RI_SUN_LINE);
@@ -255,11 +258,11 @@ static void _settings_screen_display(lv_event_t *e)
     lv_obj_add_event_cb(wd_btn, _wake_duration_entry_button_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 /************************** 通知 **************************/
-static void _settings_screen_notification(lv_event_t *e)
+static void _settings_view_notification(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_NOTIFICATION);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_NOTIFICATION);
+    lv_obj_t *list = eos_list_create(view);
+    // TODO: 通知设置
 }
 
 /************************** 声音与触感反馈 **************************/
@@ -345,7 +348,7 @@ static void _haptics_radio_list_selection_changed_cb(lv_event_t *e)
 
 static void _haptics_entry_button_clicked_cb(lv_event_t *e)
 {
-    eos_radio_list_t *rl = eos_radio_list_create(current_lang[STR_ID_SETTINGS_HAPTICS]);
+    eos_radio_list_t *rl = eos_radio_list_enter(current_lang[STR_ID_SETTINGS_HAPTICS]);
     eos_radio_list_add_item(rl, current_lang[STR_ID_OFF]);
     eos_radio_list_add_item(rl, current_lang[STR_ID_NORMAL]);
     eos_radio_list_add_item(rl, current_lang[STR_ID_INTENSE]);
@@ -370,15 +373,13 @@ static void _haptics_entry_button_clicked_cb(lv_event_t *e)
     }
 }
 
-static void _settings_screen_sound_and_haptics(lv_event_t *e)
+static void _settings_view_sound_and_haptics(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
 
-    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_t *list = eos_list_create(view);
 
-    eos_list_add_title(list,current_lang[STR_ID_SETTINGS_SOUNDS_AND_ALERTS]);
+    eos_list_add_title(list, current_lang[STR_ID_SETTINGS_SOUNDS_AND_ALERTS]);
 
     lv_obj_t *bt_sw = _auto_get_config_switch_create(
         list, current_lang[STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_SILENT_MODE], EOS_SYS_CFG_KEY_MUTE_BOOL, false);
@@ -412,7 +413,7 @@ static void _uninstall_btn_cb(lv_event_t *e)
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
     eos_app_uninstall(app_id);
-    eos_nav_back_clean();
+    eos_activity_back();
 }
 
 static void _clear_data_btn_cb(lv_event_t *e)
@@ -464,11 +465,13 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     }
 
     // 创建新的页面用于绘制应用详情页
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen(scr, pkg.name);
-    eos_screen_load(scr);
+    eos_activity_t *a = eos_activity_create(NULL);
+    lv_obj_t *view = eos_activity_get_view(a);
+    eos_activity_set_title(a, pkg.name);
+    eos_app_header_show(NULL);
+    eos_activity_enter(a);
 
-    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_t *list = eos_list_create(view);
 
     lv_obj_t *container = eos_list_add_container(list);
     lv_obj_set_size(container, lv_pct(100), LV_SIZE_CONTENT);
@@ -568,14 +571,12 @@ static void _app_installed_cb(lv_event_t *e)
 /**
  * @brief 系统设置中的应用列表
  */
-static void _settings_screen_apps(lv_event_t *e)
+static void _settings_view_apps(lv_event_t *e)
 {
     // 创建新的页面用于绘制应用列表
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_APPS);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_APPS);
 
-    lv_obj_t *app_list = eos_list_create(scr);
+    lv_obj_t *app_list = eos_list_create(view);
     eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
 
     size_t app_list_size = eos_app_get_installed();
@@ -595,18 +596,18 @@ static void _language_roller_event_handler(lv_event_t *e)
     {
         char buf[64];
         lv_roller_get_selected_str(obj, buf, sizeof(buf));
-        language_id_t lang_id = eos_lang_get_with_str(buf);
+        language_id_t lang_id = eos_lang_get_current_id_with_str(buf);
         switch (lang_id)
         {
         case LANG_EN:
             EOS_LOG_D("Select English");
             eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, buf);
-            eos_lang_set(LANG_EN);
+            eos_lang_set_current_id(LANG_EN);
             break;
         case LANG_ZH:
             EOS_LOG_D("Select Simplify Chinese");
             eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, buf);
-            eos_lang_set(LANG_ZH);
+            eos_lang_set_current_id(LANG_ZH);
             break;
         default:
             break;
@@ -614,13 +615,11 @@ static void _language_roller_event_handler(lv_event_t *e)
     }
 }
 
-static void _settings_screen_language(lv_event_t *e)
+static void _settings_view_language(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_GENERAL_LANGUAGE);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_GENERAL_LANGUAGE);
 
-    lv_obj_t *roller = lv_roller_create(scr);
+    lv_obj_t *roller = lv_roller_create(view);
     lv_obj_set_size(roller, lv_pct(80), 200);
     lv_roller_set_options(roller,
                           "English\n"
@@ -631,18 +630,16 @@ static void _settings_screen_language(lv_event_t *e)
     lv_roller_set_visible_row_count(roller, 5);
 
     char *sel_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
-    uint32_t sel_opt = (uint32_t)eos_lang_get_with_str(sel_str);
+    uint32_t sel_opt = (uint32_t)eos_lang_get_current_id_with_str(sel_str);
     lv_roller_set_selected(roller, sel_opt, LV_ANIM_OFF);
     lv_obj_add_event_cb(roller, _language_roller_event_handler, LV_EVENT_ALL, NULL);
     eos_free(sel_str);
 }
 
-static void _settings_screen_device_info(lv_event_t *e)
+static void _settings_view_device_info(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
-    eos_screen_load(scr);
-    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
+    lv_obj_t *list = eos_list_create(view);
     lv_obj_set_style_pad_row(list, 0, 0);
 
     eos_std_title_comment_create(list,
@@ -706,48 +703,52 @@ static void _settings_screen_device_info(lv_event_t *e)
 #endif /* LV_USE_QRCODE */
 }
 
-static void _settings_screen_general(lv_event_t *e)
+static void _settings_view_general(lv_event_t *e)
 {
-    lv_obj_t *scr = eos_nav_scr_create();
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS_GENERAL);
-    eos_screen_load(scr);
+    lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_GENERAL);
 
-    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_t *list = eos_list_create(view);
 
     lv_obj_t *btn;
     // 语言设置
     btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_LANGUAGE);
-    lv_obj_add_event_cb(btn, _settings_screen_language, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_language, LV_EVENT_CLICKED, NULL);
     btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
-    lv_obj_add_event_cb(btn, _settings_screen_device_info, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_device_info, LV_EVENT_CLICKED, NULL);
 }
 
 /************************** 系统设置程序入口 **************************/
-void eos_settings_create(void)
+static const eos_activity_lifecycle_t _settings_lifecycle = {
+    .on_enter = NULL,
+    .on_exit = NULL,
+};
+void eos_settings_enter(void)
 {
-    lv_obj_t *scr = eos_nav_init(eos_screen_active());
-    eos_app_header_bind_screen_str_id(scr, STR_ID_SETTINGS);
-    eos_screen_load(scr);
-
-    lv_obj_t *settings_list = eos_list_create(scr);
+    eos_activity_t *a = eos_activity_create(&_settings_lifecycle);
+    EOS_CHECK_PTR_RETURN(a);
+    lv_obj_t *view = eos_activity_get_view(a);
+    EOS_CHECK_PTR_RETURN(view);
+    lv_obj_t *settings_list = eos_list_create(view);
 
     lv_obj_t *btn;
     // 蓝牙设置
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_BLUE, RI_BLUETOOTH_FILL, STR_ID_SETTINGS_BLUETOOTH);
-    lv_obj_add_event_cb(btn, _settings_screen_bluetooth, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_bluetooth, LV_EVENT_CLICKED, NULL);
     // 显示设置
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_ORANGE, RI_SUN_FILL, STR_ID_SETTINGS_DISPLAY);
-    lv_obj_add_event_cb(btn, _settings_screen_display, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_display, LV_EVENT_CLICKED, NULL);
     // 通知设置
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_RED, RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
-    lv_obj_add_event_cb(btn, _settings_screen_notification, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_notification, LV_EVENT_CLICKED, NULL);
     // 声音与触感反馈
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
-    lv_obj_add_event_cb(btn, _settings_screen_sound_and_haptics, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_sound_and_haptics, LV_EVENT_CLICKED, NULL);
     // 应用列表
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
-    lv_obj_add_event_cb(btn, _settings_screen_apps, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_apps, LV_EVENT_CLICKED, NULL);
     // 其他设置
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
-    lv_obj_add_event_cb(btn, _settings_screen_general, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, _settings_view_general, LV_EVENT_CLICKED, NULL);
+
+    eos_activity_enter(a);
 }

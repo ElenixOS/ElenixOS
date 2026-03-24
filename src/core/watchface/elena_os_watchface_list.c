@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "cJSON.h"
-#include "elena_os_nav.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "WatchfaceList"
 #include "elena_os_log.h"
@@ -24,9 +23,7 @@
 #include "elena_os_anim.h"
 #include "script_engine_core.h"
 #include "elena_os_sys.h"
-#include "elena_os_scene.h"
 #include "elena_os_fs.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_activity.h"
 /* Macros and Definitions -------------------------------------*/
 
@@ -50,12 +47,11 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     eos_activity_back();
 }
 
-eos_activity_t *eos_watchface_list_create(void)
+void eos_watchface_list_enter(void)
 {
     // 创建新的页面用于绘制应用列表
-    eos_activity_t *a = eos_activity_create(NULL, NULL);
+    eos_activity_t *a = eos_activity_create(NULL);
     lv_obj_t *wf_list_view = eos_activity_get_view(a);
-    eos_screen_load(wf_list_view);
     size_t watchface_list_size = eos_watchface_list_size();
 
     lv_obj_t *cont = lv_list_create(wf_list_view);
@@ -129,5 +125,5 @@ eos_activity_t *eos_watchface_list_create(void)
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     }
     lv_obj_update_snap(cont, LV_ANIM_OFF);
-    return a;
+    eos_activity_enter(a);
 }

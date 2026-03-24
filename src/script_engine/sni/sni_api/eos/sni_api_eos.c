@@ -15,7 +15,6 @@
 #include "sni_types.h"
 #include "sni_api_export.h"
 #include "elena_os_log.h"
-#include "elena_os_screen_mgr.h"
 #include "script_engine_core.h"
 #include "elena_os_font.h"
 #include "elena_os_activity.h"
@@ -73,7 +72,7 @@ static jerry_value_t sni_api_eos_console_write(const jerry_value_t args_p[],
 }
 /* Function Implementations -----------------------------------*/
 
-jerry_value_t sni_api_eos_screen_active(const jerry_call_info_t *call_info_p,
+jerry_value_t sni_api_eos_view_active(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
 {
@@ -124,8 +123,8 @@ jerry_value_t sni_api_eos_console_debug(const jerry_call_info_t *call_info_p,
     return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_DEBUG);
 }
 
-const sni_method_desc_t eos_class_static_methods_screen[] = {
-    {.name = "active", .handler = sni_api_eos_screen_active},
+const sni_method_desc_t eos_class_static_methods_view[] = {
+    {.name = "active", .handler = sni_api_eos_view_active},
     {.name = NULL, .handler = NULL},
 };
 
@@ -138,13 +137,13 @@ const sni_method_desc_t eos_class_static_methods_console[] = {
     {.name = NULL, .handler = NULL},
 };
 
-const sni_class_desc_t eos_class_desc_screen = {
-    .name = "screen",
+const sni_class_desc_t eos_class_desc_view = {
+    .name = "view",
     .constructor = NULL,
     .base_class = NULL,
     .methods = NULL,
     .properties = NULL,
-    .static_methods = eos_class_static_methods_screen,
+    .static_methods = eos_class_static_methods_view,
     .constants = NULL,
 };
 
@@ -159,7 +158,7 @@ const sni_class_desc_t eos_class_desc_console = {
 };
 
 const sni_class_desc_t *const eos_api_classes[] = {
-    &eos_class_desc_screen,
+    &eos_class_desc_view,
     &eos_class_desc_console,
     NULL,
 };

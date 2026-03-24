@@ -13,13 +13,12 @@
 #define EOS_LOG_TAG "RadioList"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_app_header.h"
 #include "elena_os_theme.h"
 #include "elena_os_icon.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _RADIO_ITEM_HEIGHT 100
@@ -148,20 +147,27 @@ void eos_radio_list_set_comment(eos_radio_list_t *rl, const char *comment)
     lv_label_set_text(rl->comment_label, comment);
 }
 
-static void _screen_deleted_cb(lv_event_t *e)
-{
-    eos_radio_list_t *rl = lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(rl);
-    eos_free(rl);
-}
-
 void eos_radio_list_add_event_cb(eos_radio_list_t *rl, lv_event_cb_t event_cb, void *user_data)
 {
     EOS_CHECK_PTR_RETURN(rl && rl->radio_item_container);
     lv_obj_add_event_cb(rl->radio_item_container, event_cb, LV_EVENT_VALUE_CHANGED, user_data);
 }
 
-eos_radio_list_t *eos_radio_list_create(const char *title)
+static void _radio_list_on_exit_cb(eos_activity_t *a)
+{
+    eos_radio_list_t *rl = eos_activity_get_user_data(a);
+    EOS_CHECK_PTR_RETURN(rl);
+    eos_free(rl);
+}
+
+static const eos_activity_lifecycle_t radio_list_lifecycle = {
+    .on_enter = NULL,
+    .on_exit = _radio_list_on_exit_cb,
+    .on_pause = NULL,
+    .on_resume = NULL,
+};
+
+eos_radio_list_t *eos_radio_list_enter(const char *title)
 {
     eos_radio_list_t *rl = eos_malloc_zeroed(sizeof(eos_radio_list_t));
     EOS_CHECK_PTR_RETURN_VAL(rl, NULL);
@@ -169,15 +175,11 @@ eos_radio_list_t *eos_radio_list_create(const char *title)
     rl->item_number = 0;
     rl->selected_index = 0;
 
-    if (eos_nav_get_initialized())
-    {
-        rl->screen = eos_nav_scr_create();
-    }
-    EOS_CHECK_PTR_RETURN_VAL(rl->screen, NULL);
-    eos_app_header_bind_screen(rl->screen, title);
-    eos_screen_load(rl->screen);
+    eos_activity_t *a = eos_activity_create(&radio_list_lifecycle);
+    EOS_CHECK_PTR_RETURN_VAL(a, NULL);
+    lv_obj_t *view = eos_activity_get_view(a);
 
-    lv_obj_t *list = eos_list_create(rl->screen);
+    lv_obj_t *list = eos_list_create(view);
 
     rl->subtitle_label = eos_list_add_title(list, title);
 
@@ -195,6 +197,8 @@ eos_radio_list_t *eos_radio_list_create(const char *title)
 
     rl->radio_item_container = con;
     rl->comment_label = eos_list_add_comment(list, "");
-    lv_obj_add_event_cb(rl->screen, _screen_deleted_cb, LV_EVENT_DELETE, rl);
+
+    eos_activity_set_user_data(a, rl);
+    eos_activity_enter(a);
     return rl;
 }

@@ -3,23 +3,6 @@
  * @brief 表盘
  * @author Sab1e
  * @date 2025-08-22
- * @details
- * 系统初始化时需要调用`eos_watchface_init()`加载系统中的表盘数据，以便获取表盘列表。
- *
- * 系统启动后需要调用`eos_watchface_create()`加载表盘。
- * 当位于其他页面时，如果想返回表盘页面，
- * 尽量使用`eos_watchface_create_async()`异步加载表盘。
- *
- * 当表盘页面初次加载时自动生成 Screen。
- * 当再次调用`eos_watchface_create()`就会删除已有的 Screen，
- * 创建新的 Screen，并在这个 Screen 上加载表盘。
- *
- * @note
- * 可以通过
- * ```c
- * eos_screen_active() == eos_watchface_get_screen()
- * ```
- * 判断当前是否位于表盘页面
  */
 
 #ifndef ELENA_OS_WATCHFACE_H

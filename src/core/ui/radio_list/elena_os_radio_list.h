@@ -32,7 +32,7 @@ typedef struct eos_radio_list_t eos_radio_list_t;
  * 选项的索引值随着列表内选项从0递增，例如：
  *
  * ```c
- * eos_radio_list_t *rl = eos_radio_list_create("Title")
+ * eos_radio_list_t *rl = eos_radio_list_enter("Title")
  * eos_radio_list_add_item(rl,"Option 1");     // index = 0
  * eos_radio_list_add_item(rl,"Option 2");     // index = 1
  * eos_radio_list_add_item(rl,"Option 3");     // index = 2
@@ -67,7 +67,7 @@ void eos_radio_list_add_event_cb(eos_radio_list_t *rl, lv_event_cb_t event_cb, v
  * @param title 标题字符串
  * @return eos_radio_list_t* 创建成功则返回单选列表指针，否则返回 NULL
  */
-eos_radio_list_t *eos_radio_list_create(const char *title);
+eos_radio_list_t *eos_radio_list_enter(const char *title);
 
 /**
  * @brief 给指定索引的单选项打勾✅

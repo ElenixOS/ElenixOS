@@ -5,7 +5,7 @@
  * @author Sab1e
  * @date 2025-07-26
  * @details
- *
+ * TODO 移动到 docs 下
  * # 脚本引擎
  *
  * ## 启动流程
@@ -58,7 +58,6 @@
 
 #include "elena_os_port.h"
 #include "elena_os_misc.h"
-#include "elena_os_nav.h"
 #include "elena_os_icon.h"
 #include "elena_os_watchface.h"
 #include "elena_os_config.h"
@@ -67,10 +66,7 @@
 #include "elena_os_event.h"
 #include "elena_os_cqueue.h"
 
-#include "lvgl_js_bridge.h"
-
 #include "script_engine_eos.h"
-#include "script_engine_lv.h"
 
 #include "sni.h"
 

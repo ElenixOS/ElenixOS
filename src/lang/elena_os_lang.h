@@ -23,7 +23,7 @@
  * eos_lang_init();
  *
  * // Somewhere
- * eos_lang_set(LANG_EN);
+ * eos_lang_set_current_id(LANG_EN);
  * lv_obj_t *label = lv_label_create(eos_screen_active());
  * lv_label_set_text(label, current_lang[STR_ID_LANGUAGE]);
  * lv_obj_center(label);
@@ -166,12 +166,12 @@ void eos_lang_init(void);
  * @param lang 目标语言类型 `language_id_t`
  * @warning 需要先初始化语言系统
  */
-void eos_lang_set(language_id_t lang);
+void eos_lang_set_current_id(language_id_t lang);
 /**
  * @brief 获取当前语言类型
  * @return language_id_t 语言类型
  */
-language_id_t eos_lang_get(void);
+language_id_t eos_lang_get_current_id(void);
 /**
  * @brief 通过语言字符串获得语言类型
  *
@@ -179,18 +179,24 @@ language_id_t eos_lang_get(void);
  * @param language_str 字符串
  * @return language_id_t 语言类型
  */
-language_id_t eos_lang_get_with_str(const char *language_str);
+language_id_t eos_lang_get_current_id_with_str(const char *language_str);
 /**
  * @brief 获取当前语言字符串
  * @return char* 语言字符串（例如：简体中文）
  */
-char *eos_lang_get_language_str(void);
+char *eos_lang_get_current_language_str(void);
+/**
+ * @brief 获取当前语言字符串
+ * @param id 字符串 ID
+ * @return char* 字符串
+ */
+const char *eos_lang_get_str(lang_string_id_t id);
 /**
  * @brief 通过字符串 ID 设置标签的字符串
  * @param label 标签对象
  * @param str_id 字符串 ID
  */
-void eos_label_set_text_id(lv_obj_t *label, uint32_t str_id);
+void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id);
 /**
  * @brief 支持格式化字符串
  * @param label

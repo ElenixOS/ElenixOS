@@ -17,17 +17,33 @@
 #include "elena_os_core.h"
 #include "elena_os_config.h"
 #include "elena_os_theme.h"
+#include "elena_os_lang.h"
+#include "elena_os_misc.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
+
+typedef enum
+{
+    _TITLE_TYPE_INVALID = 0,
+    _TITLE_TYPE_STRING,
+    _TITLE_TYPE_ID
+} eos_activity_title_type_t;
 
 struct eos_activity_t
 {
     lv_obj_t *view;
+    struct
+    {
+        union
+        {
+            const char *string;
+            uint32_t id;
+        };
+        eos_activity_title_type_t type;
+    } title;
 
-    eos_activity_on_enter_t on_enter;
-    eos_activity_on_exit_t on_exit;
-
-    void* user_data;
+    eos_activity_lifecycle_t *lifecycle;
+    void *user_data;
 };
 
 typedef struct
@@ -63,6 +79,15 @@ static void _activity_run_destroy(eos_activity_t *activity)
         activity->view = NULL;
     }
 
+    if (activity->title.type == _TITLE_TYPE_STRING)
+    {
+        if (activity->title.string)
+        {
+            eos_free(activity->title.string);
+            activity->title.string = NULL;
+        }
+    }
+
     eos_free(activity);
 }
 
@@ -95,14 +120,24 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         return;
     }
 
-    if (cur_activity && cur_activity->on_exit)
+    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_exit)
     {
-        cur_activity->on_exit(cur_activity);
+        cur_activity->lifecycle->on_exit(cur_activity);
     }
 
-    if (next_activity->on_enter)
+    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_pause)
     {
-        next_activity->on_enter(next_activity);
+        cur_activity->lifecycle->on_pause(cur_activity);
+    }
+
+    if (next_activity->lifecycle && next_activity->lifecycle->on_enter)
+    {
+        next_activity->lifecycle->on_enter(next_activity);
+    }
+
+    if (next_activity->lifecycle && next_activity->lifecycle->on_resume)
+    {
+        next_activity->lifecycle->on_resume(next_activity);
     }
 
     _activity_show(next_activity);
@@ -168,6 +203,51 @@ eos_activity_t *eos_activity_get_watchface(void)
     return g_activity_ctx.watchface_activity;
 }
 
+const char *eos_activity_get_title(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, NULL);
+    if (activity->title.type == _TITLE_TYPE_STRING)
+    {
+        return activity->title.string;
+    }
+    else if (activity->title.type == _TITLE_TYPE_ID)
+    {
+        return eos_lang_get_str(activity->title.id);
+    }
+    return NULL;
+}
+
+void eos_activity_set_title(eos_activity_t *activity, const char *title)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    if (activity->title.string)
+    {
+        eos_free(activity->title.string);
+        activity->title.string = NULL;
+    }
+    if (title)
+    {
+        activity->title.string = eos_strdup(title);
+        activity->title.type = _TITLE_TYPE_STRING;
+    }
+    else
+    {
+        activity->title.type = _TITLE_TYPE_INVALID;
+    }
+}
+
+void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    if (activity->title.string)
+    {
+        eos_free(activity->title.string);
+        activity->title.string = NULL;
+    }
+    activity->title.id = id;
+    activity->title.type = _TITLE_TYPE_ID;
+}
+
 lv_obj_t *eos_view_active(void)
 {
     eos_activity_t *current = eos_activity_get_current();
@@ -223,9 +303,9 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
 
     g_activity_ctx.watchface_activity = initial_activity;
 
-    if (initial_activity->on_enter)
+    if (initial_activity->lifecycle && initial_activity->lifecycle->on_enter)
     {
-        initial_activity->on_enter(initial_activity);
+        initial_activity->lifecycle->on_enter(initial_activity);
     }
     _activity_show(initial_activity);
     g_activity_ctx.current_activity = initial_activity;
@@ -233,8 +313,7 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
     return EOS_OK;
 }
 
-eos_activity_t *eos_activity_create(eos_activity_on_enter_t on_enter,
-                                    eos_activity_on_exit_t on_exit)
+eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
 {
     eos_activity_t *activity = eos_malloc(sizeof(eos_activity_t));
     if (!activity)
@@ -243,13 +322,12 @@ eos_activity_t *eos_activity_create(eos_activity_on_enter_t on_enter,
     }
 
     activity->view = _view_create(g_activity_ctx.root_screen);
-    if(!activity->view)
+    if (!activity->view)
     {
         eos_free(activity);
         return NULL;
     }
-    activity->on_enter = on_enter;
-    activity->on_exit = on_exit;
+    activity->lifecycle = lifecycle;
 
     return activity;
 }
@@ -303,9 +381,9 @@ eos_result_t eos_activity_back(void)
 
     EOS_CHECK_PTR_RETURN_VAL(current, EOS_FAILED);
 
-    if (current->on_exit)
+    if (current->lifecycle && current->lifecycle->on_exit)
     {
-        current->on_exit(current);
+        current->lifecycle->on_exit(current);
     }
 
     g_activity_ctx.current_activity = NULL;

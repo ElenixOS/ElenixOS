@@ -27,9 +27,7 @@
 #include "elena_os_anim.h"
 #include "elena_os_lang.h"
 #include "elena_os_settings.h"
-#include "elena_os_scene.h"
 #include "elena_os_mem.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_crown.h"
 
@@ -383,11 +381,7 @@ static void _control_center_mute_switch_btn_cb(lv_event_t *e)
 
 static void _control_center_settings_entry_cb(lv_event_t *e)
 {
-    lv_obj_t *obj = lv_event_get_target(e);
-    lv_coord_t x, y;
-    eos_obj_get_coord_center(obj, &x, &y);
-    eos_screen_set_last_clicked_point(x, y);
-    eos_settings_create();
+    eos_settings_enter();
     eos_control_panel_slide_change();
 }
 /************************** 控制中心 **************************/

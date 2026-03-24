@@ -17,6 +17,7 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_core.h"
+#include "elena_os_lang.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -24,6 +25,16 @@ typedef struct eos_activity_t eos_activity_t;
 
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_exit_t)(eos_activity_t *activity);
+typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
+typedef void (*eos_activity_on_resume_t)(eos_activity_t *activity);
+
+typedef struct
+{
+    eos_activity_on_enter_t on_enter;
+    eos_activity_on_exit_t on_exit;
+    eos_activity_on_pause_t on_pause;
+    eos_activity_on_resume_t on_resume;
+} eos_activity_lifecycle_t;
 
 /* Public function prototypes --------------------------------*/
 
@@ -43,8 +54,7 @@ void eos_activity_controller_deinit(void);
  * @brief 创建一个 Activity
  * @return eos_activity_t* 创建成功返回 Activity 指针，失败返回 NULL
  */
-eos_activity_t *eos_activity_create(eos_activity_on_enter_t on_enter,
-									eos_activity_on_exit_t on_exit);
+eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle);
 
 /**
  * @brief 获取 Activity 的用户数据
@@ -59,6 +69,27 @@ void *eos_activity_get_user_data(eos_activity_t *activity);
  * @param user_data 用户数据指针
  */
 void eos_activity_set_user_data(eos_activity_t *activity, void *user_data);
+
+/**
+ * @brief 获取 Activity 的标题
+ * @param activity Activity 指针
+ * @return const char* 标题字符串，失败返回 NULL
+ */
+const char *eos_activity_get_title(eos_activity_t *activity);
+
+/**
+ * @brief 设置 Activity 的标题
+ * @param activity Activity 指针
+ * @param title 标题字符串
+ */
+void eos_activity_set_title(eos_activity_t *activity, const char *title);
+
+/**
+ * @brief 设置 Activity 的标题
+ * @param activity Activity 指针
+ * @param id 标题字符串ID
+ */
+void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id);
 
 /**
  * @brief 获取 Activity 对应的 View

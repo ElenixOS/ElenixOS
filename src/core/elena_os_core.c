@@ -48,7 +48,6 @@
 #include "elena_os_pm.h"
 #include "elena_os_dfw.h"
 #include "elena_os_app_header.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_toast.h"
 #include "elena_os_vibrator.h"
 #include "elena_os_crown.h"
@@ -81,7 +80,7 @@ void eos_logo_play(bool anim)
     eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
 
     // 创建全屏容器
-    logo = lv_obj_create(eos_screen_active());
+    logo = lv_obj_create(lv_screen_active());
     lv_obj_set_style_bg_color(logo, EOS_COLOR_BLACK, 0);
     lv_obj_set_size(logo, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(logo, 0, 0);
@@ -123,6 +122,7 @@ void eos_run(void)
 #if EOS_DFW_ENABLE
     eos_dfw_init();
 #endif /* EOS_DFW_ENABLE */
+    eos_lang_init();
     eos_dispatcher_init();
     eos_toast_init();
     eos_vibrator_init();
@@ -136,7 +136,7 @@ void eos_run(void)
                   default_font);
     eos_app_init();
     eos_watchface_init();
-    eos_lang_init();
+
     if (eos_watchface_list_size() == 0)
     {
         EOS_LOG_E("Watchface not found");

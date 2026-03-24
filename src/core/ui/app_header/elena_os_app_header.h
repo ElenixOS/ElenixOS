@@ -39,6 +39,7 @@ extern "C" {
 #include "lvgl.h"
 #include "elena_os_lang.h"
 #include "elena_os_config.h"
+#include "elena_os_activity.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -47,27 +48,15 @@ extern "C" {
 
 #if EOS_APP_HEADER_ENABLE
 
-void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param title 标题字符串
- */
-void eos_app_header_set_title(lv_obj_t *scr, const char *title);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param id 多语言的字符串 ID
- */
-void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id);
 /**
  * @brief 隐藏应用头
  */
 void eos_app_header_hide(void);
 /**
  * @brief 显示应用头
+ * @param a 要显示应用头的活动
  */
-void eos_app_header_show(void);
+void eos_app_header_show(eos_activity_t *a);
 /**
  * @brief 初始化应用头
  *
@@ -81,91 +70,32 @@ void eos_app_header_show(void);
  */
 void eos_app_header_init(void);
 /**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param title 标题 字符串（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_app_header_bind_screen(lv_obj_t *scr, const char *title);
-/**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param id 标题 ID（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id);
-/**
  * @brief 临时设置一次标题文字颜色（当被绑定的 Screen 被删除时恢复原色）
  * @param title_text_color 标题文本颜色
  */
 void eos_app_header_set_title_color_once(lv_color_t title_text_color);
-/**
- * @brief 设置应用头的父对象
- */
-void eos_app_header_set_parent(lv_obj_t *parent);
-/**
- * @brief 恢复父级对象
- */
-void eos_app_header_parent_reset(void);
 /**
  * @brief 判断应用头当前是否可见
  */
 bool eos_app_header_is_visible(void);
 #else
 
-static inline void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering)
-{
-	(void)current_scr;
-	(void)next_scr;
-	(void)is_anim_entering;
-}
-
-static inline void eos_app_header_set_title(lv_obj_t *scr, const char *title)
-{
-	(void)scr;
-	(void)title;
-}
-
-static inline void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
-{
-	(void)scr;
-	(void)id;
-}
-
 static inline void eos_app_header_hide(void)
 {
 }
 
-static inline void eos_app_header_show(void)
+static inline void eos_app_header_show(eos_activity_t *a)
 {
+	(void)a;
 }
 
 static inline void eos_app_header_init(void)
 {
 }
 
-static inline void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
-{
-	(void)scr;
-	(void)title;
-}
-
-static inline void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
-{
-	(void)scr;
-	(void)id;
-}
-
 static inline void eos_app_header_set_title_color_once(lv_color_t title_text_color)
 {
 	(void)title_text_color;
-}
-
-static inline void eos_app_header_set_parent(lv_obj_t *parent)
-{
-	(void)parent;
-}
-
-static inline void eos_app_header_parent_reset(void)
-{
 }
 
 static inline bool eos_app_header_is_visible(void)

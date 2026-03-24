@@ -24,10 +24,10 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建表盘列表页面
+ * @brief 进入表盘列表页面
  * @return eos_activity_t* 表盘列表页面的 Activity
  */
-eos_activity_t *eos_watchface_list_create(void);
+void eos_watchface_list_enter(void);
 #ifdef __cplusplus
 }
 #endif

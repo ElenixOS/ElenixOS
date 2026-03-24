@@ -17,7 +17,6 @@
 // #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "BasicWidgets"
 #include "elena_os_log.h"
-#include "elena_os_nav.h"
 #include "elena_os_img.h"
 #include "elena_os_event.h"
 #include "script_engine_core.h"
@@ -30,11 +29,9 @@
 #include "elena_os_font.h"
 #include "elena_os_crown.h"
 #include "elena_os_anim_effects.h"
-#include "elena_os_scene.h"
 #include "lvgl_private.h"
 #include "elena_os_app_header.h"
 #include "elena_os_app_list.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -152,7 +149,7 @@ void eos_draw_buf_destory(lv_draw_buf_t *draw_buf)
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 {
     lv_obj_t *btn = lv_button_create(parent);
-    lv_obj_add_event_cb(btn, eos_nav_back_prev_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, eos_activity_back_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_set_style_border_width(btn, 0, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
 
@@ -213,7 +210,7 @@ static void _list_button_clicked_cb(lv_event_t *e)
     lv_obj_t *btn = lv_event_get_target(e);
     lv_obj_t *list = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(btn && list);
-    eos_anim_list_bind(eos_screen_active(), list, btn);
+    // eos_anim_list_bind(eos_screen_active(), list, btn);
 }
 
 static void _list_container_common_style(lv_obj_t *container)
@@ -707,7 +704,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     }
 
     // 创建并配置画布
-    lv_obj_t *canvas = lv_canvas_create(eos_screen_active());
+    lv_obj_t *canvas = lv_canvas_create(lv_screen_active());
     EOS_CHECK_PTR_RETURN_FREE(canvas, canvas_buf);
 
     lv_obj_remove_style_all(canvas);

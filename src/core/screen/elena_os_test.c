@@ -5,6 +5,8 @@
  * @date 2025-08-20
  */
 
+#include "elena_os_config.h"
+#if EOS_SYSTEM_MODE == TEST_MODE
 #include "elena_os_test.h"
 
 /* Includes ---------------------------------------------------*/
@@ -19,7 +21,6 @@
 #include "elena_os_lang.h"
 #define EOS_LOG_TAG "Test"
 #include "elena_os_log.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_event.h"
@@ -35,13 +36,11 @@
 #include "elena_os_slide_widget.h"
 #include "elena_os_font.h"
 #include "elena_os_sensor.h"
-#include "elena_os_scene.h"
 #include "elena_os_crown.h"
 #include "elena_os_app_header.h"
 #include "elena_os_fs.h"
 #include "elena_os_mem.h"
 #include "elena_os_theme.h"
-#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
@@ -834,13 +833,13 @@ static void _test_font()
 
 static void _test_lang_cb(lv_event_t *e)
 {
-    if (eos_lang_get() == LANG_ZH)
+    if (eos_lang_get_current_id() == LANG_ZH)
     {
-        eos_lang_set(LANG_EN);
+        eos_lang_set_current_id(LANG_EN);
     }
     else
     {
-        eos_lang_set(LANG_ZH);
+        eos_lang_set_current_id(LANG_ZH);
     }
 }
 
@@ -1303,3 +1302,5 @@ void eos_test_start(void)
     btn = lv_list_add_button(test_list, RI_OMEGA, "LVGL Symbols");
     lv_obj_add_event_cb(btn, _test_show_all_lv_symbols_list, LV_EVENT_CLICKED, NULL);
 }
+
+#endif /* EOS_SYSTEM_MODE == TEST_MODE */

@@ -22,14 +22,15 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
 /**
  * @brief 快捷显示手电筒，主要用于`control_center`。
  */
 void eos_flash_light_show(void);
 /**
- * @brief 创建手电筒页面，用于应用列表。
+ * @brief 进入手电筒页面，用于应用列表。
  */
-void eos_flash_light_create(void);
+void eos_flash_light_enter(void);
 
 #ifdef __cplusplus
 }

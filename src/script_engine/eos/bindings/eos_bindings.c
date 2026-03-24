@@ -4,7 +4,7 @@
  * @author Sab1e
  * @date 2025-12-27
  */
-
+#if 0
 #include "eos_bindings.h"
 
 /* Includes ---------------------------------------------------*/
@@ -16,7 +16,6 @@
 #include "lvgl.h"
 #include "script_engine_core.h"
 #include "elena_os_port.h"
-#include "elena_os_nav.h"
 #include "elena_os_img.h"
 #include "elena_os_app.h"
 #include "elena_os_watchface.h"
@@ -28,9 +27,7 @@
 #include "elena_os_fs.h"
 #include "elena_os_dfw.h"
 #include "elena_os_app_header.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
-#include "lvgl_js_bridge.h"
 #include "elena_os_ww_clock_hand.h"
 #include "script_engine_core.h"
 #include "script_engine_utils.h"
@@ -854,3 +851,4 @@ void eos_binding_init(jerry_value_t parent)
                                      sizeof(script_engine_native_funcs) / sizeof(script_engine_func_entry_t));
     register_eos_enums(parent);
 }
+#endif

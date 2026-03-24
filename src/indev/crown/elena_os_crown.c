@@ -10,7 +10,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "elena_os_scene.h"
 #include "elena_os_dispatcher.h"
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
@@ -213,7 +212,7 @@ static void _crown_button_async_cb(void *user_data)
         if(eos_activity_get_current() == eos_activity_get_watchface())
         {
             // 进入应用列表
-            eos_activity_enter(eos_app_list_create());
+            eos_app_list_enter();
         }
         else
         {

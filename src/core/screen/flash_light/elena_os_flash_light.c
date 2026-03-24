@@ -20,7 +20,6 @@
 #include "elena_os_icon.h"
 #include "elena_os_anim.h"
 #include "elena_os_utils.h"
-#include "elena_os_nav.h"
 #include "elena_os_card_pager.h"
 #include "elena_os_watchface.h"
 #include "elena_os_port.h"
@@ -30,7 +29,6 @@
 #include "elena_os_lang.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_app_header.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -46,14 +44,22 @@ typedef struct
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-void _flash_light_create(lv_obj_t *launcher_screen);
-static void _screen_delete_cb(lv_event_t *e);
+static void _flash_light_on_exit(eos_activity_t *a);
+static inline void _flash_light_delete(_pressing_user_data_t *ud);
+static const eos_activity_lifecycle_t _flash_light_lifecycle = {
+    .on_enter = NULL,
+    .on_exit = _flash_light_on_exit,
+};
+
+static void _flash_light_on_exit(eos_activity_t *a)
+{
+    _flash_light_delete(NULL);
+    eos_display_tmp_restore_brightness_smooth();
+}
 
 static inline void _flash_light_delete(_pressing_user_data_t *ud)
 {
     EOS_CHECK_PTR_RETURN(ud);
-
-    lv_obj_remove_event_cb(eos_screen_active(), _screen_delete_cb);
 
     if (ud->sp)
         eos_swipe_panel_delete(ud->sp);
@@ -117,7 +123,6 @@ static void _screen_delete_cb(lv_event_t *e)
 {
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
     _flash_light_delete(ud);
-    eos_display_tmp_restore_brightness_smooth();
 }
 
 void eos_flash_light_show(void)
@@ -185,37 +190,23 @@ void eos_flash_light_show(void)
                         _flash_light_clicked_cb,
                         LV_EVENT_CLICKED,
                         ud);
-    lv_obj_add_event_cb(eos_screen_active(),
-                        _screen_delete_cb,
-                        LV_EVENT_DELETE,
-                        ud);
 
     eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
 }
 
-static void _flash_light_screen_delete_cb(lv_event_t *e)
-{
-    eos_display_tmp_restore_brightness_smooth();
-}
-
-void _flash_light_create(lv_obj_t *launcher_screen)
+void eos_flash_light_enter(void)
 {
     eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
-    lv_obj_t *scr = eos_nav_init(launcher_screen);
-    eos_screen_load(scr);
-    lv_obj_remove_style_all(scr);
-    eos_card_pager_t *cp = eos_card_pager_create(scr, EOS_CARD_PAGER_DIR_HOR);
+    eos_activity_t *a = eos_activity_create(&_flash_light_lifecycle);
+    lv_obj_t *view = eos_activity_get_view(a);
+    lv_obj_remove_style_all(view);
+    eos_card_pager_t *cp = eos_card_pager_create(view, EOS_CARD_PAGER_DIR_HOR);
     lv_obj_t *page = eos_card_pager_create_page(cp);
     lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
     page = eos_card_pager_create_page(cp);
     lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
     eos_card_pager_move_node(cp, 0, 1);
     eos_card_pager_move_page(cp, 1);
-    lv_obj_add_event_cb(scr, _flash_light_screen_delete_cb, LV_EVENT_DELETE, NULL);
     eos_app_header_hide();
-}
-
-void eos_flash_light_create(void)
-{
-    // _flash_light_create(eos_app_list_get_screen());
+    eos_activity_enter(a);
 }

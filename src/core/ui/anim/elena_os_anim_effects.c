@@ -4,7 +4,7 @@
  * @author Sab1e
  * @date 2025-11-28
  */
-
+#if 0
 #include "elena_os_anim_effects.h"
 
 /* Includes ---------------------------------------------------*/
@@ -16,7 +16,6 @@
 #include "elena_os_port.h"
 #include "elena_os_cqueue.h"
 #include "elena_os_event.h"
-#include "elena_os_nav.h"
 #include "elena_os_anim.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_mem.h"
@@ -120,3 +119,4 @@ void eos_anim_list_bind(lv_obj_t *screen, lv_obj_t *list, lv_obj_t *selected_obj
     lv_obj_add_event_cb(screen, _anim_list_screen_unloaded_cb, LV_EVENT_SCREEN_UNLOAD_START, d);
     lv_obj_add_event_cb(screen, _anim_list_screen_delete_cb, LV_EVENT_DELETE, d);
 }
+#endif

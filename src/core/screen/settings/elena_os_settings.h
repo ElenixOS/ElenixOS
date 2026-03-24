@@ -22,10 +22,12 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
 /**
- * @brief 创建设置页面
+ * @brief 进入设置页面
+ * @return eos_activity_t* 设置页面活动指针，失败时返回 NULL
  */
-void eos_settings_create(void);
+void eos_settings_enter(void);
 /**
  * @brief 启用静音模式
  */

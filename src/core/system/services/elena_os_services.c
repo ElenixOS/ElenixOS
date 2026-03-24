@@ -19,7 +19,6 @@
 #define EOS_LOG_TAG "Services"
 #include "elena_os_log.h"
 #include "elena_os_basic_widgets.h"
-#include "elena_os_screen_mgr.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _DEFINE_SENSOR_SERVICE(sensor_name, SENSOR_TYPE, update_ms)                                               \
@@ -38,7 +37,7 @@
     void eos_##sensor_name##_service_start(void)                                                                  \
     {                                                                                                             \
         lv_timer_t *t = lv_timer_create(_##sensor_name##_timer_cb, update_ms, NULL);                              \
-        eos_event_add_cb(eos_screen_active(), _##sensor_name##_cb, eos_sensor_get_event_code(SENSOR_TYPE), NULL); \
+        /*eos_event_add_cb(eos_screen_active(), _##sensor_name##_cb, eos_sensor_get_event_code(SENSOR_TYPE), NULL);*/ \
         eos_sensor_read_async(SENSOR_TYPE);                                                                       \
     }
 

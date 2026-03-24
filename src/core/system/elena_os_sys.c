@@ -18,7 +18,6 @@
 #include "elena_os_lang.h"
 #define EOS_LOG_TAG "System"
 #include "elena_os_log.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
 #include "elena_os_test.h"

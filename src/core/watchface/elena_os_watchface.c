@@ -22,9 +22,7 @@
 #include "elena_os_theme.h"
 #include "elena_os_control_center.h"
 #include "elena_os_basic_widgets.h"
-#include "elena_os_scene.h"
 #include "elena_os_fs.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 #include "elena_os_icon.h"
 #include "elena_os_std_widgets.h"
@@ -46,6 +44,16 @@ typedef struct
 /* Variables --------------------------------------------------*/
 static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
+
+static void eos_watchface_on_enter(eos_activity_t *a);
+static void eos_watchface_on_exit(eos_activity_t *a);
+
+static const eos_activity_lifecycle_t watchface_lifecycle = {
+    .on_enter = eos_watchface_on_enter,
+    .on_exit = eos_watchface_on_exit,
+    .on_pause = NULL,
+    .on_resume = NULL,
+};
 /* Function Implementations -----------------------------------*/
 
 size_t eos_watchface_list_size(void)
@@ -244,7 +252,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
 
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
-    eos_activity_enter(eos_watchface_list_create());
+    eos_watchface_list_enter();
 }
 
 void eos_watchface_on_enter(eos_activity_t *a)
@@ -298,13 +306,13 @@ void eos_watchface_on_enter(eos_activity_t *a)
             eos_activity_get_view(a),
             EOS_COLOR_RED,
             RI_BUG_LINE,
-            current_lang[STR_ID_WATCHFACE_RUN_ERR_TITLE],
-            current_lang[STR_ID_WATCHFACE_RUN_ERR]);
+            eos_lang_get_str(STR_ID_WATCHFACE_RUN_ERR_TITLE),
+            eos_lang_get_str(STR_ID_WATCHFACE_RUN_ERR));
         lv_obj_set_style_pad_top(list, 30, 0);
         char info_str[1024];
         snprintf(info_str, sizeof(info_str), "Code: %d\nWFID: %s\nError: %s", ret, wf_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_WATCHFACE_SWITCH], _watchface_long_pressed_cb, NULL);
+        lv_obj_t *btn = eos_button_create(list, eos_lang_get_str(STR_ID_WATCHFACE_SWITCH), _watchface_long_pressed_cb, NULL);
         EOS_LOG_E("Watchface encounter a fatal error");
     }
 
@@ -320,7 +328,7 @@ void eos_watchface_on_exit(eos_activity_t *a)
         return;
     }
     eos_activity_t *watchface_activity =
-        eos_activity_create(eos_watchface_on_enter, eos_watchface_on_exit);
+        eos_activity_create(&watchface_lifecycle);
     if (!watchface_activity)
     {
         EOS_LOG_E("Create watchface activity failed");
@@ -346,7 +354,7 @@ eos_result_t eos_watchface_init(void)
     }
     // 创建表盘 Activity
     eos_activity_t *watchface_activity =
-        eos_activity_create(eos_watchface_on_enter, eos_watchface_on_exit);
+        eos_activity_create(&watchface_lifecycle);
     if (!watchface_activity)
     {
         EOS_LOG_E("Create watchface activity failed");

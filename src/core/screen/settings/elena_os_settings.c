@@ -82,7 +82,7 @@ lv_obj_t *_create_and_enter_activity_with_header(lang_string_id_t id)
     eos_activity_t *a = eos_activity_create(NULL);
     lv_obj_t *view = eos_activity_get_view(a);
     eos_activity_set_title_id(a, id);
-    eos_app_header_show(NULL);
+    eos_activity_set_app_header_visible(a, true);
     eos_activity_enter(a);
     return view;
 }
@@ -468,7 +468,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     eos_activity_t *a = eos_activity_create(NULL);
     lv_obj_t *view = eos_activity_get_view(a);
     eos_activity_set_title(a, pkg.name);
-    eos_app_header_show(NULL);
+    eos_activity_set_app_header_visible(a, true);
     eos_activity_enter(a);
 
     lv_obj_t *list = eos_list_create(view);
@@ -728,6 +728,9 @@ void eos_settings_enter(void)
     EOS_CHECK_PTR_RETURN(a);
     lv_obj_t *view = eos_activity_get_view(a);
     EOS_CHECK_PTR_RETURN(view);
+    eos_activity_set_title_id(a, STR_ID_SETTINGS);
+    eos_activity_set_app_header_visible(a, true);
+
     lv_obj_t *settings_list = eos_list_create(view);
 
     lv_obj_t *btn;

@@ -70,10 +70,10 @@ void eos_app_header_show(eos_activity_t *a);
  */
 void eos_app_header_init(void);
 /**
- * @brief 临时设置一次标题文字颜色（当被绑定的 Screen 被删除时恢复原色）
+ * @brief 设置标题文字颜色
  * @param title_text_color 标题文本颜色
  */
-void eos_app_header_set_title_color_once(lv_color_t title_text_color);
+void eos_app_header_set_title_color(lv_color_t title_text_color);
 /**
  * @brief 判断应用头当前是否可见
  */

@@ -177,6 +177,8 @@ eos_radio_list_t *eos_radio_list_enter(const char *title)
 
     eos_activity_t *a = eos_activity_create(&radio_list_lifecycle);
     EOS_CHECK_PTR_RETURN_VAL(a, NULL);
+    eos_activity_set_title(a, title);
+    eos_activity_set_app_header_visible(a, true);
     lv_obj_t *view = eos_activity_get_view(a);
 
     lv_obj_t *list = eos_list_create(view);

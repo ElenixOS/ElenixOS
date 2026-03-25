@@ -213,6 +213,14 @@ void eos_app_header_show(eos_activity_t *a)
         lv_label_set_text(app_header->title_label, title);
     else
         lv_label_set_text(app_header->title_label, "");
+    // 从当前 Activity 获取标题颜色
+    lv_color_t color = EOS_COLOR_WHITE;
+    if (a)
+        color = eos_activity_get_title_color(a);
+    else
+        color = eos_activity_get_title_color(eos_activity_get_current());
+    if (lv_obj_is_valid(app_header->title_label))
+        lv_obj_set_style_text_color(app_header->title_label, color, 0);
     lv_timer_resume(app_header->clock_timer);
     lv_timer_reset(app_header->clock_timer);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
@@ -224,7 +232,7 @@ bool eos_app_header_is_visible(void)
     return !lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
-void eos_app_header_set_title_color_once(lv_color_t title_text_color)
+void eos_app_header_set_title_color(lv_color_t title_text_color)
 {
     EOS_CHECK_PTR_RETURN(app_header && app_header->title_label);
     if (lv_obj_is_valid(app_header->title_label))

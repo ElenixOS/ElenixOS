@@ -92,6 +92,34 @@ void eos_activity_set_title(eos_activity_t *activity, const char *title);
 void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id);
 
 /**
+ * @brief 获取 Activity 的标题颜色
+ * @param activity Activity 指针
+ * @return lv_color_t 标题颜色
+ */
+lv_color_t eos_activity_get_title_color(eos_activity_t *activity);
+
+/**
+ * @brief 设置 Activity 的标题颜色
+ * @param activity Activity 指针
+ * @param color 标题颜色
+ */
+void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color);
+
+/**
+ * @brief 设置 Activity 的标题可见性
+ * @param activity Activity 指针
+ * @param visible 是否可见
+ */
+void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible);
+
+/**
+ * @brief 判断 Activity 的标题是否可见
+ * @param activity Activity 指针
+ * @return bool true 可见，false 不可见
+ */
+bool eos_activity_is_app_header_visible(eos_activity_t *activity);
+
+/**
  * @brief 获取 Activity 对应的 View
  * @param activity Activity 指针
  * @return lv_obj_t* View 对象，失败返回 NULL

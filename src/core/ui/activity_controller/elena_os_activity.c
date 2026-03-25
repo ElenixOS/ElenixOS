@@ -19,8 +19,10 @@
 #include "elena_os_theme.h"
 #include "elena_os_lang.h"
 #include "elena_os_misc.h"
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
+#define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
 
 typedef enum
 {
@@ -32,8 +34,10 @@ typedef enum
 struct eos_activity_t
 {
     lv_obj_t *view;
+    bool is_app_header_visible;
     struct
     {
+        lv_color_t color;
         union
         {
             const char *string;
@@ -63,6 +67,7 @@ static eos_activity_ctx_t g_activity_ctx = {
 };
 
 /* Function Implementations -----------------------------------*/
+static void _update_app_header_if_needed(eos_activity_t *activity);
 
 static bool _controller_initialized(void)
 {
@@ -117,6 +122,14 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     if (cur_activity == next_activity)
     {
         _activity_show(next_activity);
+        if (next_activity->is_app_header_visible)
+        {
+            eos_app_header_show(next_activity);
+        }
+        else
+        {
+            eos_app_header_hide();
+        }
         return;
     }
 
@@ -142,6 +155,15 @@ static void _activity_switch_to(eos_activity_t *next_activity)
 
     _activity_show(next_activity);
     g_activity_ctx.current_activity = next_activity;
+
+    if (next_activity->is_app_header_visible)
+    {
+        eos_app_header_show(next_activity);
+    }
+    else
+    {
+        eos_app_header_hide();
+    }
 }
 
 static lv_obj_t *_view_create(lv_obj_t *parent)
@@ -234,6 +256,9 @@ void eos_activity_set_title(eos_activity_t *activity, const char *title)
     {
         activity->title.type = _TITLE_TYPE_INVALID;
     }
+
+    // 立即更新app header
+    _update_app_header_if_needed(activity);
 }
 
 void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id)
@@ -246,6 +271,66 @@ void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id)
     }
     activity->title.id = id;
     activity->title.type = _TITLE_TYPE_ID;
+
+    // 立即更新app header
+    _update_app_header_if_needed(activity);
+}
+
+void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    activity->is_app_header_visible = visible;
+
+    // 立即更新app header
+    if (visible)
+    {
+        _update_app_header_if_needed(activity);
+    }
+    else
+    {
+        // 检查当前activity是否是当前显示的activity
+        eos_activity_t *current = eos_activity_get_current();
+        if (current == activity)
+        {
+            eos_app_header_hide();
+        }
+    }
+}
+
+static void _update_app_header_if_needed(eos_activity_t *activity)
+{
+    // 检查当前activity是否是当前显示的activity
+    eos_activity_t *current = eos_activity_get_current();
+    if (current != activity)
+        return;
+
+    // 检查app header是否可见
+    if (!activity->is_app_header_visible)
+        return;
+
+    // 立即更新app header
+    eos_app_header_show(activity);
+}
+
+bool eos_activity_is_app_header_visible(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, false);
+    return activity->is_app_header_visible;
+}
+
+lv_color_t eos_activity_get_title_color(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, _DEFAULT_TITLE_COLOR);
+    return activity->title.color;
+}
+
+void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    activity->title.color = color;
+
+    // 立即更新app header
+    _update_app_header_if_needed(activity);
 }
 
 lv_obj_t *eos_view_active(void)
@@ -310,6 +395,15 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
     _activity_show(initial_activity);
     g_activity_ctx.current_activity = initial_activity;
 
+    if (initial_activity->is_app_header_visible)
+    {
+        eos_app_header_show(initial_activity);
+    }
+    else
+    {
+        eos_app_header_hide();
+    }
+
     return EOS_OK;
 }
 
@@ -328,6 +422,10 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
         return NULL;
     }
     activity->lifecycle = lifecycle;
+    activity->is_app_header_visible = false;
+    activity->title.color = _DEFAULT_TITLE_COLOR;
+    activity->title.type = _TITLE_TYPE_INVALID;
+    activity->title.string = NULL;
 
     return activity;
 }

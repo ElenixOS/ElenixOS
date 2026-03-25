@@ -167,7 +167,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
 
     pkg.script_str = eos_fs_read_file(script_path);
     eos_activity_set_title(a, pkg.name);
-    eos_app_header_show(a);
+    eos_activity_set_app_header_visible(a, true);
     // 进入应用页面
     eos_activity_enter(a);
     script_engine_result_t ret = script_engine_run(&pkg);
@@ -176,9 +176,9 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         lv_obj_clean(app_view);
         lv_obj_remove_style_all(app_view);
         lv_obj_add_style(app_view, eos_theme_get_view_style(), 0);
-        eos_app_header_set_title_color_once(EOS_COLOR_RED);
+        eos_activity_set_title_color(a, EOS_COLOR_RED);
         eos_activity_set_title_id(a, STR_ID_ERROR);
-        eos_app_header_show(a);
+
         lv_obj_t *list = eos_std_info_create(
             app_view,
             EOS_COLOR_RED,

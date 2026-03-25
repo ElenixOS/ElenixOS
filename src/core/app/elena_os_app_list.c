@@ -38,8 +38,8 @@
 #include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define _APP_ICON_ANIM_DURATION 250 * EOS_ANIM_PLAY_COEFFICIENT
-#define _APP_ICON_ANIM_DELAY 75 * EOS_ANIM_PLAY_COEFFICIENT
+#define _APP_ICON_ANIM_DURATION 250
+#define _APP_ICON_ANIM_DELAY 75
 /* Variables --------------------------------------------------*/
 
 const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {
@@ -115,6 +115,32 @@ static void _app_list_sys_app_cb(lv_event_t *e)
     }
 }
 
+void _app_hide_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
+{
+    // 当前页面（应用）向右退出
+    lv_obj_t *this_view = eos_activity_get_view(this);
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, this_view);
+    lv_anim_set_values(&a, 0, EOS_DISPLAY_WIDTH);
+    lv_anim_set_time(&a, _APP_ICON_ANIM_DURATION);
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_x);
+    lv_anim_timeline_add(at, 0, &a);
+
+    // 目标页面（应用列表）从左侧进入
+    if (next)
+    {
+        lv_obj_t *next_view = eos_activity_get_view(next);
+        lv_anim_t b;
+        lv_anim_init(&b);
+        lv_anim_set_var(&b, next_view);
+        lv_anim_set_values(&b, -EOS_DISPLAY_WIDTH, 0);
+        lv_anim_set_time(&b, _APP_ICON_ANIM_DURATION);
+        lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
+        lv_anim_timeline_add(at, 0, &b);
+    }
+}
+
 /**
  * @brief 脚本应用入口
  */
@@ -127,6 +153,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     eos_activity_t *a = eos_activity_create(&app_lifecycle);
     lv_obj_t *app_view = eos_activity_get_view(a);
     lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    eos_activity_set_anim_cb(a, _app_hide_anim_cb);
 
     EOS_LOG_D("view_size: %d, %d", lv_obj_get_width(app_view), lv_obj_get_height(app_view));
 
@@ -346,6 +373,32 @@ static void _container_delete_cb(lv_event_t *e)
     eos_event_remove_cb(container, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
 }
 
+void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
+{
+    // 当前页面（应用列表）向左退出
+    lv_obj_t *this_view = eos_activity_get_view(this);
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, this_view);
+    lv_anim_set_values(&a, 0, -EOS_DISPLAY_WIDTH);
+    lv_anim_set_time(&a, _APP_ICON_ANIM_DURATION);
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_x);
+    lv_anim_timeline_add(at, 0, &a);
+
+    // 目标页面（应用）从右侧进入
+    if (next)
+    {
+        lv_obj_t *next_view = eos_activity_get_view(next);
+        lv_anim_t b;
+        lv_anim_init(&b);
+        lv_anim_set_var(&b, next_view);
+        lv_anim_set_values(&b, EOS_DISPLAY_WIDTH, 0);
+        lv_anim_set_time(&b, _APP_ICON_ANIM_DURATION);
+        lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
+        lv_anim_timeline_add(at, 0, &b);
+    }
+}
+
 void eos_app_list_enter(void)
 {
     eos_activity_t *a = eos_activity_create(&app_list_lifecycle);
@@ -354,6 +407,7 @@ void eos_app_list_enter(void)
         EOS_LOG_E("Failed to create activity");
         return;
     }
+    eos_activity_set_anim_cb(a, _app_list_show_anim_cb);
 
     lv_obj_t *container = eos_activity_get_view(a);
     // 初始化样式

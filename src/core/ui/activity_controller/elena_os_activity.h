@@ -27,6 +27,7 @@ typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_exit_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_resume_t)(eos_activity_t *activity);
+typedef void (*eos_activity_anim_cb_t)(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next);
 
 typedef struct
 {
@@ -104,6 +105,13 @@ lv_color_t eos_activity_get_title_color(eos_activity_t *activity);
  * @param color 标题颜色
  */
 void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color);
+
+/**
+ * @brief 设置 Activity 的动画回调
+ * @param activity Activity 指针
+ * @param cb 动画回调函数指针
+ */
+void eos_activity_set_anim_cb(eos_activity_t *activity, eos_activity_anim_cb_t cb);
 
 /**
  * @brief 设置 Activity 的标题可见性

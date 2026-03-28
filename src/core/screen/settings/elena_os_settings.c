@@ -461,6 +461,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
+        eos_pkg_free(&pkg);
         return;
     }
 
@@ -529,6 +530,9 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
         EOS_THEME_DANGEROS_COLOR,
         _uninstall_btn_cb,
         app_id);
+
+    (void)uninstall_btn;
+    eos_pkg_free(&pkg);
 }
 
 static void _app_btn_create(lv_obj_t *parent, const char *app_id)
@@ -558,6 +562,7 @@ static void _app_btn_create(lv_obj_t *parent, const char *app_id)
     lv_obj_t *btn = eos_list_add_button(parent, icon_path, pkg.name);
     lv_obj_add_event_cb(btn, _settings_app_list_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
     eos_app_obj_auto_delete(btn, app_id);
+    eos_pkg_free(&pkg);
 }
 
 static void _app_installed_cb(lv_event_t *e)
@@ -642,11 +647,13 @@ static void _settings_view_device_info(lv_event_t *e)
     lv_obj_t *list = eos_list_create(view);
     lv_obj_set_style_pad_row(list, 0, 0);
 
+    char *device_name = eos_sys_cfg_get_string(
+        EOS_SYS_CFG_KEY_DEVICE_NAME_STR,
+        EOS_SYS_DEFAULT_DEVICE_NAME);
     eos_std_title_comment_create(list,
                                  current_lang[STR_ID_SETTINGS_GENERAL_DEVICE_NAME],
-                                 eos_sys_cfg_get_string(
-                                     EOS_SYS_CFG_KEY_DEVICE_NAME_STR,
-                                     EOS_SYS_DEFAULT_DEVICE_NAME));
+                                 device_name);
+    eos_free(device_name);
     eos_list_add_placeholder(list, 20);
 
     eos_std_title_comment_create(list,

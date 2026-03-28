@@ -78,6 +78,23 @@ void eos_app_header_set_title_color(lv_color_t title_text_color);
  * @brief 判断应用头当前是否可见
  */
 bool eos_app_header_is_visible(void);
+/**
+ * @brief 附加app header到指定View
+ * @param view 要附加的View
+ */
+void eos_app_header_attach_to_view(lv_obj_t *view);
+/**
+ * @brief 从View中分离app header，恢复到原始父对象
+ */
+void eos_app_header_detach_from_view(void);
+/**
+ * @brief 播放标题变化动画
+ * @param from 从哪个activity切换
+ * @param to 切换到哪个activity
+ * @param need_anim 是否需要动画
+ * @param reverse_anim 是否反向执行动画
+ */
+void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim);
 #else
 
 static inline void eos_app_header_hide(void)

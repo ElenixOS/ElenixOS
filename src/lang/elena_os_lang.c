@@ -313,6 +313,7 @@ void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id)
         lv_label_set_text(label, current_lang[str_id]);
     }
 
+    eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
     eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)str_id);
 }
 

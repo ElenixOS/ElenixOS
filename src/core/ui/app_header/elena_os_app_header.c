@@ -55,6 +55,9 @@ typedef struct
     lv_obj_t *title_label;
     lv_obj_t *back_btn;
     lv_timer_t *clock_timer;
+    lv_obj_t *original_parent; // 原始父对象，用于恢复
+    bool is_anim_entering; // 动画方向
+    bool attached_to_view; // 是否附加到View
 } eos_app_header_t;
 
 /* Variables --------------------------------------------------*/
@@ -82,14 +85,33 @@ static void _set_back_btn_style(lv_obj_t *btn)
     lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_align(btn, LV_ALIGN_LEFT_MID, _BACK_BTN_MARGIN_LEFT, 0);
 }
-
-#if 0
-void _play_title_changed_anim(void)
+// TODO 似乎Settings页面存在0.1KB内存泄漏
+void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim)
 {
-    EOS_CHECK_PTR_RETURN(app_header && app_header->current_scr && app_header->next_scr);
+    EOS_CHECK_PTR_RETURN(app_header);
     if (!(lv_obj_is_valid(app_header->title_label) &&
           lv_obj_has_class(app_header->title_label, &lv_label_class)))
         return;
+
+    // 如果不需要动画，直接更新标题和颜色
+    if (!need_anim) {
+        // 从to activity获取标题
+        const char *new_title = eos_activity_get_title(to);
+        EOS_LOG_D("New title: %s", new_title);
+        lv_label_set_text(app_header->title_label, new_title ? new_title : "");
+
+        // 从to activity获取标题颜色
+        lv_color_t color = eos_activity_get_title_color(to);
+        lv_obj_set_style_text_color(app_header->title_label, color, 0);
+        return;
+    }
+
+    // 确定动画方向
+    if (reverse_anim) {
+        app_header->is_anim_entering = false;
+    } else {
+        app_header->is_anim_entering = true;
+    }
 
     lv_obj_t *l = app_header->title_label;
     lv_obj_t *back_btn = app_header->back_btn;
@@ -126,9 +148,14 @@ void _play_title_changed_anim(void)
     lv_obj_t *new_l = lv_label_create(parent);
     _set_title_style(new_l);
 
-    const char *new_title = _get_title_str(lv_obj_get_user_data(app_header->next_scr));
+    // 从to activity获取标题
+    const char *new_title = eos_activity_get_title(to);
     EOS_LOG_D("New title: %s", new_title);
-    lv_label_set_text(new_l, new_title);
+    lv_label_set_text(new_l, new_title ? new_title : "");
+
+    // 从to activity获取标题颜色
+    lv_color_t color = eos_activity_get_title_color(to);
+    lv_obj_set_style_text_color(new_l, color, 0);
 
     // 创建新的返回按钮
     lv_obj_t *new_back_btn = eos_back_btn_create(parent, false);
@@ -162,11 +189,7 @@ void _play_title_changed_anim(void)
     // 更新指针
     app_header->title_label = new_l;
     app_header->back_btn = new_back_btn;
-
-    app_header->current_scr = NULL;
-    app_header->next_scr = NULL;
 }
-#endif
 
 /**
  * @brief 更新LVGL字符串，显示当前时间
@@ -194,6 +217,11 @@ void eos_app_header_hide(void)
 {
     EOS_CHECK_PTR_RETURN(app_header);
     EOS_LOG_D("Hide app header");
+    // 如果附加到View，先恢复父对象
+    if (app_header->attached_to_view) {
+        lv_obj_set_parent(app_header->container, app_header->original_parent);
+        app_header->attached_to_view = false;
+    }
     lv_timer_pause(app_header->clock_timer);
     lv_timer_reset(app_header->clock_timer);
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
@@ -203,6 +231,10 @@ void eos_app_header_show(eos_activity_t *a)
 {
     EOS_CHECK_PTR_RETURN(app_header);
     EOS_LOG_D("Show app header");
+    if (app_header->attached_to_view) {
+        lv_obj_set_parent(app_header->container, app_header->original_parent);
+        app_header->attached_to_view = false;
+    }
     // 从当前 Activity 获取标题文字
     const char *title = NULL;
     if (a)
@@ -224,6 +256,33 @@ void eos_app_header_show(eos_activity_t *a)
     lv_timer_resume(app_header->clock_timer);
     lv_timer_reset(app_header->clock_timer);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+}
+
+/**
+ * @brief 附加app header到指定View
+ * @param view 要附加的View
+ */
+void eos_app_header_attach_to_view(lv_obj_t *view)
+{
+    EOS_CHECK_PTR_RETURN(app_header && view);
+    if (app_header->attached_to_view) {
+        return;
+    }
+    lv_obj_set_parent(app_header->container, view);
+    app_header->attached_to_view = true;
+}
+
+/**
+ * @brief 从View中分离app header，恢复到原始父对象
+ */
+void eos_app_header_detach_from_view(void)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+    if (!app_header->attached_to_view) {
+        return;
+    }
+    lv_obj_set_parent(app_header->container, app_header->original_parent);
+    app_header->attached_to_view = false;
 }
 
 bool eos_app_header_is_visible(void)
@@ -267,6 +326,7 @@ void eos_app_header_init(void)
 
     // 半透明容器
     app_header->container = lv_obj_create(lv_layer_sys());
+    app_header->original_parent = lv_obj_get_parent(app_header->container); // 保存原始父对象
     lv_obj_remove_style_all(app_header->container);
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
@@ -298,6 +358,9 @@ void eos_app_header_init(void)
 
     // 默认隐藏 app_header
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+
+    app_header->is_anim_entering = false;
+    app_header->attached_to_view = false;
 }
 
 #endif /* EOS_APP_HEADER_ENABLE */

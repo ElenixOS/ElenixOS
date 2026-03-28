@@ -123,6 +123,7 @@ void eos_watchface_list_enter(void)
         lv_label_set_text(label, pkg.name);
         lv_obj_set_width(label, LV_SIZE_CONTENT);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+        eos_pkg_free(&pkg);
     }
     lv_obj_update_snap(cont, LV_ANIM_OFF);
     eos_activity_enter(a);

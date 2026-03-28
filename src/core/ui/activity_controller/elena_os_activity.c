@@ -172,13 +172,61 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         next_activity->lifecycle->on_resume(next_activity);
     }
 
+    // 处理AppHeader逻辑
+    if (eos_activity_is_app_header_visible(next_activity))
+    {
+        // NextView有app_header
+        if (cur_activity)
+        {
+            bool need_anim = false;
+            bool reverse_anim = false;
+
+            // 从有header进入有header才有动画
+            if (eos_activity_is_app_header_visible(cur_activity)) {
+                need_anim = true;
+
+                // 检查是否是back操作
+                if (cur_activity->destroy_on_exit) {
+                    reverse_anim = true;
+                }
+            }
+            // 从无header进入有header无需动画
+
+            _play_title_changed_anim(cur_activity, next_activity, need_anim, reverse_anim);
+        }
+        eos_app_header_show(next_activity);
+    }
+    else
+    {
+        // NextView没有app_header，将header附加到当前View
+        if (cur_activity && cur_activity->view && eos_activity_is_app_header_visible(cur_activity))
+        {
+            // 只有从有header进入无header时，才将header附加到当前View
+            eos_app_header_attach_to_view(cur_activity->view);
+            // 不立即隐藏header，让它随View执行动画
+            // eos_app_header_hide()会在动画完成后调用
+        } else {
+            // 从无header进入无header，直接隐藏header
+            eos_app_header_hide();
+        }
+    }
+
     // 如果需要动画，创建动画上下文并启动动画
     if (cur_activity && cur_activity->anim_cb)
     {
-        eos_activity_anim_ctx_t *anim_ctx = eos_malloc(sizeof(eos_activity_anim_ctx_t));
+        eos_activity_anim_ctx_t *anim_ctx = eos_malloc_zeroed(sizeof(eos_activity_anim_ctx_t));
         if (anim_ctx)
         {
             anim_ctx->at = lv_anim_timeline_create();
+            if (!anim_ctx->at)
+            {
+                eos_free(anim_ctx);
+                anim_ctx = NULL;
+            }
+        }
+
+        if (anim_ctx)
+        {
             anim_ctx->from = cur_activity;
             anim_ctx->to = next_activity;
             anim_ctx->destroy_from = cur_activity ? cur_activity->destroy_on_exit : false;
@@ -191,22 +239,23 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     // 显示 next_activity（在动画启动之后显示，确保动画的初始位置设置不会被覆盖）
     _activity_show(next_activity);
 
-    // 更新 app header
-    if (next_activity->is_app_header_visible)
-    {
-        eos_app_header_show(next_activity);
-    }
-    else
-    {
-        eos_app_header_hide();
-    }
-
     // 如果没有动画但需要销毁 from activity，直接销毁
     if (!cur_activity || !cur_activity->anim_cb)
     {
         if (cur_activity && cur_activity->destroy_on_exit)
         {
+            // 在删除View之前，恢复header的父级对象
+            if (!eos_activity_is_app_header_visible(next_activity))
+            {
+                // 从有header进入无header，直接隐藏header
+                eos_app_header_hide();
+            }
             _activity_run_destroy(cur_activity);
+        }
+        else if (!eos_activity_is_app_header_visible(next_activity) && cur_activity && eos_activity_is_app_header_visible(cur_activity))
+        {
+            // 从有header进入无header，且不需要销毁from activity，直接隐藏header
+            eos_app_header_hide();
         }
     }
 }
@@ -244,8 +293,19 @@ static void _anim_clean_up_activity(lv_anim_t *a)
     // 如果需要销毁 from activity
     if (anim_ctx->destroy_from && anim_ctx->from)
     {
+        // 在删除View之前，恢复header的父级对象
+        if (!eos_activity_is_app_header_visible(anim_ctx->to))
+        {
+            // 从有header进入无header，动画完成后隐藏header
+            eos_app_header_hide();
+        }
         _activity_run_destroy(anim_ctx->from);
         anim_ctx->from = NULL;
+    }
+    else if (!eos_activity_is_app_header_visible(anim_ctx->to) && eos_activity_is_app_header_visible(anim_ctx->from))
+    {
+        // 从有header进入无header，且不需要销毁from activity，动画完成后隐藏header
+        eos_app_header_hide();
     }
 
     // 清理时间线
@@ -272,12 +332,11 @@ static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx)
     lv_anim_set_delay(&anim_ctx->dummy_anim, 1);
     lv_anim_set_completed_cb(&anim_ctx->dummy_anim, _anim_clean_up_activity);
     lv_anim_set_user_data(&anim_ctx->dummy_anim, anim_ctx);
-    lv_anim_start(&anim_ctx->dummy_anim);
 }
 
 static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_activity_anim_ctx_t *anim_ctx)
 {
-    if (!anim_ctx)
+    if (!(anim_ctx && anim_ctx->at))
     {
         return;
     }
@@ -535,7 +594,7 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
 
 eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
 {
-    eos_activity_t *activity = eos_malloc(sizeof(eos_activity_t));
+    eos_activity_t *activity = eos_malloc_zeroed(sizeof(eos_activity_t));
     if (!activity)
     {
         return NULL;
@@ -553,6 +612,8 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     activity->title.color = _DEFAULT_TITLE_COLOR;
     activity->title.type = _TITLE_TYPE_INVALID;
     activity->title.string = NULL;
+    activity->anim_cb = NULL;
+    activity->user_data = NULL;
 
     return activity;
 }
@@ -607,12 +668,6 @@ eos_result_t eos_activity_back(void)
 
     // 标记此 activity 在 exit 时需要销毁
     current->destroy_on_exit = true;
-
-    // 执行生命周期回调
-    if (current->lifecycle && current->lifecycle->on_exit)
-    {
-        current->lifecycle->on_exit(current);
-    }
 
     // 确定要切换到的 activity
     eos_activity_t *prev = NULL;

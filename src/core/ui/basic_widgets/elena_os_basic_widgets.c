@@ -148,6 +148,9 @@ void eos_draw_buf_destory(lv_draw_buf_t *draw_buf)
 
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 {
+    static lv_style_t style_pressed;
+    static bool style_pressed_inited = false;
+
     lv_obj_t *btn = lv_button_create(parent);
     lv_obj_add_event_cb(btn, eos_activity_back_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_set_style_border_width(btn, 0, 0);
@@ -169,11 +172,15 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     lv_obj_set_style_transform_pivot_x(btn, _BACK_BTN_WIDTH / 2, 0);
     lv_obj_set_style_transform_pivot_y(btn, _BACK_BTN_HEIGHT / 2, 0);
 
-    static lv_style_t style_pressed;
-    lv_style_init(&style_pressed);
-
-    lv_style_set_transform_scale(&style_pressed, 350);
-    lv_style_set_bg_color(&style_pressed, lv_color_lighten(EOS_THEME_SECONDARY_COLOR, 64));
+    if (!style_pressed_inited)
+    {
+        /* Shared styles must be initialized only once, otherwise LVGL will leak the
+         * previously allocated property list on every back button recreation. */
+        lv_style_init(&style_pressed);
+        lv_style_set_transform_scale(&style_pressed, 350);
+        lv_style_set_bg_color(&style_pressed, lv_color_lighten(EOS_THEME_SECONDARY_COLOR, 64));
+        style_pressed_inited = true;
+    }
 
     lv_obj_add_style(btn, &style_pressed, LV_STATE_PRESSED);
 
@@ -776,6 +783,9 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(obj, 0, 0);
     lv_obj_set_style_radius(obj, 0, 0);
+
+    // 如果此前已经为这个对象设置过圆角背景，先释放旧的图像缓冲区。
+    lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
 
     // 移除旧的事件回调（如果存在）
     lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);

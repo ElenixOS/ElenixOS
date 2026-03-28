@@ -407,7 +407,7 @@ void eos_app_list_enter(void)
         EOS_LOG_E("Failed to create activity");
         return;
     }
-    eos_activity_set_anim_cb(a, _app_list_show_anim_cb);
+    // eos_activity_set_anim_cb(a, _app_list_show_anim_cb);
 
     lv_obj_t *container = eos_activity_get_view(a);
     // 初始化样式

@@ -310,7 +310,7 @@ static script_engine_result_t _test_app_debug_create_pkg(const char *app_id, scr
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
-        eos_free((void *)pkg->base_path);
+        eos_pkg_free(pkg);
         eos_free(pkg);
         return -SE_FAILED;
     }
@@ -318,7 +318,7 @@ static script_engine_result_t _test_app_debug_create_pkg(const char *app_id, scr
     pkg->script_str = eos_fs_read_file(script_path);
     if (!pkg->script_str)
     {
-        eos_free((void *)pkg->base_path);
+        eos_pkg_free(pkg);
         eos_free(pkg);
         return -SE_FAILED;
     }
@@ -606,6 +606,7 @@ static void _test_app_debug_app_btn_create(lv_obj_t *parent, const char *app_id)
     lv_obj_t *btn = eos_list_add_button(parent, icon_path, pkg.name);
     lv_obj_add_event_cb(btn, _test_app_debug_app_btn_cb, LV_EVENT_CLICKED, (void *)app_id);
     eos_app_obj_auto_delete(btn, app_id);
+    eos_pkg_free(&pkg);
 }
 
 static void _test_app_debug_app_installed_cb(lv_event_t *e)

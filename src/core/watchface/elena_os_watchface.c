@@ -264,9 +264,11 @@ void eos_watchface_on_enter(eos_activity_t *a)
     eos_activity_set_view(a, view);
     // JSON中获取表盘id
     char wf_id[EOS_PKG_ID_LEN_MAX];
+    char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
     snprintf(wf_id, sizeof(wf_id),
              "%s",
-             eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock"));
+             selected_wf_id);
+    eos_free(selected_wf_id);
     // 直接通过表盘id 获取相关信息并存储到script_package
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path),

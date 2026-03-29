@@ -14,6 +14,7 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "uthash.h"
+#include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -61,7 +62,7 @@ static void sni_canvas_ctx_remove(lv_obj_t *obj)
     }
 
     HASH_DEL(g_canvas_ctx, ctx);
-    lv_free(ctx);
+    eos_free(ctx);
 }
 
 static void sni_canvas_ctx_delete_cb(lv_event_t *e)
@@ -90,13 +91,11 @@ static sni_canvas_buf_ctx_t *sni_canvas_ctx_get_or_create(lv_obj_t *obj)
         return ctx;
     }
 
-    ctx = lv_malloc(sizeof(sni_canvas_buf_ctx_t));
+    ctx = eos_malloc_zeroed(sizeof(sni_canvas_buf_ctx_t));
     if (!ctx)
     {
         return NULL;
     }
-
-    lv_memzero(ctx, sizeof(sni_canvas_buf_ctx_t));
     ctx->obj = obj;
     HASH_ADD_PTR(g_canvas_ctx, obj, ctx);
 

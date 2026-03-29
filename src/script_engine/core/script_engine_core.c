@@ -73,6 +73,7 @@
 /* Macros and Definitions -------------------------------------*/
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
 #define SCRIPT_DEFAULT_CQUEUE_CAPACITY 10
+#define SCRIPT_ERROR_STACK_BUF_SIZE 256
 
 /**
  * @brief 模块任务结构体
@@ -609,6 +610,14 @@ static void _check_mem(void)
     }
 }
 
+static void _collect_script_garbage(void)
+{
+    /* Run an aggressive pass after script-exit hooks so native handles owned by
+     * the previous realm are reclaimed before the next app launch. */
+    jerry_heap_gc(JERRY_GC_PRESSURE_HIGH);
+    jerry_heap_gc(JERRY_GC_PRESSURE_LOW);
+}
+
 inline void script_engine_set_prop_number(jerry_value_t obj,
                                           const char *prop_name,
                                           double value)
@@ -655,6 +664,9 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
 {
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_value_t final_str_val = value;
+    char stack_buf[SCRIPT_ERROR_STACK_BUF_SIZE];
+    char *buf = stack_buf;
+    bool need_free = false;
 
     // 如果不是字符串，则转换成字符串
     if (!(jerry_value_is_string(value)))
@@ -663,11 +675,14 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
     }
     // 取字符串长度
     jerry_size_t req_sz = jerry_string_size(final_str_val, JERRY_ENCODING_CESU8);
-    char *buf = NULL;
-
     if (req_sz > 0)
     {
-        buf = (char *)eos_malloc(req_sz + 1);
+        if (req_sz >= sizeof(stack_buf))
+        {
+            buf = (char *)eos_malloc(req_sz + 1);
+            need_free = (buf != NULL);
+        }
+
         if (buf)
         {
             jerry_string_to_buffer(final_str_val, JERRY_ENCODING_CESU8,
@@ -676,7 +691,10 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
             EOS_LOG_E("[%s]%s", tag, buf);
             _set_error_info(buf);
 
-            eos_free(buf);
+            if (need_free)
+            {
+                eos_free(buf);
+            }
         }
         else
         {
@@ -889,6 +907,7 @@ static script_engine_result_t _script_engine_stop_and_cleanup(void)
     engine_ctx.base_path = NULL;
 
     _change_state(SCRIPT_STATE_STOPPED);
+    _collect_script_garbage();
     _check_mem();
     EOS_LOG_I("Script terminated successfully");
 
@@ -1140,6 +1159,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
         }
         engine_ctx.base_path = NULL;
         _change_state(SCRIPT_STATE_STOPPED);
+        _collect_script_garbage();
     }
 
     return result;

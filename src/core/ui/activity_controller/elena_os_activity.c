@@ -16,6 +16,7 @@
 #include "elena_os_log.h"
 #include "elena_os_core.h"
 #include "elena_os_config.h"
+#include "elena_os_dispatcher.h"
 #include "elena_os_theme.h"
 #include "elena_os_lang.h"
 #include "elena_os_misc.h"
@@ -39,6 +40,7 @@ typedef struct
     eos_activity_t *from;
     eos_activity_t *to;
     bool destroy_from; // 是否在动画完成后销毁 from activity
+    bool cleanup_scheduled;
 } eos_activity_anim_ctx_t;
 
 struct eos_activity_t
@@ -84,6 +86,8 @@ static eos_activity_ctx_t g_activity_ctx = {
 static void _update_app_header_if_needed(eos_activity_t *activity);
 static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_activity_anim_ctx_t *anim_ctx);
 static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx);
+static void _anim_dummy_exec_cb(void *var, int32_t value);
+static void _anim_clean_up_activity_deferred(void *user_data);
 
 static bool _controller_initialized(void)
 {
@@ -129,6 +133,47 @@ static void _activity_show(eos_activity_t *activity)
     }
 
     lv_obj_move_foreground(activity->view);
+}
+
+static void _anim_dummy_exec_cb(void *var, int32_t value)
+{
+    LV_UNUSED(var);
+    LV_UNUSED(value);
+}
+
+static void _anim_clean_up_activity_deferred(void *user_data)
+{
+    eos_activity_anim_ctx_t *anim_ctx = (eos_activity_anim_ctx_t *)user_data;
+    if (!anim_ctx)
+    {
+        return;
+    }
+
+    // 如果需要销毁 from activity
+    if (anim_ctx->destroy_from && anim_ctx->from)
+    {
+        // 在删除View之前，恢复header的父级对象
+        if (!eos_activity_is_app_header_visible(anim_ctx->to))
+        {
+            // 从有header进入无header，动画完成后隐藏header
+            eos_app_header_hide();
+        }
+        _activity_run_destroy(anim_ctx->from);
+        anim_ctx->from = NULL;
+    }
+    else if (!eos_activity_is_app_header_visible(anim_ctx->to) && eos_activity_is_app_header_visible(anim_ctx->from))
+    {
+        // 从有header进入无header，且不需要销毁from activity，动画完成后隐藏header
+        eos_app_header_hide();
+    }
+
+    if (anim_ctx->at)
+    {
+        lv_anim_timeline_delete(anim_ctx->at);
+        anim_ctx->at = NULL;
+    }
+
+    eos_free(anim_ctx);
 }
 
 static void _activity_switch_to(eos_activity_t *next_activity)
@@ -290,33 +335,13 @@ static void _anim_clean_up_activity(lv_anim_t *a)
     if (!anim_ctx)
         return;
 
-    // 如果需要销毁 from activity
-    if (anim_ctx->destroy_from && anim_ctx->from)
+    if (anim_ctx->cleanup_scheduled)
     {
-        // 在删除View之前，恢复header的父级对象
-        if (!eos_activity_is_app_header_visible(anim_ctx->to))
-        {
-            // 从有header进入无header，动画完成后隐藏header
-            eos_app_header_hide();
-        }
-        _activity_run_destroy(anim_ctx->from);
-        anim_ctx->from = NULL;
-    }
-    else if (!eos_activity_is_app_header_visible(anim_ctx->to) && eos_activity_is_app_header_visible(anim_ctx->from))
-    {
-        // 从有header进入无header，且不需要销毁from activity，动画完成后隐藏header
-        eos_app_header_hide();
+        return;
     }
 
-    // 清理时间线
-    if (anim_ctx->at)
-    {
-        lv_anim_timeline_delete(anim_ctx->at);
-        anim_ctx->at = NULL;
-    }
-
-    // 清理 eos_activity_anim_ctx_t
-    eos_free(anim_ctx);
+    anim_ctx->cleanup_scheduled = true;
+    eos_dispatcher_call(_anim_clean_up_activity_deferred, anim_ctx);
 }
 
 static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx)
@@ -328,6 +353,7 @@ static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx)
 
     lv_anim_init(&anim_ctx->dummy_anim);
     lv_anim_set_var(&anim_ctx->dummy_anim, lv_screen_active());
+    lv_anim_set_exec_cb(&anim_ctx->dummy_anim, _anim_dummy_exec_cb);
     lv_anim_set_values(&anim_ctx->dummy_anim, 0, 100);
     lv_anim_set_delay(&anim_ctx->dummy_anim, 1);
     lv_anim_set_completed_cb(&anim_ctx->dummy_anim, _anim_clean_up_activity);

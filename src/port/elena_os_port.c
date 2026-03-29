@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "elena_os_log.h"
+#include "elena_os_mem.h"
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 #include <stdatomic.h>
 #define HAS_ATOMIC 1
@@ -38,14 +39,14 @@ struct eos_sem_t
 EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
 {
 #if HAS_ATOMIC
-    eos_sem_t *sem = (eos_sem_t *)malloc(sizeof(eos_sem_t));
+    eos_sem_t *sem = eos_malloc(sizeof(eos_sem_t));
     if (!sem)
         return NULL;
     atomic_init(&sem->count, initial_count);
     sem->max = max_count;
     return sem;
 #else
-    eos_sem_t *sem = (eos_sem_t *)malloc(sizeof(eos_sem_t));
+    eos_sem_t *sem = eos_malloc(sizeof(eos_sem_t));
     if (!sem)
         return NULL;
     sem->count = initial_count;
@@ -57,7 +58,7 @@ EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
 EOS_WEAK void eos_sem_destroy(eos_sem_t *sem)
 {
     if (sem)
-        free(sem);
+        eos_free(sem);
 }
 
 EOS_WEAK bool eos_sem_take(eos_sem_t *sem, uint32_t timeout_ms)

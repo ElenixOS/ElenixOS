@@ -58,16 +58,16 @@ static void _app_list_on_resueme(eos_activity_t *a);
 
 static eos_activity_lifecycle_t app_list_lifecycle = {
     .on_enter = NULL,
-    .on_exit = NULL,
+    .on_destroy = NULL,
     .on_pause = NULL,
     .on_resume = _app_list_on_resueme,
 };
 
-static void _app_on_exit(eos_activity_t *a);
+static void _app_on_destroy(eos_activity_t *a);
 
 static eos_activity_lifecycle_t app_lifecycle = {
     .on_enter = NULL,
-    .on_exit = _app_on_exit,
+    .on_destroy = _app_on_destroy,
     .on_pause = NULL,
     .on_resume = NULL,
 };
@@ -81,7 +81,7 @@ static void _app_list_refresh(lv_obj_t *container);
 
 /************************** 生命周期 **************************/
 
-static void _app_on_exit(eos_activity_t *a)
+static void _app_on_destroy(eos_activity_t *a)
 {
     // 退出脚本引擎
     script_engine_request_stop();

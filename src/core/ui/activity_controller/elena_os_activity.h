@@ -24,7 +24,7 @@ extern "C" {
 typedef struct eos_activity_t eos_activity_t;
 
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
-typedef void (*eos_activity_on_exit_t)(eos_activity_t *activity);
+typedef void (*eos_activity_on_destroy_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_resume_t)(eos_activity_t *activity);
 typedef void (*eos_activity_anim_cb_t)(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next);
@@ -32,7 +32,7 @@ typedef void (*eos_activity_anim_cb_t)(lv_anim_timeline_t *at, eos_activity_t *t
 typedef struct
 {
     eos_activity_on_enter_t on_enter;
-    eos_activity_on_exit_t on_exit;
+    eos_activity_on_destroy_t on_destroy;
     eos_activity_on_pause_t on_pause;
     eos_activity_on_resume_t on_resume;
 } eos_activity_lifecycle_t;
@@ -182,6 +182,18 @@ void eos_activity_back_cb(lv_event_t *e);
  * @return eos_activity_t* 当前 Activity，失败返回 NULL
  */
 eos_activity_t *eos_activity_get_current(void);
+
+/**
+ * @brief 获取当前已完成显示的 Activity
+ * @return eos_activity_t* 已完成显示的 Activity，失败返回 NULL
+ */
+eos_activity_t *eos_activity_get_visible(void);
+
+/**
+ * @brief 当前是否有 Activity 切换动画正在进行
+ * @return bool true 正在切换，false 空闲
+ */
+bool eos_activity_is_transition_in_progress(void);
 
 /**
  * @brief 获取栈底 Activity（通常是表盘 Activity）

@@ -153,16 +153,9 @@ void eos_radio_list_add_event_cb(eos_radio_list_t *rl, lv_event_cb_t event_cb, v
     lv_obj_add_event_cb(rl->radio_item_container, event_cb, LV_EVENT_VALUE_CHANGED, user_data);
 }
 
-static void _radio_list_on_exit_cb(eos_activity_t *a)
-{
-    eos_radio_list_t *rl = eos_activity_get_user_data(a);
-    EOS_CHECK_PTR_RETURN(rl);
-    eos_free(rl);
-}
-
 static const eos_activity_lifecycle_t radio_list_lifecycle = {
     .on_enter = NULL,
-    .on_exit = _radio_list_on_exit_cb,
+    .on_destroy = NULL,
     .on_pause = NULL,
     .on_resume = NULL,
 };

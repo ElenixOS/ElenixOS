@@ -53,13 +53,13 @@ struct eos_activity_t
         lv_color_t color;
         union
         {
-            const char *string;
+            char *string;
             uint32_t id;
         };
         eos_activity_title_type_t type;
     } title;
 
-    eos_activity_lifecycle_t *lifecycle;
+    const eos_activity_lifecycle_t *lifecycle;
 
     eos_activity_anim_cb_t anim_cb; // 作为页面切换发起方时会调用此回调，用于控制动画行为
 
@@ -70,16 +70,20 @@ typedef struct
 {
     eos_activity_t *watchface_activity;
     eos_activity_t *current_activity;
+    eos_activity_t *visible_activity;
     eos_stack_t *activity_stack;
     lv_obj_t *root_screen;
+    bool transition_in_progress;
 } eos_activity_ctx_t;
 
 /* Variables --------------------------------------------------*/
 static eos_activity_ctx_t g_activity_ctx = {
     .watchface_activity = NULL,
     .current_activity = NULL,
+    .visible_activity = NULL,
     .activity_stack = NULL,
     .root_screen = NULL,
+    .transition_in_progress = false,
 };
 
 /* Function Implementations -----------------------------------*/
@@ -88,6 +92,7 @@ static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_a
 static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx);
 static void _anim_dummy_exec_cb(void *var, int32_t value);
 static void _anim_clean_up_activity_deferred(void *user_data);
+static void _activity_mark_visible(eos_activity_t *activity);
 
 static bool _controller_initialized(void)
 {
@@ -98,7 +103,9 @@ static void _activity_run_destroy(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
 
-    if (activity->view)
+    activity->user_data = NULL;
+
+    if (activity->view && lv_obj_is_valid(activity->view))
     {
         lv_obj_delete(activity->view);
         activity->view = NULL;
@@ -120,8 +127,10 @@ static void _activity_reset_context(void)
 {
     g_activity_ctx.watchface_activity = NULL;
     g_activity_ctx.current_activity = NULL;
+    g_activity_ctx.visible_activity = NULL;
     g_activity_ctx.activity_stack = NULL;
     g_activity_ctx.root_screen = NULL;
+    g_activity_ctx.transition_in_progress = false;
 }
 
 static void _activity_show(eos_activity_t *activity)
@@ -139,6 +148,12 @@ static void _anim_dummy_exec_cb(void *var, int32_t value)
 {
     LV_UNUSED(var);
     LV_UNUSED(value);
+}
+
+static void _activity_mark_visible(eos_activity_t *activity)
+{
+    g_activity_ctx.visible_activity = activity;
+    g_activity_ctx.transition_in_progress = false;
 }
 
 static void _anim_clean_up_activity_deferred(void *user_data)
@@ -173,6 +188,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
         anim_ctx->at = NULL;
     }
 
+    _activity_mark_visible(anim_ctx->to);
     eos_free(anim_ctx);
 }
 
@@ -182,6 +198,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     eos_activity_t *cur_activity = g_activity_ctx.current_activity;
     if (cur_activity == next_activity)
     {
+        _activity_mark_visible(next_activity);
         _activity_show(next_activity);
         if (next_activity->is_app_header_visible)
         {
@@ -197,9 +214,9 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     g_activity_ctx.current_activity = next_activity;
 
     // 执行生命周期回调
-    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_exit)
+    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_destroy)
     {
-        cur_activity->lifecycle->on_exit(cur_activity);
+        cur_activity->lifecycle->on_destroy(cur_activity);
     }
 
     if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_pause)
@@ -257,6 +274,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     }
 
     // 如果需要动画，创建动画上下文并启动动画
+    bool transition_started = false;
     if (cur_activity && cur_activity->anim_cb)
     {
         eos_activity_anim_ctx_t *anim_ctx = eos_malloc_zeroed(sizeof(eos_activity_anim_ctx_t));
@@ -276,6 +294,8 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             anim_ctx->to = next_activity;
             anim_ctx->destroy_from = cur_activity ? cur_activity->destroy_on_exit : false;
 
+            g_activity_ctx.transition_in_progress = true;
+            transition_started = true;
             _init_anim_timeline(anim_ctx);
             _anim_timeline_start(cur_activity, next_activity, anim_ctx);
         }
@@ -285,7 +305,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     _activity_show(next_activity);
 
     // 如果没有动画但需要销毁 from activity，直接销毁
-    if (!cur_activity || !cur_activity->anim_cb)
+    if (!transition_started)
     {
         if (cur_activity && cur_activity->destroy_on_exit)
         {
@@ -302,6 +322,8 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             // 从有header进入无header，且不需要销毁from activity，直接隐藏header
             eos_app_header_hide();
         }
+
+        _activity_mark_visible(next_activity);
     }
 }
 
@@ -458,7 +480,7 @@ void eos_activity_set_title(eos_activity_t *activity, const char *title)
     }
     if (title)
     {
-        activity->title.string = eos_strdup(title);
+        activity->title.string = (char *)eos_strdup(title);
         activity->title.type = _TITLE_TYPE_STRING;
     }
     else
@@ -605,6 +627,8 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
     }
     _activity_show(initial_activity);
     g_activity_ctx.current_activity = initial_activity;
+    g_activity_ctx.visible_activity = initial_activity;
+    g_activity_ctx.transition_in_progress = false;
 
     if (initial_activity->is_app_header_visible)
     {
@@ -652,6 +676,12 @@ void eos_activity_enter(eos_activity_t *activity)
         return;
     }
 
+    if (g_activity_ctx.transition_in_progress)
+    {
+        EOS_LOG_W("Activity transition in progress");
+        return;
+    }
+
     if (g_activity_ctx.current_activity == activity)
     {
         _activity_show(activity);
@@ -676,6 +706,12 @@ eos_result_t eos_activity_back(void)
 {
     if (!_controller_initialized())
     {
+        return EOS_FAILED;
+    }
+
+    if (g_activity_ctx.transition_in_progress)
+    {
+        EOS_LOG_W("Activity transition in progress");
         return EOS_FAILED;
     }
 
@@ -730,6 +766,31 @@ eos_activity_t *eos_activity_get_current(void)
     if (g_activity_ctx.watchface_activity)
         return g_activity_ctx.watchface_activity;
     return NULL;
+}
+
+eos_activity_t *eos_activity_get_visible(void)
+{
+    if (!_controller_initialized())
+    {
+        return NULL;
+    }
+    if (g_activity_ctx.visible_activity)
+        return g_activity_ctx.visible_activity;
+    return eos_activity_get_current();
+}
+
+bool eos_activity_is_transition_in_progress(void)
+{
+    return g_activity_ctx.transition_in_progress;
+}
+
+eos_activity_t *eos_activity_get_bottom(void)
+{
+    if (!_controller_initialized())
+    {
+        return NULL;
+    }
+    return g_activity_ctx.watchface_activity;
 }
 
 void eos_activity_controller_deinit(void)

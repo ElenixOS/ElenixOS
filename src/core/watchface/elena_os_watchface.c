@@ -46,11 +46,11 @@ static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
 
 static void eos_watchface_on_enter(eos_activity_t *a);
-static void eos_watchface_on_exit(eos_activity_t *a);
+static void eos_watchface_on_destroy(eos_activity_t *a);
 
 static const eos_activity_lifecycle_t watchface_lifecycle = {
     .on_enter = eos_watchface_on_enter,
-    .on_exit = eos_watchface_on_exit,
+    .on_destroy = eos_watchface_on_destroy,
     .on_pause = NULL,
     .on_resume = NULL,
 };
@@ -321,7 +321,7 @@ void eos_watchface_on_enter(eos_activity_t *a)
     eos_pkg_free(&pkg);
 }
 
-void eos_watchface_on_exit(eos_activity_t *a)
+void eos_watchface_on_destroy(eos_activity_t *a)
 {
     EOS_LOG_I("Exit watchface activity");
     if(script_engine_request_stop() != SE_OK)

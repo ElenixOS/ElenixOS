@@ -727,7 +727,7 @@ static void _settings_view_general(lv_event_t *e)
 /************************** 系统设置程序入口 **************************/
 static const eos_activity_lifecycle_t _settings_lifecycle = {
     .on_enter = NULL,
-    .on_exit = NULL,
+    .on_destroy = NULL,
 };
 void eos_settings_enter(void)
 {

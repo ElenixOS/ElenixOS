@@ -44,14 +44,14 @@ typedef struct
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-static void _flash_light_on_exit(eos_activity_t *a);
+static void _flash_light_on_destroy(eos_activity_t *a);
 static inline void _flash_light_delete(_pressing_user_data_t *ud);
 static const eos_activity_lifecycle_t _flash_light_lifecycle = {
     .on_enter = NULL,
-    .on_exit = _flash_light_on_exit,
+    .on_destroy = _flash_light_on_destroy,
 };
 
-static void _flash_light_on_exit(eos_activity_t *a)
+static void _flash_light_on_destroy(eos_activity_t *a)
 {
     _flash_light_delete(NULL);
     eos_display_tmp_restore_brightness_smooth();

@@ -46,13 +46,16 @@ static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
 
 static void eos_watchface_on_enter(eos_activity_t *a);
+static void eos_watchface_on_pause(eos_activity_t *a);
+static void eos_watchface_on_resume(eos_activity_t *a);
 static void eos_watchface_on_destroy(eos_activity_t *a);
+static void _watchface_stop_and_reset(eos_activity_t *a);
 
 static const eos_activity_lifecycle_t watchface_lifecycle = {
     .on_enter = eos_watchface_on_enter,
+    .on_pause = eos_watchface_on_pause,
+    .on_resume = eos_watchface_on_resume,
     .on_destroy = eos_watchface_on_destroy,
-    .on_pause = NULL,
-    .on_resume = NULL,
 };
 /* Function Implementations -----------------------------------*/
 
@@ -321,23 +324,40 @@ void eos_watchface_on_enter(eos_activity_t *a)
     eos_pkg_free(&pkg);
 }
 
+static void _watchface_stop_and_reset(eos_activity_t *a)
+{
+    EOS_CHECK_PTR_RETURN(a);
+
+    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
+    {
+        if (script_engine_request_stop() != SE_OK)
+        {
+            EOS_LOG_E("Script engine request stop failed");
+        }
+    }
+
+    if (eos_activity_get_view(a) != NULL)
+    {
+        eos_activity_set_view(a, NULL);
+    }
+}
+
+static void eos_watchface_on_pause(eos_activity_t *a)
+{
+    EOS_LOG_I("Pause watchface activity");
+    _watchface_stop_and_reset(a);
+}
+
+static void eos_watchface_on_resume(eos_activity_t *a)
+{
+    EOS_LOG_I("Resume watchface activity");
+    eos_watchface_on_enter(a);
+}
+
 void eos_watchface_on_destroy(eos_activity_t *a)
 {
     EOS_LOG_I("Exit watchface activity");
-    if(script_engine_request_stop() != SE_OK)
-    {
-        EOS_LOG_E("Script engine request stop failed");
-        return;
-    }
-    eos_activity_t *watchface_activity =
-        eos_activity_create(&watchface_lifecycle);
-    if (!watchface_activity)
-    {
-        EOS_LOG_E("Create watchface activity failed");
-        return;
-    }
-    // 删除 View
-    lv_obj_delete(eos_activity_get_view(a));
+    _watchface_stop_and_reset(a);
 }
 
 eos_result_t eos_watchface_init(void)

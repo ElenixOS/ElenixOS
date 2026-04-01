@@ -23,11 +23,20 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 typedef struct eos_activity_t eos_activity_t;
 
+typedef enum
+{
+    EOS_ACTIVITY_ANIM_TIMING_ENTER = 0,
+    EOS_ACTIVITY_ANIM_TIMING_EXIT,
+} eos_activity_anim_timing_t;
+
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_destroy_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_resume_t)(eos_activity_t *activity);
 typedef void (*eos_activity_anim_cb_t)(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next);
+typedef void (*eos_activity_transition_anim_cb_t)(eos_activity_anim_timing_t timing,
+                                                  eos_activity_t *from,
+                                                  eos_activity_t *to);
 
 typedef struct
 {
@@ -112,6 +121,18 @@ void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color);
  * @param cb 动画回调函数指针
  */
 void eos_activity_set_anim_cb(eos_activity_t *activity, eos_activity_anim_cb_t cb);
+
+/**
+ * @brief 设置页面切换动画开始回调
+ * @param cb 动画开始回调，参数提供时机与from/to上下文
+ */
+void eos_activity_set_transition_anim_start_cb(eos_activity_transition_anim_cb_t cb);
+
+/**
+ * @brief 设置页面切换动画结束回调
+ * @param cb 动画结束回调，参数提供时机与from/to上下文
+ */
+void eos_activity_set_transition_anim_end_cb(eos_activity_transition_anim_cb_t cb);
 
 /**
  * @brief 设置 Activity 的标题可见性

@@ -39,6 +39,7 @@ typedef struct
 
     eos_activity_t *from;
     eos_activity_t *to;
+    eos_activity_anim_timing_t timing;
     bool destroy_from; // 是否在动画完成后销毁 from activity
     bool cleanup_scheduled;
 } eos_activity_anim_ctx_t;
@@ -74,6 +75,8 @@ typedef struct
     eos_stack_t *activity_stack;
     lv_obj_t *root_screen;
     bool transition_in_progress;
+    eos_activity_transition_anim_cb_t transition_anim_start_cb;
+    eos_activity_transition_anim_cb_t transition_anim_end_cb;
 } eos_activity_ctx_t;
 
 /* Variables --------------------------------------------------*/
@@ -84,6 +87,8 @@ static eos_activity_ctx_t g_activity_ctx = {
     .activity_stack = NULL,
     .root_screen = NULL,
     .transition_in_progress = false,
+    .transition_anim_start_cb = NULL,
+    .transition_anim_end_cb = NULL,
 };
 
 /* Function Implementations -----------------------------------*/
@@ -93,6 +98,15 @@ static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx);
 static void _anim_dummy_exec_cb(void *var, int32_t value);
 static void _anim_clean_up_activity_deferred(void *user_data);
 static void _activity_mark_visible(eos_activity_t *activity);
+static void _activity_notify_transition_anim_start(eos_activity_anim_timing_t timing,
+                                                   eos_activity_t *from,
+                                                   eos_activity_t *to);
+static void _activity_notify_transition_anim_end(eos_activity_anim_timing_t timing,
+                                                 eos_activity_t *from,
+                                                 eos_activity_t *to);
+static void _activity_run_post_switch_lifecycle(eos_activity_anim_timing_t timing,
+                                                eos_activity_t *from,
+                                                eos_activity_t *to);
 
 static bool _controller_initialized(void)
 {
@@ -102,6 +116,11 @@ static bool _controller_initialized(void)
 static void _activity_run_destroy(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
+
+    if (activity->lifecycle && activity->lifecycle->on_destroy)
+    {
+        activity->lifecycle->on_destroy(activity);
+    }
 
     activity->user_data = NULL;
 
@@ -131,6 +150,8 @@ static void _activity_reset_context(void)
     g_activity_ctx.activity_stack = NULL;
     g_activity_ctx.root_screen = NULL;
     g_activity_ctx.transition_in_progress = false;
+    g_activity_ctx.transition_anim_start_cb = NULL;
+    g_activity_ctx.transition_anim_end_cb = NULL;
 }
 
 static void _activity_show(eos_activity_t *activity)
@@ -156,12 +177,62 @@ static void _activity_mark_visible(eos_activity_t *activity)
     g_activity_ctx.transition_in_progress = false;
 }
 
+static void _activity_notify_transition_anim_start(eos_activity_anim_timing_t timing,
+                                                   eos_activity_t *from,
+                                                   eos_activity_t *to)
+{
+    if (g_activity_ctx.transition_anim_start_cb)
+    {
+        g_activity_ctx.transition_anim_start_cb(timing, from, to);
+    }
+}
+
+static void _activity_notify_transition_anim_end(eos_activity_anim_timing_t timing,
+                                                 eos_activity_t *from,
+                                                 eos_activity_t *to)
+{
+    if (g_activity_ctx.transition_anim_end_cb)
+    {
+        g_activity_ctx.transition_anim_end_cb(timing, from, to);
+    }
+}
+
+static void _activity_run_post_switch_lifecycle(eos_activity_anim_timing_t timing,
+                                                eos_activity_t *from,
+                                                eos_activity_t *to)
+{
+    EOS_CHECK_PTR_RETURN(to);
+    LV_UNUSED(from);
+
+    if (timing == EOS_ACTIVITY_ANIM_TIMING_ENTER)
+    {
+        if (to->lifecycle && to->lifecycle->on_enter)
+        {
+            to->lifecycle->on_enter(to);
+        }
+        return;
+    }
+
+    if (to->lifecycle && to->lifecycle->on_resume)
+    {
+        to->lifecycle->on_resume(to);
+    }
+}
+
 static void _anim_clean_up_activity_deferred(void *user_data)
 {
     eos_activity_anim_ctx_t *anim_ctx = (eos_activity_anim_ctx_t *)user_data;
     if (!anim_ctx)
     {
         return;
+    }
+
+    bool anim_end_notified = false;
+
+    if (anim_ctx->timing == EOS_ACTIVITY_ANIM_TIMING_EXIT && anim_ctx->destroy_from && anim_ctx->from)
+    {
+        _activity_notify_transition_anim_end(anim_ctx->timing, anim_ctx->from, anim_ctx->to);
+        anim_end_notified = true;
     }
 
     // 如果需要销毁 from activity
@@ -188,11 +259,18 @@ static void _anim_clean_up_activity_deferred(void *user_data)
         anim_ctx->at = NULL;
     }
 
+    _activity_run_post_switch_lifecycle(anim_ctx->timing, anim_ctx->from, anim_ctx->to);
     _activity_mark_visible(anim_ctx->to);
+
+    if (!anim_end_notified)
+    {
+        _activity_notify_transition_anim_end(anim_ctx->timing, anim_ctx->from, anim_ctx->to);
+    }
+
     eos_free(anim_ctx);
 }
 
-static void _activity_switch_to(eos_activity_t *next_activity)
+static void _activity_switch_to(eos_activity_t *next_activity, eos_activity_anim_timing_t timing)
 {
     EOS_CHECK_PTR_RETURN(next_activity);
     eos_activity_t *cur_activity = g_activity_ctx.current_activity;
@@ -213,25 +291,10 @@ static void _activity_switch_to(eos_activity_t *next_activity)
 
     g_activity_ctx.current_activity = next_activity;
 
-    // 执行生命周期回调
-    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_destroy)
-    {
-        cur_activity->lifecycle->on_destroy(cur_activity);
-    }
-
-    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_pause)
+    if (timing == EOS_ACTIVITY_ANIM_TIMING_ENTER && cur_activity && cur_activity->lifecycle &&
+        cur_activity->lifecycle->on_pause)
     {
         cur_activity->lifecycle->on_pause(cur_activity);
-    }
-
-    if (next_activity->lifecycle && next_activity->lifecycle->on_enter)
-    {
-        next_activity->lifecycle->on_enter(next_activity);
-    }
-
-    if (next_activity->lifecycle && next_activity->lifecycle->on_resume)
-    {
-        next_activity->lifecycle->on_resume(next_activity);
     }
 
     // 处理AppHeader逻辑
@@ -248,7 +311,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
                 need_anim = true;
 
                 // 检查是否是back操作
-                if (cur_activity->destroy_on_exit) {
+                if (timing == EOS_ACTIVITY_ANIM_TIMING_EXIT) {
                     reverse_anim = true;
                 }
             }
@@ -273,6 +336,8 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         }
     }
 
+    _activity_notify_transition_anim_start(timing, cur_activity, next_activity);
+
     // 如果需要动画，创建动画上下文并启动动画
     bool transition_started = false;
     if (cur_activity && cur_activity->anim_cb)
@@ -292,6 +357,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         {
             anim_ctx->from = cur_activity;
             anim_ctx->to = next_activity;
+            anim_ctx->timing = timing;
             anim_ctx->destroy_from = cur_activity ? cur_activity->destroy_on_exit : false;
 
             g_activity_ctx.transition_in_progress = true;
@@ -307,8 +373,16 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     // 如果没有动画但需要销毁 from activity，直接销毁
     if (!transition_started)
     {
+        bool anim_end_notified = false;
+
         if (cur_activity && cur_activity->destroy_on_exit)
         {
+            if (timing == EOS_ACTIVITY_ANIM_TIMING_EXIT)
+            {
+                _activity_notify_transition_anim_end(timing, cur_activity, next_activity);
+                anim_end_notified = true;
+            }
+
             // 在删除View之前，恢复header的父级对象
             if (!eos_activity_is_app_header_visible(next_activity))
             {
@@ -323,7 +397,13 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             eos_app_header_hide();
         }
 
+        _activity_run_post_switch_lifecycle(timing, cur_activity, next_activity);
         _activity_mark_visible(next_activity);
+
+        if (!anim_end_notified)
+        {
+            _activity_notify_transition_anim_end(timing, cur_activity, next_activity);
+        }
     }
 }
 
@@ -416,6 +496,16 @@ void eos_activity_set_anim_cb(eos_activity_t *activity, eos_activity_anim_cb_t c
 {
     EOS_CHECK_PTR_RETURN(activity);
     activity->anim_cb = cb;
+}
+
+void eos_activity_set_transition_anim_start_cb(eos_activity_transition_anim_cb_t cb)
+{
+    g_activity_ctx.transition_anim_start_cb = cb;
+}
+
+void eos_activity_set_transition_anim_end_cb(eos_activity_transition_anim_cb_t cb)
+{
+    g_activity_ctx.transition_anim_end_cb = cb;
 }
 
 void *eos_activity_get_user_data(eos_activity_t *activity)
@@ -690,7 +780,7 @@ void eos_activity_enter(eos_activity_t *activity)
 
     if (activity == g_activity_ctx.watchface_activity)
     {
-        _activity_switch_to(activity);
+        _activity_switch_to(activity, EOS_ACTIVITY_ANIM_TIMING_ENTER);
         return;
     }
 
@@ -699,7 +789,7 @@ void eos_activity_enter(eos_activity_t *activity)
         return;
     }
 
-    _activity_switch_to(activity);
+    _activity_switch_to(activity, EOS_ACTIVITY_ANIM_TIMING_ENTER);
 }
 
 eos_result_t eos_activity_back(void)
@@ -719,7 +809,7 @@ eos_result_t eos_activity_back(void)
     {
         if (g_activity_ctx.watchface_activity && g_activity_ctx.current_activity != g_activity_ctx.watchface_activity)
         {
-            _activity_switch_to(g_activity_ctx.watchface_activity);
+            _activity_switch_to(g_activity_ctx.watchface_activity, EOS_ACTIVITY_ANIM_TIMING_EXIT);
             return EOS_OK;
         }
         return EOS_FAILED;
@@ -745,7 +835,7 @@ eos_result_t eos_activity_back(void)
     EOS_CHECK_PTR_RETURN_VAL(prev, EOS_FAILED);
 
     // 切换到上一个 activity，destroy_on_exit 标志会控制是否销毁当前 activity
-    _activity_switch_to(prev);
+    _activity_switch_to(prev, EOS_ACTIVITY_ANIM_TIMING_EXIT);
 
     return EOS_OK;
 }

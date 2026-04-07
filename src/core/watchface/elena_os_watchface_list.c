@@ -51,6 +51,7 @@ void eos_watchface_list_enter(void)
 {
     // 创建新的页面用于绘制应用列表
     eos_activity_t *a = eos_activity_create(NULL);
+    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_WATCHFACE_LIST);
     lv_obj_t *wf_list_view = eos_activity_get_view(a);
     size_t watchface_list_size = eos_watchface_list_size();
 

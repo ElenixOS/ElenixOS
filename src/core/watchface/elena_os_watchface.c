@@ -336,6 +336,7 @@ void eos_watchface_on_destroy(eos_activity_t *a)
         EOS_LOG_E("Create watchface activity failed");
         return;
     }
+    eos_activity_set_type(watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
     // 删除 View
     lv_obj_delete(eos_activity_get_view(a));
 }
@@ -362,6 +363,7 @@ eos_result_t eos_watchface_init(void)
         EOS_LOG_E("Create watchface activity failed");
         return EOS_FAILED;
     }
+    eos_activity_set_type(watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
     {
         EOS_LOG_E("Init watchface activity controller failed");

@@ -8,6 +8,7 @@
 #include "elena_os_activity.h"
 
 /* Includes ---------------------------------------------------*/
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "elena_os_stack.h"
@@ -20,10 +21,12 @@
 #include "elena_os_theme.h"
 #include "elena_os_lang.h"
 #include "elena_os_misc.h"
+#include "elena_os_basic_widgets.h"
 #include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
 #define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
+#define _SNAPSHOT_COLOR_FORMAT LV_COLOR_FORMAT_NATIVE_WITH_ALPHA
 
 typedef enum
 {
@@ -31,6 +34,14 @@ typedef enum
     _TITLE_TYPE_STRING,
     _TITLE_TYPE_ID
 } eos_activity_title_type_t;
+
+typedef struct eos_activity_snapshot_node_t
+{
+    lv_obj_t *snapshot_obj;
+    lv_draw_buf_t *draw_buf;
+    eos_activity_t *owner;
+    struct eos_activity_snapshot_node_t *next;
+} eos_activity_snapshot_node_t;
 
 typedef struct
 {
@@ -41,11 +52,14 @@ typedef struct
     eos_activity_t *to;
     bool destroy_from; // 是否在动画完成后销毁 from activity
     bool cleanup_scheduled;
+    eos_activity_snapshot_node_t *snapshots;
 } eos_activity_anim_ctx_t;
 
 struct eos_activity_t
 {
     lv_obj_t *view;
+    eos_activity_type_t type;
+    uint8_t snapshot_ref_count;
     bool is_app_header_visible;
     bool destroy_on_exit; // 是否在 exit 时销毁此 activity
     struct
@@ -61,8 +75,6 @@ struct eos_activity_t
 
     const eos_activity_lifecycle_t *lifecycle;
 
-    eos_activity_anim_cb_t anim_cb; // 作为页面切换发起方时会调用此回调，用于控制动画行为
-
     void *user_data;
 };
 
@@ -74,6 +86,8 @@ typedef struct
     eos_stack_t *activity_stack;
     lv_obj_t *root_screen;
     bool transition_in_progress;
+    bool snapshot_capture_window;
+    eos_activity_anim_ctx_t *active_anim_ctx;
 } eos_activity_ctx_t;
 
 /* Variables --------------------------------------------------*/
@@ -84,7 +98,11 @@ static eos_activity_ctx_t g_activity_ctx = {
     .activity_stack = NULL,
     .root_screen = NULL,
     .transition_in_progress = false,
+    .snapshot_capture_window = false,
+    .active_anim_ctx = NULL,
 };
+
+static eos_activity_anim_cb_t g_anim_callback_routes[EOS_ACTIVITY_TYPE_COUNT][EOS_ACTIVITY_TYPE_COUNT] = {0};
 
 /* Function Implementations -----------------------------------*/
 static void _update_app_header_if_needed(eos_activity_t *activity);
@@ -93,6 +111,9 @@ static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx);
 static void _anim_dummy_exec_cb(void *var, int32_t value);
 static void _anim_clean_up_activity_deferred(void *user_data);
 static void _activity_mark_visible(eos_activity_t *activity);
+static void _snapshot_img_delete_cb(lv_event_t *e);
+static void _activity_snapshot_hold(eos_activity_t *activity);
+static void _activity_snapshot_release(eos_activity_t *activity);
 
 static bool _controller_initialized(void)
 {
@@ -131,6 +152,9 @@ static void _activity_reset_context(void)
     g_activity_ctx.activity_stack = NULL;
     g_activity_ctx.root_screen = NULL;
     g_activity_ctx.transition_in_progress = false;
+    g_activity_ctx.snapshot_capture_window = false;
+    g_activity_ctx.active_anim_ctx = NULL;
+    memset(g_anim_callback_routes, 0, sizeof(g_anim_callback_routes));
 }
 
 static void _activity_show(eos_activity_t *activity)
@@ -141,6 +165,7 @@ static void _activity_show(eos_activity_t *activity)
         return;
     }
 
+    lv_obj_remove_flag(activity->view, LV_OBJ_FLAG_HIDDEN);
     lv_obj_move_foreground(activity->view);
 }
 
@@ -156,6 +181,50 @@ static void _activity_mark_visible(eos_activity_t *activity)
     g_activity_ctx.transition_in_progress = false;
 }
 
+static void _snapshot_img_delete_cb(lv_event_t *e)
+{
+    eos_activity_snapshot_node_t *snapshot_node = lv_event_get_user_data(e);
+    if (!snapshot_node)
+    {
+        return;
+    }
+
+    if (snapshot_node->draw_buf)
+    {
+        lv_draw_buf_destroy(snapshot_node->draw_buf);
+        snapshot_node->draw_buf = NULL;
+    }
+
+    if (snapshot_node->owner)
+    {
+        _activity_snapshot_release(snapshot_node->owner);
+        snapshot_node->owner = NULL;
+    }
+}
+
+static void _activity_snapshot_hold(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    if (activity->snapshot_ref_count < UINT8_MAX)
+    {
+        activity->snapshot_ref_count++;
+    }
+
+    if (activity->view)
+    {
+        lv_obj_add_flag(activity->view, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void _activity_snapshot_release(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+    if (activity->snapshot_ref_count > 0)
+    {
+        activity->snapshot_ref_count--;
+    }
+}
+
 static void _anim_clean_up_activity_deferred(void *user_data)
 {
     eos_activity_anim_ctx_t *anim_ctx = (eos_activity_anim_ctx_t *)user_data;
@@ -163,6 +232,19 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     {
         return;
     }
+
+    eos_activity_snapshot_node_t *node = anim_ctx->snapshots;
+    while (node)
+    {
+        eos_activity_snapshot_node_t *next = node->next;
+        if (node->snapshot_obj && lv_obj_is_valid(node->snapshot_obj))
+        {
+            lv_obj_delete(node->snapshot_obj);
+        }
+        eos_free(node);
+        node = next;
+    }
+    anim_ctx->snapshots = NULL;
 
     // 如果需要销毁 from activity
     if (anim_ctx->destroy_from && anim_ctx->from)
@@ -180,6 +262,15 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     {
         // 从有header进入无header，且不需要销毁from activity，动画完成后隐藏header
         eos_app_header_hide();
+    }
+
+    if (anim_ctx->to && anim_ctx->to->snapshot_ref_count == 0)
+    {
+        _activity_show(anim_ctx->to);
+    }
+    if (anim_ctx->to && eos_activity_is_app_header_visible(anim_ctx->to))
+    {
+        eos_app_header_show(anim_ctx->to);
     }
 
     if (anim_ctx->at)
@@ -244,11 +335,13 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             bool reverse_anim = false;
 
             // 从有header进入有header才有动画
-            if (eos_activity_is_app_header_visible(cur_activity)) {
+            if (eos_activity_is_app_header_visible(cur_activity))
+            {
                 need_anim = true;
 
                 // 检查是否是back操作
-                if (cur_activity->destroy_on_exit) {
+                if (cur_activity->destroy_on_exit)
+                {
                     reverse_anim = true;
                 }
             }
@@ -256,7 +349,6 @@ static void _activity_switch_to(eos_activity_t *next_activity)
 
             _play_title_changed_anim(cur_activity, next_activity, need_anim, reverse_anim);
         }
-        eos_app_header_show(next_activity);
     }
     else
     {
@@ -267,15 +359,23 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             eos_app_header_attach_to_view(cur_activity->view);
             // 不立即隐藏header，让它随View执行动画
             // eos_app_header_hide()会在动画完成后调用
-        } else {
+        }
+        else
+        {
             // 从无header进入无header，直接隐藏header
             eos_app_header_hide();
         }
     }
 
+    eos_activity_anim_cb_t anim_cb = NULL;
+    if (cur_activity)
+    {
+        anim_cb = eos_activity_get_anim_route(cur_activity->type, next_activity->type);
+    }
+
     // 如果需要动画，创建动画上下文并启动动画
     bool transition_started = false;
-    if (cur_activity && cur_activity->anim_cb)
+    if (cur_activity && anim_cb)
     {
         eos_activity_anim_ctx_t *anim_ctx = eos_malloc_zeroed(sizeof(eos_activity_anim_ctx_t));
         if (anim_ctx)
@@ -297,12 +397,17 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             g_activity_ctx.transition_in_progress = true;
             transition_started = true;
             _init_anim_timeline(anim_ctx);
+            g_activity_ctx.active_anim_ctx = anim_ctx;
+            g_activity_ctx.snapshot_capture_window = true;
+            anim_cb(anim_ctx->at, cur_activity, next_activity);
+            g_activity_ctx.snapshot_capture_window = false;
+            g_activity_ctx.active_anim_ctx = NULL;
             _anim_timeline_start(cur_activity, next_activity, anim_ctx);
         }
     }
 
     // 显示 next_activity（在动画启动之后显示，确保动画的初始位置设置不会被覆盖）
-    _activity_show(next_activity);
+    // _activity_show(next_activity); // Commented out to delay showing next_activity
 
     // 如果没有动画但需要销毁 from activity，直接销毁
     if (!transition_started)
@@ -323,6 +428,11 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             eos_app_header_hide();
         }
 
+        _activity_show(next_activity);
+        if (eos_activity_is_app_header_visible(next_activity))
+        {
+            eos_app_header_show(next_activity);
+        }
         _activity_mark_visible(next_activity);
     }
 }
@@ -344,6 +454,7 @@ static lv_obj_t *_view_create(lv_obj_t *parent)
     // 设置默认样式
     lv_obj_remove_style_all(view);
     lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+    lv_obj_update_layout(view);
 
     return view;
 }
@@ -384,15 +495,12 @@ static void _init_anim_timeline(eos_activity_anim_ctx_t *anim_ctx)
 
 static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_activity_anim_ctx_t *anim_ctx)
 {
+    LV_UNUSED(from);
+    LV_UNUSED(to);
+
     if (!(anim_ctx && anim_ctx->at))
     {
         return;
-    }
-
-    // 执行当前页面的动画回调
-    if (from && from->anim_cb)
-    {
-        from->anim_cb(anim_ctx->at, from, to);
     }
 
     // 计算持续时间
@@ -408,14 +516,63 @@ static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_a
     lv_anim_set_duration(&anim_ctx->dummy_anim, playtime);
     lv_anim_timeline_add(anim_ctx->at, 0, &anim_ctx->dummy_anim);
 
+    // 隐藏 header
+    eos_app_header_hide();
+
     // 启动动画
     lv_anim_timeline_start(anim_ctx->at);
 }
 
-void eos_activity_set_anim_cb(eos_activity_t *activity, eos_activity_anim_cb_t cb)
+void eos_activity_set_type(eos_activity_t *activity, eos_activity_type_t type)
 {
     EOS_CHECK_PTR_RETURN(activity);
-    activity->anim_cb = cb;
+    if (type <= EOS_ACTIVITY_TYPE_NULL || type >= EOS_ACTIVITY_TYPE_COUNT)
+    {
+        EOS_LOG_W("Invalid activity type: %d", type);
+        activity->type = EOS_ACTIVITY_TYPE_NULL;
+        return;
+    }
+
+    activity->type = type;
+}
+
+eos_activity_type_t eos_activity_get_type(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, EOS_ACTIVITY_TYPE_NULL);
+    return activity->type;
+}
+
+eos_result_t eos_activity_register_anim_route(eos_activity_type_t from_type,
+                                              eos_activity_type_t to_type,
+                                              eos_activity_anim_cb_t cb)
+{
+    if (from_type <= EOS_ACTIVITY_TYPE_NULL || from_type >= EOS_ACTIVITY_TYPE_COUNT ||
+        to_type <= EOS_ACTIVITY_TYPE_NULL || to_type >= EOS_ACTIVITY_TYPE_COUNT ||
+        cb == NULL)
+    {
+        EOS_LOG_W("Invalid route register request: from=%d to=%d cb=%p", from_type, to_type, cb);
+        return EOS_FAILED;
+    }
+
+    if (g_anim_callback_routes[from_type][to_type] != NULL)
+    {
+        EOS_LOG_W("Animation route duplicated: from=%d to=%d, overwrite", from_type, to_type);
+    }
+
+    g_anim_callback_routes[from_type][to_type] = cb;
+    return EOS_OK;
+}
+
+eos_activity_anim_cb_t eos_activity_get_anim_route(eos_activity_type_t from_type,
+                                                   eos_activity_type_t to_type)
+{
+    if (from_type <= EOS_ACTIVITY_TYPE_NULL || from_type >= EOS_ACTIVITY_TYPE_COUNT ||
+        to_type <= EOS_ACTIVITY_TYPE_NULL || to_type >= EOS_ACTIVITY_TYPE_COUNT)
+    {
+        return NULL;
+    }
+
+    return g_anim_callback_routes[from_type][to_type];
 }
 
 void *eos_activity_get_user_data(eos_activity_t *activity)
@@ -449,6 +606,115 @@ void eos_activity_set_view(eos_activity_t *activity, lv_obj_t *view)
 lv_obj_t *eos_activity_get_root_screen(void)
 {
     return g_activity_ctx.root_screen;
+}
+
+lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_header)
+{
+#if LV_USE_SNAPSHOT
+    EOS_CHECK_PTR_RETURN_VAL(activity, NULL);
+
+    if (!(g_activity_ctx.snapshot_capture_window && g_activity_ctx.active_anim_ctx))
+    {
+        EOS_LOG_W("eos_activity_take_snapshot is only allowed in animation callback");
+        return NULL;
+    }
+
+    lv_obj_t *view = activity->view;
+    if (!(view && lv_obj_is_valid(view)))
+    {
+        return NULL;
+    }
+
+    eos_activity_snapshot_node_t *snapshot_node = eos_malloc_zeroed(sizeof(eos_activity_snapshot_node_t));
+    if (!snapshot_node)
+    {
+        return NULL;
+    }
+
+    lv_obj_t *snapshot_obj = lv_image_create(lv_layer_top());
+    if (!snapshot_obj)
+    {
+        eos_free(snapshot_node);
+        return NULL;
+    }
+
+    lv_obj_set_style_image_recolor(snapshot_obj,lv_color_hex(0xFF0000),0);
+    lv_obj_set_style_image_recolor_opa(snapshot_obj, LV_OPA_20, 0);
+
+    lv_draw_buf_t *snapshot = eos_draw_buf_create(
+        (uint32_t)lv_obj_get_width(view),
+        (uint32_t)lv_obj_get_height(view),
+        _SNAPSHOT_COLOR_FORMAT,
+        0);
+    if (!snapshot)
+    {
+        lv_obj_delete(snapshot_obj);
+        eos_free(snapshot_node);
+        return NULL;
+    }
+
+#if EOS_APP_HEADER_ENABLE
+    bool prev_header_visible = eos_app_header_is_visible();
+    eos_activity_t *prev_visible_activity = eos_activity_get_visible();
+    bool need_attach_header = include_header && activity->is_app_header_visible;
+    if (need_attach_header)
+    {
+        eos_app_header_show(activity);
+        eos_app_header_attach_to_view(view);
+    }
+
+    lv_result_t snapshot_result = lv_snapshot_take_to_draw_buf(view, _SNAPSHOT_COLOR_FORMAT, snapshot);
+
+    if (need_attach_header)
+    {
+        eos_app_header_detach_from_view();
+
+        if (prev_header_visible)
+        {
+            if (prev_visible_activity)
+            {
+                eos_app_header_show(prev_visible_activity);
+            }
+            else
+            {
+                eos_app_header_show(eos_activity_get_current());
+            }
+        }
+        else
+        {
+            eos_app_header_hide();
+        }
+    }
+#else
+    LV_UNUSED(include_header);
+    lv_result_t snapshot_result = lv_snapshot_take_to_draw_buf(view, _SNAPSHOT_COLOR_FORMAT, snapshot);
+#endif
+
+    if (snapshot_result != LV_RESULT_OK)
+    {
+        lv_draw_buf_destroy(snapshot);
+        lv_obj_delete(snapshot_obj);
+        eos_free(snapshot_node);
+        return NULL;
+    }
+
+    snapshot_node->snapshot_obj = snapshot_obj;
+    snapshot_node->draw_buf = snapshot;
+    snapshot_node->owner = activity;
+    snapshot_node->next = g_activity_ctx.active_anim_ctx->snapshots;
+    g_activity_ctx.active_anim_ctx->snapshots = snapshot_node;
+
+    lv_image_set_src(snapshot_obj, snapshot);
+    lv_obj_set_pos(snapshot_obj, lv_obj_get_x(view), lv_obj_get_y(view));
+    lv_obj_add_event_cb(snapshot_obj, _snapshot_img_delete_cb, LV_EVENT_DELETE, snapshot_node);
+    _activity_snapshot_hold(activity);
+    return snapshot_obj;
+#else
+    LV_UNUSED(activity);
+    LV_UNUSED(include_header);
+    EOS_LOG_W("LV_USE_SNAPSHOT disabled");
+    return NULL;
+#endif
 }
 
 eos_activity_t *eos_activity_get_watchface(void)
@@ -657,12 +923,13 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
         return NULL;
     }
     activity->lifecycle = lifecycle;
+    activity->type = EOS_ACTIVITY_TYPE_APP;
+    activity->snapshot_ref_count = 0;
     activity->is_app_header_visible = false;
     activity->destroy_on_exit = false;
     activity->title.color = _DEFAULT_TITLE_COLOR;
     activity->title.type = _TITLE_TYPE_INVALID;
     activity->title.string = NULL;
-    activity->anim_cb = NULL;
     activity->user_data = NULL;
 
     return activity;

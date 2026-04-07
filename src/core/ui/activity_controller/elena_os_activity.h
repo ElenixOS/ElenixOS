@@ -23,6 +23,16 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 typedef struct eos_activity_t eos_activity_t;
 
+typedef enum
+{
+    EOS_ACTIVITY_TYPE_NULL = 0,
+    EOS_ACTIVITY_TYPE_APP,
+    EOS_ACTIVITY_TYPE_APP_LIST,
+    EOS_ACTIVITY_TYPE_WATCHFACE,
+    EOS_ACTIVITY_TYPE_WATCHFACE_LIST,
+    EOS_ACTIVITY_TYPE_COUNT
+} eos_activity_type_t;
+
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_destroy_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
@@ -107,11 +117,38 @@ lv_color_t eos_activity_get_title_color(eos_activity_t *activity);
 void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color);
 
 /**
- * @brief 设置 Activity 的动画回调
+ * @brief 设置 Activity 的页面类型
  * @param activity Activity 指针
- * @param cb 动画回调函数指针
+ * @param type 页面类型
  */
-void eos_activity_set_anim_cb(eos_activity_t *activity, eos_activity_anim_cb_t cb);
+void eos_activity_set_type(eos_activity_t *activity, eos_activity_type_t type);
+
+/**
+ * @brief 获取 Activity 的页面类型
+ * @param activity Activity 指针
+ * @return eos_activity_type_t 页面类型
+ */
+eos_activity_type_t eos_activity_get_type(eos_activity_t *activity);
+
+/**
+ * @brief 注册页面切换动画路由
+ * @param from_type 来源页面类型
+ * @param to_type 目标页面类型
+ * @param cb 动画回调
+ * @return eos_result_t EOS_OK 成功，EOS_FAILED 失败
+ */
+eos_result_t eos_activity_register_anim_route(eos_activity_type_t from_type,
+                                              eos_activity_type_t to_type,
+                                              eos_activity_anim_cb_t cb);
+
+/**
+ * @brief 查询页面切换动画路由
+ * @param from_type 来源页面类型
+ * @param to_type 目标页面类型
+ * @return eos_activity_anim_cb_t 动画回调，未找到返回 NULL
+ */
+eos_activity_anim_cb_t eos_activity_get_anim_route(eos_activity_type_t from_type,
+                                                   eos_activity_type_t to_type);
 
 /**
  * @brief 设置 Activity 的标题可见性
@@ -146,6 +183,15 @@ void eos_activity_set_view(eos_activity_t *activity, lv_obj_t *view);
  * @return lv_obj_t* 根 Screen 对象，失败返回 NULL
  */
 lv_obj_t *eos_activity_get_root_screen(void);
+
+/**
+ * @brief 获取 Activity 视图快照
+ * @param activity Activity 指针
+ * @param include_header 是否包含 Header（仅当前 Activity 且 Header 可见时有效）
+ * @return lv_obj_t* 快照图像对象（lv_image），失败返回 NULL
+ * @note 图像资源会在该对象删除时自动释放
+ */
+lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_header);
 
 /**
  * @brief 获取 Watchface Activity

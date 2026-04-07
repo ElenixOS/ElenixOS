@@ -38,7 +38,7 @@
 #include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define _APP_ICON_ANIM_DURATION 250
+#define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
 /* Variables --------------------------------------------------*/
 
@@ -56,6 +56,7 @@ const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
 
 static void _app_list_on_resueme(eos_activity_t *a);
 
+static void _app_on_enter(eos_activity_t *a);
 static eos_activity_lifecycle_t app_list_lifecycle = {
     .on_enter = NULL,
     .on_destroy = NULL,
@@ -66,11 +67,17 @@ static eos_activity_lifecycle_t app_list_lifecycle = {
 static void _app_on_destroy(eos_activity_t *a);
 
 static eos_activity_lifecycle_t app_lifecycle = {
-    .on_enter = NULL,
+    .on_enter = _app_on_enter,
     .on_destroy = _app_on_destroy,
     .on_pause = NULL,
     .on_resume = NULL,
 };
+
+typedef struct
+{
+    script_pkg_t pkg;
+    char *app_id;
+} app_launch_ctx_t;
 
 /* Function Implementations -----------------------------------*/
 static void _app_list_icon_clicked_cb(lv_event_t *e);
@@ -78,13 +85,57 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_refresh(lv_obj_t *container);
+void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next);
+static void _register_anim_routes_once(void);
+
+static bool _anim_routes_registered = false;
 
 /************************** 生命周期 **************************/
 
 static void _app_on_destroy(eos_activity_t *a)
 {
+    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
+    if (ctx)
+    {
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx->app_id);
+        eos_free(ctx);
+        eos_activity_set_user_data(a, NULL);
+    }
+
     // 退出脚本引擎
     script_engine_request_stop();
+}
+
+static void _app_on_enter(eos_activity_t *a)
+{
+    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
+    EOS_CHECK_PTR_RETURN(ctx);
+
+    lv_obj_t *app_view = eos_activity_get_view(a);
+    EOS_CHECK_PTR_RETURN(app_view);
+
+    script_engine_result_t ret = script_engine_run(&ctx->pkg);
+    if (ret != SE_OK)
+    {
+        lv_obj_clean(app_view);
+        lv_obj_remove_style_all(app_view);
+        lv_obj_add_style(app_view, eos_theme_get_view_style(), 0);
+        eos_activity_set_title_color(a, EOS_COLOR_RED);
+        eos_activity_set_title_id(a, STR_ID_ERROR);
+
+        lv_obj_t *list = eos_std_info_create(
+            app_view,
+            EOS_COLOR_RED,
+            RI_BUG_LINE,
+            current_lang[STR_ID_APP_RUN_ERR_TITLE],
+            current_lang[STR_ID_APP_RUN_ERR]);
+        char info_str[1024];
+        snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s", ret, ctx->app_id, script_engine_get_error_info());
+        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
+        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_activity_back_cb, NULL);
+        EOS_LOG_E("Application encounter a fatal error");
+    }
 }
 
 static void _app_list_on_resueme(eos_activity_t *a)
@@ -118,7 +169,7 @@ static void _app_list_sys_app_cb(lv_event_t *e)
 void _app_hide_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
 {
     // 当前页面（应用）向右退出
-    lv_obj_t *this_view = eos_activity_get_view(this);
+    lv_obj_t *this_view = eos_activity_take_snapshot(this, true);
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, this_view);
@@ -139,6 +190,19 @@ void _app_hide_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activit
         lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
         lv_anim_timeline_add(at, 0, &b);
     }
+
+}
+
+static void _register_anim_routes_once(void)
+{
+    if (_anim_routes_registered)
+    {
+        return;
+    }
+
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP_LIST, EOS_ACTIVITY_TYPE_APP, _app_list_show_anim_cb);
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP, EOS_ACTIVITY_TYPE_APP_LIST, _app_hide_anim_cb);
+    _anim_routes_registered = true;
 }
 
 /**
@@ -148,14 +212,6 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
-
-    // 创建脚本应用的 Activity
-    eos_activity_t *a = eos_activity_create(&app_lifecycle);
-    lv_obj_t *app_view = eos_activity_get_view(a);
-    lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
-    eos_activity_set_anim_cb(a, _app_hide_anim_cb);
-
-    EOS_LOG_D("view_size: %d, %d", lv_obj_get_width(app_view), lv_obj_get_height(app_view));
 
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
@@ -193,33 +249,47 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     }
 
     pkg.script_str = eos_fs_read_file(script_path);
-    eos_activity_set_title(a, pkg.name);
-    eos_activity_set_app_header_visible(a, true);
-    // 进入应用页面
-    eos_activity_enter(a);
-    script_engine_result_t ret = script_engine_run(&pkg);
-    if (ret != SE_OK)
-    {
-        lv_obj_clean(app_view);
-        lv_obj_remove_style_all(app_view);
-        lv_obj_add_style(app_view, eos_theme_get_view_style(), 0);
-        eos_activity_set_title_color(a, EOS_COLOR_RED);
-        eos_activity_set_title_id(a, STR_ID_ERROR);
 
-        lv_obj_t *list = eos_std_info_create(
-            app_view,
-            EOS_COLOR_RED,
-            RI_BUG_LINE,
-            current_lang[STR_ID_APP_RUN_ERR_TITLE],
-            current_lang[STR_ID_APP_RUN_ERR]);
-        char info_str[1024];
-        snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s", ret, app_id, script_engine_get_error_info());
-        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_activity_back_cb, NULL);
-        EOS_LOG_E("Application encounter a fatal error");
+    app_launch_ctx_t *ctx = eos_malloc_zeroed(sizeof(app_launch_ctx_t));
+    if (!ctx)
+    {
+        EOS_LOG_E("Failed to allocate app launch context");
+        eos_pkg_free(&pkg);
+        return;
     }
 
-    eos_pkg_free(&pkg);
+    ctx->pkg = pkg;
+    ctx->app_id = eos_strdup(app_id);
+    if (!ctx->app_id)
+    {
+        EOS_LOG_E("Failed to copy app id");
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx);
+        return;
+    }
+
+    // 创建脚本应用的 Activity
+    eos_activity_t *a = eos_activity_create(&app_lifecycle);
+    if (!a)
+    {
+        EOS_LOG_E("Failed to create activity");
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx->app_id);
+        eos_free(ctx);
+        return;
+    }
+
+    lv_obj_t *app_view = eos_activity_get_view(a);
+    lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
+    eos_activity_set_user_data(a, ctx);
+    eos_activity_set_title(a, pkg.name);
+    eos_activity_set_app_header_visible(a, true);
+
+    EOS_LOG_D("view_size: %d, %d", lv_obj_get_width(app_view), lv_obj_get_height(app_view));
+
+    // 进入应用页面
+    eos_activity_enter(a);
 }
 
 /************************** 刷新应用列表 **************************/
@@ -375,23 +445,13 @@ static void _container_delete_cb(lv_event_t *e)
 
 void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
 {
-    // 当前页面（应用列表）向左退出
-    lv_obj_t *this_view = eos_activity_get_view(this);
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, this_view);
-    lv_anim_set_values(&a, 0, -EOS_DISPLAY_WIDTH);
-    lv_anim_set_time(&a, _APP_ICON_ANIM_DURATION);
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_x);
-    lv_anim_timeline_add(at, 0, &a);
-
     // 目标页面（应用）从右侧进入
     if (next)
     {
-        lv_obj_t *next_view = eos_activity_get_view(next);
+        lv_obj_t *next_snapshot = eos_activity_take_snapshot(next, true);
         lv_anim_t b;
         lv_anim_init(&b);
-        lv_anim_set_var(&b, next_view);
+        lv_anim_set_var(&b, next_snapshot);
         lv_anim_set_values(&b, EOS_DISPLAY_WIDTH, 0);
         lv_anim_set_time(&b, _APP_ICON_ANIM_DURATION);
         lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
@@ -401,13 +461,15 @@ void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_ac
 
 void eos_app_list_enter(void)
 {
+    _register_anim_routes_once();
+
     eos_activity_t *a = eos_activity_create(&app_list_lifecycle);
     if (!a)
     {
         EOS_LOG_E("Failed to create activity");
         return;
     }
-    // eos_activity_set_anim_cb(a, _app_list_show_anim_cb);
+    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP_LIST);
 
     lv_obj_t *container = eos_activity_get_view(a);
     // 初始化样式

@@ -208,7 +208,11 @@ static inline void _app_header_update_clock_label(lv_obj_t *label)
 static void _clock_update_cb(lv_timer_t *timer)
 {
     lv_obj_t *label = lv_timer_get_user_data(timer);
-    EOS_CHECK_PTR_RETURN(label);
+    EOS_CHECK_PTR_RETURN(app_header && label);
+    if (lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN))
+    {
+        return;
+    }
     // 更新显示文字
     _app_header_update_clock_label(label);
 }
@@ -222,8 +226,6 @@ void eos_app_header_hide(void)
         lv_obj_set_parent(app_header->container, app_header->original_parent);
         app_header->attached_to_view = false;
     }
-    lv_timer_pause(app_header->clock_timer);
-    lv_timer_reset(app_header->clock_timer);
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -253,8 +255,7 @@ void eos_app_header_show(eos_activity_t *a)
         color = eos_activity_get_title_color(eos_activity_get_current());
     if (lv_obj_is_valid(app_header->title_label))
         lv_obj_set_style_text_color(app_header->title_label, color, 0);
-    lv_timer_resume(app_header->clock_timer);
-    lv_timer_reset(app_header->clock_timer);
+    _app_header_update_clock_label(app_header->clock_label);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 

@@ -27,6 +27,7 @@
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
 #define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
 #define _SNAPSHOT_COLOR_FORMAT LV_COLOR_FORMAT_NATIVE_WITH_ALPHA
+#define _DEBUG_SNAPSHOT 0
 
 typedef enum
 {
@@ -638,8 +639,10 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
         return NULL;
     }
 
+#if _DEBUG_SNAPSHOT
     lv_obj_set_style_image_recolor(snapshot_obj,lv_color_hex(0xFF0000),0);
     lv_obj_set_style_image_recolor_opa(snapshot_obj, LV_OPA_20, 0);
+#endif /* _DEBUG_SNAPSHOT */
 
     lv_draw_buf_t *snapshot = eos_draw_buf_create(
         (uint32_t)lv_obj_get_width(view),

@@ -36,10 +36,19 @@
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_activity.h"
-
+#include "debug_var_defs.h"
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
+
+#define _APP_LIST_ANIM_DURATION dbg_app_list_anim_duration
+#define _APP_LIST_ANIM_FOCUS_SCALE dbg_app_list_anim_focus_scale
+#define _APP_LIST_ANIM_MIN_SACLE dbg_app_list_anim_min_scale
+#define _APP_LIST_ANIM_SPLIT_PCT dbg_app_list_anim_split_pct
+#define _APP_LIST_ANIM_FROM_OPA_START dbg_app_list_anim_from_opa_start
+#define _APP_LIST_ANIM_FROM_OPA_END dbg_app_list_anim_from_opa_end
+#define _APP_LIST_ANIM_TO_OPA_START dbg_app_list_anim_to_opa_start
+#define _APP_LIST_ANIM_TO_OPA_END dbg_app_list_anim_to_opa_end
 /* Variables --------------------------------------------------*/
 
 const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {
@@ -85,10 +94,30 @@ static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_refresh(lv_obj_t *container);
-void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next);
+static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to);
+static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to);
 static void _register_anim_routes_once(void);
+static const char *_app_list_get_launch_app_id(eos_activity_t *activity);
+static void _app_list_set_last_launch_app_id(const char *app_id);
+static lv_obj_t *_app_list_find_icon_by_app_id(eos_activity_t *activity, const char *app_id);
+static void _app_list_record_icon_center(lv_obj_t *icon_obj);
+static bool _app_list_calc_focus_pivot(lv_obj_t *snapshot_obj, lv_obj_t *icon_obj, int32_t *pivot_x, int32_t *pivot_y);
+static bool _app_list_calc_focus_pivot_by_global_center(lv_obj_t *obj, int32_t *pivot_x, int32_t *pivot_y);
+static void _app_list_set_transform_scale_cb(void *var, int32_t value);
+static void _app_list_set_translate_x_cb(void *var, int32_t value);
+static void _app_list_set_translate_y_cb(void *var, int32_t value);
+static void _app_list_set_opa_cb(void *var, int32_t value);
+static void _app_list_init_scale_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static void _app_list_init_translate_x_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static void _app_list_init_translate_y_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static void _app_list_init_opa_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool opening);
 
 static bool _anim_routes_registered = false;
+static bool _app_list_last_icon_center_valid = false;
+static int32_t _app_list_last_icon_center_x = 0;
+static int32_t _app_list_last_icon_center_y = 0;
+static char _app_list_last_launch_app_id[64] = {0};
 
 /************************** 生命周期 **************************/
 
@@ -138,6 +167,340 @@ static void _app_on_enter(eos_activity_t *a)
     }
 }
 
+static const char *_app_list_get_launch_app_id(eos_activity_t *activity)
+{
+    app_launch_ctx_t *ctx = eos_activity_get_user_data(activity);
+    if (ctx && ctx->app_id)
+    {
+        return ctx->app_id;
+    }
+
+    return _app_list_last_launch_app_id[0] ? _app_list_last_launch_app_id : NULL;
+}
+
+static void _app_list_set_last_launch_app_id(const char *app_id)
+{
+    if (!app_id)
+    {
+        _app_list_last_launch_app_id[0] = '\0';
+        return;
+    }
+
+    snprintf(_app_list_last_launch_app_id,
+             sizeof(_app_list_last_launch_app_id),
+             "%s",
+             app_id);
+}
+
+static lv_obj_t *_app_list_find_icon_by_app_id(eos_activity_t *activity, const char *app_id)
+{
+    if (!(activity && app_id))
+    {
+        return NULL;
+    }
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view)
+    {
+        return NULL;
+    }
+
+    uint32_t child_count = lv_obj_get_child_count(view);
+    for (uint32_t i = 0; i < child_count; ++i)
+    {
+        lv_obj_t *child = lv_obj_get_child(view, (int32_t)i);
+        if (!child)
+        {
+            continue;
+        }
+
+        const char *child_app_id = (const char *)lv_obj_get_user_data(child);
+        if (child_app_id && strcmp(child_app_id, app_id) == 0)
+        {
+            return child;
+        }
+    }
+
+    return NULL;
+}
+
+static void _app_list_record_icon_center(lv_obj_t *icon_obj)
+{
+    if (!icon_obj)
+    {
+        _app_list_last_icon_center_valid = false;
+        return;
+    }
+
+    lv_area_t icon_area;
+    lv_obj_get_coords(icon_obj, &icon_area);
+    _app_list_last_icon_center_x = icon_area.x1 + (lv_area_get_width(&icon_area) / 2);
+    _app_list_last_icon_center_y = icon_area.y1 + (lv_area_get_height(&icon_area) / 2);
+    _app_list_last_icon_center_valid = true;
+}
+
+static bool _app_list_calc_focus_pivot_by_global_center(lv_obj_t *obj, int32_t *pivot_x, int32_t *pivot_y)
+{
+    if (!(obj && pivot_x && pivot_y && _app_list_last_icon_center_valid))
+    {
+        return false;
+    }
+
+    int32_t max_x = lv_obj_get_width(obj);
+    int32_t max_y = lv_obj_get_height(obj);
+    int32_t local_x = _app_list_last_icon_center_x;
+    int32_t local_y = _app_list_last_icon_center_y;
+
+    if (local_x < 0)
+        local_x = 0;
+    if (local_y < 0)
+        local_y = 0;
+    if (local_x > max_x)
+        local_x = max_x;
+    if (local_y > max_y)
+        local_y = max_y;
+
+    *pivot_x = local_x;
+    *pivot_y = local_y;
+    return true;
+}
+
+static bool _app_list_calc_focus_pivot(lv_obj_t *snapshot_obj, lv_obj_t *icon_obj, int32_t *pivot_x, int32_t *pivot_y)
+{
+    if (!(snapshot_obj && pivot_x && pivot_y))
+    {
+        return false;
+    }
+
+    lv_area_t snapshot_area;
+    lv_obj_get_coords(snapshot_obj, &snapshot_area);
+
+    if (!icon_obj)
+    {
+        *pivot_x = lv_area_get_width(&snapshot_area) / 2;
+        *pivot_y = lv_area_get_height(&snapshot_area) / 2;
+        return false;
+    }
+
+    lv_area_t icon_area;
+    lv_obj_get_coords(icon_obj, &icon_area);
+
+    int32_t icon_mid_x = icon_area.x1 + (lv_area_get_width(&icon_area) / 2);
+    int32_t icon_mid_y = icon_area.y1 + (lv_area_get_height(&icon_area) / 2);
+
+    *pivot_x = icon_mid_x - snapshot_area.x1;
+    *pivot_y = icon_mid_y - snapshot_area.y1;
+    return true;
+}
+
+static void _app_list_set_transform_scale_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_transform_scale((lv_obj_t *)var, value, 0);
+}
+
+static void _app_list_set_translate_x_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_translate_x((lv_obj_t *)var, value, 0);
+}
+
+static void _app_list_set_translate_y_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_translate_y((lv_obj_t *)var, value, 0);
+}
+
+static void _app_list_set_opa_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_opa((lv_obj_t *)var, (lv_opa_t)value, 0);
+}
+
+static void _app_list_init_scale_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _app_list_set_transform_scale_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static void _app_list_init_translate_x_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _app_list_set_translate_x_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static void _app_list_init_translate_y_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _app_list_set_translate_y_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static void _app_list_init_opa_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _app_list_set_opa_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool opening)
+{
+    if (!(at && from && to))
+    {
+        return;
+    }
+
+    const char *focus_app_id = opening ? _app_list_get_launch_app_id(to) : _app_list_get_launch_app_id(from);
+    lv_obj_t *list_view = opening ? eos_activity_get_view(from) : eos_activity_get_view(to);
+    lv_obj_t *focus_icon = list_view ? _app_list_find_icon_by_app_id(opening ? from : to, focus_app_id) : NULL;
+
+    lv_obj_t *app_snapshot = eos_activity_take_snapshot(opening ? to : from, true);
+    if (!app_snapshot)
+    {
+        return;
+    }
+
+    if (!opening && list_view)
+    {
+        lv_obj_remove_flag(list_view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(list_view);
+    }
+
+    int32_t pivot_x = 0;
+    int32_t pivot_y = 0;
+    if (!_app_list_calc_focus_pivot_by_global_center(list_view ? list_view : app_snapshot, &pivot_x, &pivot_y))
+    {
+        _app_list_calc_focus_pivot(list_view ? list_view : app_snapshot, focus_icon, &pivot_x, &pivot_y);
+    }
+
+    if (list_view)
+    {
+        lv_obj_set_style_transform_pivot_x(list_view, pivot_x, 0);
+        lv_obj_set_style_transform_pivot_y(list_view, pivot_y, 0);
+    }
+    lv_obj_set_style_transform_pivot_x(app_snapshot, pivot_x, 0);
+    lv_obj_set_style_transform_pivot_y(app_snapshot, pivot_y, 0);
+
+    EOS_LOG_D("Pivot(%d,%d)",pivot_x,pivot_y);
+
+    uint32_t total_duration = (uint32_t)_APP_LIST_ANIM_DURATION;
+    if (total_duration == 0U)
+    {
+        total_duration = 1U;
+    }
+
+    uint32_t split_delay = (total_duration * (uint32_t)_APP_LIST_ANIM_SPLIT_PCT) / 100U;
+    if (split_delay >= total_duration)
+    {
+        split_delay = total_duration > 1U ? total_duration - 1U : 0U;
+    }
+
+    uint32_t from_scale_duration = total_duration;
+    uint32_t to_duration = (total_duration > split_delay) ? (total_duration - split_delay) : 1U;
+
+    int32_t focus_translate_x = 0;
+    int32_t focus_translate_y = 0;
+    if (_app_list_last_icon_center_valid && list_view)
+    {
+        int32_t view_center_x = EOS_DISPLAY_WIDTH / 2;
+        int32_t view_center_y = EOS_DISPLAY_HEIGHT / 2;
+        focus_translate_x = view_center_x - _app_list_last_icon_center_x;
+        focus_translate_y = view_center_y - _app_list_last_icon_center_y;
+    }
+
+    lv_anim_t list_scale_anim;
+    lv_anim_t list_translate_x_anim;
+    lv_anim_t list_translate_y_anim;
+    lv_anim_t icon_opa_anim;
+    lv_anim_t app_scale_anim;
+    lv_anim_t app_opa_anim;
+
+    if (opening)
+    {
+        if (list_view)
+        {
+            lv_obj_set_style_transform_scale(list_view, 256, 0);
+            lv_obj_set_style_translate_x(list_view, 0, 0);
+            lv_obj_set_style_translate_y(list_view, 0, 0);
+            _app_list_init_scale_anim(&list_scale_anim, list_view, 256, _APP_LIST_ANIM_FOCUS_SCALE, from_scale_duration);
+            _app_list_init_translate_x_anim(&list_translate_x_anim, list_view, 0, focus_translate_x, from_scale_duration);
+            _app_list_init_translate_y_anim(&list_translate_y_anim, list_view, 0, focus_translate_y, from_scale_duration);
+            lv_anim_timeline_add(at, 0, &list_scale_anim);
+            lv_anim_timeline_add(at, 0, &list_translate_x_anim);
+            lv_anim_timeline_add(at, 0, &list_translate_y_anim);
+        }
+
+        if (focus_icon)
+        {
+            lv_obj_set_style_opa(focus_icon, (lv_opa_t)_APP_LIST_ANIM_FROM_OPA_START, 0);
+            _app_list_init_opa_anim(&icon_opa_anim,
+                                    focus_icon,
+                                    _APP_LIST_ANIM_FROM_OPA_START,
+                                    _APP_LIST_ANIM_FROM_OPA_END,
+                                    total_duration);
+            lv_anim_timeline_add(at, 0, &icon_opa_anim);
+        }
+
+        lv_obj_set_style_transform_scale(app_snapshot, _APP_LIST_ANIM_MIN_SACLE, 0);
+        lv_obj_set_style_opa(app_snapshot, (lv_opa_t)_APP_LIST_ANIM_TO_OPA_START, 0);
+        _app_list_init_scale_anim(&app_scale_anim, app_snapshot, _APP_LIST_ANIM_MIN_SACLE, 256, to_duration);
+        _app_list_init_opa_anim(&app_opa_anim,
+                                app_snapshot,
+                                _APP_LIST_ANIM_TO_OPA_START,
+                                _APP_LIST_ANIM_TO_OPA_END,
+                                to_duration);
+        lv_anim_timeline_add(at, split_delay, &app_scale_anim);
+        lv_anim_timeline_add(at, split_delay, &app_opa_anim);
+    }
+    else
+    {
+        if (list_view)
+        {
+            lv_obj_set_style_transform_scale(list_view, _APP_LIST_ANIM_FOCUS_SCALE, 0);
+            lv_obj_set_style_translate_x(list_view, focus_translate_x, 0);
+            lv_obj_set_style_translate_y(list_view, focus_translate_y, 0);
+            _app_list_init_scale_anim(&list_scale_anim, list_view, _APP_LIST_ANIM_FOCUS_SCALE, 256, to_duration);
+            _app_list_init_translate_x_anim(&list_translate_x_anim, list_view, focus_translate_x, 0, to_duration);
+            _app_list_init_translate_y_anim(&list_translate_y_anim, list_view, focus_translate_y, 0, to_duration);
+            lv_anim_timeline_add(at, split_delay, &list_scale_anim);
+            lv_anim_timeline_add(at, split_delay, &list_translate_x_anim);
+            lv_anim_timeline_add(at, split_delay, &list_translate_y_anim);
+        }
+
+        if (focus_icon)
+        {
+            lv_obj_set_style_opa(focus_icon, (lv_opa_t)_APP_LIST_ANIM_FROM_OPA_END, 0);
+            _app_list_init_opa_anim(&icon_opa_anim,
+                                    focus_icon,
+                                    _APP_LIST_ANIM_FROM_OPA_END,
+                                    _APP_LIST_ANIM_FROM_OPA_START,
+                                    total_duration);
+            lv_anim_timeline_add(at, 0, &icon_opa_anim);
+        }
+
+        lv_obj_set_style_transform_scale(app_snapshot, 256, 0);
+        lv_obj_set_style_opa(app_snapshot, (lv_opa_t)_APP_LIST_ANIM_TO_OPA_END, 0);
+        _app_list_init_scale_anim(&app_scale_anim, app_snapshot, 256, _APP_LIST_ANIM_MIN_SACLE, to_duration);
+        _app_list_init_opa_anim(&app_opa_anim,
+                                app_snapshot,
+                                _APP_LIST_ANIM_TO_OPA_END,
+                                _APP_LIST_ANIM_TO_OPA_START,
+                    to_duration);
+        lv_anim_timeline_add(at, 0, &app_scale_anim);
+        lv_anim_timeline_add(at, 0, &app_opa_anim);
+    }
+}
+
 static void _app_list_on_resueme(eos_activity_t *a)
 {
     // 初始化应用列表
@@ -154,6 +517,9 @@ static void _app_list_sys_app_cb(lv_event_t *e)
 {
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
+    _app_list_set_last_launch_app_id(app_id);
+    lv_obj_t *icon_obj = lv_event_get_target(e);
+    _app_list_record_icon_center(icon_obj);
 
     for (int i = 0; i < EOS_SYS_APP_LAST; i++)
     {
@@ -166,33 +532,6 @@ static void _app_list_sys_app_cb(lv_event_t *e)
     }
 }
 
-void _app_hide_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
-{
-    // 当前页面（应用）向右退出
-    lv_obj_t *this_view = eos_activity_take_snapshot(this, true);
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, this_view);
-    lv_anim_set_values(&a, 0, EOS_DISPLAY_WIDTH);
-    lv_anim_set_time(&a, _APP_ICON_ANIM_DURATION);
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_x);
-    lv_anim_timeline_add(at, 0, &a);
-
-    // 目标页面（应用列表）从左侧进入
-    if (next)
-    {
-        lv_obj_t *next_view = eos_activity_get_view(next);
-        lv_anim_t b;
-        lv_anim_init(&b);
-        lv_anim_set_var(&b, next_view);
-        lv_anim_set_values(&b, -EOS_DISPLAY_WIDTH, 0);
-        lv_anim_set_time(&b, _APP_ICON_ANIM_DURATION);
-        lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
-        lv_anim_timeline_add(at, 0, &b);
-    }
-
-}
-
 static void _register_anim_routes_once(void)
 {
     if (_anim_routes_registered)
@@ -200,8 +539,8 @@ static void _register_anim_routes_once(void)
         return;
     }
 
-    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP_LIST, EOS_ACTIVITY_TYPE_APP, _app_list_show_anim_cb);
-    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP, EOS_ACTIVITY_TYPE_APP_LIST, _app_hide_anim_cb);
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP_LIST, EOS_ACTIVITY_TYPE_APP, _app_list_open_app_anim_cb);
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP, EOS_ACTIVITY_TYPE_APP_LIST, _app_list_close_app_anim_cb);
     _anim_routes_registered = true;
 }
 
@@ -212,6 +551,10 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
+    _app_list_set_last_launch_app_id(app_id);
+
+    lv_obj_t *icon_obj = lv_event_get_target(e);
+    _app_list_record_icon_center(icon_obj);
 
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
@@ -348,6 +691,7 @@ static void _app_list_refresh(lv_obj_t *container)
                 }
                 lv_obj_t *app_icon = _app_icon_create(container, icon_path);
                 lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);
+                lv_obj_set_user_data(app_icon, (void *)app_id);
                 eos_app_obj_auto_delete(app_icon, app_id);
             }
         }
@@ -391,6 +735,7 @@ static void _app_list_refresh(lv_obj_t *container)
             }
             lv_obj_t *app_icon = _app_icon_create(container, icon_path);
             lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);
+            lv_obj_set_user_data(app_icon, (void *)app_id);
             eos_app_obj_auto_delete(app_icon, app_id);
         }
     }
@@ -443,20 +788,14 @@ static void _container_delete_cb(lv_event_t *e)
     eos_event_remove_cb(container, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
 }
 
-void _app_list_show_anim_cb(lv_anim_timeline_t *at, eos_activity_t *this, eos_activity_t *next)
+static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to)
 {
-    // 目标页面（应用）从右侧进入
-    if (next)
-    {
-        lv_obj_t *next_snapshot = eos_activity_take_snapshot(next, true);
-        lv_anim_t b;
-        lv_anim_init(&b);
-        lv_anim_set_var(&b, next_snapshot);
-        lv_anim_set_values(&b, EOS_DISPLAY_WIDTH, 0);
-        lv_anim_set_time(&b, _APP_ICON_ANIM_DURATION);
-        lv_anim_set_exec_cb(&b, (lv_anim_exec_xcb_t)lv_obj_set_x);
-        lv_anim_timeline_add(at, 0, &b);
-    }
+    _app_list_play_transition_anim(at, from, to, true);
+}
+
+static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to)
+{
+    _app_list_play_transition_anim(at, from, to, false);
 }
 
 void eos_app_list_enter(void)

@@ -36,19 +36,18 @@
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_activity.h"
-#include "debug_var_defs.h"
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
 
-#define _APP_LIST_ANIM_DURATION dbg_app_list_anim_duration
-#define _APP_LIST_ANIM_FOCUS_SCALE dbg_app_list_anim_focus_scale
-#define _APP_LIST_ANIM_MIN_SACLE dbg_app_list_anim_min_scale
-#define _APP_LIST_ANIM_SPLIT_PCT dbg_app_list_anim_split_pct
-#define _APP_LIST_ANIM_FROM_OPA_START dbg_app_list_anim_from_opa_start
-#define _APP_LIST_ANIM_FROM_OPA_END dbg_app_list_anim_from_opa_end
-#define _APP_LIST_ANIM_TO_OPA_START dbg_app_list_anim_to_opa_start
-#define _APP_LIST_ANIM_TO_OPA_END dbg_app_list_anim_to_opa_end
+#define _APP_LIST_ANIM_DURATION 300
+#define _APP_LIST_ANIM_FOCUS_SCALE 1024
+#define _APP_LIST_ANIM_MIN_SACLE 64
+#define _APP_LIST_ANIM_SPLIT_PCT 15
+#define _APP_LIST_ANIM_FROM_OPA_START 255
+#define _APP_LIST_ANIM_FROM_OPA_END 0
+#define _APP_LIST_ANIM_TO_OPA_START 0
+#define _APP_LIST_ANIM_TO_OPA_END 255
 /* Variables --------------------------------------------------*/
 
 const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {

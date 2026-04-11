@@ -270,6 +270,18 @@ void eos_app_header_hide(void)
 void eos_app_header_show(eos_activity_t *a)
 {
     EOS_CHECK_PTR_RETURN(app_header);
+
+    // 检查是否是Watchface Activity，如果是则不显示AppHeader
+    eos_activity_t *target_activity = a;
+    if (!target_activity)
+        target_activity = eos_activity_get_current();
+
+    if (target_activity && target_activity == eos_activity_get_watchface())
+    {
+        EOS_LOG_D("Skip showing app header for watchface activity");
+        return;
+    }
+
     EOS_LOG_D("Show app header");
     if (!(app_header->container && lv_obj_is_valid(app_header->container)))
     {

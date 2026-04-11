@@ -69,6 +69,7 @@ void eos_watchface_list_enter(void)
     lv_obj_set_scroll_snap_x(cont, LV_SCROLL_SNAP_CENTER);
     for (size_t i = 0; i < watchface_list_size; i++)
     {
+        const char *watchface_id = eos_watchface_list_get_id(i);
         lv_obj_t *item = lv_obj_create(cont);
         lv_obj_set_size(item, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
         lv_obj_set_flex_flow(item, LV_FLEX_FLOW_COLUMN); // 垂直布局
@@ -86,13 +87,20 @@ void eos_watchface_list_enter(void)
                               LV_FLEX_ALIGN_CENTER); // 内容居中
 
         char icon_path[PATH_MAX];
-        snprintf(icon_path, sizeof(icon_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SNAPSHOT_FILE_NAME,
-                 eos_watchface_list_get_id(i));
-        EOS_LOG_D("WFPATH:%s", icon_path);
-        if (!eos_is_file(icon_path))
+        if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
         {
-            EOS_LOG_W("Watchface snapshot not found!");
             memcpy(icon_path, EOS_IMG_WATCHFACE, sizeof(EOS_IMG_WATCHFACE));
+        }
+        else
+        {
+            snprintf(icon_path, sizeof(icon_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SNAPSHOT_FILE_NAME,
+                     watchface_id);
+            EOS_LOG_D("WFPATH:%s", icon_path);
+            if (!eos_is_file(icon_path))
+            {
+                EOS_LOG_W("Watchface snapshot not found!");
+                memcpy(icon_path, EOS_IMG_WATCHFACE, sizeof(EOS_IMG_WATCHFACE));
+            }
         }
 
         lv_obj_t *watchface_snapshot = lv_image_create(item);
@@ -101,30 +109,43 @@ void eos_watchface_list_enter(void)
         lv_obj_set_style_margin_all(watchface_snapshot, 0, 0);
         lv_obj_center(watchface_snapshot);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
-        lv_obj_add_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
+        // 移除 CLICKABLE 标志，让触摸事件传递给父对象，以便滚动容器能够接收到滑动事件
+        lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         eos_img_set_src(watchface_snapshot, icon_path);
         eos_img_set_size(watchface_snapshot, 268, 310);
         lv_obj_center(watchface_snapshot);
-        lv_obj_add_event_cb(watchface_snapshot, _watchface_list_btn_cb, LV_EVENT_CLICKED, (void *)eos_watchface_list_get_id(i));
+
+        // 将点击事件处理函数添加到父对象上，这样当用户点击图片时，点击事件会传递给父对象
+        lv_obj_add_event_cb(item, _watchface_list_btn_cb, LV_EVENT_CLICKED, (void *)eos_watchface_list_get_id(i));
+        // 确保父对象是可点击的
+        lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_flag(item, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_set_style_clip_corner(watchface_snapshot, false, 0);
         // 显示名称
-        char manifest_path[PATH_MAX];
-        snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
-                 eos_watchface_list_get_id(i));
-        script_pkg_t pkg = {0};
-        pkg.type = SCRIPT_TYPE_WATCHFACE;
-        if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
-        {
-            EOS_LOG_E("Read manifest failed: %s", manifest_path);
-            eos_pkg_free(&pkg);
-            continue;
-        }
         lv_obj_t *label = lv_label_create(item);
-        lv_label_set_text(label, pkg.name);
+        if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+        {
+            lv_label_set_text(label, "Fallback Watchface");
+        }
+        else
+        {
+            char manifest_path[PATH_MAX];
+            snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
+                     watchface_id);
+            script_pkg_t pkg = {0};
+            pkg.type = SCRIPT_TYPE_WATCHFACE;
+            if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
+            {
+                EOS_LOG_E("Read manifest failed: %s", manifest_path);
+                eos_pkg_free(&pkg);
+                continue;
+            }
+            lv_label_set_text(label, pkg.name);
+            eos_pkg_free(&pkg);
+        }
         lv_obj_set_width(label, LV_SIZE_CONTENT);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-        eos_pkg_free(&pkg);
     }
     lv_obj_update_snap(cont, LV_ANIM_OFF);
     eos_activity_enter(a);

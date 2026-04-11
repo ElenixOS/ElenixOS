@@ -631,5 +631,4 @@ eos_msg_list_t *eos_msg_list_get_instance(void)
 void eos_msg_list_init(void)
 {
     message_list_instance = eos_msg_list_create(lv_layer_top());
-    eos_msg_list_hide();
 }

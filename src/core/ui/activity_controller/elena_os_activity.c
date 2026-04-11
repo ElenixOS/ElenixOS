@@ -23,6 +23,8 @@
 #include "elena_os_misc.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_app_header.h"
+#include "elena_os_control_center.h"
+#include "elena_os_msg_list.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
 #define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
@@ -304,6 +306,10 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     }
 
     g_activity_ctx.current_activity = next_activity;
+
+    // 隐藏控制中心和消息列表，确保在其他Activity中不显示
+    eos_control_center_hide();
+    eos_msg_list_hide();
 
     // 执行生命周期回调
     if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_destroy)

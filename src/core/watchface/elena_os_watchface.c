@@ -28,6 +28,7 @@
 #include "elena_os_std_widgets.h"
 #include "elena_os_ww_clock_hand.h"
 #include "elena_os_activity.h"
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -337,6 +338,10 @@ void eos_watchface_on_enter(eos_activity_t *a)
     lv_obj_remove_style_all(view);
     lv_obj_add_style(view, eos_theme_get_view_style(), 0);
     eos_activity_set_view(a, view);
+
+    // 显示控制中心和消息列表
+    eos_control_center_show();
+    eos_msg_list_show();
     // JSON中获取表盘id
     char wf_id[EOS_PKG_ID_LEN_MAX];
     char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
@@ -417,6 +422,11 @@ void eos_watchface_on_destroy(eos_activity_t *a)
         EOS_LOG_E("Script engine request stop failed");
         return;
     }
+
+    // 隐藏控制中心和消息列表
+    eos_control_center_hide();
+    eos_msg_list_hide();
+
     // 删除 View
     lv_obj_delete(eos_activity_get_view(a));
 }
@@ -449,6 +459,9 @@ eos_result_t eos_watchface_init(void)
         EOS_LOG_E("Init watchface activity controller failed");
         return EOS_FAILED;
     }
+
+    eos_control_center_show();
+    eos_msg_list_show();
 
     return EOS_OK;
 }

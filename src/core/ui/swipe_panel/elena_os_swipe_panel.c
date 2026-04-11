@@ -113,6 +113,8 @@ void eos_swipe_panel_pull_back(eos_swipe_panel_t *sp)
         target = -EOS_DISPLAY_WIDTH; // 向右拉回时完全隐藏
         break;
     }
+    // 设置状态为REVERTING，确保动画完成后状态会被正确更新为IDLE
+    sp->sw->state = EOS_SLIDE_WIDGET_STATE_REVERTING;
     eos_swipe_panel_move(sp, target, true);
     eos_slide_widget_reverse(sp->sw);
     if (sp->sw->dir == EOS_SLIDE_DIR_VER)

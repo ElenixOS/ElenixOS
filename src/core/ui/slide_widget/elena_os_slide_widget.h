@@ -72,6 +72,7 @@ typedef enum
     EOS_SLIDE_WIDGET_STATE_THRESHOLD, /**< 超过阈值，滑动确认（执行展开/触发操作） */
     EOS_SLIDE_WIDGET_STATE_REVERTING, /**< 正在回弹（未超过阈值自动返回） */
     EOS_SLIDE_WIDGET_STATE_ANIMATING, /**< 手动触发动画 */
+    EOS_SLIDE_WIDGET_STATE_OPEN,      /**< 面板已完全打开 */
 } eos_slide_widget_state_t;
 
 typedef struct

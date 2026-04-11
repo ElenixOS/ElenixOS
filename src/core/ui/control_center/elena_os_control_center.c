@@ -532,6 +532,5 @@ static void _system_config_update_event_cb(lv_event_t *e)
 void eos_control_center_init(void)
 {
     control_center_instance = eos_control_center_create(lv_layer_top());
-    eos_control_center_hide();
     eos_event_add_global_cb(_system_config_update_event_cb, EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
 }

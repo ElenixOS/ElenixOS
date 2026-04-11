@@ -113,12 +113,44 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
     if (sw->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
         lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, sw);
+        // 面板已完全打开，设置状态为OPEN
+        sw->state = EOS_SLIDE_WIDGET_STATE_OPEN;
     }
     else if (sw->state == EOS_SLIDE_WIDGET_STATE_REVERTING)
     {
         lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REVERTED, sw);
+        // 面板已关闭，设置状态为IDLE
+        sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
     }
-    sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
+    else if (sw->state == EOS_SLIDE_WIDGET_STATE_ANIMATING)
+    {
+        // 手动触发的动画，根据最终位置判断状态
+        lv_coord_t cur;
+        if (sw->dir == EOS_SLIDE_DIR_VER)
+        {
+            cur = lv_obj_get_y(sw->target_obj);
+        }
+        else
+        {
+            cur = lv_obj_get_x(sw->target_obj);
+        }
+
+        if (cur == sw->target)
+        {
+            // 动画到target位置，面板打开
+            sw->state = EOS_SLIDE_WIDGET_STATE_OPEN;
+        }
+        else if (cur == sw->base)
+        {
+            // 动画到base位置，面板关闭
+            sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
+        }
+        else
+        {
+            // 其他位置，设置为IDLE
+            sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
+        }
+    }
 
     eos_anim_blocker_hide();
 }

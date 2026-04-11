@@ -21,6 +21,10 @@
 #include "elena_os_anim.h"
 #include "elena_os_activity.h"
 #include "elena_os_app_list.h"
+#include "elena_os_control_center.h"
+#include "elena_os_msg_list.h"
+#include "elena_os_swipe_panel.h"
+#include "elena_os_slide_widget.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
@@ -209,14 +213,43 @@ static void _crown_button_async_cb(void *user_data)
     switch (state)
     {
     case EOS_BUTTON_STATE_CLICKED:
-        if(eos_activity_get_current() == eos_activity_get_watchface())
+        // 检查控制中心和消息列表是否被下拉
+        bool has_panel_open = false;
+
+        // 检查控制中心
+        eos_control_center_t *cc = eos_control_center_get_instance();
+        if (cc && cc->swipe_panel && cc->swipe_panel->sw)
         {
-            // 进入应用列表
-            eos_app_list_enter();
+            if (cc->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
+            {
+                eos_swipe_panel_pull_back(cc->swipe_panel);
+                has_panel_open = true;
+            }
         }
-        else
+
+        // 检查消息列表
+        eos_msg_list_t *msg_list = eos_msg_list_get_instance();
+        if (msg_list && msg_list->swipe_panel && msg_list->swipe_panel->sw)
         {
-            eos_activity_back();
+            if (msg_list->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
+            {
+                eos_swipe_panel_pull_back(msg_list->swipe_panel);
+                has_panel_open = true;
+            }
+        }
+
+        // 如果有面板打开，则不切换Activity
+        if (!has_panel_open)
+        {
+            if(eos_activity_get_current() == eos_activity_get_watchface())
+            {
+                // 进入应用列表
+                eos_app_list_enter();
+            }
+            else
+            {
+                eos_activity_back();
+            }
         }
     default:
         break;

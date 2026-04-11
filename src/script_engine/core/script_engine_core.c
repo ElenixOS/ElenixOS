@@ -66,8 +66,6 @@
 #include "elena_os_event.h"
 #include "elena_os_cqueue.h"
 
-#include "script_engine_eos.h"
-
 #include "sni.h"
 
 /* Macros and Definitions -------------------------------------*/

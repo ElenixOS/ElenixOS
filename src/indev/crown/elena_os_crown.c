@@ -25,6 +25,7 @@
 #include "elena_os_msg_list.h"
 #include "elena_os_swipe_panel.h"
 #include "elena_os_slide_widget.h"
+#include "elena_os_event.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
@@ -42,15 +43,23 @@ static lv_obj_t *scrollable_screen = NULL;
 static int8_t encoder_reverse = -1;
 static lv_obj_t *scrollbar = NULL;
 static lv_timer_t *scrollbar_hide_timer = NULL;
+static lv_obj_t *pending_rebind_target = NULL;
+static bool pending_rebind_is_screen = true;
+static bool pending_rebind_scheduled = false;
 
 static void _scrollable_obj_scrolled_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
 static void _clear_scrollable_obj_async_cb(void *user_data);
+static void _activity_screen_switched_cb(lv_event_t *e);
+static void _activity_screen_switched_async_cb(void *user_data);
+static void _apply_pending_rebind_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(lv_anim_t *a);
 static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
+static void _set_target_obj_immediate(lv_obj_t *obj);
+static void _set_target_screen_immediate(lv_obj_t *screen);
 /* Function Implementations -----------------------------------*/
 
 static void _scrollbar_schedule_hide(void)
@@ -340,6 +349,38 @@ static void _scrollable_obj_scroll_end_cb(lv_event_t *e)
     _scrollbar_schedule_hide();
 }
 
+static void _activity_screen_switched_cb(lv_event_t *e)
+{
+    lv_obj_t *view = (lv_obj_t *)lv_event_get_param(e);
+    lv_async_call(_activity_screen_switched_async_cb, view);
+}
+
+static void _activity_screen_switched_async_cb(void *user_data)
+{
+    lv_obj_t *view = (lv_obj_t *)user_data;
+    eos_crown_encoder_set_target_screen(view);
+}
+
+static void _apply_pending_rebind_async_cb(void *user_data)
+{
+    LV_UNUSED(user_data);
+
+    lv_obj_t *target = pending_rebind_target;
+    bool is_screen = pending_rebind_is_screen;
+
+    pending_rebind_scheduled = false;
+    pending_rebind_target = NULL;
+
+    if (is_screen)
+    {
+        _set_target_screen_immediate(target);
+    }
+    else
+    {
+        _set_target_obj_immediate(target);
+    }
+}
+
 static void _apply_scrollable_obj(lv_obj_t *obj)
 {
     lv_obj_t *screen;
@@ -399,13 +440,13 @@ static lv_obj_t *_find_scrollable_obj(lv_obj_t *root)
     return NULL;
 }
 
-void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
+static void _set_target_obj_immediate(lv_obj_t *obj)
 {
     if (obj && lv_obj_is_valid(obj) && lv_obj_has_class(obj, &lv_obj_class))
     {
         if (!lv_obj_get_parent(obj))
         {
-            eos_crown_encoder_set_target_screen(obj);
+            _set_target_screen_immediate(obj);
             return;
         }
         _apply_scrollable_obj(obj);
@@ -416,7 +457,7 @@ void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
     }
 }
 
-void eos_crown_encoder_set_target_screen(lv_obj_t *screen)
+static void _set_target_screen_immediate(lv_obj_t *screen)
 {
     if (screen && lv_obj_is_valid(screen) && lv_obj_has_class(screen, &lv_obj_class))
     {
@@ -430,6 +471,32 @@ void eos_crown_encoder_set_target_screen(lv_obj_t *screen)
     }
 
     _clear_scrollable_obj();
+}
+
+void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
+{
+    pending_rebind_target = obj;
+    pending_rebind_is_screen = false;
+    if (pending_rebind_scheduled)
+    {
+        return;
+    }
+
+    pending_rebind_scheduled = true;
+    lv_async_call(_apply_pending_rebind_async_cb, NULL);
+}
+
+void eos_crown_encoder_set_target_screen(lv_obj_t *screen)
+{
+    pending_rebind_target = screen;
+    pending_rebind_is_screen = true;
+    if (pending_rebind_scheduled)
+    {
+        return;
+    }
+
+    pending_rebind_scheduled = true;
+    lv_async_call(_apply_pending_rebind_async_cb, NULL);
 }
 
 void eos_crown_encoder_set_reverse(bool reverse)
@@ -471,4 +538,8 @@ void eos_crown_init(void)
     {
         lv_timer_pause(scrollbar_hide_timer);
     }
+
+    eos_event_add_global_cb(_activity_screen_switched_cb,
+                            EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,
+                            NULL);
 }

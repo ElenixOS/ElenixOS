@@ -41,6 +41,7 @@ typedef enum
     EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< 删除圆角，参见`eos_obj_set_corner_radius_bg()` */
     EOS_EVENT_SCRIPT_STARTED,                   /**< 脚本已启动 */
     EOS_EVENT_SCRIPT_EXITED,                    /**< 脚本已退出 */
+    EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity页面切换完成，param为当前activity view */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */

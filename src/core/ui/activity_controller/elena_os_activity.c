@@ -25,6 +25,7 @@
 #include "elena_os_app_header.h"
 #include "elena_os_control_center.h"
 #include "elena_os_msg_list.h"
+#include "elena_os_event.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
 #define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
@@ -182,6 +183,7 @@ static void _activity_mark_visible(eos_activity_t *activity)
 {
     g_activity_ctx.visible_activity = activity;
     g_activity_ctx.transition_in_progress = false;
+    eos_event_broadcast(EOS_EVENT_ACTIVITY_SCREEN_SWITCHED, activity ? activity->view : NULL);
 }
 
 static void _snapshot_img_delete_cb(lv_event_t *e)

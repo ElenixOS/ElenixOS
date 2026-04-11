@@ -329,14 +329,6 @@ void eos_watchface_on_destroy(eos_activity_t *a)
         EOS_LOG_E("Script engine request stop failed");
         return;
     }
-    eos_activity_t *watchface_activity =
-        eos_activity_create(&watchface_lifecycle);
-    if (!watchface_activity)
-    {
-        EOS_LOG_E("Create watchface activity failed");
-        return;
-    }
-    eos_activity_set_type(watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
     // 删除 View
     lv_obj_delete(eos_activity_get_view(a));
 }

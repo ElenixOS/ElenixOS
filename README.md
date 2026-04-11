@@ -1,10 +1,11 @@
-![ElenaOS LOGO](./logo.png)
+<div style="display: flex; align-items: center;">
+    <img src="./assets/logo.png" alt="ElenaOS LOGO" width="80" style="margin-right: 0px;"/>
+    <p style="font-size: 50px; margin-top: 20px;">Elena <span style="color: #de2a00;">OS</span></p>
+</div>
 
 [![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) ![Platform](https://img.shields.io/badge/platform-Embedded-lightgrey)
 
 ---
-
->本项目处于开发阶段
 
 ## 简述
 

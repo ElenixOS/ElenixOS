@@ -160,11 +160,13 @@ static void sni_cb_event_dsc_destroy_cb(void *native_ptr)
 
 static void sni_cb_timer_handle_destroy_cb(void *native_ptr); /* forward declaration */
 static void sni_cb_anim_handle_destroy_hook(void *native_ptr);
+static void sni_cb_style_handle_destroy_cb(void *native_ptr);
 
 void sni_cb_runtime_init(void)
 {
     sni_tb_register_handle_destroy_cb(SNI_H_LV_EVENT_DSC, sni_cb_event_dsc_destroy_cb);
     sni_tb_register_handle_destroy_cb(SNI_H_LV_TIMER, sni_cb_timer_handle_destroy_cb);
+    sni_tb_register_handle_destroy_cb(SNI_H_LV_STYLE, sni_cb_style_handle_destroy_cb);
     sni_tb_register_handle_destroy_cb(SNI_H_LV_ANIM, sni_cb_anim_handle_destroy_hook);
 }
 
@@ -218,6 +220,17 @@ static void sni_cb_timer_handle_destroy_cb(void *native_ptr)
         lv_timer_delete(timer);
     }
     /* ctx 不在 hash 中说明已通过 sni_cb_timer_delete 显式清理，跳过 */
+}
+
+static void sni_cb_style_handle_destroy_cb(void *native_ptr)
+{
+    lv_style_t *style = (lv_style_t *)native_ptr;
+    if (!style)
+    {
+        return;
+    }
+
+    lv_style_reset(style);
 }
 
 

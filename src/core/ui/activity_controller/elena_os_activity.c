@@ -354,7 +354,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     else
     {
         // NextView没有app_header，将header附加到当前View
-        if (cur_activity && cur_activity->view && eos_activity_is_app_header_visible(cur_activity))
+        if (cur_activity && cur_activity->view && lv_obj_is_valid(cur_activity->view) && eos_activity_is_app_header_visible(cur_activity))
         {
             // 只有从有header进入无header时，才将header附加到当前View
             eos_app_header_attach_to_view(cur_activity->view);

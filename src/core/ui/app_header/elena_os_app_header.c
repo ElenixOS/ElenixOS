@@ -65,6 +65,29 @@ static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
 static void _clock_update_cb(lv_timer_t *timer);
 
+static bool _app_header_can_reparent(lv_obj_t *new_parent)
+{
+    if (!app_header)
+    {
+        return false;
+    }
+
+    if (!app_header->container || !lv_obj_is_valid(app_header->container))
+    {
+        app_header->attached_to_view = false;
+        EOS_LOG_E("AppHeader container is invalid");
+        return false;
+    }
+
+    if (!new_parent || !lv_obj_is_valid(new_parent))
+    {
+        EOS_LOG_E("AppHeader target parent is invalid");
+        return false;
+    }
+
+    return true;
+}
+
 static void _set_title_style(lv_obj_t *label)
 {
     lv_obj_add_style(label, eos_theme_get_label_style(), 0);
@@ -222,19 +245,52 @@ void eos_app_header_hide(void)
     EOS_CHECK_PTR_RETURN(app_header);
     EOS_LOG_D("Hide app header");
     // 如果附加到View，先恢复父对象
-    if (app_header->attached_to_view) {
-        lv_obj_set_parent(app_header->container, app_header->original_parent);
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *restore_parent = app_header->original_parent;
+        if (!restore_parent || !lv_obj_is_valid(restore_parent))
+        {
+            restore_parent = lv_layer_sys();
+            app_header->original_parent = restore_parent;
+        }
+
+        if (_app_header_can_reparent(restore_parent))
+        {
+            lv_obj_set_parent(app_header->container, restore_parent);
+        }
         app_header->attached_to_view = false;
     }
-    lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+
+    if (app_header->container && lv_obj_is_valid(app_header->container))
+    {
+        lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
 void eos_app_header_show(eos_activity_t *a)
 {
     EOS_CHECK_PTR_RETURN(app_header);
     EOS_LOG_D("Show app header");
-    if (app_header->attached_to_view) {
-        lv_obj_set_parent(app_header->container, app_header->original_parent);
+    if (!(app_header->container && lv_obj_is_valid(app_header->container)))
+    {
+        app_header->attached_to_view = false;
+        EOS_LOG_E("AppHeader container is invalid");
+        return;
+    }
+
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *restore_parent = app_header->original_parent;
+        if (!restore_parent || !lv_obj_is_valid(restore_parent))
+        {
+            restore_parent = lv_layer_sys();
+            app_header->original_parent = restore_parent;
+        }
+
+        if (_app_header_can_reparent(restore_parent))
+        {
+            lv_obj_set_parent(app_header->container, restore_parent);
+        }
         app_header->attached_to_view = false;
     }
     // 从当前 Activity 获取标题文字
@@ -266,9 +322,27 @@ void eos_app_header_show(eos_activity_t *a)
 void eos_app_header_attach_to_view(lv_obj_t *view)
 {
     EOS_CHECK_PTR_RETURN(app_header && view);
-    if (app_header->attached_to_view) {
+
+    if (!_app_header_can_reparent(view))
+    {
+        app_header->attached_to_view = false;
         return;
     }
+
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *cur_parent = lv_obj_get_parent(app_header->container);
+        if (cur_parent == view)
+        {
+            return;
+        }
+    }
+
+    if (!app_header->original_parent || !lv_obj_is_valid(app_header->original_parent))
+    {
+        app_header->original_parent = lv_layer_sys();
+    }
+
     lv_obj_set_parent(app_header->container, view);
     app_header->attached_to_view = true;
 }
@@ -279,10 +353,22 @@ void eos_app_header_attach_to_view(lv_obj_t *view)
 void eos_app_header_detach_from_view(void)
 {
     EOS_CHECK_PTR_RETURN(app_header);
-    if (!app_header->attached_to_view) {
+    if (!app_header->attached_to_view)
+    {
         return;
     }
-    lv_obj_set_parent(app_header->container, app_header->original_parent);
+
+    lv_obj_t *restore_parent = app_header->original_parent;
+    if (!restore_parent || !lv_obj_is_valid(restore_parent))
+    {
+        restore_parent = lv_layer_sys();
+        app_header->original_parent = restore_parent;
+    }
+
+    if (_app_header_can_reparent(restore_parent))
+    {
+        lv_obj_set_parent(app_header->container, restore_parent);
+    }
     app_header->attached_to_view = false;
 }
 

@@ -109,6 +109,86 @@ static char *sni_image_dup_string(const char *src)
     return ret;
 }
 
+static bool sni_image_normalize_absolute_path(const char *input, char *output, size_t output_size)
+{
+    size_t in_idx = 0;
+    size_t out_len = 0;
+
+    if (!input || !output || output_size < 2)
+    {
+        return false;
+    }
+
+    if (input[0] != '/')
+    {
+        return false;
+    }
+
+    output[0] = '/';
+    out_len = 1;
+
+    while (input[in_idx] != '\0')
+    {
+        size_t seg_start;
+        size_t seg_len;
+
+        while (input[in_idx] == '/')
+        {
+            in_idx++;
+        }
+
+        if (input[in_idx] == '\0')
+        {
+            break;
+        }
+
+        seg_start = in_idx;
+        while (input[in_idx] != '\0' && input[in_idx] != '/')
+        {
+            in_idx++;
+        }
+
+        seg_len = in_idx - seg_start;
+        if (seg_len == 0 || (seg_len == 1 && input[seg_start] == '.'))
+        {
+            continue;
+        }
+
+        if (seg_len == 2 && input[seg_start] == '.' && input[seg_start + 1] == '.')
+        {
+            if (out_len > 1)
+            {
+                out_len--;
+                while (out_len > 0 && output[out_len - 1] != '/')
+                {
+                    out_len--;
+                }
+            }
+            continue;
+        }
+
+        if (out_len > 1)
+        {
+            if (out_len + 1 >= output_size)
+            {
+                return false;
+            }
+            output[out_len++] = '/';
+        }
+
+        if (out_len + seg_len >= output_size)
+        {
+            return false;
+        }
+
+        memcpy(output + out_len, input + seg_start, seg_len);
+        out_len += seg_len;
+    }
+
+    output[out_len] = '\0';
+    return true;
+}
+
 static char *sni_image_resolve_under_root(const char *root_dir, const char *candidate)
 {
     char root_real[PATH_MAX];
@@ -119,7 +199,8 @@ static char *sni_image_resolve_under_root(const char *root_dir, const char *cand
         return NULL;
     }
 
-    if (!realpath(root_dir, root_real) || !realpath(candidate, candidate_real))
+    if (!sni_image_normalize_absolute_path(root_dir, root_real, sizeof(root_real)) ||
+        !sni_image_normalize_absolute_path(candidate, candidate_real, sizeof(candidate_real)))
     {
         return NULL;
     }

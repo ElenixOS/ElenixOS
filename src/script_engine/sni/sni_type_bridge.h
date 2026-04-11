@@ -84,8 +84,8 @@ bool sni_tb_c2js_set_object(void *c_val, sni_type_t type, jerry_value_t js_obj);
 void sni_tb_register_val_obj(const sni_val_obj_t *val_obj);
 
 /**
- * @brief 注册 Realm 生命周期句柄的销毁回调
- * @param type 句柄类型（必须为 Realm 生命周期句柄）
+ * @brief 注册句柄销毁回调（支持 External/Realm 生命周期句柄）
+ * @param type 句柄类型（必须为 Handle 类型）
  * @param destroy_cb 销毁回调
  */
 void sni_tb_register_handle_destroy_cb(sni_type_t type, sni_handle_destroy_cb_t destroy_cb);

@@ -29,7 +29,22 @@ static const jerry_object_native_info_t sni_native_info =
         .number_of_references = 0,
         .offset_of_references = 0,
 };
-static sni_handle_destroy_cb_t sni_handle_destroy_cb[SNI_HANDLE_LC_REALM_COUNT] = {0};
+static sni_handle_destroy_cb_t sni_handle_destroy_cb[SNI_HANDLE_COUNT] = {0};
+
+static int sni_tb_get_destroy_cb_index(sni_type_t type)
+{
+    if (SNI_TYPE_IS_HANDLE_LC_EXTERNAL(type))
+    {
+        return (int)(type - __SNI_HANDLE_LC_EXTERNAL_START - 1);
+    }
+
+    if (SNI_TYPE_IS_HANDLE_LC_REALM(type))
+    {
+        return (int)(SNI_HANDLE_LC_EXTERNAL_COUNT + (type - __SNI_HANDLE_LC_REALM_START - 1));
+    }
+
+    return -1;
+}
 
 /* Function Implementations -----------------------------------*/
 
@@ -625,9 +640,10 @@ void sni_tb_register_val_obj(const sni_val_obj_t *val_obj)
 
 void sni_tb_register_handle_destroy_cb(sni_type_t type, sni_handle_destroy_cb_t destroy_cb)
 {
-    if (SNI_TYPE_IS_HANDLE_LC_REALM(type))
+    int index = sni_tb_get_destroy_cb_index(type);
+    if (index >= 0)
     {
-        sni_handle_destroy_cb[type - __SNI_HANDLE_LC_REALM_START - 1] = destroy_cb;
+        sni_handle_destroy_cb[index] = destroy_cb;
     }
 }
 
@@ -639,11 +655,12 @@ void _script_exited_cb(lv_event_t * e)
 
     HASH_ITER(hh, sni_map, handle, tmp)
     {
-        if (SNI_TYPE_IS_HANDLE_LC_REALM(handle->type))
+        int index = sni_tb_get_destroy_cb_index(handle->type);
+        if (index >= 0)
         {
-            if (sni_handle_destroy_cb[handle->type - __SNI_HANDLE_LC_REALM_START - 1])
+            if (sni_handle_destroy_cb[index])
             {
-                sni_handle_destroy_cb[handle->type - __SNI_HANDLE_LC_REALM_START - 1](handle->ptr);
+                sni_handle_destroy_cb[index](handle->ptr);
             }
 
             HASH_DEL(sni_map, handle);

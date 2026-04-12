@@ -32,10 +32,10 @@ void eos_crown_encoder_set_reverse(bool reverse);
  */
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj);
 /**
- * @brief 根据`lv_screen`设置编码器的滚动对象，对象总是获取最先创建的对象(Firstly created)
- * @param screen 目标 Screen
+ * @brief 根据活动 View 自动设置编码器的滚动对象，对象总是获取最先创建的对象(Firstly created)
+ * @param view 目标 View
  */
-void eos_crown_encoder_set_target_screen(lv_obj_t *screen);
+void eos_crown_encoder_set_target_view(lv_obj_t *view);
 /**
  * @brief 上报表冠按钮的状态
  * @param state 状态值

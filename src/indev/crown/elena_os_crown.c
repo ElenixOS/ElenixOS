@@ -39,12 +39,12 @@
 #define _SCROLLBAR_HIDE_DELAY 260
 /* Variables --------------------------------------------------*/
 static lv_obj_t *scrollable_obj = NULL;
-static lv_obj_t *scrollable_screen = NULL;
+static lv_obj_t *scrollable_root = NULL;
 static int8_t encoder_reverse = -1;
 static lv_obj_t *scrollbar = NULL;
 static lv_timer_t *scrollbar_hide_timer = NULL;
 static lv_obj_t *pending_rebind_target = NULL;
-static bool pending_rebind_is_screen = true;
+static bool pending_rebind_is_view = true;
 static bool pending_rebind_scheduled = false;
 
 static void _scrollable_obj_scrolled_cb(lv_event_t *e);
@@ -52,14 +52,17 @@ static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
 static void _clear_scrollable_obj_async_cb(void *user_data);
-static void _activity_screen_switched_cb(lv_event_t *e);
-static void _activity_screen_switched_async_cb(void *user_data);
+static void _activity_view_switched_cb(lv_event_t *e);
+static void _activity_view_switched_async_cb(void *user_data);
+static void _slide_widget_state_changed_cb(lv_event_t *e);
+static void _slide_widget_state_changed_async_cb(void *user_data);
 static void _apply_pending_rebind_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(lv_anim_t *a);
 static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
+static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
 static void _set_target_obj_immediate(lv_obj_t *obj);
-static void _set_target_screen_immediate(lv_obj_t *screen);
+static void _set_target_view_immediate(lv_obj_t *view);
 /* Function Implementations -----------------------------------*/
 
 static void _scrollbar_schedule_hide(void)
@@ -160,15 +163,15 @@ static void _clear_scrollable_obj(void)
         }
     }
 
-    if (scrollable_screen && lv_obj_is_valid(scrollable_screen))
+    if (scrollable_root && lv_obj_is_valid(scrollable_root))
     {
-        while (lv_obj_remove_event_cb(scrollable_screen, _clear_scrollable_obj_cb))
+        while (lv_obj_remove_event_cb(scrollable_root, _clear_scrollable_obj_cb))
         {
         }
     }
 
     scrollable_obj = NULL;
-    scrollable_screen = NULL;
+    scrollable_root = NULL;
 
     _scrollbar_hide_now();
 }
@@ -182,8 +185,8 @@ static void _clear_scrollable_obj_cb(lv_event_t *e)
 static void _clear_scrollable_obj_async_cb(void *user_data)
 {
     lv_obj_t *target = (lv_obj_t *)user_data;
-    /* Ignore stale deferred cleanup from previous screens/objects. */
-    if (target != scrollable_obj && target != scrollable_screen)
+    /* 延迟清理的旧滚动对象 */
+    if (target != scrollable_obj && target != scrollable_root)
         return;
 
     _clear_scrollable_obj();
@@ -212,6 +215,10 @@ static void _scrollbar_hide_set_anim(void)
 
 static void _crown_button_async_cb(void *user_data)
 {
+    bool has_panel_open = false;
+    eos_control_center_t *cc = NULL;
+    eos_msg_list_t *msg_list = NULL;
+
     if (eos_pm_get_state() == EOS_PM_SLEEP)
     {
         eos_pm_wake_up();
@@ -222,11 +229,8 @@ static void _crown_button_async_cb(void *user_data)
     switch (state)
     {
     case EOS_BUTTON_STATE_CLICKED:
-        // 检查控制中心和消息列表是否被下拉
-        bool has_panel_open = false;
-
         // 检查控制中心
-        eos_control_center_t *cc = eos_control_center_get_instance();
+        cc = eos_control_center_get_instance();
         if (cc && cc->swipe_panel && cc->swipe_panel->sw)
         {
             if (cc->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
@@ -237,7 +241,7 @@ static void _crown_button_async_cb(void *user_data)
         }
 
         // 检查消息列表
-        eos_msg_list_t *msg_list = eos_msg_list_get_instance();
+        msg_list = eos_msg_list_get_instance();
         if (msg_list && msg_list->swipe_panel && msg_list->swipe_panel->sw)
         {
             if (msg_list->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
@@ -269,9 +273,14 @@ static void _crown_encoder_async_cb(void *user_data)
 {
     if (scrollable_obj)
     {
-        if (!lv_obj_is_valid(scrollable_obj))
+        if (!lv_obj_is_valid(scrollable_obj) || !lv_obj_is_visible(scrollable_obj))
         {
             _clear_scrollable_obj();
+            return;
+        }
+
+        if (scrollable_root && lv_obj_is_valid(scrollable_root) && !lv_obj_is_visible(scrollable_root))
+        {
             return;
         }
 
@@ -349,16 +358,39 @@ static void _scrollable_obj_scroll_end_cb(lv_event_t *e)
     _scrollbar_schedule_hide();
 }
 
-static void _activity_screen_switched_cb(lv_event_t *e)
+static void _activity_view_switched_cb(lv_event_t *e)
 {
     lv_obj_t *view = (lv_obj_t *)lv_event_get_param(e);
-    lv_async_call(_activity_screen_switched_async_cb, view);
+    lv_async_call(_activity_view_switched_async_cb, view);
 }
 
-static void _activity_screen_switched_async_cb(void *user_data)
+static void _activity_view_switched_async_cb(void *user_data)
 {
     lv_obj_t *view = (lv_obj_t *)user_data;
-    eos_crown_encoder_set_target_screen(view);
+    eos_crown_encoder_set_target_view(view);
+}
+
+static void _slide_widget_state_changed_cb(lv_event_t *e)
+{
+    lv_async_call(_slide_widget_state_changed_async_cb, lv_event_get_param(e));
+}
+
+static void _slide_widget_state_changed_async_cb(void *user_data)
+{
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)user_data;
+    if (sw && sw->state == EOS_SLIDE_WIDGET_STATE_OPEN && sw->target_obj && lv_obj_is_valid(sw->target_obj))
+    {
+        lv_obj_t *target = _find_scrollable_obj(sw->target_obj);
+        if (target)
+        {
+            /* 滑动面板已打开，优先作为滚动对象 */
+            eos_crown_encoder_set_target_obj(target);
+            return;
+        }
+    }
+
+    /* 滑动面板已关闭或没有可用的滚动对象，尝试查找可用的滚动对象 */
+    eos_crown_encoder_set_target_view(eos_view_active());
 }
 
 static void _apply_pending_rebind_async_cb(void *user_data)
@@ -366,14 +398,14 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     LV_UNUSED(user_data);
 
     lv_obj_t *target = pending_rebind_target;
-    bool is_screen = pending_rebind_is_screen;
+    bool is_view = pending_rebind_is_view;
 
     pending_rebind_scheduled = false;
     pending_rebind_target = NULL;
 
-    if (is_screen)
+    if (is_view)
     {
-        _set_target_screen_immediate(target);
+        _set_target_view_immediate(target);
     }
     else
     {
@@ -381,9 +413,26 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     }
 }
 
-static void _apply_scrollable_obj(lv_obj_t *obj)
+static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor)
 {
-    lv_obj_t *screen;
+    if (!(obj && ancestor && lv_obj_is_valid(obj) && lv_obj_is_valid(ancestor)))
+        return false;
+
+    lv_obj_t *cur = obj;
+    while (cur && lv_obj_is_valid(cur))
+    {
+        if (cur == ancestor)
+            return true;
+        cur = lv_obj_get_parent(cur);
+    }
+
+    return false;
+}
+
+static void _apply_scrollable_obj(lv_obj_t *obj, bool enforce_active_view_scope)
+{
+    lv_obj_t *root;
+    lv_obj_t *active_view;
 
     if (!(obj && lv_obj_is_valid(obj)))
     {
@@ -391,25 +440,36 @@ static void _apply_scrollable_obj(lv_obj_t *obj)
         return;
     }
 
-    screen = lv_obj_get_screen(obj);
-    if (!(screen && lv_obj_is_valid(screen)))
+    root = lv_obj_get_screen(obj);
+    if (!(root && lv_obj_is_valid(root)))
     {
         _clear_scrollable_obj();
         return;
+    }
+
+    if (enforce_active_view_scope)
+    {
+        active_view = eos_view_active();
+        if (!(active_view && lv_obj_is_valid(active_view) && _is_descendant_of(obj, active_view)))
+        {
+            EOS_LOG_D("Skip non-active-view scrollable: obj=%p view=%p", obj, active_view);
+            _clear_scrollable_obj();
+            return;
+        }
     }
 
     lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
     _clear_scrollable_obj();
 
     scrollable_obj = obj;
-    scrollable_screen = screen;
+    scrollable_root = root;
     lv_obj_add_flag(obj, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_add_event_cb(obj, _scrollable_obj_scrolled_cb, LV_EVENT_SCROLL, NULL);
     lv_obj_add_event_cb(obj, _scrollable_obj_scroll_start_cb, LV_EVENT_SCROLL_BEGIN, NULL);
     lv_obj_add_event_cb(obj, _scrollable_obj_scroll_end_cb, LV_EVENT_SCROLL_END, NULL);
     lv_obj_add_event_cb(obj, _clear_scrollable_obj_cb, LV_EVENT_DELETE, NULL);
-    lv_obj_add_event_cb(screen, _clear_scrollable_obj_cb, LV_EVENT_SCREEN_UNLOAD_START, NULL);
-    lv_obj_add_event_cb(screen, _clear_scrollable_obj_cb, LV_EVENT_DELETE, NULL);
+    lv_obj_add_event_cb(root, _clear_scrollable_obj_cb, LV_EVENT_SCREEN_UNLOAD_START, NULL);
+    lv_obj_add_event_cb(root, _clear_scrollable_obj_cb, LV_EVENT_DELETE, NULL);
 }
 
 static lv_obj_t *_find_scrollable_obj(lv_obj_t *root)
@@ -446,10 +506,10 @@ static void _set_target_obj_immediate(lv_obj_t *obj)
     {
         if (!lv_obj_get_parent(obj))
         {
-            _set_target_screen_immediate(obj);
+            _set_target_view_immediate(obj);
             return;
         }
-        _apply_scrollable_obj(obj);
+        _apply_scrollable_obj(obj, false);
     }
     else
     {
@@ -457,15 +517,15 @@ static void _set_target_obj_immediate(lv_obj_t *obj)
     }
 }
 
-static void _set_target_screen_immediate(lv_obj_t *screen)
+static void _set_target_view_immediate(lv_obj_t *view)
 {
-    if (screen && lv_obj_is_valid(screen) && lv_obj_has_class(screen, &lv_obj_class))
+    if (view && lv_obj_is_valid(view) && lv_obj_has_class(view, &lv_obj_class))
     {
-        lv_obj_t *target = _find_scrollable_obj(screen);
+        lv_obj_t *target = _find_scrollable_obj(view);
         EOS_LOG_D("Scrollable target=%p", target);
         if (target)
         {
-            _apply_scrollable_obj(target);
+            _apply_scrollable_obj(target, true);
             return;
         }
     }
@@ -476,7 +536,7 @@ static void _set_target_screen_immediate(lv_obj_t *screen)
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
     pending_rebind_target = obj;
-    pending_rebind_is_screen = false;
+    pending_rebind_is_view = false;
     if (pending_rebind_scheduled)
     {
         return;
@@ -486,10 +546,10 @@ void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
     lv_async_call(_apply_pending_rebind_async_cb, NULL);
 }
 
-void eos_crown_encoder_set_target_screen(lv_obj_t *screen)
+void eos_crown_encoder_set_target_view(lv_obj_t *view)
 {
-    pending_rebind_target = screen;
-    pending_rebind_is_screen = true;
+    pending_rebind_target = view;
+    pending_rebind_is_view = true;
     if (pending_rebind_scheduled)
     {
         return;
@@ -539,7 +599,13 @@ void eos_crown_init(void)
         lv_timer_pause(scrollbar_hide_timer);
     }
 
-    eos_event_add_global_cb(_activity_screen_switched_cb,
+    eos_event_add_global_cb(_activity_view_switched_cb,
                             EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,
+                            NULL);
+    eos_event_add_global_cb(_slide_widget_state_changed_cb,
+                            EOS_EVENT_SLIDE_WIDGET_OPENED,
+                            NULL);
+    eos_event_add_global_cb(_slide_widget_state_changed_cb,
+                            EOS_EVENT_SLIDE_WIDGET_CLOSED,
                             NULL);
 }

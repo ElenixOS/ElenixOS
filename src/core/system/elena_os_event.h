@@ -32,6 +32,8 @@ typedef enum
     EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< 滑动未超过阈值自动回弹 */
     EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< 滑动时（包括手动滑动以及动画执行）触发 */
     EOS_EVENT_SLIDE_WIDGET_DONE,                /**< 滑动完成 */
+    EOS_EVENT_SLIDE_WIDGET_OPENED,              /**< 滑动组件已拉出（全局广播） */
+    EOS_EVENT_SLIDE_WIDGET_CLOSED,              /**< 滑动组件已拉回（全局广播） */
     EOS_EVENT_APP_UNINSTALLED,                  /**< 应用已卸载 */
     EOS_EVENT_APP_INSTALLED,                    /**< 应用已安装 */
     EOS_EVENT_SYSTEM_SLEEP,                     /**< 系统进入睡眠模式 */

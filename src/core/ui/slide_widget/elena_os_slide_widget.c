@@ -173,6 +173,15 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
     _set_state(sw, settle_state, "anim completed");
     sw->settle_state = settle_state;
 
+    if (settle_state == EOS_SLIDE_WIDGET_STATE_OPEN)
+    {
+        eos_event_broadcast(EOS_EVENT_SLIDE_WIDGET_OPENED, sw);
+    }
+    else if (settle_state == EOS_SLIDE_WIDGET_STATE_IDLE)
+    {
+        eos_event_broadcast(EOS_EVENT_SLIDE_WIDGET_CLOSED, sw);
+    }
+
     eos_anim_blocker_hide();
 }
 

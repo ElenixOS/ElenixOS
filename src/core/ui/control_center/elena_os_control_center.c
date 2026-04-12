@@ -487,6 +487,7 @@ void eos_control_center_show(void)
     EOS_CHECK_PTR_RETURN(control_center_instance);
     lv_obj_remove_flag(control_center_instance->swipe_panel->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(control_center_instance->swipe_panel->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+    eos_crown_encoder_activate_current_overlay_scrollable();
 }
 
 void eos_control_center_hide(void)
@@ -495,6 +496,7 @@ void eos_control_center_hide(void)
     lv_obj_add_flag(control_center_instance->swipe_panel->sw->touch_obj, LV_OBJ_FLAG_HIDDEN);
     if (lv_obj_get_y(control_center_instance->swipe_panel->swipe_obj) < EOS_DISPLAY_HEIGHT)
         lv_obj_add_flag(control_center_instance->swipe_panel->swipe_obj, LV_OBJ_FLAG_HIDDEN);
+    eos_crown_encoder_activate_current_overlay_scrollable();
 }
 
 eos_control_center_t *eos_control_center_get_instance(void)

@@ -339,9 +339,9 @@ void eos_watchface_on_enter(eos_activity_t *a)
     lv_obj_add_style(view, eos_theme_get_view_style(), 0);
     eos_activity_set_view(a, view);
 
-    // 显示控制中心和消息列表
-    eos_control_center_show();
+    // 显示消息列表和控制中心
     eos_msg_list_show();
+    eos_control_center_show();
     // JSON中获取表盘id
     char wf_id[EOS_PKG_ID_LEN_MAX];
     char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
@@ -460,8 +460,8 @@ eos_result_t eos_watchface_init(void)
         return EOS_FAILED;
     }
 
-    eos_control_center_show();
     eos_msg_list_show();
+    eos_control_center_show();
 
     return EOS_OK;
 }

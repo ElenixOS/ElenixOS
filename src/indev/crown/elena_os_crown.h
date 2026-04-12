@@ -37,6 +37,10 @@ void eos_crown_encoder_set_target_obj(lv_obj_t *obj);
  */
 void eos_crown_encoder_set_target_view(lv_obj_t *view);
 /**
+ * @brief 激活当前可见 overlay 的滚动对象，按 overlay 优先级统一选择
+ */
+void eos_crown_encoder_activate_current_overlay_scrollable(void);
+/**
  * @brief 上报表冠按钮的状态
  * @param state 状态值
  */

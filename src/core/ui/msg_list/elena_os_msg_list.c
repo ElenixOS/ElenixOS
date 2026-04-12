@@ -615,12 +615,14 @@ void eos_msg_list_hide(void)
 {
     EOS_CHECK_PTR_RETURN(message_list_instance);
     eos_swipe_panel_hide(message_list_instance->swipe_panel);
+    eos_crown_encoder_activate_current_overlay_scrollable();
 }
 
 void eos_msg_list_show(void)
 {
     EOS_CHECK_PTR_RETURN(message_list_instance);
     eos_swipe_panel_show(message_list_instance->swipe_panel);
+    eos_crown_encoder_activate_current_overlay_scrollable();
 }
 
 eos_msg_list_t *eos_msg_list_get_instance(void)

@@ -63,6 +63,7 @@ static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
 static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
 static void _set_target_obj_immediate(lv_obj_t *obj);
 static void _set_target_view_immediate(lv_obj_t *view);
+static bool _obj_is_visible_for_crown(lv_obj_t *obj);
 /* Function Implementations -----------------------------------*/
 
 static void _scrollbar_schedule_hide(void)
@@ -229,6 +230,7 @@ static void _crown_button_async_cb(void *user_data)
     switch (state)
     {
     case EOS_BUTTON_STATE_CLICKED:
+    {
         // 检查控制中心
         cc = eos_control_center_get_instance();
         if (cc && cc->swipe_panel && cc->swipe_panel->sw)
@@ -264,6 +266,8 @@ static void _crown_button_async_cb(void *user_data)
                 eos_activity_back();
             }
         }
+        break;
+    }
     default:
         break;
     }
@@ -388,9 +392,11 @@ static void _slide_widget_state_changed_async_cb(void *user_data)
             return;
         }
     }
+}
 
-    /* 滑动面板已关闭或没有可用的滚动对象，尝试查找可用的滚动对象 */
-    eos_crown_encoder_set_target_view(eos_view_active());
+static bool _obj_is_visible_for_crown(lv_obj_t *obj)
+{
+    return obj && lv_obj_is_valid(obj) && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) && lv_obj_is_visible(obj);
 }
 
 static void _apply_pending_rebind_async_cb(void *user_data)
@@ -557,6 +563,27 @@ void eos_crown_encoder_set_target_view(lv_obj_t *view)
 
     pending_rebind_scheduled = true;
     lv_async_call(_apply_pending_rebind_async_cb, NULL);
+}
+
+void eos_crown_encoder_activate_current_overlay_scrollable(void)
+{
+    eos_control_center_t *cc = eos_control_center_get_instance();
+    if (cc && cc->swipe_panel && _obj_is_visible_for_crown(cc->swipe_panel->swipe_obj) &&
+        cc->container && _obj_is_visible_for_crown(cc->container))
+    {
+        eos_crown_encoder_set_target_obj(cc->container);
+        return;
+    }
+
+    eos_msg_list_t *msg_list = eos_msg_list_get_instance();
+    if (msg_list && msg_list->swipe_panel && _obj_is_visible_for_crown(msg_list->swipe_panel->swipe_obj) &&
+        msg_list->list && _obj_is_visible_for_crown(msg_list->list))
+    {
+        eos_crown_encoder_set_target_obj(msg_list->list);
+        return;
+    }
+
+    eos_crown_encoder_set_target_view(eos_view_active());
 }
 
 void eos_crown_encoder_set_reverse(bool reverse)

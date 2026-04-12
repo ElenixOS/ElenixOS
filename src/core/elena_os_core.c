@@ -51,11 +51,13 @@
 #include "elena_os_toast.h"
 #include "elena_os_vibrator.h"
 #include "elena_os_crown.h"
+#include "elena_os_icon.h"
+#include "elena_os_activity.h"
+#include "elena_os_std_widgets.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 static bool is_logo_played = false;
-static lv_obj_t *logo = NULL;
 /* Function Implementations -----------------------------------*/
 
 static lv_indev_t *_get_key_indev()
@@ -72,6 +74,24 @@ static lv_indev_t *_get_key_indev()
     EOS_LOG_W("Not found input device: key");
 }
 
+void _sys_init_err_handler(const char *err_msg)
+{
+    EOS_LOG_E("System initialization failed: %s", err_msg);
+    lv_obj_t *list = eos_std_info_create(lv_layer_sys(),
+                                         EOS_COLOR_RED, RI_BUG_LINE,
+                                         eos_lang_get_str(STR_ID_SYS_INIT_FAILED),
+                                         eos_lang_get_str(STR_ID_SYS_INIT_FAILED_CONTENT));
+    char info_str[1024];
+    snprintf(info_str, sizeof(info_str),
+             "Error: %s", err_msg);
+    lv_obj_t *err_label = eos_list_add_comment(list, info_str);
+    while (1)
+    {
+        uint32_t delay = lv_timer_handler();
+        eos_delay(delay);
+    }
+}
+
 void eos_logo_play(bool anim)
 {
     if (is_logo_played)
@@ -79,15 +99,24 @@ void eos_logo_play(bool anim)
 
     eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
 
+    lv_obj_t *scr = lv_screen_active();
+
+    if (!scr)
+    {
+        EOS_LOG_W("Active screen not found, creating a new screen for logo");
+        lv_obj_t *scr = lv_obj_create(NULL);
+        lv_screen_load(scr);
+    }
+
     // 创建全屏容器
-    logo = lv_obj_create(lv_screen_active());
-    lv_obj_set_style_bg_color(logo, EOS_COLOR_BLACK, 0);
-    lv_obj_set_size(logo, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_border_width(logo, 0, 0);
-    lv_obj_move_foreground(logo);
+    lv_obj_t *logo_container = lv_obj_create(scr);
+    lv_obj_set_style_bg_color(logo_container, EOS_COLOR_BLACK, 0);
+    lv_obj_set_size(logo_container, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_border_width(logo_container, 0, 0);
+    lv_obj_move_foreground(logo_container);
 
     // 创建LOGO图片对象
-    lv_obj_t *logo_img = lv_image_create(logo);
+    lv_obj_t *logo_img = lv_image_create(logo_container);
     eos_img_set_src(logo_img, EOS_IMG_LOGO);
     lv_obj_center(logo_img);
 
@@ -130,30 +159,27 @@ void eos_run(void)
     script_engine_init();
     eos_sys_init();
     lv_font_t *default_font = eos_font_init();
-    EOS_ASSERT(default_font != NULL);
+    if (!default_font)
+        _sys_init_err_handler("Failed to initialize default font");
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE),
                   lv_palette_main(LV_PALETTE_RED),
                   default_font);
     eos_app_init();
     eos_watchface_init();
-
-    if (eos_watchface_list_size() == 0)
-    {
-        EOS_LOG_E("Watchface not found");
-        while (1)
-        {
-            if (eos_watchface_list_size() > 0)
-                break;
-            eos_delay(5000);
-        }
-    }
     eos_app_header_init();
     eos_services_start();
     eos_msg_list_init();
     eos_control_center_init();
-    if (logo && lv_obj_is_valid(logo))
-        lv_obj_delete_async(logo);
     eos_pm_init();
+
+    eos_activity_t *watchface_activity = eos_watchface_get_activity();
+    if (!watchface_activity)
+        _sys_init_err_handler("Failed to get watchface activity");
+
+    // Activity controller 会自动删除 Logo Screen
+    if (eos_activity_controller_init(watchface_activity) != EOS_OK)
+        _sys_init_err_handler("Failed to initialize activity controller");
+
     /************************** 系统启动 **************************/
     // 开始绘制
     while (1)

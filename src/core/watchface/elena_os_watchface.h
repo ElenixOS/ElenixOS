@@ -28,6 +28,9 @@ extern "C" {
 #define EOS_WATCHFACE_SNAPSHOT_FILE_NAME "snapshot.bin"
 #define EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME "main.js"
 /* Public typedefs --------------------------------------------*/
+#ifndef ELENA_OS_ACTIVITY_H
+typedef struct eos_activity_t eos_activity_t;
+#endif
 
 /* Public function prototypes --------------------------------*/
 
@@ -66,6 +69,11 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id);
  * @return eos_result_t 初始化结果
  */
 eos_result_t eos_watchface_init(void);
+/**
+ * @brief 获取初始化阶段创建的表盘 Activity
+ * @return eos_activity_t* 表盘 Activity 指针，失败返回 NULL
+ */
+eos_activity_t *eos_watchface_get_activity(void);
 #ifdef __cplusplus
 }
 #endif

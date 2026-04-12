@@ -644,8 +644,15 @@ static void _settings_view_language(lv_event_t *e)
 static void _settings_view_device_info(lv_event_t *e)
 {
     lv_obj_t *view = _create_and_enter_activity_with_header(STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
+    eos_app_header_set_title_color(EOS_THEME_LOGO_PRIMARY_COLOR);
+
     lv_obj_t *list = eos_list_create(view);
     lv_obj_set_style_pad_row(list, 0, 0);
+
+    eos_list_add_placeholder(list, 20);
+    lv_obj_t *logo = lv_image_create(list);
+    eos_img_set_src(logo, EOS_IMG_LOGO);
+    eos_list_add_placeholder(list, 30);
 
     char *device_name = eos_sys_cfg_get_string(
         EOS_SYS_CFG_KEY_DEVICE_NAME_STR,
@@ -653,7 +660,8 @@ static void _settings_view_device_info(lv_event_t *e)
     eos_std_title_comment_create(list,
                                  current_lang[STR_ID_SETTINGS_GENERAL_DEVICE_NAME],
                                  device_name);
-    eos_free(device_name);
+    if (device_name)
+        eos_free(device_name);
     eos_list_add_placeholder(list, 20);
 
     eos_std_title_comment_create(list,

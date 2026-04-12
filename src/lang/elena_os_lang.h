@@ -128,7 +128,8 @@ typedef enum {
     STR_ID_TOAST_SHOW_MUTE,
     STR_ID_TOAST_SHOW_UNMUTE,
     STR_ID_SECOND,
-
+    STR_ID_SYS_INIT_FAILED,
+    STR_ID_SYS_INIT_FAILED_CONTENT,
     STR_ID_SENSOR_START,
     STR_ID_SENSOR_ACCE,      /**< 加速度传感器     */
     STR_ID_SENSOR_GYRO,      /**< 重力传感器       */
@@ -180,11 +181,6 @@ language_id_t eos_lang_get_current_id(void);
  * @return language_id_t 语言类型
  */
 language_id_t eos_lang_get_current_id_with_str(const char *language_str);
-/**
- * @brief 获取当前语言字符串
- * @return char* 语言字符串（例如：简体中文）
- */
-char *eos_lang_get_current_language_str(void);
 /**
  * @brief 获取当前语言字符串
  * @param id 字符串 ID

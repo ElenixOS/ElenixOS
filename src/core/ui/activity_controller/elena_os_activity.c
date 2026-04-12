@@ -935,11 +935,18 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
         return NULL;
     }
 
-    activity->view = _view_create(g_activity_ctx.root_screen);
-    if (!activity->view)
+    if (g_activity_ctx.root_screen)
     {
-        eos_free(activity);
-        return NULL;
+        activity->view = _view_create(g_activity_ctx.root_screen);
+        if (!activity->view)
+        {
+            eos_free(activity);
+            return NULL;
+        }
+    }
+    else
+    {
+        activity->view = NULL;
     }
     activity->lifecycle = lifecycle;
     activity->type = EOS_ACTIVITY_TYPE_APP;

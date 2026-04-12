@@ -45,6 +45,7 @@ typedef struct
 /* Variables --------------------------------------------------*/
 static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
+static eos_activity_t *_watchface_activity = NULL;
 
 static void eos_watchface_on_enter(eos_activity_t *a);
 static void eos_watchface_on_destroy(eos_activity_t *a);
@@ -431,6 +432,11 @@ void eos_watchface_on_destroy(eos_activity_t *a)
     lv_obj_delete(eos_activity_get_view(a));
 }
 
+eos_activity_t *eos_watchface_get_activity(void)
+{
+    return _watchface_activity;
+}
+
 eos_result_t eos_watchface_init(void)
 {
     EOS_LOG_D("Init eos_watchface");
@@ -446,22 +452,13 @@ eos_result_t eos_watchface_init(void)
         return EOS_FAILED;
     }
     // 创建表盘 Activity
-    eos_activity_t *watchface_activity =
-        eos_activity_create(&watchface_lifecycle);
-    if (!watchface_activity)
+    _watchface_activity = eos_activity_create(&watchface_lifecycle);
+    if (!_watchface_activity)
     {
         EOS_LOG_E("Create watchface activity failed");
         return EOS_FAILED;
     }
-    eos_activity_set_type(watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
-    if (eos_activity_controller_init(watchface_activity) != EOS_OK)
-    {
-        EOS_LOG_E("Init watchface activity controller failed");
-        return EOS_FAILED;
-    }
-
-    eos_msg_list_show();
-    eos_control_center_show();
+    eos_activity_set_type(_watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
 
     return EOS_OK;
 }

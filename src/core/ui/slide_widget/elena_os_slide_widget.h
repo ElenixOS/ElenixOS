@@ -86,6 +86,7 @@ typedef struct
     lv_coord_t touch_obj_target;
     eos_threshold_t threshold; /**< 阈值：(当前点 - 基点)/（目标点 - 基点）> threshold时触发阈值 */
     eos_slide_widget_state_t state;
+    eos_slide_widget_state_t settle_state; /**< 当前动画完成后的收敛状态 */
     lv_coord_t _indev_start;            /**< 触摸起始点 */
     lv_coord_t last_touch_displacement; /**< 上一次移动的位移量 */
     bool bidirectional;                 /**< 是否支持双向滑动 */
@@ -142,6 +143,9 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
  */
 void eos_slide_widget_set_bidirectional(eos_slide_widget_t *sw, bool enable);
 void eos_slide_widget_set_move_foreground_on_pressed(eos_slide_widget_t *sw, bool enable);
+void eos_slide_widget_set_anim_transition(eos_slide_widget_t *sw,
+                                          eos_slide_widget_state_t transit_state,
+                                          eos_slide_widget_state_t settle_state);
 void eos_slide_widget_delete(eos_slide_widget_t *sw);
 #ifdef __cplusplus
 }

@@ -113,8 +113,10 @@ void eos_swipe_panel_pull_back(eos_swipe_panel_t *sp)
         target = -EOS_DISPLAY_WIDTH; // 向右拉回时完全隐藏
         break;
     }
-    // 设置状态为REVERTING，确保动画完成后状态会被正确更新为IDLE
-    sp->sw->state = EOS_SLIDE_WIDGET_STATE_REVERTING;
+    // 显式声明本次动画是“回弹关闭”路径。
+    eos_slide_widget_set_anim_transition(sp->sw,
+                                         EOS_SLIDE_WIDGET_STATE_REVERTING,
+                                         EOS_SLIDE_WIDGET_STATE_IDLE);
     eos_swipe_panel_move(sp, target, true);
     eos_slide_widget_reverse(sp->sw);
     if (sp->sw->dir == EOS_SLIDE_DIR_VER)
@@ -217,6 +219,7 @@ static void _slide_widget_move_done_cb(lv_event_t *e)
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
     if (sw->state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
+        bool closing_from_open = sw->reversed;
         EOS_LOG_I("Move cb threshold");
         if (sw->dir == EOS_SLIDE_DIR_VER)
         {
@@ -228,6 +231,14 @@ static void _slide_widget_move_done_cb(lv_event_t *e)
         }
 
         eos_slide_widget_reverse(sw);
+
+        if (closing_from_open)
+        {
+            /* Closing path should settle to IDLE after DONE. */
+            eos_slide_widget_set_anim_transition(sw,
+                                                 EOS_SLIDE_WIDGET_STATE_REVERTING,
+                                                 EOS_SLIDE_WIDGET_STATE_IDLE);
+        }
     }
     else if (sw->state == EOS_SLIDE_WIDGET_STATE_REVERTING)
     {

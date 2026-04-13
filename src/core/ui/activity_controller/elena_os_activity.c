@@ -309,6 +309,23 @@ static void _activity_switch_to(eos_activity_t *next_activity)
 
     g_activity_ctx.current_activity = next_activity;
 
+    if (cur_activity == g_activity_ctx.watchface_activity && next_activity != g_activity_ctx.watchface_activity)
+    {
+        eos_control_center_t *cc = eos_control_center_get_instance();
+        if (cc && cc->swipe_panel && cc->swipe_panel->sw &&
+            cc->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
+        {
+            eos_swipe_panel_pull_back(cc->swipe_panel);
+        }
+
+        eos_msg_list_t *msg_list = eos_msg_list_get_instance();
+        if (msg_list && msg_list->swipe_panel && msg_list->swipe_panel->sw &&
+            msg_list->swipe_panel->sw->state == EOS_SLIDE_WIDGET_STATE_OPEN)
+        {
+            eos_swipe_panel_pull_back(msg_list->swipe_panel);
+        }
+    }
+
     // 隐藏控制中心和消息列表，确保在其他Activity中不显示
     eos_control_center_hide();
     eos_msg_list_hide();

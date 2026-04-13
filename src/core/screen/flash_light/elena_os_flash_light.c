@@ -79,6 +79,8 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(ud);
 
+    /* Use final position after slide DONE as cleanup fallback,
+     * because threshold event may be skipped in some edge drags. */
     int32_t swipe_obj_coord_y = lv_obj_get_y(ud->sp->swipe_obj);
     if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
@@ -116,7 +118,7 @@ static void _flash_light_clicked_cb(lv_event_t *e)
 {
     _pressing_user_data_t *ud = lv_event_get_user_data(e);
     _flash_light_delete(ud);
-    // _flash_light_create(eos_watchface_get_screen());
+    eos_flash_light_enter();
 }
 
 static void _screen_delete_cb(lv_event_t *e)
@@ -130,14 +132,16 @@ void eos_flash_light_show(void)
     _pressing_user_data_t *ud = eos_malloc(sizeof(_pressing_user_data_t));
     EOS_CHECK_PTR_RETURN(ud);
 
-    lv_obj_t *mask = lv_obj_create(lv_layer_sys());
+    lv_obj_t *layer_top = lv_layer_top();
+
+    lv_obj_t *mask = lv_obj_create(layer_top);
     lv_obj_remove_style_all(mask);
     lv_obj_set_size(mask, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(mask, EOS_COLOR_BLACK, 0);
 
     ud->mask = mask;
 
-    eos_swipe_panel_t *sp = eos_swipe_panel_create(lv_layer_sys());
+    eos_swipe_panel_t *sp = eos_swipe_panel_create(layer_top);
     eos_swipe_panel_set_dir(sp, EOS_SWIPE_DIR_UP);
     eos_swipe_panel_slide_down(sp);
     eos_slide_widget_reverse(sp->sw);
@@ -149,7 +153,7 @@ void eos_flash_light_show(void)
     lv_obj_add_event_cb(
         sp->sw->touch_obj,
         _swipe_panel_pull_back_cb,
-        EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,
+        EOS_EVENT_SLIDE_WIDGET_DONE,
         ud);
     lv_obj_add_event_cb(
         sp->sw->touch_obj,
@@ -198,15 +202,31 @@ void eos_flash_light_enter(void)
 {
     eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
     eos_activity_t *a = eos_activity_create(&_flash_light_lifecycle);
+    if(!a) return;
+
+    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
+    eos_activity_set_title_id(a, STR_ID_APP_FLASH_LIGHT_DISMISS);
+    eos_activity_set_app_header_visible(a, false);
+
     lv_obj_t *view = eos_activity_get_view(a);
+    if(!view) {
+        eos_activity_back();
+        return;
+    }
+
     lv_obj_remove_style_all(view);
+    lv_obj_set_size(view, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(view, EOS_COLOR_WHITE, 0);
+
     eos_card_pager_t *cp = eos_card_pager_create(view, EOS_CARD_PAGER_DIR_HOR);
-    lv_obj_t *page = eos_card_pager_create_page(cp);
-    lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
-    page = eos_card_pager_create_page(cp);
-    lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
-    eos_card_pager_move_node(cp, 0, 1);
-    eos_card_pager_move_page(cp, 1);
-    eos_app_header_hide();
+    if(cp) {
+        lv_obj_t *page = eos_card_pager_create_page(cp);
+        lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
+        page = eos_card_pager_create_page(cp);
+        lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
+        eos_card_pager_move_node(cp, 0, 1);
+        eos_card_pager_move_page(cp, 1);
+    }
+
     eos_activity_enter(a);
 }

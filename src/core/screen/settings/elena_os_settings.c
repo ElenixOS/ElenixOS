@@ -445,6 +445,10 @@ static void _clear_data_btn_cb(lv_event_t *e)
         return;
     }
     lv_obj_add_state(btn, LV_STATE_DISABLED);
+    eos_toast_show_char_icon(
+        RI_CHECKBOX_CIRCLE_FILL,
+        EOS_COLOR_GREEN,
+        eos_lang_get_str(STR_ID_SETTINGS_APPS_CLEAR_DATA_SUCCESS));
 }
 
 /**
@@ -533,6 +537,8 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
         _clear_data_btn_cb,
         app_id);
 
+    eos_list_add_placeholder(list, 20);
+
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
     if (!eos_is_dir(data_path))
@@ -543,7 +549,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     lv_obj_t *uninstall_btn = eos_button_create_ex(
         list,
         EOS_THEME_SECONDARY_COLOR,
-        current_lang[STR_ID_SETTINGS_APPS_UINSTALL],
+        current_lang[STR_ID_SETTINGS_APPS_UNINSTALL],
         EOS_THEME_DANGEROS_COLOR,
         _uninstall_btn_cb,
         app_id);

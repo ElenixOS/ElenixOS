@@ -30,6 +30,15 @@ extern "C" {
  * @return lv_obj_t* 返回创建的 Toast 对象指针
  */
 lv_obj_t * eos_toast_show(const char *icon_src, const char *message);
+
+/**
+ * @brief 显示一个支持字符图标颜色的 Toast 提示
+ * @param icon_char 字符图标（如 RI_ 宏），设置为 NULL 时不显示图标
+ * @param icon_color 图标颜色
+ * @param message 消息内容
+ * @return lv_obj_t* 返回创建的 Toast 对象指针
+ */
+lv_obj_t *eos_toast_show_char_icon(const char *icon_char, lv_color_t icon_color, const char *message);
 /**
  * @brief 支持格式化字符串的 Toast 提示
  */

@@ -45,6 +45,8 @@ static eos_cqueue_t *anim_cq = NULL;
 static bool is_toast_playing = false;
 /* Function Implementations -----------------------------------*/
 static void _play_move_anim(lv_obj_t *toast);
+static lv_obj_t *_toast_create_container(void);
+static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message);
 
 static void _anim_move_end_cb(lv_anim_t *a)
 {
@@ -96,9 +98,8 @@ static void _play_move_anim(lv_obj_t *toast)
                                  _toast_start_move_back_cb, toast);
 }
 
-lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
+static lv_obj_t *_toast_create_container(void)
 {
-    // 创建 Toast 容器
     lv_obj_t *toast = lv_button_create(lv_layer_sys());
     lv_obj_set_size(toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_color(toast, EOS_COLOR_DARK_GREY_2, 0);
@@ -108,12 +109,11 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     lv_obj_set_flex_flow(toast, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(toast, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_gap(toast, 8, 0);
+    return toast;
+}
 
-    // 创建 icon
-    lv_obj_t *icon = lv_image_create(toast);
-    eos_img_set_src(icon, icon_src);
-    eos_img_set_size(icon, _ICON_WIDTH, _ICON_HEIGHT);
-
+static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message)
+{
     // 创建 mask
     lv_obj_t *mask = lv_obj_create(toast);
     lv_obj_remove_style_all(mask);
@@ -133,7 +133,6 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     lv_txt_get_size(&size, message, lv_obj_get_style_text_font(label, 0), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     lv_coord_t text_width = LV_MIN(size.x, _LABEL_MAX_WIDTH);
 
-    lv_obj_add_flag(icon, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_add_flag(mask, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_add_flag(label, LV_OBJ_FLAG_EVENT_BUBBLE);
 
@@ -180,6 +179,42 @@ lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
     }
 
     return toast;
+}
+
+lv_obj_t *eos_toast_show(const char *icon_src, const char *message)
+{
+    lv_obj_t *toast = _toast_create_container();
+
+    // 创建 icon
+    lv_obj_t *icon = lv_image_create(toast);
+    eos_img_set_src(icon, icon_src);
+    eos_img_set_size(icon, _ICON_WIDTH, _ICON_HEIGHT);
+
+    lv_obj_add_flag(icon, LV_OBJ_FLAG_EVENT_BUBBLE);
+    return _toast_finalize(toast, message);
+}
+
+lv_obj_t *eos_toast_show_char_icon(const char *icon_char, lv_color_t icon_color, const char *message)
+{
+    lv_obj_t *toast = _toast_create_container();
+
+    if (icon_char)
+    {
+        lv_obj_t *icon_wrap = lv_obj_create(toast);
+        lv_obj_remove_style_all(icon_wrap);
+        lv_obj_set_size(icon_wrap, _ICON_WIDTH, _ICON_HEIGHT);
+
+        lv_obj_t *icon = lv_label_create(icon_wrap);
+        lv_label_set_text(icon, icon_char);
+        lv_obj_set_style_text_color(icon, icon_color, 0);
+        lv_obj_set_style_translate_y(icon, 2, 0);
+        lv_obj_center(icon);
+
+        lv_obj_add_flag(icon_wrap, LV_OBJ_FLAG_EVENT_BUBBLE);
+        lv_obj_add_flag(icon, LV_OBJ_FLAG_EVENT_BUBBLE);
+    }
+
+    return _toast_finalize(toast, message);
 }
 
 lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...)

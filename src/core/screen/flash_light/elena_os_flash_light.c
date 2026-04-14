@@ -121,12 +121,6 @@ static void _flash_light_clicked_cb(lv_event_t *e)
     eos_flash_light_enter();
 }
 
-static void _screen_delete_cb(lv_event_t *e)
-{
-    _pressing_user_data_t *ud = lv_event_get_user_data(e);
-    _flash_light_delete(ud);
-}
-
 void eos_flash_light_show(void)
 {
     _pressing_user_data_t *ud = eos_malloc(sizeof(_pressing_user_data_t));

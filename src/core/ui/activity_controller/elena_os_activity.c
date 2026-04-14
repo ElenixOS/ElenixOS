@@ -87,6 +87,7 @@ typedef struct
     eos_activity_t *watchface_activity;
     eos_activity_t *current_activity;
     eos_activity_t *visible_activity;
+    eos_activity_t *previous_activity; // 前一个 activity，用于事件回调中获取真正的源页面
     eos_stack_t *activity_stack;
     lv_obj_t *root_screen;
     bool transition_in_progress;
@@ -99,6 +100,7 @@ static eos_activity_ctx_t g_activity_ctx = {
     .watchface_activity = NULL,
     .current_activity = NULL,
     .visible_activity = NULL,
+    .previous_activity = NULL,
     .activity_stack = NULL,
     .root_screen = NULL,
     .transition_in_progress = false,
@@ -153,6 +155,7 @@ static void _activity_reset_context(void)
     g_activity_ctx.watchface_activity = NULL;
     g_activity_ctx.current_activity = NULL;
     g_activity_ctx.visible_activity = NULL;
+    g_activity_ctx.previous_activity = NULL;
     g_activity_ctx.activity_stack = NULL;
     g_activity_ctx.root_screen = NULL;
     g_activity_ctx.transition_in_progress = false;
@@ -307,6 +310,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         return;
     }
 
+    g_activity_ctx.previous_activity = cur_activity; // 保存前一个 activity
     g_activity_ctx.current_activity = next_activity;
 
     if (cur_activity == g_activity_ctx.watchface_activity && next_activity != g_activity_ctx.watchface_activity)
@@ -394,14 +398,19 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     }
 
     eos_activity_anim_cb_t anim_cb = NULL;
+    bool list_anim_available = false;
     if (cur_activity)
     {
         anim_cb = eos_activity_get_anim_route(cur_activity->type, next_activity->type);
+        if (!anim_cb)
+        {
+            list_anim_available = eos_list_transition_should_animate(cur_activity, next_activity, cur_activity->destroy_on_exit);
+        }
     }
 
     // 如果需要动画，创建动画上下文并启动动画
     bool transition_started = false;
-    if (cur_activity && anim_cb)
+    if (cur_activity && (anim_cb || list_anim_available))
     {
         eos_activity_anim_ctx_t *anim_ctx = eos_malloc_zeroed(sizeof(eos_activity_anim_ctx_t));
         if (anim_ctx)
@@ -425,7 +434,14 @@ static void _activity_switch_to(eos_activity_t *next_activity)
             _init_anim_timeline(anim_ctx);
             g_activity_ctx.active_anim_ctx = anim_ctx;
             g_activity_ctx.snapshot_capture_window = true;
-            anim_cb(anim_ctx->at, cur_activity, next_activity);
+            if (anim_cb)
+            {
+                anim_cb(anim_ctx->at, cur_activity, next_activity);
+            }
+            else
+            {
+                eos_list_transition_play(anim_ctx->at, cur_activity, next_activity, cur_activity->destroy_on_exit);
+            }
             g_activity_ctx.snapshot_capture_window = false;
             g_activity_ctx.active_anim_ctx = NULL;
             _anim_timeline_start(cur_activity, next_activity, anim_ctx);
@@ -541,9 +557,6 @@ static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_a
     // 设置 dummy 动画的持续时间并添加到时间线
     lv_anim_set_duration(&anim_ctx->dummy_anim, playtime);
     lv_anim_timeline_add(anim_ctx->at, 0, &anim_ctx->dummy_anim);
-
-    // 隐藏 header
-    eos_app_header_hide();
 
     // 启动动画
     lv_anim_timeline_start(anim_ctx->at);
@@ -1025,6 +1038,12 @@ eos_result_t eos_activity_back(void)
         return EOS_FAILED;
     }
 
+    if (g_activity_ctx.current_activity != g_activity_ctx.visible_activity)
+    {
+        EOS_LOG_W("Activity state mismatch");
+        return EOS_FAILED;
+    }
+
     if (eos_stack_get_size(g_activity_ctx.activity_stack) == 0)
     {
         if (g_activity_ctx.watchface_activity && g_activity_ctx.current_activity != g_activity_ctx.watchface_activity)
@@ -1087,6 +1106,15 @@ eos_activity_t *eos_activity_get_visible(void)
     if (g_activity_ctx.visible_activity)
         return g_activity_ctx.visible_activity;
     return eos_activity_get_current();
+}
+
+eos_activity_t *eos_activity_get_previous(void)
+{
+    if (!_controller_initialized())
+    {
+        return NULL;
+    }
+    return g_activity_ctx.previous_activity;
 }
 
 bool eos_activity_is_transition_in_progress(void)

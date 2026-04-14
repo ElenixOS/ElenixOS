@@ -236,6 +236,12 @@ eos_activity_t *eos_activity_get_current(void);
 eos_activity_t *eos_activity_get_visible(void);
 
 /**
+ * @brief 获取前一个 Activity（用于事件回调中获取起源页面）
+ * @return eos_activity_t* 前一个 Activity，失败返回 NULL
+ */
+eos_activity_t *eos_activity_get_previous(void);
+
+/**
  * @brief 当前是否有 Activity 切换动画正在进行
  * @return bool true 正在切换，false 空闲
  */

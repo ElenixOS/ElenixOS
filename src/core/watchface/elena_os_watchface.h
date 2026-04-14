@@ -19,6 +19,7 @@ extern "C" {
 #include "elena_os_core.h"
 #include "elena_os_sys.h"
 #include "lvgl.h"
+#include "elena_os_activity.h"
 /* Public macros ----------------------------------------------*/
 #define EOS_WATCHFACE_DIR EOS_SYS_DIR "wf/"
 #define EOS_WATCHFACE_INSTALLED_DIR EOS_WATCHFACE_DIR "faces/"
@@ -28,10 +29,6 @@ extern "C" {
 #define EOS_WATCHFACE_SNAPSHOT_FILE_NAME "snapshot.bin"
 #define EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME "main.js"
 /* Public typedefs --------------------------------------------*/
-#ifndef ELENA_OS_ACTIVITY_H
-typedef struct eos_activity_t eos_activity_t;
-#endif
-
 /* Public function prototypes --------------------------------*/
 
 /**

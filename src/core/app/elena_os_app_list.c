@@ -40,7 +40,7 @@
 #define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
 
-#define _APP_LIST_ANIM_DURATION 300
+#define _APP_LIST_ANIM_DURATION 150
 #define _APP_LIST_ANIM_FOCUS_SCALE 1024
 #define _APP_LIST_ANIM_MIN_SACLE 64
 #define _APP_LIST_ANIM_SPLIT_PCT 15
@@ -363,7 +363,9 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
     lv_obj_t *list_view = opening ? eos_activity_get_view(from) : eos_activity_get_view(to);
     lv_obj_t *focus_icon = list_view ? _app_list_find_icon_by_app_id(opening ? from : to, focus_app_id) : NULL;
 
-    lv_obj_t *app_snapshot = eos_activity_take_snapshot(opening ? to : from, true);
+    /* Closing animation (APP -> APP_LIST) should not render app header on top. */
+    bool include_header_in_snapshot = opening;
+    lv_obj_t *app_snapshot = eos_activity_take_snapshot(opening ? to : from, include_header_in_snapshot);
     if (!app_snapshot)
     {
         return;

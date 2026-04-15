@@ -430,7 +430,7 @@ void eos_flash_light_show(void)
     lv_obj_set_height(label, LV_SIZE_CONTENT);
 
     lv_label_set_text_fmt(label, "%s\n" RI_ARROW_DOWN_WIDE_FILL,
-                          current_lang[STR_ID_APP_FLASH_LIGHT_DISMISS]);
+                          eos_lang_get_text(STR_ID_APP_FLASH_LIGHT_DISMISS));
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, 0);
 

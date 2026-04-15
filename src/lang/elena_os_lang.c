@@ -197,11 +197,11 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     // 在此添加新的字符串ID和中文翻译
 };
 
-const char *language_list[LANG_MAX_NUMBER] = {
+static const char *const language_list[LANG_MAX_NUMBER] = {
     [LANG_EN] = "English",
     [LANG_ZH] = "简体中文"};
 
-const char **current_lang = NULL;     // 当前语言指针
+static const char **current_lang = NULL;     // 当前语言指针
 static bool lang_initialized = false; // 语言系统初始化标志
 
 // 函数声明
@@ -209,7 +209,7 @@ static void lang_event_cb(lv_event_t *e);
 
 /* Function Implementations -----------------------------------*/
 void eos_lang_set_current_id(language_id_t lang);
-language_id_t eos_lang_get_current_id_with_str(const char *language_str);
+language_id_t eos_lang_parse_name(const char *language_name);
 
 void eos_lang_init(void)
 {
@@ -217,7 +217,7 @@ void eos_lang_init(void)
     if (!lang_initialized)
     {
         const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
-        eos_lang_set_current_id(eos_lang_get_current_id_with_str(lang_str));
+        eos_lang_set_current_id(eos_lang_parse_name(lang_str));
         eos_free(lang_str);
         lang_initialized = true;
     }
@@ -232,6 +232,9 @@ void eos_lang_set_current_id(language_id_t lang)
         break;
     case LANG_ZH:
         current_lang = lang_zh;
+        break;
+    default:
+        current_lang = lang_en;
         break;
     }
 
@@ -257,50 +260,70 @@ language_id_t eos_lang_get_current_id(void)
     }
 }
 
-language_id_t eos_lang_get_current_id_with_str(const char *language_str)
+language_id_t eos_lang_parse_name(const char *language_name)
 {
-    if (strcmp(language_list[LANG_EN], language_str) == 0)
+    EOS_CHECK_PTR_RETURN_VAL(language_name, LANG_EN);
+
+    if (strcmp(language_list[LANG_EN], language_name) == 0)
     {
         return LANG_EN;
     }
-    else if (strcmp(language_list[LANG_ZH], language_str) == 0)
+    else if (strcmp(language_list[LANG_ZH], language_name) == 0)
     {
         return LANG_ZH;
     }
     else
     {
-        EOS_LOG_E("Language not found: %s", language_str);
+        EOS_LOG_E("Language not found: %s", language_name);
         return LANG_EN;
     }
 }
 
-const char *eos_lang_get_str(lang_string_id_t id)
+const char *eos_lang_get_name(language_id_t lang)
 {
-    if(id >= STR_ID_MAX_NUMBER || id < 0 || !current_lang[id])
+    if (lang < 0 || lang >= LANG_MAX_NUMBER)
+    {
+        return language_list[LANG_EN];
+    }
+
+    return language_list[lang];
+}
+
+const char *eos_lang_get_current_name(void)
+{
+    return eos_lang_get_name(eos_lang_get_current_id());
+}
+
+const char *eos_lang_get_text(lang_string_id_t id)
+{
+    if (id < 0 || id >= STR_ID_MAX_NUMBER || !current_lang || !current_lang[id])
         return NULL;
+
     return current_lang[id];
 }
 
-char *eos_lang_get_language_str(void)
+language_id_t eos_lang_get_current_id_with_str(const char *language_str)
 {
-    return current_lang[STR_ID_LANGUAGE];
+    return eos_lang_parse_name(language_str);
 }
 
 static void lang_event_cb(lv_event_t *e)
 {
     lv_obj_t *label = lv_event_get_target(e);
 
-    // 从用户数据中获取str_id
-    lang_string_id_t id = (lang_string_id_t)lv_event_get_user_data(e);
-    if (!id)
+    // user_data 保存 str_id + 1，避免 STR_ID_LANGUAGE(0) 与 NULL 冲突。
+    uintptr_t raw_id = (uintptr_t)lv_event_get_user_data(e);
+    if (raw_id == 0)
     {
         EOS_LOG_E("No id for label");
         return;
     }
 
-    if (id < STR_ID_MAX_NUMBER && current_lang && current_lang[id])
+    lang_string_id_t id = (lang_string_id_t)(raw_id - 1U);
+    const char *text = eos_lang_get_text(id);
+    if (text)
     {
-        lv_label_set_text(label, current_lang[id]);
+        lv_label_set_text(label, text);
     }
 }
 
@@ -314,13 +337,14 @@ void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id)
 {
     EOS_CHECK_PTR_RETURN(label);
 
-    if (str_id < STR_ID_MAX_NUMBER && current_lang && current_lang[str_id])
+    const char *text = eos_lang_get_text(str_id);
+    if (text)
     {
-        lv_label_set_text(label, current_lang[str_id]);
+        lv_label_set_text(label, text);
     }
 
     eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
-    eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)str_id);
+    eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)((uintptr_t)str_id + 1U));
 }
 
 lv_obj_t *eos_lang_label_create(lv_obj_t *parent, lang_string_id_t str_id)

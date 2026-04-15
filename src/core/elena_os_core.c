@@ -79,8 +79,8 @@ void _sys_init_err_handler(const char *err_msg)
     EOS_LOG_E("System initialization failed: %s", err_msg);
     lv_obj_t *list = eos_std_info_create(lv_layer_sys(),
                                          EOS_COLOR_RED, RI_BUG_LINE,
-                                         eos_lang_get_str(STR_ID_SYS_INIT_FAILED),
-                                         eos_lang_get_str(STR_ID_SYS_INIT_FAILED_CONTENT));
+                                         eos_lang_get_text(STR_ID_SYS_INIT_FAILED),
+                                         eos_lang_get_text(STR_ID_SYS_INIT_FAILED_CONTENT));
     char info_str[1024];
     snprintf(info_str, sizeof(info_str),
              "Error: %s", err_msg);

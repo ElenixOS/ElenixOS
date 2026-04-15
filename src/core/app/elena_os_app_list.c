@@ -156,12 +156,12 @@ static void _app_on_enter(eos_activity_t *a)
             app_view,
             EOS_COLOR_RED,
             RI_BUG_LINE,
-            current_lang[STR_ID_APP_RUN_ERR_TITLE],
-            current_lang[STR_ID_APP_RUN_ERR]);
+            eos_lang_get_text(STR_ID_APP_RUN_ERR_TITLE),
+            eos_lang_get_text(STR_ID_APP_RUN_ERR));
         char info_str[1024];
         snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s", ret, ctx->app_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_BACK], eos_activity_back_cb, NULL);
+        lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_BACK), eos_activity_back_cb, NULL);
         EOS_LOG_E("Application encounter a fatal error");
     }
 }

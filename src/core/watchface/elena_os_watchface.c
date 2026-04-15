@@ -402,13 +402,13 @@ void eos_watchface_on_enter(eos_activity_t *a)
             eos_activity_get_view(a),
             EOS_COLOR_RED,
             RI_BUG_LINE,
-            eos_lang_get_str(STR_ID_WATCHFACE_RUN_ERR_TITLE),
-            eos_lang_get_str(STR_ID_WATCHFACE_RUN_ERR));
+            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR_TITLE),
+            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR));
         lv_obj_set_style_pad_top(list, 30, 0);
         char info_str[1024];
         snprintf(info_str, sizeof(info_str), "Code: %d\nWFID: %s\nError: %s", ret, wf_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, eos_lang_get_str(STR_ID_WATCHFACE_SWITCH), _watchface_long_pressed_cb, NULL);
+        lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_WATCHFACE_SWITCH), _watchface_long_pressed_cb, NULL);
         EOS_LOG_E("Watchface encounter a fatal error");
     }
 

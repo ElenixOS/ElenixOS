@@ -774,7 +774,7 @@ const char *eos_activity_get_title(eos_activity_t *activity)
     }
     else if (activity->title.type == _TITLE_TYPE_ID)
     {
-        return eos_lang_get_str(activity->title.id);
+        return eos_lang_get_text(activity->title.id);
     }
     return NULL;
 }

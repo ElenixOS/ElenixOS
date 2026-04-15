@@ -337,8 +337,8 @@ static void _test_app_debug_show_error(lv_obj_t *scr, const char *app_id, script
         scr,
         EOS_THEME_DANGEROS_COLOR,
         RI_BUG_LINE,
-        current_lang[STR_ID_APP_RUN_ERR_TITLE],
-        current_lang[STR_ID_APP_RUN_ERR]);
+        eos_lang_get_text(STR_ID_APP_RUN_ERR_TITLE),
+        eos_lang_get_text(STR_ID_APP_RUN_ERR));
 
     char info_str[1024];
     snprintf(info_str, sizeof(info_str), "Code: %d\nAppID: %s\nError: %s",
@@ -1233,7 +1233,7 @@ static void _test_sensor()
 
     for (int i = 0; i < EOS_SENSOR_NUMBER; i++)
     {
-        lv_table_set_cell_value(tb, i + 1, 0, current_lang[STR_ID_SENSOR_START + 1 + i]);
+        lv_table_set_cell_value(tb, i + 1, 0, eos_lang_get_text(STR_ID_SENSOR_START + 1 + i));
     }
 
     for (int i = 0; i < EOS_SENSOR_NUMBER; i++)

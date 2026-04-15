@@ -195,7 +195,7 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     lv_obj_t *btn_label = lv_label_create(btn);
     if (show_text)
     {
-        lv_label_set_text_fmt(btn_label, "%s", current_lang[STR_ID_BACK]);
+        lv_label_set_text_fmt(btn_label, "%s", eos_lang_get_text(STR_ID_BACK));
     }
     else
     {

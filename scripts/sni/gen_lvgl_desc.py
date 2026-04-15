@@ -1,0 +1,2212 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@file gen_lvgl_desc.py
+@brief 从 lvgl.json 中提取 API 描述信息，输出为 JSON 格式
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import fnmatch
+import json
+import re
+import sys
+import unicodedata
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+
+HEADER_TEXT = """/**
+ * @file sni_api_lv.c
+ * @brief LVGL API 导出
+ * @author Auto Generated
+ * @date {date}
+ */
+
+#include "sni_api_lv.h"
+
+/* Includes ---------------------------------------------------*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "lvgl.h"
+#include "sni_type_bridge.h"
+#include "sni_types.h"
+#include "sni_api_export.h"
+#include "sni_callback_runtime.h"
+#include "sni_api_lv_special.h"
+#include "elena_os_log.h"
+/* Macros and Definitions -------------------------------------*/
+#define LV_API_NAME "lv"
+/* Variables --------------------------------------------------*/
+static jerry_value_t lv_api_obj;
+/* Function Implementations -----------------------------------*/
+"""
+
+
+SPECIAL_CONSTRUCTOR_WRAPPERS: Dict[str, str] = {
+    "timer": "sni_api_ctor_timer",
+    "anim": "sni_api_ctor_anim",
+    "buttonmatrix": "sni_api_ctor_buttonmatrix",
+}
+
+
+SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {
+    "lv_obj_add_event_cb": "sni_api_lv_obj_add_event_cb",
+    "lv_obj_remove_event_cb": "sni_api_lv_obj_remove_event_cb",
+    "lv_obj_remove_event_dsc": "sni_api_lv_obj_remove_event_dsc",
+    "lv_obj_remove_event_cb_with_user_data": "sni_api_lv_obj_remove_event_cb_with_user_data",
+    "lv_obj_send_event": "sni_api_lv_obj_send_event",
+    "lv_obj_set_user_data": "sni_api_lv_obj_set_user_data",
+    "lv_obj_get_user_data": "sni_api_lv_obj_get_user_data",
+    "lv_obj_get_coords": "sni_api_lv_obj_get_coords",
+    "lv_obj_get_content_coords": "sni_api_lv_obj_get_content_coords",
+    "lv_obj_get_click_area": "sni_api_lv_obj_get_click_area",
+    "lv_obj_get_scroll_end": "sni_api_lv_obj_get_scroll_end",
+    "lv_obj_get_scrollbar_area": "sni_api_lv_obj_get_scrollbar_area",
+    "lv_timer_set_cb": "sni_api_lv_timer_set_cb",
+    "lv_timer_delete": "sni_api_lv_timer_delete",
+    "lv_anim_set_values": "sni_api_lv_anim_set_values",
+    "lv_anim_set_duration": "sni_api_lv_anim_set_duration",
+    "lv_anim_set_delay": "sni_api_lv_anim_set_delay",
+    "lv_anim_set_repeat_count": "sni_api_lv_anim_set_repeat_count",
+    "lv_anim_start": "sni_api_lv_anim_start",
+    "lv_anim_set_custom_exec_cb": "sni_api_lv_anim_set_custom_exec_cb",
+    "lv_anim_set_start_cb": "sni_api_lv_anim_set_start_cb",
+    "lv_anim_set_completed_cb": "sni_api_lv_anim_set_completed_cb",
+    "lv_anim_set_deleted_cb": "sni_api_lv_anim_set_deleted_cb",
+    "lv_anim_set_get_value_cb": "sni_api_lv_anim_set_get_value_cb",
+    "lv_anim_set_path_cb": "sni_api_lv_anim_set_path_cb",
+    "lv_anim_set_var": "sni_api_lv_anim_set_var",
+    "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
+    "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
+    "lv_calendar_set_day_names": "sni_api_lv_calendar_set_day_names",
+    "lv_calendar_set_highlighted_dates": "sni_api_lv_calendar_set_highlighted_dates",
+    "lv_dropdown_set_symbol": "sni_api_lv_dropdown_set_symbol",
+    "lv_image_set_src": "sni_api_lv_image_set_src",
+    "lv_imagebutton_set_src": "sni_api_lv_imagebutton_set_src",
+    "lv_imagebutton_get_src_left": "sni_api_lv_imagebutton_get_src_left",
+    "lv_imagebutton_get_src_middle": "sni_api_lv_imagebutton_get_src_middle",
+    "lv_imagebutton_get_src_right": "sni_api_lv_imagebutton_get_src_right",
+    "lv_canvas_set_px": "sni_api_lv_canvas_set_px",
+    "lv_canvas_get_px": "sni_api_lv_canvas_get_px",
+    "lv_canvas_init_buffer": "sni_api_lv_canvas_init_buffer",
+    "lv_canvas_free_buffer": "sni_api_lv_canvas_free_buffer",
+}
+
+
+SPECIAL_PROPERTY_GETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
+    ("obj", "user_data", "lv_obj_get_user_data"): "sni_api_prop_get_obj_user_data",
+}
+
+
+SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {
+    ("timer", "cb", "lv_timer_set_cb"): "sni_api_prop_set_timer_cb",
+    ("obj", "user_data", "lv_obj_set_user_data"): "sni_api_prop_set_obj_user_data",
+    ("anim", "var", "lv_anim_set_var"): "sni_api_prop_set_anim_var",
+    ("anim", "delay", "lv_anim_set_delay"): "sni_api_lv_anim_set_delay",
+    ("anim", "duration", "lv_anim_set_duration"): "sni_api_lv_anim_set_duration",
+    ("anim", "repeat_count", "lv_anim_set_repeat_count"): "sni_api_lv_anim_set_repeat_count",
+    ("anim", "custom_exec_cb", "lv_anim_set_custom_exec_cb"): "sni_api_lv_anim_set_custom_exec_cb",
+    ("anim", "start_cb", "lv_anim_set_start_cb"): "sni_api_lv_anim_set_start_cb",
+    ("anim", "completed_cb", "lv_anim_set_completed_cb"): "sni_api_lv_anim_set_completed_cb",
+    ("anim", "deleted_cb", "lv_anim_set_deleted_cb"): "sni_api_lv_anim_set_deleted_cb",
+    ("anim", "get_value_cb", "lv_anim_set_get_value_cb"): "sni_api_lv_anim_set_get_value_cb",
+    ("anim", "path_cb", "lv_anim_set_path_cb"): "sni_api_lv_anim_set_path_cb",
+    ("buttonmatrix", "map", "lv_buttonmatrix_set_map"): "sni_api_lv_buttonmatrix_set_map",
+    ("buttonmatrix", "ctrl_map", "lv_buttonmatrix_set_ctrl_map"): "sni_api_lv_buttonmatrix_set_ctrl_map",
+    ("calendar", "day_names", "lv_calendar_set_day_names"): "sni_api_lv_calendar_set_day_names",
+    ("dropdown", "symbol", "lv_dropdown_set_symbol"): "sni_api_prop_set_dropdown_symbol",
+    ("image", "src", "lv_image_set_src"): "sni_api_prop_set_image_src",
+}
+
+
+SPECIAL_EXTRA_PROPERTIES: Dict[str, List[Tuple[str, Optional[str], Optional[str]]]] = {
+    "calendar": [
+        ("chineseMode", None, "sni_api_lv_calendar_set_chinese_mode"),
+    ],
+}
+
+# Extra methods (not in lvgl.json) to inject per class.
+# Format: { class_name: [(js_method_name, c_wrapper_name), ...] }
+SPECIAL_EXTRA_METHODS: Dict[str, List[Tuple[str, str]]] = {
+    "obj": [
+        ("setFontSize", "sni_api_eos_label_set_font_size"),
+    ],
+    "canvas": [
+        ("initBuffer", "sni_api_lv_canvas_init_buffer"),
+        ("freeBuffer", "sni_api_lv_canvas_free_buffer"),
+    ],
+}
+
+
+VERBOSE = False
+
+
+@dataclass
+class TypeBridge:
+    c_type: str
+    js_check: str
+    js2c_mode: str
+    js2c_expr: Optional[str]
+    sni_type: Optional[str]
+    c2js_mode: str
+    c2js_expr: Optional[str]
+
+
+@dataclass
+class FuncArg:
+    name: str
+    c_type: str
+    bridge: TypeBridge
+
+
+@dataclass
+class ApiFunction:
+    name: str
+    return_type: str
+    return_bridge: TypeBridge
+    args: List[FuncArg]
+
+
+@dataclass
+class ArgRenderResult:
+    call_expr: str
+    post_lines: List[str]
+
+
+@dataclass
+class ApiConstant:
+    name: str
+    kind: str
+    value: str
+
+
+@dataclass
+class FilterStats:
+    total: int = 0
+    blacklisted: int = 0
+    whitelist_miss: int = 0
+    included: int = 0
+    skipped_by_user: int = 0
+
+
+class SkipFunctionError(Exception):
+    def __init__(self, func_name: str, reason: str, add_to_blacklist: bool = True):
+        super().__init__(reason)
+        self.func_name = func_name
+        self.reason = reason
+        self.add_to_blacklist = add_to_blacklist
+
+
+SKIP_BLACKLIST_FUNCTION = "__BLACKLIST_FUNCTION__"
+SKIP_ONCE_FUNCTION = "__SKIP_ONCE_FUNCTION__"
+
+
+SPECIAL_PROPERTY_SETTER_FUNCTIONS: Set[str] = {item[2] for item in SPECIAL_PROPERTY_SETTER_WRAPPERS.keys()}
+
+
+def should_skip_manual_signature_bridges(func_name: str, context: str) -> bool:
+    if func_name in SPECIAL_METHOD_WRAPPERS or func_name in SPECIAL_PROPERTY_SETTER_FUNCTIONS:
+        return True
+
+    match = re.fullmatch(r"classes\.([^.]+)\.constructor", context)
+    return bool(match and match.group(1) in SPECIAL_CONSTRUCTOR_WRAPPERS)
+
+
+def eprint(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def vlog(msg: str) -> None:
+    if VERBOSE:
+        print(msg)
+
+
+def velog(msg: str) -> None:
+    if VERBOSE:
+        print(msg, file=sys.stderr)
+
+
+def load_json(path: Path, required: Optional[List[str]] = None) -> Dict[str, Any]:
+    if not path.exists():
+        raise SystemExit(f"[错误] 文件不存在: {path}")
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"[错误] JSON 解析失败: {path}: {exc}") from exc
+
+    if required:
+        for key in required:
+            if key not in data:
+                raise SystemExit(f"[错误] JSON 缺少关键字段 '{key}': {path}")
+    return data
+
+
+def normalize_c_type(type_info: Optional[Dict[str, Any]]) -> str:
+    if not type_info:
+        return "void"
+
+    jt = type_info.get("json_type")
+
+    if jt == "ret_type":
+        return normalize_c_type(type_info.get("type"))
+
+    if jt == "pointer":
+        base = normalize_c_type(type_info.get("type"))
+        quals = " ".join(type_info.get("quals", []))
+        base_part = f"{quals} {base}".strip()
+        return f"{base_part}*"
+
+    if jt == "array":
+        base = normalize_c_type(type_info.get("type"))
+        return f"{base}*"
+
+    if "name" in type_info:
+        quals = " ".join(type_info.get("quals", []))
+        type_name = str(type_info["name"]).strip()
+        return f"{quals} {type_name}".strip()
+
+    return "void"
+
+
+def normalize_type_key(c_type: str) -> str:
+    text = c_type.replace("const", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    text = text.replace(" *", "*").replace("* ", "*")
+    return text
+
+
+def c_type_to_base_name(c_type: str) -> str:
+    base = normalize_type_key(c_type).replace("*", "")
+    if base.endswith("_t"):
+        base = base[:-2]
+    return base.upper()
+
+
+def is_const_pointer_type(c_type: str) -> bool:
+    normalized = normalize_type_key(c_type)
+    return normalized.startswith("const ") and normalized.endswith("*")
+
+
+def get_pointer_pointee_type(c_type: str) -> str:
+    normalized = normalize_type_key(c_type)
+    if not normalized.endswith("*"):
+        return normalized
+    pointee = normalized[:-1].strip()
+    if pointee.startswith("const "):
+        pointee = pointee[len("const "):].strip()
+    return pointee
+
+
+def is_value_pointer_arg(arg: FuncArg) -> bool:
+    return (
+        arg.bridge.js2c_mode == "bridge"
+        and arg.bridge.sni_type is not None
+        and arg.bridge.sni_type.startswith("SNI_V_")
+        and normalize_type_key(arg.c_type).endswith("*")
+    )
+
+
+def should_treat_as_output_only_value_arg(func: ApiFunction, arg: FuncArg) -> bool:
+    if not is_value_pointer_arg(arg):
+        return False
+    if is_const_pointer_type(arg.c_type):
+        return False
+    return "_get_" in func.name
+
+
+def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str]]]:
+    result = {
+        "function": {"whitelist": [], "blacklist": []},
+        "constant": {"whitelist": [], "blacklist": []},
+    }
+
+    scan = api_table.get("scan", {}) if isinstance(api_table.get("scan", {}), dict) else {}
+    for group in ("function", "constant"):
+        group_obj = scan.get(group, {})
+        if not isinstance(group_obj, dict):
+            raise SystemExit(f"[错误] api-table 字段 scan.{group} 必须是对象")
+        for key in ("whitelist", "blacklist"):
+            value = group_obj.get(key, [])
+            if not isinstance(value, list):
+                raise SystemExit(f"[错误] api-table 字段 scan.{group}.{key} 必须是数组")
+            result[group][key] = [str(item).strip() for item in value if str(item).strip()]
+    return result
+
+
+@dataclass
+class ApiClass:
+    name: str
+    c_type: str
+    constructor: Optional[str]
+    base: Optional[str]
+    methods: List["ApiMethodSelector"]
+    static_methods: List["ApiMethodSelector"]
+    constants: List[str]
+
+
+@dataclass
+class ApiProperty:
+    name: str
+    getter: Optional[str]
+    setter: Optional[str]
+
+
+@dataclass
+class ApiMethodArgMatcher:
+    index: int
+    name_pattern: Optional[str]
+    type_pattern: Optional[str]
+
+
+@dataclass
+class ApiMethodSelector:
+    name_pattern: str
+    arg_matchers: List[ApiMethodArgMatcher]
+    raw_text: str
+
+
+def parse_method_selector(
+    item: Any,
+    class_name: str,
+    field_name: str,
+    item_index: int,
+) -> ApiMethodSelector:
+    context = f"classes.{class_name}.{field_name}[{item_index}]"
+
+    if isinstance(item, str):
+        name_pattern = item.strip()
+        if not name_pattern:
+            raise SystemExit(f"[错误] {context} 不能为空字符串")
+        return ApiMethodSelector(name_pattern=name_pattern, arg_matchers=[], raw_text=name_pattern)
+
+    if not isinstance(item, dict):
+        raise SystemExit(f"[错误] {context} 必须是字符串或对象")
+
+    name_pattern = str(item.get("name", item.get("match", item.get("pattern", "*")))).strip()
+    if not name_pattern:
+        name_pattern = "*"
+
+    arg_rules_raw: Any
+    if "arg_match" in item:
+        arg_rules_raw = item.get("arg_match")
+    elif "args" in item:
+        arg_rules_raw = item.get("args")
+    elif "arg" in item:
+        arg_rules_raw = item.get("arg")
+    else:
+        arg_rules_raw = []
+
+    if isinstance(arg_rules_raw, dict):
+        arg_rules = [arg_rules_raw]
+    elif isinstance(arg_rules_raw, list):
+        arg_rules = arg_rules_raw
+    else:
+        raise SystemExit(f"[错误] {context}.arg_match/args/arg 必须是对象或数组")
+
+    parsed_arg_rules: List[ApiMethodArgMatcher] = []
+    for ridx, rule in enumerate(arg_rules):
+        rule_ctx = f"{context}.arg_match[{ridx}]"
+        if not isinstance(rule, dict):
+            raise SystemExit(f"[错误] {rule_ctx} 必须是对象")
+
+        raw_index = None
+        if "index" in rule:
+            raw_index = rule.get("index")
+            try:
+                arg_index = int(raw_index)
+            except (TypeError, ValueError):
+                raise SystemExit(f"[错误] {rule_ctx}.index 必须是整数")
+            if arg_index < 0:
+                raise SystemExit(f"[错误] {rule_ctx}.index 必须 >= 0")
+        else:
+            nth_value = rule.get("nth", rule.get("n", rule.get("position")))
+            if nth_value is None:
+                raise SystemExit(f"[错误] {rule_ctx} 必须提供 index(0-based) 或 nth/n/position(1-based)")
+            try:
+                nth = int(nth_value)
+            except (TypeError, ValueError):
+                raise SystemExit(f"[错误] {rule_ctx}.nth 必须是整数")
+            if nth <= 0:
+                raise SystemExit(f"[错误] {rule_ctx}.nth 必须 >= 1")
+            arg_index = nth - 1
+
+        name_pattern_rule = None
+        if "name" in rule and rule.get("name") is not None:
+            val = str(rule.get("name")).strip()
+            if val:
+                name_pattern_rule = val
+
+        type_pattern_rule = None
+        if "type" in rule and rule.get("type") is not None:
+            val = str(rule.get("type")).strip()
+            if val:
+                type_pattern_rule = normalize_type_key(val)
+
+        if name_pattern_rule is None and type_pattern_rule is None:
+            raise SystemExit(f"[错误] {rule_ctx} 至少要提供 name 或 type")
+
+        parsed_arg_rules.append(
+            ApiMethodArgMatcher(
+                index=arg_index,
+                name_pattern=name_pattern_rule,
+                type_pattern=type_pattern_rule,
+            )
+        )
+
+    raw_text = json.dumps(item, ensure_ascii=False, sort_keys=True)
+    return ApiMethodSelector(name_pattern=name_pattern, arg_matchers=parsed_arg_rules, raw_text=raw_text)
+
+
+def parse_method_selectors(entries: Any, class_name: str, field_name: str) -> List[ApiMethodSelector]:
+    if isinstance(entries, (str, dict)):
+        entries = [entries]
+    elif not isinstance(entries, list):
+        raise SystemExit(
+            f"[错误] classes.{class_name}.{field_name} 必须是数组，或单个字符串/对象"
+        )
+
+    selectors: List[ApiMethodSelector] = []
+    for idx, item in enumerate(entries):
+        selectors.append(parse_method_selector(item, class_name, field_name, idx))
+    return selectors
+
+
+def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
+    classes_raw = api_table.get("classes")
+    if not isinstance(classes_raw, dict) or not classes_raw:
+        raise SystemExit("[错误] api-table 缺少 classes 定义")
+
+    classes: Dict[str, ApiClass] = {}
+    for class_name, cfg in classes_raw.items():
+        if not isinstance(cfg, dict):
+            raise SystemExit(f"[错误] classes.{class_name} 必须是对象")
+
+        c_type = str(cfg.get("c_type", "")).strip()
+        ctor_val = cfg.get("constructor", None)
+        constructor = None if ctor_val is None else str(ctor_val).strip()
+        base_val = cfg.get("base")
+        base = None if base_val is None else str(base_val).strip()
+        methods = cfg.get("methods", [])
+        static_methods = cfg.get("static_methods", [])
+        constants = cfg.get("constants", [])
+
+        if not c_type:
+            raise SystemExit(f"[错误] classes.{class_name}.c_type 不能为空")
+        if constructor == "":
+            constructor = None
+        if not isinstance(constants, list):
+            raise SystemExit(f"[错误] classes.{class_name}.constants 必须为数组")
+
+        methods_norm = parse_method_selectors(methods, class_name, "methods")
+        static_methods_norm = parse_method_selectors(static_methods, class_name, "static_methods")
+        constants_norm = [str(item).strip() for item in constants if str(item).strip()]
+
+        if constructor is None:
+            if methods_norm:
+                raise SystemExit(f"[错误] classes.{class_name} 为静态类(constructor=null)，methods 必须为空")
+            if not static_methods_norm:
+                raise SystemExit(f"[错误] classes.{class_name} 为静态类(constructor=null)，static_methods 不能为空")
+
+        classes[class_name] = ApiClass(
+            name=class_name,
+            c_type=c_type,
+            constructor=constructor,
+            base=base if base else None,
+            methods=methods_norm,
+            static_methods=static_methods_norm,
+            constants=constants_norm,
+        )
+
+    for class_name, cls in classes.items():
+        if cls.base and cls.base not in classes:
+            raise SystemExit(f"[错误] classes.{class_name}.base 指向不存在的类: {cls.base}")
+
+    temp_mark: Set[str] = set()
+    perm_mark: Set[str] = set()
+
+    def visit(name: str) -> None:
+        if name in perm_mark:
+            return
+        if name in temp_mark:
+            raise SystemExit(f"[错误] classes 存在循环继承: {name}")
+
+        temp_mark.add(name)
+        parent = classes[name].base
+        if parent:
+            visit(parent)
+        temp_mark.remove(name)
+        perm_mark.add(name)
+
+    for name in classes.keys():
+        visit(name)
+
+    return classes
+
+
+def is_matched(name: str, patterns: List[str]) -> bool:
+    for pattern in patterns:
+        if fnmatch.fnmatchcase(name, pattern):
+            return True
+    return False
+
+
+def include_by_filter(
+    name: str,
+    whitelist: List[str],
+    blacklist: List[str],
+    stats: Optional[FilterStats] = None,
+) -> bool:
+    if stats is not None:
+        stats.total += 1
+    if blacklist and is_matched(name, blacklist):
+        if stats is not None:
+            stats.blacklisted += 1
+        return False
+    if whitelist and not is_matched(name, whitelist):
+        if stats is not None:
+            stats.whitelist_miss += 1
+        return False
+    if stats is not None:
+        stats.included += 1
+    return True
+
+
+def parse_numeric_constant(value_text: str) -> Optional[Tuple[str, str]]:
+    text = str(value_text).strip()
+    if not text:
+        return None
+
+    # 去掉一层外层括号
+    while text.startswith("(") and text.endswith(")"):
+        inner = text[1:-1].strip()
+        if not inner:
+            break
+        text = inner
+
+    text = text.rstrip("UuLlFf")
+
+    if re.fullmatch(r"[-+]?0x[0-9a-fA-F]+", text):
+        return ("int", str(int(text, 16)))
+    if re.fullmatch(r"[-+]?\d+", text):
+        return ("int", str(int(text, 10)))
+    if re.fullmatch(r"[-+]?\d+\.\d*([eE][-+]?\d+)?", text) or re.fullmatch(r"[-+]?\d+[eE][-+]?\d+", text):
+        return ("float", text)
+    return None
+
+
+def parse_string_constant(value_text: str) -> Optional[str]:
+    text = str(value_text).strip()
+    if not text:
+        return None
+
+    # Accept C string literals even when followed by comments, e.g. "..." /* ... */
+    match = re.match(r'^"([^"\\]|\\.)*"', text)
+    if match:
+        return match.group(0)
+    return None
+
+
+def collect_constants(
+    lvgl_data: Dict[str, Any],
+    filters: Dict[str, List[str]],
+    stats: FilterStats,
+) -> List[ApiConstant]:
+    constants: Dict[str, ApiConstant] = {}
+
+    whitelist = filters.get("whitelist", [])
+    blacklist = filters.get("blacklist", [])
+
+    for macro in lvgl_data.get("macros", []):
+        name = str(macro.get("name", "")).strip()
+        if not name:
+            continue
+        if macro.get("params"):
+            continue
+        if not include_by_filter(name, whitelist, blacklist, stats):
+            continue
+
+        init = macro.get("initializer")
+        if init is None:
+            continue
+
+        value_text = str(init).strip()
+        number = parse_numeric_constant(value_text)
+        if number:
+            kind, val = number
+            constants[name] = ApiConstant(name=name, kind=kind, value=val)
+            continue
+
+        string_value = parse_string_constant(value_text)
+        if string_value:
+            constants[name] = ApiConstant(name=name, kind="string", value=string_value)
+
+    for enum in lvgl_data.get("enums", []):
+        members = enum.get("members", [])
+        for member in members:
+            name = str(member.get("name", "")).strip()
+            if not name:
+                continue
+            if not include_by_filter(name, whitelist, blacklist, stats):
+                continue
+
+            value_text = member.get("value")
+            number = parse_numeric_constant(str(value_text))
+            if number:
+                kind, val = number
+                constants[name] = ApiConstant(name=name, kind=kind, value=val)
+
+    return [constants[name] for name in sorted(constants.keys())]
+
+
+def build_root_constants_with_aliases(constants: List[ApiConstant], blacklist: List[str]) -> List[ApiConstant]:
+    result: Dict[str, ApiConstant] = {}
+
+    for item in constants:
+        export_name = item.name
+        if item.name.startswith("LV_") and len(item.name) > 3:
+            export_name = item.name[3:]
+
+        if blacklist and (is_matched(item.name, blacklist) or is_matched(export_name, blacklist)):
+            continue
+
+        result[export_name] = ApiConstant(name=export_name, kind=item.kind, value=item.value)
+
+    return [result[name] for name in sorted(result.keys())]
+
+
+def build_constant_index(lvgl_data: Dict[str, Any]) -> Dict[str, ApiConstant]:
+    constants: Dict[str, ApiConstant] = {}
+
+    for macro in lvgl_data.get("macros", []):
+        name = str(macro.get("name", "")).strip()
+        if not name or macro.get("params"):
+            continue
+        init = macro.get("initializer")
+        if init is None:
+            continue
+
+        value_text = str(init).strip()
+        number = parse_numeric_constant(value_text)
+        if number:
+            kind, val = number
+            constants[name] = ApiConstant(name=name, kind=kind, value=val)
+            continue
+
+        string_value = parse_string_constant(value_text)
+        if string_value:
+            constants[name] = ApiConstant(name=name, kind="string", value=string_value)
+
+    for enum in lvgl_data.get("enums", []):
+        for member in enum.get("members", []):
+            name = str(member.get("name", "")).strip()
+            if not name:
+                continue
+            value_text = member.get("value")
+            number = parse_numeric_constant(str(value_text))
+            if number:
+                kind, val = number
+                constants[name] = ApiConstant(name=name, kind=kind, value=val)
+
+    return constants
+
+
+def topo_sort_classes(classes: Dict[str, ApiClass]) -> List[ApiClass]:
+    ordered: List[ApiClass] = []
+    temp_mark: Set[str] = set()
+    perm_mark: Set[str] = set()
+
+    def visit(name: str) -> None:
+        if name in perm_mark:
+            return
+        if name in temp_mark:
+            raise SystemExit(f"[错误] classes 存在循环继承: {name}")
+        temp_mark.add(name)
+        base = classes[name].base
+        if base:
+            visit(base)
+        temp_mark.remove(name)
+        perm_mark.add(name)
+        ordered.append(classes[name])
+
+    for name in classes.keys():
+        visit(name)
+
+    return ordered
+
+
+def build_function_index(lvgl_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    result: Dict[str, Dict[str, Any]] = {}
+    for item in lvgl_data.get("functions", []):
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        result[name] = item
+    return result
+
+
+def require_function(function_index: Dict[str, Dict[str, Any]], name: str, context: str) -> Dict[str, Any]:
+    if name not in function_index:
+        raise SystemExit(f"[错误] 找不到函数 {name} ({context})")
+    return function_index[name]
+
+
+def require_class_function(
+    function_index: Dict[str, Dict[str, Any]],
+    class_name: str,
+    name: str,
+    context: str,
+) -> Dict[str, Any]:
+    normalized = str(name).strip()
+    candidates: List[str] = [normalized]
+    if normalized and not normalized.startswith("lv_"):
+        candidates.insert(0, f"lv_{class_name}_{normalized}")
+        candidates.append(f"lv_{normalized}")
+
+    seen: Set[str] = set()
+    dedup_candidates: List[str] = []
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            dedup_candidates.append(candidate)
+            seen.add(candidate)
+
+    for candidate in dedup_candidates:
+        if candidate in function_index:
+            return function_index[candidate]
+
+    raise SystemExit(
+        f"[错误] 找不到函数 {name} ({context})，已尝试: {', '.join(dedup_candidates)}"
+    )
+
+
+def build_selector_name_patterns(class_name: str, name_pattern: str) -> List[str]:
+    pattern = str(name_pattern).strip() or "*"
+    if pattern.startswith("lv_"):
+        return [pattern]
+
+    candidates = [f"lv_{class_name}_{pattern}", f"lv_{pattern}", pattern]
+    result: List[str] = []
+    seen: Set[str] = set()
+    for item in candidates:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
+def has_wildcard_pattern(text: str) -> bool:
+    return any(ch in text for ch in "*?[")
+
+
+def function_name_matches_selector(class_name: str, selector: ApiMethodSelector, func_name: str) -> bool:
+    patterns = build_selector_name_patterns(class_name, selector.name_pattern)
+    for pattern in patterns:
+        if has_wildcard_pattern(pattern):
+            if fnmatch.fnmatchcase(func_name, pattern):
+                return True
+        else:
+            if func_name == pattern:
+                return True
+    return False
+
+
+def function_args_match_selector(selector: ApiMethodSelector, func_item: Dict[str, Any]) -> bool:
+    if not selector.arg_matchers:
+        return True
+
+    args = normalize_args(func_item.get("args", []))
+    for matcher in selector.arg_matchers:
+        if matcher.index >= len(args):
+            return False
+
+        arg = args[matcher.index]
+        arg_name = str(arg.get("name") or "").strip()
+        arg_type = normalize_type_key(normalize_c_type(arg.get("type")))
+
+        if matcher.name_pattern is not None and not fnmatch.fnmatchcase(arg_name, matcher.name_pattern):
+            return False
+
+        if matcher.type_pattern is not None and not fnmatch.fnmatchcase(arg_type, matcher.type_pattern):
+            return False
+
+    return True
+
+
+def resolve_class_selector_items(
+    function_index: Dict[str, Dict[str, Any]],
+    class_name: str,
+    selector: ApiMethodSelector,
+    context: str,
+) -> List[Dict[str, Any]]:
+    matches: List[Dict[str, Any]] = []
+    for func_name, item in function_index.items():
+        if not function_name_matches_selector(class_name, selector, func_name):
+            continue
+        if not function_args_match_selector(selector, item):
+            continue
+        matches.append(item)
+
+    if not matches:
+        patterns = build_selector_name_patterns(class_name, selector.name_pattern)
+        raise SystemExit(
+            f"[错误] 找不到函数匹配 {context}: {selector.raw_text}，已尝试名称模式: {', '.join(patterns)}"
+        )
+
+    return matches
+
+
+def sanitize_ident(text: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_]", "_", text)
+
+
+def snake_to_camel(text: str) -> str:
+    parts = text.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
+
+
+def discover_class_properties(
+    cls: ApiClass,
+    function_index: Dict[str, Dict[str, Any]],
+    filters: Dict[str, Dict[str, List[str]]],
+) -> List[ApiProperty]:
+    if cls.constructor is None:
+        return []
+
+    func_filter = filters.get("function", {})
+    blacklist = func_filter.get("blacklist", [])
+
+    get_prefix = f"lv_{cls.name}_get_"
+    set_prefix = f"lv_{cls.name}_set_"
+    props: Dict[str, ApiProperty] = {}
+
+    for func_name in sorted(function_index.keys()):
+        if blacklist and is_matched(func_name, blacklist):
+            continue
+
+        if func_name.startswith(get_prefix):
+            prop_name = func_name[len(get_prefix):]
+            if prop_name:
+                existing = props.get(prop_name)
+                if existing:
+                    existing.getter = func_name
+                else:
+                    props[prop_name] = ApiProperty(name=prop_name, getter=func_name, setter=None)
+            continue
+
+        if func_name.startswith(set_prefix):
+            prop_name = func_name[len(set_prefix):]
+            if prop_name:
+                existing = props.get(prop_name)
+                if existing:
+                    existing.setter = func_name
+                else:
+                    props[prop_name] = ApiProperty(name=prop_name, getter=None, setter=func_name)
+
+    return [props[name] for name in sorted(props.keys())]
+
+
+def build_api_function(
+    item: Dict[str, Any],
+    lv_type_entries: Dict[str, str],
+    pending_updates: Dict[str, str],
+    context: str,
+    function_blacklist: Optional[List[str]] = None,
+) -> ApiFunction:
+    name = str(item.get("name", "")).strip()
+    if not name:
+        raise SystemExit(f"[错误] {context} 缺少函数名")
+
+    if function_blacklist and is_matched(name, function_blacklist):
+        raise SkipFunctionError(name, f"函数命中 scan.function.blacklist: {name}")
+
+    manual_signature = should_skip_manual_signature_bridges(name, context)
+    ret_type = normalize_c_type(item.get("type"))
+    ret_bridge = build_bridge_from_type(ret_type, lv_type_entries, pending_updates, True, f"{context} 返回值", name)
+
+    args_raw = normalize_args(item.get("args", []))
+    args: List[FuncArg] = []
+    for idx, arg in enumerate(args_raw):
+        arg_name = str(arg.get("name") or f"arg{idx}")
+        arg_type = normalize_c_type(arg.get("type"))
+        if arg_type in {"ellipsis", "..."} or arg_name == "...":
+            raise SkipFunctionError(name, f"暂不支持变参函数: {name}")
+
+        if manual_signature:
+            arg_bridge = TypeBridge(arg_type, "", "none", None, None, "none", None)
+        else:
+            arg_bridge = build_bridge_from_type(
+                arg_type,
+                lv_type_entries,
+                pending_updates,
+                True,
+                f"{context} 参数 #{idx} ({arg_name})",
+                name,
+            )
+        args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
+
+    return ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args)
+
+
+def render_arg_conversion(
+    lines: List[str],
+    arg_expr: str,
+    arg: FuncArg,
+    c_var_name: str,
+    allow_null: bool = False,
+    output_only_value_arg: bool = False,
+) -> ArgRenderResult:
+    # Nullable pointer handle types (SNI_H_* or SNI_T_PTR) accept JS null → C NULL
+    is_nullable_ptr = (
+        allow_null
+        and arg.bridge.js2c_mode == "bridge"
+        and arg.bridge.sni_type is not None
+        and (arg.bridge.sni_type.startswith("SNI_H_") or arg.bridge.sni_type == "SNI_T_PTR")
+    )
+    if is_nullable_ptr:
+        post_lines: List[str] = []
+        lines.append(f"    {arg.c_type} {c_var_name};")
+        lines.append(f"    if (jerry_value_is_null({arg_expr}))")
+        lines.append("    {")
+        lines.append(f"        {c_var_name} = NULL;")
+        lines.append("    }")
+        lines.append(f"    else if (jerry_value_is_object({arg_expr}))")
+        lines.append("    {")
+        lines.append(f"        if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{c_var_name}))")
+        lines.append("        {")
+        lines.append('            return sni_api_throw_error("Failed to convert argument");')
+        lines.append("        }")
+        lines.append("    }")
+        lines.append("    else")
+        lines.append("    {")
+        lines.append('        return sni_api_throw_error("Invalid argument type");')
+        lines.append("    }")
+        return ArgRenderResult(call_expr=c_var_name, post_lines=post_lines)
+
+    if is_value_pointer_arg(arg):
+        if not output_only_value_arg:
+            check = arg.bridge.js_check
+            if check:
+                lines.append(f"    if (!{check}({arg_expr}))")
+                lines.append("    {")
+                lines.append('        return sni_api_throw_error("Invalid argument type");')
+                lines.append("    }")
+
+        value_var = f"{c_var_name}_value"
+        value_c_type = get_pointer_pointee_type(arg.c_type)
+        if output_only_value_arg:
+            lines.append(f"    {value_c_type} {value_var} = {{0}};")
+        else:
+            lines.append(f"    {value_c_type} {value_var};")
+            lines.append(f"    if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{value_var}))")
+            lines.append("    {")
+            lines.append('        return sni_api_throw_error("Failed to convert argument");')
+            lines.append("    }")
+
+        post_lines: List[str] = []
+        if not is_const_pointer_type(arg.c_type):
+            post_lines.append(f"    if (!sni_tb_c2js_set_object(&{value_var}, {arg.bridge.sni_type}, {arg_expr}))")
+            post_lines.append("    {")
+            post_lines.append('        return sni_api_throw_error("Failed to convert return argument");')
+            post_lines.append("    }")
+
+        return ArgRenderResult(call_expr=f"&{value_var}", post_lines=post_lines)
+
+    check = arg.bridge.js_check
+    if check:
+        lines.append(f"    if (!{check}({arg_expr}))")
+        lines.append("    {")
+        lines.append('        return sni_api_throw_error("Invalid argument type");')
+        lines.append("    }")
+
+    lines.append(f"    {arg.c_type} {c_var_name};")
+
+    if arg.bridge.js2c_mode == "macro" and arg.bridge.js2c_expr:
+        lines.append(f"    {c_var_name} = {arg.bridge.js2c_expr}({arg_expr});")
+    elif arg.bridge.js2c_mode == "string_fn" and arg.bridge.js2c_expr:
+        lines.append(f"    {c_var_name} = {arg.bridge.js2c_expr}({arg_expr});")
+    elif arg.bridge.js2c_mode == "bridge" and arg.bridge.sni_type:
+        lines.append(f"    if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{c_var_name}))")
+        lines.append("    {")
+        lines.append('        return sni_api_throw_error("Failed to convert argument");')
+        lines.append("    }")
+    else:
+        lines.append('    return sni_api_throw_error("Unsupported argument conversion");')
+
+    return ArgRenderResult(call_expr=c_var_name, post_lines=[])
+
+
+def render_return_conversion(lines: List[str], func: ApiFunction, result_var: str) -> None:
+    if func.return_bridge.c2js_mode == "void":
+        lines.append("    return jerry_undefined();")
+        return
+
+    if func.return_bridge.c2js_mode == "macro" and func.return_bridge.c2js_expr:
+        lines.append(f"    return {func.return_bridge.c2js_expr}({result_var});")
+        return
+
+    if func.return_bridge.c2js_mode == "string" and func.return_bridge.c2js_expr:
+        lines.append(f"    return {func.return_bridge.c2js_expr}({result_var});")
+        return
+
+    if func.return_bridge.c2js_mode == "bridge" and func.return_bridge.sni_type:
+        lines.append(f"    return sni_tb_c2js(&{result_var}, {func.return_bridge.sni_type});")
+        return
+
+    lines.append('    return sni_api_throw_error("Unsupported return conversion");')
+
+
+def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
+    wrapper_name = f"sni_api_ctor_{sanitize_ident(cls.name)}"
+    lines: List[str] = []
+
+    lines.append(f"jerry_value_t {wrapper_name}(const jerry_call_info_t *call_info_p,")
+    lines.append("                                const jerry_value_t args_p[],")
+    lines.append("                                const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append("    if (jerry_value_is_undefined(call_info_p->new_target))")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Constructor must be called with new");')
+    lines.append("    }")
+    lines.append("")
+    lines.append(f"    if (args_count != {len(ctor_func.args)})")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    call_args: List[str] = []
+    for idx, arg in enumerate(ctor_func.args):
+        c_var = f"arg_{arg.name}"
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, allow_null=True)
+        call_args.append(render_result.call_expr)
+        lines.append("")
+
+    call_text = ", ".join(call_args)
+    if ctor_func.return_bridge.sni_type is None or ctor_func.return_bridge.c2js_mode != "bridge":
+        lines.append('    return sni_api_throw_error("Constructor return type must be object handle/value");')
+        lines.append("}")
+        return "\n".join(lines)
+
+    lines.append(f"    {ctor_func.return_type} native_obj = {ctor_func.name}({call_text});" if call_text else f"    {ctor_func.return_type} native_obj = {ctor_func.name}();")
+    lines.append(f"    if (!sni_tb_c2js_set_object(&native_obj, {ctor_func.return_bridge.sni_type}, call_info_p->this_value))")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Failed to bind native object");')
+    lines.append("    }")
+    lines.append("    return jerry_undefined();")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def get_special_constructor_wrapper_name(cls: "ApiClass") -> "Optional[str]":
+    return SPECIAL_CONSTRUCTOR_WRAPPERS.get(cls.name)
+
+
+def get_special_method_wrapper_name(func: ApiFunction) -> Optional[str]:
+    return SPECIAL_METHOD_WRAPPERS.get(func.name)
+
+
+def get_special_property_setter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
+    return SPECIAL_PROPERTY_SETTER_WRAPPERS.get((cls.name, prop.name, func.name))
+
+
+def get_special_property_getter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
+    return SPECIAL_PROPERTY_GETTER_WRAPPERS.get((cls.name, prop.name, func.name))
+
+
+def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
+    wrapper_name = f"sni_api_{func.name}"
+    lines: List[str] = []
+
+    if not func.args:
+        raise SystemExit(f"[错误] 实例方法 {func.name} 缺少 this 参数")
+
+    this_arg = func.args[0]
+    js_arg_count = len(func.args) - 1
+
+    lines.append(f"jerry_value_t {wrapper_name}(const jerry_call_info_t *call_info_p,")
+    lines.append("                                const jerry_value_t args_p[],")
+    lines.append("                                const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append(f"    if (args_count != {js_arg_count})")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    lines.append("")
+
+    call_args: List[str] = [self_render.call_expr]
+    post_call_lines: List[str] = []
+    for idx, arg in enumerate(func.args[1:]):
+        c_var = f"arg_{arg.name}"
+        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
+        call_args.append(render_result.call_expr)
+        post_call_lines.extend(render_result.post_lines)
+        lines.append("")
+
+    call_text = ", ".join(call_args)
+    if func.return_bridge.c2js_mode == "void":
+        lines.append(f"    {func.name}({call_text});")
+        if post_call_lines:
+            lines.extend(post_call_lines)
+        lines.append("    return jerry_undefined();")
+        lines.append("}")
+        return "\n".join(lines)
+
+    lines.append(f"    {func.return_type} result = {func.name}({call_text});")
+    if post_call_lines:
+        lines.extend(post_call_lines)
+    render_return_conversion(lines, func, "result")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_static_wrapper(func: ApiFunction) -> str:
+    wrapper_name = f"sni_api_{func.name}"
+    lines: List[str] = []
+
+    lines.append(f"jerry_value_t {wrapper_name}(const jerry_call_info_t *call_info_p,")
+    lines.append("                                const jerry_value_t args_p[],")
+    lines.append("                                const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append("    (void)call_info_p;")
+    lines.append("")
+    lines.append(f"    if (args_count != {len(func.args)})")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    call_args: List[str] = []
+    post_call_lines: List[str] = []
+    for idx, arg in enumerate(func.args):
+        c_var = f"arg_{arg.name}"
+        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
+        call_args.append(render_result.call_expr)
+        post_call_lines.extend(render_result.post_lines)
+        lines.append("")
+
+    call_text = ", ".join(call_args)
+    if func.return_bridge.c2js_mode == "void":
+        lines.append(f"    {func.name}({call_text});" if call_text else f"    {func.name}();")
+        if post_call_lines:
+            lines.extend(post_call_lines)
+        lines.append("    return jerry_undefined();")
+        lines.append("}")
+        return "\n".join(lines)
+
+    lines.append(f"    {func.return_type} result = {func.name}({call_text});" if call_text else f"    {func.return_type} result = {func.name}();")
+    if post_call_lines:
+        lines.extend(post_call_lines)
+    render_return_conversion(lines, func, "result")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
+    wrapper_name = f"sni_api_prop_get_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
+    lines: List[str] = []
+
+    if len(func.args) != 1:
+        raise SystemExit(f"[错误] 属性 getter {func.name} 必须只有 this 参数")
+
+    this_arg = func.args[0]
+
+    lines.append(f"jerry_value_t {wrapper_name}(const jerry_call_info_t *call_info_p,")
+    lines.append("                                const jerry_value_t args_p[],")
+    lines.append("                                const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append("    (void)args_p;")
+    lines.append("    if (args_count != 0)")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    lines.append("")
+
+    if func.return_bridge.c2js_mode == "void":
+        raise SystemExit(f"[错误] 属性 getter {func.name} 不能返回 void")
+
+    lines.append(f"    {func.return_type} result = {func.name}({self_render.call_expr});")
+    render_return_conversion(lines, func, "result")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
+    wrapper_name = f"sni_api_prop_set_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
+    lines: List[str] = []
+
+    if len(func.args) != 2:
+        raise SystemExit(f"[错误] 属性 setter {func.name} 必须是 this + value 两个参数")
+
+    this_arg = func.args[0]
+    value_arg = func.args[1]
+
+    lines.append(f"jerry_value_t {wrapper_name}(const jerry_call_info_t *call_info_p,")
+    lines.append("                                const jerry_value_t args_p[],")
+    lines.append("                                const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append("    if (args_count != 1)")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    lines.append("")
+    value_render = render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
+    lines.append("")
+    lines.append(f"    {func.name}({self_render.call_expr}, {value_render.call_expr});")
+    if value_render.post_lines:
+        lines.extend(value_render.post_lines)
+    lines.append("    return jerry_undefined();")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_method_array(name: str, items: List[Tuple[str, str]]) -> str:
+    lines = [f"const sni_method_desc_t {name}[] = {{"]
+    for js_name, handler in items:
+        lines.append(f"    {{.name = \"{js_name}\", .handler = {handler}}},")
+    lines.append("    {.name = NULL, .handler = NULL},")
+    lines.append("};")
+    return "\n".join(lines)
+
+
+def render_property_array(name: str, items: List[Tuple[str, Optional[str], Optional[str]]]) -> str:
+    lines = [f"const sni_property_desc_t {name}[] = {{"]
+    for js_name, getter, setter in items:
+        getter_expr = getter if getter else "NULL"
+        setter_expr = setter if setter else "NULL"
+        lines.append(f"    {{.name = \"{js_name}\", .getter = {getter_expr}, .setter = {setter_expr}}},")
+    lines.append("    {.name = NULL, .getter = NULL, .setter = NULL},")
+    lines.append("};")
+    return "\n".join(lines)
+
+
+def render_constant_array(name: str, items: List[ApiConstant]) -> str:
+    lines = [f"const sni_constant_desc_t {name}[] = {{"]
+    for item in items:
+        if item.kind == "int":
+            lines.append(
+                "    {"
+                f".name = \"{item.name}\", .type = SNI_CONST_INT, .value.i = {item.value}"
+                "},"
+            )
+        elif item.kind == "float":
+            lines.append(
+                "    {"
+                f".name = \"{item.name}\", .type = SNI_CONST_FLOAT, .value.f = {item.value}"
+                "},"
+            )
+        elif item.kind == "string":
+            lines.append(
+                "    {"
+                f".name = \"{item.name}\", .type = SNI_CONST_STRING, .value.s = {item.value}"
+                "},"
+            )
+    lines.append("    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},")
+    lines.append("};")
+    return "\n".join(lines)
+
+
+def render_class_block(
+    classes: List[ApiClass],
+    constructor_wrapper_names: Dict[str, str],
+    method_array_names: Dict[str, str],
+    property_array_names: Dict[str, str],
+    static_method_array_names: Dict[str, str],
+    constant_array_names: Dict[str, str],
+    root_constant_array_name: str,
+) -> str:
+    lines: List[str] = []
+
+    for cls in classes:
+        class_var = f"lv_class_desc_{sanitize_ident(cls.name)}"
+        base_expr = "NULL"
+        if cls.base:
+            base_expr = f"&lv_class_desc_{sanitize_ident(cls.base)}"
+
+        lines.append(f"const sni_class_desc_t {class_var} = {{")
+        lines.append(f"    .name = \"{cls.name}\",")
+        is_static = cls.constructor is None
+        lines.append(f"    .constructor = {constructor_wrapper_names[cls.name]},")
+        lines.append(f"    .base_class = {'NULL' if is_static else base_expr},")
+        methods_expr = "NULL" if is_static else method_array_names[cls.name]
+        properties_expr = "NULL" if is_static else property_array_names[cls.name]
+        lines.append(f"    .methods = {methods_expr},")
+        lines.append(f"    .properties = {properties_expr},")
+        lines.append(f"    .static_methods = {static_method_array_names[cls.name]},")
+        lines.append(f"    .constants = {constant_array_names[cls.name]},")
+        lines.append("};")
+        lines.append("")
+
+    lines.append("const sni_class_desc_t *const lv_api_classes[] = {")
+    for cls in classes:
+        lines.append(f"    &lv_class_desc_{sanitize_ident(cls.name)},")
+    lines.append("    NULL,")
+    lines.append("};")
+
+    init_mount = """
+void sni_api_lv_init(void)
+{
+    sni_cb_runtime_init();
+    lv_api_obj = sni_api_build(lv_api_classes);
+    if (!jerry_value_is_object(lv_api_obj))
+    {
+        EOS_LOG_E("Failed to build LV API object");
+    }
+    if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
+    {
+        EOS_LOG_E("Failed to register LV root constants");
+    }
+}
+
+void sni_api_lv_mount(jerry_value_t realm)
+{
+    bool result = sni_api_mount(realm, lv_api_obj, LV_API_NAME);
+    if (!result)
+    {
+        EOS_LOG_E("Failed to mount LVGL API");
+    }
+}
+""".strip("\n")
+
+    lines.append("")
+    lines.append(init_mount)
+
+    return "\n".join(lines)
+
+
+def make_default_type_map() -> Dict[str, str]:
+    return {
+        "bool": "SNI_T_BOOL",
+        "char*": "SNI_T_STRING",
+        "char**": "SNI_T_PTR",
+        "char const*": "SNI_T_STRING",
+        "char const**": "SNI_T_PTR",
+        "const char*": "SNI_T_STRING",
+        "const char**": "SNI_T_PTR",
+        "double": "SNI_T_DOUBLE",
+        "float": "SNI_T_FLOAT",
+        "int": "SNI_T_INT32",
+        "int16_t": "SNI_T_INT32",
+        "int32_t": "SNI_T_INT32",
+        "int64_t": "SNI_T_INT32",
+        "int8_t": "SNI_T_INT32",
+        "long": "SNI_T_INT32",
+        "short": "SNI_T_INT32",
+        "size_t": "SNI_T_UINT32",
+        "uint16_t": "SNI_T_UINT32",
+        "uint32_t": "SNI_T_UINT32",
+        "uint64_t": "SNI_T_UINT32",
+        "uint8_t": "SNI_T_UINT32",
+        "unsigned": "SNI_T_UINT32",
+        "unsigned int": "SNI_T_UINT32",
+        "unsigned long": "SNI_T_UINT32",
+        "void*": "SNI_T_PTR",
+    }
+
+
+def load_type_entries(lv_types_data: Dict[str, Any]) -> Dict[str, str]:
+    entries = lv_types_data.get("types")
+    if not isinstance(entries, list):
+        raise SystemExit("[错误] lv-types JSON 缺少 'types' 数组")
+
+    result: Dict[str, str] = {}
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        object_type = item.get("object_type")
+        if object_type is None:
+            result[name] = ""
+        else:
+            result[name] = str(object_type).strip()
+    return result
+
+
+def prompt_object_type(type_name: str, context: str, func_name: Optional[str] = None) -> str:
+    while True:
+        print(f"\n[输入] 类型未定义: {type_name}")
+        print(f"[位置] {context}")
+        if func_name:
+            print(f"[函数] {func_name}")
+        print("[选项] 1) handle_object")
+        print("[选项] 2) value_object")
+        print("[选项] 3) primitive(<type>) 例如 primitive(int)")
+        print("[选项] 4) blacklist 当前函数并跳过")
+        print("[选项] 5) skip 仅跳过当前函数(不加入黑名单)")
+        value = input("请输入选项编号或直接输入 object_type: ").strip()
+
+        if value == "1" or value == "handle_object":
+            return "handle_object"
+        if value == "2" or value == "value_object":
+            return "value_object"
+        if value == "4" or value.lower() in {"blacklist", "b"}:
+            return SKIP_BLACKLIST_FUNCTION
+        if value == "5" or value.lower() in {"skip", "s"}:
+            return SKIP_ONCE_FUNCTION
+        if value == "3":
+            typed = input("请输入 primitive(<type>)：").strip()
+            if re.fullmatch(r"primitive\([^()]+\)", typed):
+                return typed
+            print("[提示] primitive 输入格式错误，请重试。")
+            continue
+        if re.fullmatch(r"primitive\([^()]+\)", value):
+            return value
+        print("[提示] 非法输入，请重试。")
+
+
+def update_lv_types_output(output_path: Path, updates: Dict[str, str]) -> None:
+    if not updates:
+        return
+
+    if output_path.exists():
+        try:
+            data = json.loads(output_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"[错误] 无法解析 {output_path}: {exc}") from exc
+    else:
+        data = {"types": []}
+
+    if "types" not in data or not isinstance(data["types"], list):
+        data["types"] = []
+
+    index: Dict[str, Dict[str, Any]] = {}
+    for item in data["types"]:
+        if isinstance(item, dict) and item.get("name"):
+            index[str(item["name"])]=item
+
+    for name, object_type in updates.items():
+        if name in index:
+            index[name]["object_type"] = object_type
+        else:
+            data["types"].append({"name": name, "object_type": object_type})
+
+    data["types"] = sorted(
+        [item for item in data["types"] if isinstance(item, dict) and item.get("name")],
+        key=lambda x: str(x["name"]),
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def add_function_to_blacklist(
+    func_name: str,
+    runtime_blacklist: List[str],
+) -> None:
+    if func_name not in runtime_blacklist:
+        runtime_blacklist.append(func_name)
+
+
+def handle_skip_exception(exc: SkipFunctionError, runtime_blacklist: List[str]) -> None:
+    if exc.add_to_blacklist:
+        add_function_to_blacklist(exc.func_name, runtime_blacklist)
+
+
+def build_bridge_from_type(
+    c_type: str,
+    lv_type_entries: Dict[str, str],
+    pending_updates: Dict[str, str],
+    allow_prompt: bool,
+    context: str,
+    func_name: str,
+) -> TypeBridge:
+    normalized = normalize_type_key(c_type)
+    base_name = normalized.replace("*", "")
+
+    if normalized == "void":
+        return TypeBridge(c_type, "", "none", None, None, "void", None)
+
+    default_map = make_default_type_map()
+    if normalized in default_map:
+        sni_type = default_map[normalized]
+
+        if sni_type == "SNI_T_STRING":
+            return TypeBridge(c_type, "jerry_value_is_string", "string_fn", "sni_tb_js2c_string", sni_type, "string", "sni_tb_c2js_string")
+        if sni_type == "SNI_T_BOOL":
+            return TypeBridge(c_type, "jerry_value_is_boolean", "macro", "sni_tb_js2c_boolean", sni_type, "macro", "sni_tb_c2js_boolean")
+        if sni_type in {"SNI_T_DOUBLE", "SNI_T_FLOAT"}:
+            return TypeBridge(c_type, "jerry_value_is_number", "bridge", None, sni_type, "bridge", None)
+        if sni_type == "SNI_T_INT32":
+            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", sni_type, "bridge", None)
+        if sni_type == "SNI_T_UINT32":
+            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", sni_type, "bridge", None)
+        if sni_type == "SNI_T_PTR":
+            return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, sni_type, "bridge", None)
+
+    # 先尝试用基础类型名映射，例如 typedef 的 int
+    if normalized.endswith("_t") and normalized in lv_type_entries:
+        object_type = lv_type_entries[normalized]
+    else:
+        object_type = lv_type_entries.get(base_name, lv_type_entries.get(normalized, ""))
+
+    if object_type == "" and allow_prompt:
+        prompt_key = base_name if base_name in lv_type_entries else normalized
+        object_type = prompt_object_type(prompt_key, context, func_name)
+        if object_type == SKIP_BLACKLIST_FUNCTION:
+            raise SkipFunctionError(func_name, f"用户选择将函数加入黑名单: {context}", add_to_blacklist=True)
+        if object_type == SKIP_ONCE_FUNCTION:
+            raise SkipFunctionError(func_name, f"用户选择仅跳过当前函数: {context}", add_to_blacklist=False)
+        lv_type_entries[prompt_key] = object_type
+        pending_updates[prompt_key] = object_type
+
+    if object_type.startswith("primitive(") and object_type.endswith(")"):
+        primitive_name = object_type[len("primitive("):-1].strip()
+        if not primitive_name:
+            raise SystemExit(f"[错误] 类型 '{normalized}' 的 object_type 无效: {object_type}")
+        primitive_bridge = build_bridge_from_type(
+            primitive_name,
+            lv_type_entries,
+            pending_updates,
+            False,
+            context,
+            func_name,
+        )
+        return TypeBridge(c_type, primitive_bridge.js_check, primitive_bridge.js2c_mode, primitive_bridge.js2c_expr, primitive_bridge.sni_type, primitive_bridge.c2js_mode, primitive_bridge.c2js_expr)
+
+    # 支持 lv_types.json 中将 typedef 直接标记为基础数值类型（如 float/double）
+    if object_type in default_map:
+        primitive_bridge = build_bridge_from_type(
+            object_type,
+            lv_type_entries,
+            pending_updates,
+            False,
+            context,
+            func_name,
+        )
+        return TypeBridge(c_type, primitive_bridge.js_check, primitive_bridge.js2c_mode, primitive_bridge.js2c_expr, primitive_bridge.sni_type, primitive_bridge.c2js_mode, primitive_bridge.c2js_expr)
+
+    if object_type == "int":
+        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", "SNI_T_INT32", "bridge", None)
+
+    if object_type == "uint":
+        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", "SNI_T_UINT32", "bridge", None)
+
+    if object_type == "handle_object":
+        return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_H_{c_type_to_base_name(normalized)}", "bridge", None)
+
+    if object_type == "value_object":
+        js_check = ""
+        if c_type_to_base_name(normalized) != "LV_COLOR":
+            js_check = "jerry_value_is_object"
+        return TypeBridge(c_type, js_check, "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
+
+    if object_type:
+        raise SystemExit(f"[错误] 类型 '{normalized}' 的 object_type 无效: {object_type}")
+
+    # 无 object_type 但为指针时，按 handle 兜底
+    if normalized.endswith("*") and normalized.startswith("lv_"):
+        return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_H_{c_type_to_base_name(normalized)}", "bridge", None)
+
+    # 无 object_type 的 lv_ 非指针按 value 兜底
+    if normalized.startswith("lv_"):
+        return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
+
+    raise SystemExit(f"[错误] 无法映射类型: {c_type}")
+
+
+def normalize_args(raw_args: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    cleaned: List[Dict[str, Any]] = []
+    for item in raw_args:
+        arg_type = normalize_c_type(item.get("type"))
+        arg_name = item.get("name")
+        if arg_type == "void" and (arg_name is None or str(arg_name).strip() == ""):
+            continue
+        cleaned.append(item)
+    return cleaned
+
+
+def collect_functions(
+    lvgl_data: Dict[str, Any],
+    filters: Dict[str, List[str]],
+    lv_type_entries: Dict[str, str],
+    pending_updates: Dict[str, str],
+    stats: FilterStats,
+) -> List[ApiFunction]:
+    result: List[ApiFunction] = []
+
+    whitelist = filters.get("whitelist", [])
+    blacklist = filters.get("blacklist", [])
+
+    for item in lvgl_data.get("functions", []):
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        if not include_by_filter(name, whitelist, blacklist, stats):
+            continue
+
+        try:
+            ret_type = normalize_c_type(item.get("type"))
+            ret_bridge = build_bridge_from_type(
+                ret_type,
+                lv_type_entries,
+                pending_updates,
+                True,
+                f"函数 {name} 的返回值",
+                name,
+            )
+
+            args_raw = normalize_args(item.get("args", []))
+            args: List[FuncArg] = []
+            for idx, arg in enumerate(args_raw):
+                arg_name = str(arg.get("name") or f"arg{idx}")
+                arg_type = normalize_c_type(arg.get("type"))
+                arg_bridge = build_bridge_from_type(
+                    arg_type,
+                    lv_type_entries,
+                    pending_updates,
+                    True,
+                    f"函数 {name} 的参数 #{idx} ({arg_name})",
+                    name,
+                )
+                args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
+        except SkipFunctionError as exc:
+            handle_skip_exception(exc, blacklist)
+            if exc.add_to_blacklist:
+                stats.blacklisted += 1
+            stats.skipped_by_user += 1
+            continue
+
+        result.append(ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args))
+
+    return sorted(result, key=lambda x: x.name)
+
+
+def entry_name(func_name: str) -> str:
+    if not func_name.startswith("lv_"):
+        return func_name
+    rest = func_name[3:]
+    parts = rest.split("_")
+    if len(parts) <= 1:
+        return rest
+    remaining = "_".join(parts[1:])
+    return snake_to_camel(remaining)
+
+
+def render_entries(
+    classes: List[ApiClass],
+    class_constructors: Dict[str, Optional[ApiFunction]],
+    class_methods: Dict[str, List[ApiFunction]],
+    class_static_methods: Dict[str, List[ApiFunction]],
+    class_properties: Dict[str, List[ApiProperty]],
+    property_getters: Dict[Tuple[str, str], ApiFunction],
+    property_setters: Dict[Tuple[str, str], ApiFunction],
+    class_constants: Dict[str, List[ApiConstant]],
+    root_constants: List[ApiConstant],
+) -> str:
+    wrappers: List[str] = []
+    blocks: List[str] = []
+
+    constructor_wrapper_names: Dict[str, str] = {}
+    method_array_names: Dict[str, str] = {}
+    property_array_names: Dict[str, str] = {}
+    static_method_array_names: Dict[str, str] = {}
+    constant_array_names: Dict[str, str] = {}
+
+    for cls in classes:
+        cls_id = sanitize_ident(cls.name)
+
+        ctor_func = class_constructors[cls.name]
+        if ctor_func is not None:
+            special_ctor = get_special_constructor_wrapper_name(cls)
+            if special_ctor is not None:
+                constructor_wrapper_names[cls.name] = special_ctor
+            else:
+                ctor_wrapper = f"sni_api_ctor_{cls_id}"
+                constructor_wrapper_names[cls.name] = ctor_wrapper
+                wrappers.append(render_constructor_wrapper(cls, ctor_func))
+        else:
+            constructor_wrapper_names[cls.name] = "NULL"
+
+        instance_items: List[Tuple[str, str]] = []
+        for method_func in class_methods[cls.name]:
+            special_method = get_special_method_wrapper_name(method_func)
+            if special_method is not None:
+                instance_items.append((entry_name(method_func.name), special_method))
+            else:
+                wrappers.append(render_method_wrapper(cls, method_func))
+                instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
+
+        extra_methods = SPECIAL_EXTRA_METHODS.get(cls.name, [])
+        if extra_methods:
+            existing_method_names = {name for name, _ in instance_items}
+            for extra_js_name, extra_c_name in extra_methods:
+                if extra_js_name not in existing_method_names:
+                    instance_items.append((extra_js_name, extra_c_name))
+
+        method_array_name = f"lv_class_methods_{cls_id}"
+        method_array_names[cls.name] = method_array_name
+        blocks.append(render_method_array(method_array_name, instance_items))
+
+        static_items: List[Tuple[str, str]] = []
+        for static_func in class_static_methods[cls.name]:
+            wrappers.append(render_static_wrapper(static_func))
+            static_items.append((entry_name(static_func.name), f"sni_api_{static_func.name}"))
+
+        static_array_name = f"lv_class_static_methods_{cls_id}"
+        static_method_array_names[cls.name] = static_array_name
+        blocks.append(render_method_array(static_array_name, static_items))
+
+        prop_items: List[Tuple[str, Optional[str], Optional[str]]] = []
+        for prop in class_properties[cls.name]:
+            getter_name = None
+            setter_name = None
+
+            if prop.getter:
+                getter_func = property_getters[(cls.name, prop.name)]
+                special_getter = get_special_property_getter_wrapper_name(cls, prop, getter_func)
+                if special_getter is not None:
+                    getter_name = special_getter
+                else:
+                    wrappers.append(render_property_getter_wrapper(cls, prop, getter_func))
+                    getter_name = f"sni_api_prop_get_{cls_id}_{sanitize_ident(prop.name)}"
+
+            if prop.setter:
+                setter_func = property_setters[(cls.name, prop.name)]
+                special_setter = get_special_property_setter_wrapper_name(cls, prop, setter_func)
+                if special_setter is not None:
+                    setter_name = special_setter
+                else:
+                    wrappers.append(render_property_setter_wrapper(cls, prop, setter_func))
+                    setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
+
+            prop_items.append((snake_to_camel(prop.name), getter_name, setter_name))
+
+        extra_props = SPECIAL_EXTRA_PROPERTIES.get(cls.name, [])
+        if extra_props:
+            existing_prop_names = {name for name, _, _ in prop_items}
+            for extra_name, extra_getter, extra_setter in extra_props:
+                if extra_name not in existing_prop_names:
+                    prop_items.append((extra_name, extra_getter, extra_setter))
+
+        prop_array_name = f"lv_class_properties_{cls_id}"
+        property_array_names[cls.name] = prop_array_name
+        blocks.append(render_property_array(prop_array_name, prop_items))
+
+        const_array_name = f"lv_class_constants_{cls_id}"
+        constant_array_names[cls.name] = const_array_name
+        blocks.append(render_constant_array(const_array_name, class_constants[cls.name]))
+
+    root_constant_array_name = "lv_root_constants"
+    blocks.append(render_constant_array(root_constant_array_name, root_constants))
+
+    blocks.append(
+        render_class_block(
+            classes,
+            constructor_wrapper_names,
+            method_array_names,
+            property_array_names,
+            static_method_array_names,
+            constant_array_names,
+            root_constant_array_name,
+        )
+    )
+
+    return "\n\n".join(wrappers + blocks)
+
+
+def write_output(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def collect_encountered_sni_types(functions: List[ApiFunction]) -> List[str]:
+    encountered: set[str] = set()
+
+    for func in functions:
+        ret_sni = func.return_bridge.sni_type
+        if ret_sni and (ret_sni.startswith("SNI_H_") or ret_sni.startswith("SNI_V_")):
+            encountered.add(ret_sni)
+
+        for arg in func.args:
+            arg_sni = arg.bridge.sni_type
+            if arg_sni and (arg_sni.startswith("SNI_H_") or arg_sni.startswith("SNI_V_")):
+                encountered.add(arg_sni)
+
+    return sorted(encountered)
+
+
+def collect_encountered_sni_types_from_model(
+    class_methods: Dict[str, List[ApiFunction]],
+    class_static_methods: Dict[str, List[ApiFunction]],
+    property_getters: Dict[Tuple[str, str], ApiFunction],
+    property_setters: Dict[Tuple[str, str], ApiFunction],
+) -> List[str]:
+    all_funcs: List[ApiFunction] = []
+    for items in class_methods.values():
+        all_funcs.extend(items)
+    for items in class_static_methods.values():
+        all_funcs.extend(items)
+    all_funcs.extend(property_getters.values())
+    all_funcs.extend(property_setters.values())
+    return collect_encountered_sni_types(all_funcs)
+
+
+def export_encountered_sni_types(output_file: Path, functions: List[ApiFunction]) -> Path:
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    types = collect_encountered_sni_types(functions)
+    lines = [f"{item}," for item in types]
+    output_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return output_file
+
+
+def print_verbose_stats(
+    func_stats: FilterStats,
+    const_stats: FilterStats,
+) -> None:
+    vlog(
+        "[过滤] func: "
+        f"total={func_stats.total}, included={func_stats.included}, "
+        f"blacklisted={func_stats.blacklisted}, whitelist_miss={func_stats.whitelist_miss}, "
+        f"skipped_by_user={func_stats.skipped_by_user}"
+    )
+    vlog(
+        "[过滤] const: "
+        f"total={const_stats.total}, included={const_stats.included}, "
+        f"blacklisted={const_stats.blacklisted}, whitelist_miss={const_stats.whitelist_miss}"
+    )
+
+
+def visual_width(text: str) -> int:
+    width = 0
+    for ch in text:
+        width += 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+    return width
+
+
+def pad_visual(text: str, target_width: int) -> str:
+    pad = max(0, target_width - visual_width(text))
+    return text + (" " * pad)
+
+
+def print_summary(
+    classes: List[ApiClass],
+    class_constructors: Dict[str, Optional[ApiFunction]],
+    class_methods: Dict[str, List[ApiFunction]],
+    class_static_methods: Dict[str, List[ApiFunction]],
+    class_properties: Dict[str, List[ApiProperty]],
+    class_constants: Dict[str, List[ApiConstant]],
+    root_constants: List[ApiConstant],
+    output_path: Path,
+    pending_updates: Dict[str, str],
+    export_file: Optional[Path],
+) -> None:
+    class_total = len(classes)
+    static_class_total = sum(1 for cls in classes if class_constructors.get(cls.name) is None)
+    constructor_total = class_total - static_class_total
+    dynamic_method_total = sum(len(items) for items in class_methods.values())
+    static_method_total = sum(len(items) for items in class_static_methods.values())
+    property_total = sum(len(items) for items in class_properties.values())
+    class_constant_total = sum(len(items) for items in class_constants.values())
+    root_constant_total = len(root_constants)
+
+    rows: List[Tuple[str, str]] = [
+        ("类", f"{class_total}个（静态类{static_class_total}个）"),
+        ("动态方法", f"{dynamic_method_total}个"),
+        ("静态方法", f"{static_method_total}个"),
+        ("类常数", f"{class_constant_total}个"),
+        ("全局常数", f"{root_constant_total}个"),
+        ("属性", f"{property_total}个"),
+        ("构造函数", f"{constructor_total}个"),
+    ]
+
+    if pending_updates:
+        rows.append(("自动补全类型", f"{len(pending_updates)}个"))
+    if export_file is not None:
+        rows.append(("SNI 类型清单", str(export_file)))
+    rows.append(("输出文件", str(output_path)))
+
+    label_width = max(visual_width(label) for label, _ in rows)
+
+    print("-" * 40)
+    print("导出成功，统计信息：\n")
+    for label, value in rows:
+        print(f"{pad_visual(label, label_width)} : {value}")
+    print("-" * 40)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate LVGL SNI descriptor C file")
+    parser.add_argument("--api-table", required=True, help="Path to API filter table JSON")
+    parser.add_argument("--output", required=True, help="Output C file path")
+    parser.add_argument("--lvgl-json", required=True, help="Path to LVGL API JSON")
+    parser.add_argument("--lv-types", required=True, help="Path to lv_types JSON")
+    parser.add_argument(
+        "--export-sni-types",
+        required=False,
+        help="Optional output file path for encountered SNI_H_*/SNI_V_* (one per line)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logs for intermediate generation details",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    global VERBOSE
+    VERBOSE = bool(args.verbose)
+
+    api_table_path = Path(args.api_table)
+    output_path = Path(args.output)
+    lvgl_json_path = Path(args.lvgl_json)
+    lv_types_path = Path(args.lv_types)
+
+    api_table_data = load_json(api_table_path, required=["classes"])
+    lvgl_data = load_json(lvgl_json_path, required=["functions", "enums", "macros"])
+    lv_types_data = load_json(lv_types_path, required=["types"])
+
+    filters = parse_api_filters(api_table_data)
+    classes_dict = parse_api_classes(api_table_data)
+    classes = topo_sort_classes(classes_dict)
+    lv_type_entries = load_type_entries(lv_types_data)
+    function_index = build_function_index(lvgl_data)
+    constant_index = build_constant_index(lvgl_data)
+
+    func_stats = FilterStats()
+    const_stats = FilterStats()
+    pending_updates: Dict[str, str] = {}
+
+    class_methods: Dict[str, List[ApiFunction]] = {}
+    class_constructors: Dict[str, Optional[ApiFunction]] = {}
+    class_static_methods: Dict[str, List[ApiFunction]] = {}
+    class_properties: Dict[str, List[ApiProperty]] = {}
+    class_constants: Dict[str, List[ApiConstant]] = {}
+    property_getters: Dict[Tuple[str, str], ApiFunction] = {}
+    property_setters: Dict[Tuple[str, str], ApiFunction] = {}
+    func_blacklist = filters["function"]["blacklist"]
+
+    for cls in classes:
+        methods: List[ApiFunction] = []
+        ctor_func: Optional[ApiFunction] = None
+        method_names: Set[str] = set()
+
+        if cls.constructor is not None:
+            ctor_item = require_class_function(function_index, cls.name, cls.constructor, f"classes.{cls.name}.constructor")
+            try:
+                ctor_func = build_api_function(
+                    ctor_item,
+                    lv_type_entries,
+                    pending_updates,
+                    f"classes.{cls.name}.constructor",
+                    func_blacklist,
+                )
+            except SkipFunctionError as exc:
+                handle_skip_exception(exc, func_blacklist)
+                raise SystemExit(f"[错误] 类 {cls.name} 的构造函数被用户跳过，无法继续生成: {exc.func_name}") from exc
+
+            for selector in cls.methods:
+                matched_items = resolve_class_selector_items(
+                    function_index,
+                    cls.name,
+                    selector,
+                    f"classes.{cls.name}.methods",
+                )
+                for method_item in matched_items:
+                    try:
+                        method_func = build_api_function(
+                            method_item,
+                            lv_type_entries,
+                            pending_updates,
+                            f"classes.{cls.name}.methods",
+                            func_blacklist,
+                        )
+                    except SkipFunctionError as exc:
+                        handle_skip_exception(exc, func_blacklist)
+                        if exc.add_to_blacklist:
+                            velog(f"[提示] 实例方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                        else:
+                            velog(f"[提示] 实例方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                        continue
+
+                    if method_func.name not in method_names:
+                        methods.append(method_func)
+                        method_names.add(method_func.name)
+        else:
+            if cls.methods:
+                raise SystemExit(f"[错误] classes.{cls.name} 是静态类，不允许配置 methods")
+
+        static_funcs: List[ApiFunction] = []
+        for selector in cls.static_methods:
+            matched_items = resolve_class_selector_items(
+                function_index,
+                cls.name,
+                selector,
+                f"classes.{cls.name}.static_methods",
+            )
+            for static_item in matched_items:
+                try:
+                    static_func = build_api_function(
+                        static_item,
+                        lv_type_entries,
+                        pending_updates,
+                        f"classes.{cls.name}.static_methods",
+                        func_blacklist,
+                    )
+                except SkipFunctionError as exc:
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 静态方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 静态方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                    continue
+                static_funcs.append(static_func)
+
+        props = discover_class_properties(cls, function_index, filters)
+        if cls.constructor is None:
+            props = []
+        validated_props: List[ApiProperty] = []
+
+        for prop in props:
+            valid_getter: Optional[str] = None
+            valid_setter: Optional[str] = None
+
+            if prop.getter:
+                getter_item = require_function(function_index, prop.getter, f"classes.{cls.name}.property_getter.{prop.name}")
+                try:
+                    getter_func = build_api_function(
+                        getter_item,
+                        lv_type_entries,
+                        pending_updates,
+                        f"classes.{cls.name}.property_getter.{prop.name}",
+                        func_blacklist,
+                    )
+                except SkipFunctionError as exc:
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 属性 getter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 属性 getter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                    getter_func = None
+
+                if getter_func is not None and len(getter_func.args) == 1 and getter_func.return_bridge.c2js_mode != "void":
+                    property_getters[(cls.name, prop.name)] = getter_func
+                    valid_getter = prop.getter
+                elif getter_func is not None:
+                    velog(
+                        f"[提示] {prop.getter} 不符合属性 getter 签名(应为 this-only 且有返回值)，已忽略"
+                    )
+
+            if prop.setter:
+                setter_item = require_function(function_index, prop.setter, f"classes.{cls.name}.property_setter.{prop.name}")
+                try:
+                    setter_func = build_api_function(
+                        setter_item,
+                        lv_type_entries,
+                        pending_updates,
+                        f"classes.{cls.name}.property_setter.{prop.name}",
+                        func_blacklist,
+                    )
+                except SkipFunctionError as exc:
+                    handle_skip_exception(exc, func_blacklist)
+                    if exc.add_to_blacklist:
+                        velog(f"[提示] 属性 setter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                    else:
+                        velog(f"[提示] 属性 setter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                    setter_func = None
+
+                if setter_func is not None and len(setter_func.args) == 2:
+                    property_setters[(cls.name, prop.name)] = setter_func
+                    valid_setter = prop.setter
+                elif setter_func is not None:
+                    velog(
+                        f"[提示] {prop.setter} 不符合属性 setter 签名(应为 this+value)，已忽略"
+                    )
+
+            if valid_getter or valid_setter:
+                validated_props.append(ApiProperty(name=prop.name, getter=valid_getter, setter=valid_setter))
+
+        const_items: List[ApiConstant] = []
+        for const_name in cls.constants:
+            if const_name not in constant_index:
+                raise SystemExit(f"[错误] classes.{cls.name}.constants 引用未知常量: {const_name}")
+            const_items.append(constant_index[const_name])
+
+        class_constructors[cls.name] = ctor_func
+        class_methods[cls.name] = methods
+        class_static_methods[cls.name] = static_funcs
+        class_properties[cls.name] = validated_props
+        class_constants[cls.name] = const_items
+
+    constants = collect_constants(lvgl_data, filters["constant"], const_stats)
+    root_constants = build_root_constants_with_aliases(constants, filters["constant"].get("blacklist", []))
+    func_stats.included = sum(len(items) for items in class_methods.values()) + sum(len(items) for items in class_static_methods.values())
+    func_stats.total = len(function_index)
+    func_stats.blacklisted = 0
+    func_stats.whitelist_miss = 0
+
+    lv_types_output_path = lv_types_path
+    update_lv_types_output(lv_types_output_path, pending_updates)
+
+    table_text = render_entries(
+        classes,
+        class_constructors,
+        class_methods,
+        class_static_methods,
+        class_properties,
+        property_getters,
+        property_setters,
+        class_constants,
+        root_constants,
+    )
+
+    generated = (
+        HEADER_TEXT.format(date=datetime.date.today().isoformat())
+        + "\n"
+        + table_text
+        + "\n"
+    )
+    write_output(output_path, generated)
+
+    export_file: Optional[Path] = None
+    if args.export_sni_types:
+        export_file = Path(args.export_sni_types)
+        if export_file.exists() and export_file.is_dir():
+            raise SystemExit(f"[错误] --export-sni-types 必须是文件路径，当前是目录: {export_file}")
+        all_types = collect_encountered_sni_types_from_model(
+            class_methods,
+            class_static_methods,
+            property_getters,
+            property_setters,
+        )
+        export_file.parent.mkdir(parents=True, exist_ok=True)
+        export_file.write_text("\n".join(f"{item}," for item in all_types) + "\n", encoding="utf-8")
+        velog(f"[统计] 已导出遇到的 SNI_H_*/SNI_V_*: {export_file}")
+
+    print_verbose_stats(func_stats, const_stats)
+    if pending_updates:
+        velog(f"[统计] 已补全类型并写入: {lv_types_output_path}")
+
+    print_summary(
+        classes,
+        class_constructors,
+        class_methods,
+        class_static_methods,
+        class_properties,
+        class_constants,
+        root_constants,
+        output_path,
+        pending_updates,
+        export_file,
+    )
+
+
+if __name__ == "__main__":
+    main()

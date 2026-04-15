@@ -6,6 +6,9 @@
  */
 
 #include "elena_os_app_header.h"
+#include "elena_os_config.h"
+
+#if EOS_APP_HEADER_ENABLE
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -22,9 +25,8 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_misc.h"
 #include "elena_os_anim.h"
-#include "elena_os_nav.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
+#include "elena_os_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120
@@ -43,24 +45,6 @@
 #define _ANIM_TITLE_MOVE_DISTANCE 50
 #define _ANIM_BACK_BTN_MOVE_DISTANCE _ANIM_TITLE_MOVE_DISTANCE
 
-typedef enum
-{
-    APP_HEADER_TITLE_TYPE_STRING,
-    APP_HEADER_TITLE_TYPE_ID
-} eos_app_header_title_string_type_t;
-
-typedef union
-{
-    const char *string;
-    language_id_t id;
-} eos_app_header_title_data_t;
-
-typedef struct
-{
-    eos_app_header_title_string_type_t type;
-    eos_app_header_title_data_t data;
-} eos_app_header_title_t;
-
 /**
  * @brief 应用内上方的头部结构体定义
  */
@@ -71,10 +55,9 @@ typedef struct
     lv_obj_t *title_label;
     lv_obj_t *back_btn;
     lv_timer_t *clock_timer;
-    lv_obj_t *current_scr;
-    lv_obj_t *next_scr;
-    bool is_anim_entering;
-    bool is_title_label_initialized;
+    lv_obj_t *original_parent; // 原始父对象，用于恢复
+    bool is_anim_entering; // 动画方向
+    bool attached_to_view; // 是否附加到View
 } eos_app_header_t;
 
 /* Variables --------------------------------------------------*/
@@ -82,23 +65,91 @@ static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
 static void _clock_update_cb(lv_timer_t *timer);
 
-static char *_get_title_str(eos_app_header_title_t *t)
+static void _app_header_set_opa_anim_cb(void *var, int32_t value)
 {
-    return (t->type == APP_HEADER_TITLE_TYPE_ID) ? current_lang[t->data.id] : t->data.string;
+    lv_obj_t *obj = (lv_obj_t *)var;
+    if (!obj || !lv_obj_is_valid(obj))
+        return;
+
+    lv_obj_set_style_opa(obj, (lv_opa_t)value, 0);
 }
 
-static void _free_header_title_data(eos_app_header_title_t *t)
+static void _app_header_fade_out_ready_cb(lv_anim_t *a)
 {
-    if (!t)
+    lv_obj_t *obj = (lv_obj_t *)a->var;
+    if (!obj || !lv_obj_is_valid(obj))
         return;
-    if (t->type == APP_HEADER_TITLE_TYPE_STRING && t->data.string)
+
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_opa(obj, LV_OPA_COVER, 0);
+}
+
+static void _app_header_apply_activity_mode(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+
+    bool time_only = false;
+    lv_color_t clock_color = EOS_COLOR_WHITE;
+    if (activity)
     {
-        eos_free((void *)t->data.string);
-        t->data.string = NULL;
+        time_only = eos_activity_is_app_header_time_only(activity);
+        if (time_only)
+        {
+            clock_color = eos_activity_get_app_header_time_only_text_color(activity);
+        }
+    }
+
+    if (app_header->container && lv_obj_is_valid(app_header->container))
+    {
+        lv_opa_t bg_opa = time_only ? LV_OPA_TRANSP : LV_OPA_COVER;
+        lv_obj_set_style_bg_opa(app_header->container, bg_opa, 0);
+    }
+
+    if (app_header->clock_label && lv_obj_is_valid(app_header->clock_label))
+    {
+        lv_obj_set_style_text_color(app_header->clock_label, clock_color, 0);
+        lv_obj_remove_flag(app_header->clock_label, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (app_header->title_label && lv_obj_is_valid(app_header->title_label))
+    {
+        if (time_only)
+            lv_obj_add_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_remove_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (app_header->back_btn && lv_obj_is_valid(app_header->back_btn))
+    {
+        if (time_only)
+            lv_obj_add_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_remove_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
-static void _app_header_lang_changed_cb(lv_event_t *e);
+static bool _app_header_can_reparent(lv_obj_t *new_parent)
+{
+    if (!app_header)
+    {
+        return false;
+    }
+
+    if (!app_header->container || !lv_obj_is_valid(app_header->container))
+    {
+        app_header->attached_to_view = false;
+        EOS_LOG_E("AppHeader container is invalid");
+        return false;
+    }
+
+    if (!new_parent || !lv_obj_is_valid(new_parent))
+    {
+        EOS_LOG_E("AppHeader target parent is invalid");
+        return false;
+    }
+
+    return true;
+}
 
 static void _set_title_style(lv_obj_t *label)
 {
@@ -120,28 +171,43 @@ static void _set_back_btn_style(lv_obj_t *btn)
     lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_align(btn, LV_ALIGN_LEFT_MID, _BACK_BTN_MARGIN_LEFT, 0);
 }
-
-void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering)
+// TODO 似乎Settings页面存在0.1KB内存泄漏
+void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim)
 {
-    EOS_CHECK_PTR_RETURN(current_scr && next_scr);
-    if (
-        lv_obj_is_valid(current_scr) &&
-        lv_obj_has_class(current_scr, &lv_obj_class) &&
-        lv_obj_is_valid(next_scr) &&
-        lv_obj_has_class(next_scr, &lv_obj_class))
-    {
-        app_header->current_scr = current_scr;
-        app_header->next_scr = next_scr;
-        app_header->is_anim_entering = is_anim_entering;
-    }
-}
-
-void _play_title_changed_anim(void)
-{
-    EOS_CHECK_PTR_RETURN(app_header && app_header->current_scr && app_header->next_scr);
+    EOS_CHECK_PTR_RETURN(app_header);
     if (!(lv_obj_is_valid(app_header->title_label) &&
           lv_obj_has_class(app_header->title_label, &lv_label_class)))
         return;
+
+    bool from_time_only = from ? eos_activity_is_app_header_time_only(from) : false;
+    bool to_time_only = to ? eos_activity_is_app_header_time_only(to) : false;
+
+    // 任一侧为仅时间模式时，直接切换显示模式，不执行标题/返回键转场动画。
+    if (from_time_only || to_time_only)
+    {
+        need_anim = false;
+    }
+
+    // 如果不需要动画，直接更新标题和颜色
+    if (!need_anim) {
+        // 从to activity获取标题
+        const char *new_title = eos_activity_get_title(to);
+        EOS_LOG_D("New title: %s", new_title);
+        lv_label_set_text(app_header->title_label, new_title ? new_title : "");
+
+        // 从to activity获取标题颜色
+        lv_color_t color = eos_activity_get_title_color(to);
+        lv_obj_set_style_text_color(app_header->title_label, color, 0);
+        _app_header_apply_activity_mode(to);
+        return;
+    }
+
+    // 确定动画方向
+    if (reverse_anim) {
+        app_header->is_anim_entering = false;
+    } else {
+        app_header->is_anim_entering = true;
+    }
 
     lv_obj_t *l = app_header->title_label;
     lv_obj_t *back_btn = app_header->back_btn;
@@ -178,9 +244,14 @@ void _play_title_changed_anim(void)
     lv_obj_t *new_l = lv_label_create(parent);
     _set_title_style(new_l);
 
-    const char *new_title = _get_title_str(lv_obj_get_user_data(app_header->next_scr));
+    // 从to activity获取标题
+    const char *new_title = eos_activity_get_title(to);
     EOS_LOG_D("New title: %s", new_title);
-    lv_label_set_text(new_l, new_title);
+    lv_label_set_text(new_l, new_title ? new_title : "");
+
+    // 从to activity获取标题颜色
+    lv_color_t color = eos_activity_get_title_color(to);
+    lv_obj_set_style_text_color(new_l, color, 0);
 
     // 创建新的返回按钮
     lv_obj_t *new_back_btn = eos_back_btn_create(parent, false);
@@ -214,9 +285,6 @@ void _play_title_changed_anim(void)
     // 更新指针
     app_header->title_label = new_l;
     app_header->back_btn = new_back_btn;
-
-    app_header->current_scr = NULL;
-    app_header->next_scr = NULL;
 }
 
 /**
@@ -236,163 +304,203 @@ static inline void _app_header_update_clock_label(lv_obj_t *label)
 static void _clock_update_cb(lv_timer_t *timer)
 {
     lv_obj_t *label = lv_timer_get_user_data(timer);
-    EOS_CHECK_PTR_RETURN(label);
+    EOS_CHECK_PTR_RETURN(app_header && label);
+    if (lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN))
+    {
+        return;
+    }
     // 更新显示文字
     _app_header_update_clock_label(label);
-}
-
-static void _app_header_lang_changed_cb(lv_event_t *e)
-{
-    lv_obj_t *label = lv_event_get_target(e);
-
-    // 从用户数据中获取str_id
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(eos_screen_active());
-    if (!t)
-        return;
-    if (t->type == APP_HEADER_TITLE_TYPE_ID)
-    {
-        lv_label_set_text(label, current_lang[t->data.id]);
-    }
-}
-
-/**
- * @brief Header 的 screen 加载事件回调
- */
-static void _screen_loaded_cb(lv_event_t *e)
-{
-    EOS_LOG_D("screen loaded");
-    lv_obj_t *scr = lv_event_get_target(e);
-
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    if (!app_header->is_title_label_initialized)
-    {
-        lv_label_set_text(app_header->title_label, _get_title_str(t));
-        app_header->is_title_label_initialized = true;
-    }
-    if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
-    {
-        EOS_LOG_D("Set String title: %s", t->data.string);
-        _play_title_changed_anim();
-    }
-    else if (t->type == APP_HEADER_TITLE_TYPE_ID && t->data.id < STR_ID_MAX_NUMBER)
-    {
-        EOS_LOG_D("Set ID title: %s", current_lang[t->data.id]);
-        _play_title_changed_anim();
-    }
-    else
-    {
-        EOS_LOG_D("no title");
-        eos_app_header_hide();
-    }
-}
-
-/**
- * @brief Header 的 screen 删除事件回调
- */
-static void _screen_delete_cb(lv_event_t *e)
-{
-    lv_obj_t *scr = lv_event_get_target(e);
-    EOS_CHECK_PTR_RETURN(scr);
-    EOS_LOG_D("screen deleted");
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    EOS_CHECK_PTR_RETURN(t);
-    if ((t->type == APP_HEADER_TITLE_TYPE_STRING) && t->data.string)
-        eos_free(t->data.string);
-    lv_obj_set_user_data(scr, NULL);
-    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
-    eos_event_remove_cb(scr, LV_EVENT_REFRESH, _app_header_lang_changed_cb);
-    EOS_LOG_D("Freed t: [%p]", t);
-    eos_free(t);
-}
-
-void eos_app_header_set_title(lv_obj_t *scr, const char *title)
-{
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    EOS_CHECK_PTR_RETURN(app_header && t);
-    // 复制一份避免被删除
-    t->type = APP_HEADER_TITLE_TYPE_STRING;
-    if (t->data.string)
-        eos_free(t->data.string);
-    t->data.string = eos_strdup(title);
-    // 更新字符串
-    lv_label_set_text(app_header->title_label, t->data.string);
-}
-
-void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id)
-{
-    eos_app_header_title_t *t = (eos_app_header_title_t *)lv_obj_get_user_data(scr);
-    EOS_CHECK_PTR_RETURN(app_header && t);
-    // 复制一份避免被删除
-    t->type = APP_HEADER_TITLE_TYPE_ID;
-    if (t->data.string)
-        eos_free(t->data.string);
-    t->data.id = id;
-    // 更新字符串
-    lv_label_set_text(app_header->title_label, current_lang[id]);
 }
 
 void eos_app_header_hide(void)
 {
     EOS_CHECK_PTR_RETURN(app_header);
     EOS_LOG_D("Hide app header");
-    lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    // 如果附加到View，先恢复父对象
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *restore_parent = app_header->original_parent;
+        if (!restore_parent || !lv_obj_is_valid(restore_parent))
+        {
+            restore_parent = lv_layer_sys();
+            app_header->original_parent = restore_parent;
+        }
+
+        if (_app_header_can_reparent(restore_parent))
+        {
+            lv_obj_set_parent(app_header->container, restore_parent);
+        }
+        app_header->attached_to_view = false;
+    }
+
+    if (app_header->container && lv_obj_is_valid(app_header->container))
+    {
+        lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
-void eos_app_header_show(void)
+void eos_app_header_show(eos_activity_t *a)
 {
     EOS_CHECK_PTR_RETURN(app_header);
+
+    // 检查是否是Watchface Activity，如果是则不显示AppHeader
+    eos_activity_t *target_activity = a;
+    if (!target_activity)
+        target_activity = eos_activity_get_current();
+
+    if (target_activity && target_activity == eos_activity_get_watchface())
+    {
+        EOS_LOG_D("Skip showing app header for watchface activity");
+        return;
+    }
+
     EOS_LOG_D("Show app header");
+    if (!(app_header->container && lv_obj_is_valid(app_header->container)))
+    {
+        app_header->attached_to_view = false;
+        EOS_LOG_E("AppHeader container is invalid");
+        return;
+    }
+
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *restore_parent = app_header->original_parent;
+        if (!restore_parent || !lv_obj_is_valid(restore_parent))
+        {
+            restore_parent = lv_layer_sys();
+            app_header->original_parent = restore_parent;
+        }
+
+        if (_app_header_can_reparent(restore_parent))
+        {
+            lv_obj_set_parent(app_header->container, restore_parent);
+        }
+        app_header->attached_to_view = false;
+    }
+    // 从当前 Activity 获取标题文字
+    const char *title = NULL;
+    if (a)
+        title = eos_activity_get_title(a);
+    else
+        title = eos_activity_get_title(eos_activity_get_current());
+    if (title)
+        lv_label_set_text(app_header->title_label, title);
+    else
+        lv_label_set_text(app_header->title_label, "");
+    // 从当前 Activity 获取标题颜色
+    lv_color_t color = EOS_COLOR_WHITE;
+    if (a)
+        color = eos_activity_get_title_color(a);
+    else
+        color = eos_activity_get_title_color(eos_activity_get_current());
+    if (lv_obj_is_valid(app_header->title_label))
+        lv_obj_set_style_text_color(app_header->title_label, color, 0);
+
+    _app_header_apply_activity_mode(target_activity);
+    _app_header_update_clock_label(app_header->clock_label);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
-void eos_app_header_bind_screen(lv_obj_t *scr, const char *title)
+void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
 {
-    EOS_CHECK_PTR_RETURN(scr);
+    EOS_CHECK_PTR_RETURN(app_header);
 
-    eos_app_header_title_t *old_t = lv_obj_get_user_data(scr);
-    if (old_t)
+    if (!(app_header->container && lv_obj_is_valid(app_header->container)))
+        return;
+
+    if (duration_ms == 0)
     {
-        _free_header_title_data(old_t); // 释放内部字符串
-        eos_free(old_t);                // 释放结构体
-        lv_obj_set_user_data(scr, NULL);
+        if (visible)
+            eos_app_header_show(a);
+        else
+            eos_app_header_hide();
+        return;
     }
-    eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
-    EOS_CHECK_PTR_RETURN(t);
-    EOS_LOG_D("Created t: [%p]", t);
-    t->type = APP_HEADER_TITLE_TYPE_STRING;
-    t->data.string = eos_strdup(title);
-    lv_obj_set_user_data(scr, (void *)t);
-    lv_label_set_text(app_header->title_label, title);
-    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
-    // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
-    // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
-    lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
+
+    lv_obj_t *container = app_header->container;
+    lv_anim_del(container, _app_header_set_opa_anim_cb);
+
+    lv_anim_t anim;
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, container);
+    lv_anim_set_exec_cb(&anim, _app_header_set_opa_anim_cb);
+    lv_anim_set_duration(&anim, duration_ms);
+
+    if (visible)
+    {
+        eos_app_header_show(a);
+        lv_obj_set_style_opa(container, LV_OPA_TRANSP, 0);
+        lv_anim_set_values(&anim, LV_OPA_TRANSP, LV_OPA_COVER);
+        lv_anim_start(&anim);
+    }
+    else
+    {
+        if (lv_obj_has_flag(container, LV_OBJ_FLAG_HIDDEN))
+            return;
+
+        lv_obj_set_style_opa(container, LV_OPA_COVER, 0);
+        lv_anim_set_values(&anim, LV_OPA_COVER, LV_OPA_TRANSP);
+        lv_anim_set_ready_cb(&anim, _app_header_fade_out_ready_cb);
+        lv_anim_start(&anim);
+    }
 }
 
-void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id)
+/**
+ * @brief 附加app header到指定View
+ * @param view 要附加的View
+ */
+void eos_app_header_attach_to_view(lv_obj_t *view)
 {
-    EOS_CHECK_PTR_RETURN(scr);
+    EOS_CHECK_PTR_RETURN(app_header && view);
 
-    eos_app_header_title_t *old_t = lv_obj_get_user_data(scr);
-    if (old_t)
+    if (!_app_header_can_reparent(view))
     {
-        _free_header_title_data(old_t); // 释放内部字符串
-        eos_free(old_t);                // 释放结构体
-        lv_obj_set_user_data(scr, NULL);
+        app_header->attached_to_view = false;
+        return;
     }
-    eos_app_header_title_t *t = eos_malloc(sizeof(eos_app_header_title_t));
-    EOS_CHECK_PTR_RETURN(t);
-    EOS_LOG_D("Created t: [%p]", t);
-    t->type = APP_HEADER_TITLE_TYPE_ID;
-    t->data.id = id;
-    lv_obj_set_user_data(scr, (void *)t);
-    lv_label_set_text(app_header->title_label, current_lang[id]);
-    lv_obj_set_style_text_color(app_header->title_label, EOS_THEME_PRIMARY_COLOR, 0);
-    // LVGL 会在 screen 加载时触发 LV_EVENT_SCREEN_LOADED
-    // 并在 screen 被删除时触发 LV_EVENT_DELETE
-    lv_obj_add_event_cb(scr, _screen_loaded_cb, LV_EVENT_SCREEN_LOAD_START, NULL);
-    lv_obj_add_event_cb(scr, _screen_delete_cb, LV_EVENT_DELETE, NULL);
+
+    if (app_header->attached_to_view)
+    {
+        lv_obj_t *cur_parent = lv_obj_get_parent(app_header->container);
+        if (cur_parent == view)
+        {
+            return;
+        }
+    }
+
+    if (!app_header->original_parent || !lv_obj_is_valid(app_header->original_parent))
+    {
+        app_header->original_parent = lv_layer_sys();
+    }
+
+    lv_obj_set_parent(app_header->container, view);
+    app_header->attached_to_view = true;
+}
+
+/**
+ * @brief 从View中分离app header，恢复到原始父对象
+ */
+void eos_app_header_detach_from_view(void)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+    if (!app_header->attached_to_view)
+    {
+        return;
+    }
+
+    lv_obj_t *restore_parent = app_header->original_parent;
+    if (!restore_parent || !lv_obj_is_valid(restore_parent))
+    {
+        restore_parent = lv_layer_sys();
+        app_header->original_parent = restore_parent;
+    }
+
+    if (_app_header_can_reparent(restore_parent))
+    {
+        lv_obj_set_parent(app_header->container, restore_parent);
+    }
+    app_header->attached_to_view = false;
 }
 
 bool eos_app_header_is_visible(void)
@@ -401,32 +509,13 @@ bool eos_app_header_is_visible(void)
     return !lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
 
-void eos_app_header_set_parent(lv_obj_t *parent)
+static void _update_title_label(lv_event_t *e)
 {
-    EOS_CHECK_PTR_RETURN(app_header && parent);
-    lv_obj_set_parent(app_header->container, parent);
-    lv_obj_move_foreground(app_header->container);
-}
-
-void eos_app_header_parent_reset(void)
-{
-    EOS_CHECK_PTR_RETURN(app_header);
-    lv_obj_set_parent(app_header->container, lv_layer_sys());
-    lv_obj_move_foreground(app_header->container);
-}
-
-
-static void _nav_clean_up_reset_label_cb(lv_event_t *e)
-{
-    lv_label_set_text(app_header->title_label, "");
-    app_header->is_title_label_initialized = false;
-}
-
-void eos_app_header_set_title_color_once(lv_color_t title_text_color)
-{
-    EOS_CHECK_PTR_RETURN(app_header && app_header->title_label);
-    if (lv_obj_is_valid(app_header->title_label))
-        lv_obj_set_style_text_color(app_header->title_label, title_text_color, 0);
+    const char *title = eos_activity_get_title(eos_activity_get_current());
+    if (title)
+        lv_label_set_text(app_header->title_label, title);
+    else
+        lv_label_set_text(app_header->title_label, "");
 }
 
 void eos_app_header_init(void)
@@ -434,7 +523,6 @@ void eos_app_header_init(void)
     EOS_LOG_D("Init eos_app_header");
     app_header = eos_malloc_zeroed(sizeof(eos_app_header_t));
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
-    app_header->is_title_label_initialized = false;
 
     static lv_grad_dsc_t grad;
     grad.dir = LV_GRAD_DIR_VER;
@@ -449,11 +537,11 @@ void eos_app_header_init(void)
 
     // 半透明容器
     app_header->container = lv_obj_create(lv_layer_sys());
+    app_header->original_parent = lv_obj_get_parent(app_header->container); // 保存原始父对象
     lv_obj_remove_style_all(app_header->container);
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_move_background(app_header->container);
-    // eos_img_set_src(app_header->container, EOS_IMG_APP_HEADER_BG);
     lv_obj_set_style_bg_grad(app_header->container, &grad, 0);
     lv_obj_set_style_bg_opa(app_header->container, LV_OPA_COVER, 0);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_SCROLLABLE);
@@ -477,10 +565,13 @@ void eos_app_header_init(void)
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);
     _set_title_style(app_header->title_label);
-    eos_event_add_cb(app_header->title_label, _app_header_lang_changed_cb, LV_EVENT_REFRESH, NULL);
+    eos_event_add_cb(app_header->title_label, _update_title_label, LV_EVENT_REFRESH, NULL);
 
     // 默认隐藏 app_header
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 
-    eos_event_add_global_cb(_nav_clean_up_reset_label_cb, EOS_EVENT_NAVIGATION_CLEAN_UP, NULL);
+    app_header->is_anim_entering = false;
+    app_header->attached_to_view = false;
 }
+
+#endif /* EOS_APP_HEADER_ENABLE */

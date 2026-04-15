@@ -22,13 +22,13 @@
 #include "elena_os_theme.h"
 #include "elena_os_control_center.h"
 #include "elena_os_basic_widgets.h"
-#include "elena_os_scene.h"
 #include "elena_os_fs.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 #include "elena_os_icon.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_ww_clock_hand.h"
+#include "elena_os_activity.h"
+#include "elena_os_app_header.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -45,7 +45,20 @@ typedef struct
 /* Variables --------------------------------------------------*/
 static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
-static lv_obj_t *watchface_screen = NULL;
+static eos_activity_t *_watchface_activity = NULL;
+
+static void eos_watchface_on_enter(eos_activity_t *a);
+static void eos_watchface_on_destroy(eos_activity_t *a);
+static void _builtin_watchface_time_update_cb(lv_timer_t *timer);
+static void _builtin_watchface_delete_cb(lv_event_t *e);
+static void _create_builtin_watchface(eos_activity_t *a);
+
+static const eos_activity_lifecycle_t watchface_lifecycle = {
+    .on_enter = eos_watchface_on_enter,
+    .on_destroy = eos_watchface_on_destroy,
+    .on_pause = NULL,
+    .on_resume = NULL,
+};
 /* Function Implementations -----------------------------------*/
 
 size_t eos_watchface_list_size(void)
@@ -65,6 +78,11 @@ const char *eos_watchface_list_get_id(size_t index)
 
 bool eos_watchface_list_contains(const char *watchface_id)
 {
+    if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    {
+        return true;
+    }
+
     for (size_t i = 0; i < watchface_list.size; i++)
     {
         if (strcmp(watchface_list.data[i], watchface_id) == 0)
@@ -112,7 +130,7 @@ eos_result_t _eos_watchface_list_get_installed()
     if (!dir)
     {
         EOS_LOG_E("Failed to open watchface directory: %s", EOS_WATCHFACE_INSTALLED_DIR);
-        return EOS_FAILED;
+        return EOS_OK;
     }
 
     // 遍历目录中的所有条目
@@ -146,10 +164,10 @@ eos_result_t _eos_watchface_list_refresh()
 {
     memset(&watchface_list, 0, sizeof(watchface_list));
     _eos_watchface_list_init(&watchface_list, EOS_WATCHFACE_LIST_DEFAULT_CAPACITY);
+    _eos_watchface_list_add(&watchface_list, EOS_WATCHFACE_BUILTIN_FALLBACK_ID);
     if (_eos_watchface_list_get_installed() != EOS_OK)
     {
         EOS_LOG_E("Get installed watchface failed");
-        return EOS_FAILED;
     }
     return EOS_OK;
 }
@@ -167,6 +185,11 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     if (!eos_is_valid_filename(header.pkg_id))
     {
         EOS_LOG_E("Invalid package id");
+        return EOS_FAILED;
+    }
+    if (strcmp(header.pkg_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    {
+        EOS_LOG_E("Builtin fallback watchface cannot be installed over");
         return EOS_FAILED;
     }
     // 拼接路径
@@ -207,6 +230,12 @@ eos_result_t eos_watchface_install(const char *eapk_path)
 
 eos_result_t eos_watchface_uninstall(const char *watchface_id)
 {
+    if (!watchface_id || strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    {
+        EOS_LOG_E("Builtin fallback watchface cannot be uninstalled");
+        return EOS_FAILED;
+    }
+
     // 卸载应用程序
     char path[PATH_MAX];
     snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", watchface_id);
@@ -242,96 +271,170 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     return EOS_OK;
 }
 
-static void _screen_unloaded_event_cb(lv_event_t *e)
-{
-    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
-    {
-        EOS_LOG_D("Request Stop");
-        script_engine_request_stop();
-        EOS_LOG_D("Delete scr[%p]", watchface_screen);
-        lv_obj_delete_async(watchface_screen);
-        watchface_screen = NULL;
-    }
-}
-
-void eos_watchface_delete(void)
-{
-    lv_obj_add_event_cb(watchface_screen, _screen_unloaded_event_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
-}
-
 static void _watchface_long_pressed_cb(lv_event_t *e)
 {
-    eos_scene_switch(EOS_SCENE_WATCHFACE_LIST);
+    eos_watchface_list_enter();
 }
 
-lv_obj_t *eos_watchface_get_screen(void)
+static void _builtin_watchface_delete_cb(lv_event_t *e)
 {
-    return watchface_screen;
-}
-
-void eos_watchface_create(void)
-{
-    if (watchface_screen && lv_obj_has_class(watchface_screen, &lv_obj_class))
+    lv_timer_t *timer = lv_event_get_user_data(e);
+    if (timer)
     {
-        // 如果不为空则清空
-        lv_obj_delete_async(watchface_screen);
-        watchface_screen = NULL;
+        lv_timer_delete(timer);
     }
-    watchface_screen = eos_screen_create();
-    lv_obj_add_style(watchface_screen, eos_theme_get_screen_style(), 0);
-    eos_screen_load(watchface_screen);
+}
+
+static void _builtin_watchface_time_update_cb(lv_timer_t *timer)
+{
+    lv_obj_t *time_label = lv_timer_get_user_data(timer);
+    if (!time_label || !lv_obj_is_valid(time_label))
+    {
+        return;
+    }
+
+    eos_datetime_t now = eos_time_get();
+    char buf[64];
+    snprintf(buf, sizeof(buf), "%02d:%02d", now.hour, now.min);
+    lv_label_set_text(time_label, buf);
+}
+
+static void _create_builtin_watchface(eos_activity_t *a)
+{
+    lv_obj_t *view = eos_activity_get_view(a);
+    EOS_CHECK_PTR_RETURN(view);
+
+    lv_obj_remove_style_all(view);
+    lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+    lv_obj_add_event_cb(view, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
+
+    lv_obj_t *title = lv_label_create(view);
+    lv_label_set_text(title, "ElenaOS");
+    lv_obj_set_style_text_color(title, lv_color_hex(0xD7E2F2), 0);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 34);
+
+    lv_obj_t *time_label = lv_label_create(view);
+    lv_label_set_text(time_label, "00:00");
+    lv_obj_set_style_text_color(time_label, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_align(time_label, LV_ALIGN_CENTER, 0, -10);
+
+    lv_obj_t *hint = lv_label_create(view);
+    lv_label_set_text(hint, "Basic fallback watchface");
+    lv_obj_set_style_text_color(hint, lv_color_hex(0x91A4BF), 0);
+    lv_obj_align(hint, LV_ALIGN_CENTER, 0, 36);
+
+    lv_timer_t *timer = lv_timer_create(_builtin_watchface_time_update_cb, 1000, time_label);
+    if (timer)
+    {
+        lv_obj_add_event_cb(view, _builtin_watchface_delete_cb, LV_EVENT_DELETE, timer);
+        lv_timer_ready(timer);
+        _builtin_watchface_time_update_cb(timer);
+    }
+}
+
+void eos_watchface_on_enter(eos_activity_t *a)
+{
+    EOS_LOG_I("Enter watchface activity");
+    lv_obj_t *view = lv_obj_create(eos_activity_get_root_screen());
+    lv_obj_remove_style_all(view);
+    lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+    eos_activity_set_view(a, view);
+
+    // 显示消息列表和控制中心
+    eos_msg_list_show();
+    eos_control_center_show();
     // JSON中获取表盘id
-    EOS_LOG_D("Loading wf_id");
-    const char *wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
-    EOS_CHECK_PTR_RETURN(wf_id);
+    char wf_id[EOS_PKG_ID_LEN_MAX];
+    char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
+    snprintf(wf_id, sizeof(wf_id),
+             "%s",
+             selected_wf_id);
+    eos_free(selected_wf_id);
+
+    if (!eos_watchface_list_contains(wf_id))
+    {
+        EOS_LOG_W("Watchface not found, fallback to builtin watchface: %s", wf_id);
+        snprintf(wf_id, sizeof(wf_id), "%s", EOS_WATCHFACE_BUILTIN_FALLBACK_ID);
+    }
+
+    if (strcmp(wf_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    {
+        _create_builtin_watchface(a);
+        return;
+    }
+
     // 直接通过表盘id 获取相关信息并存储到script_package
-    EOS_LOG_D("Loading manifest");
     char manifest_path[PATH_MAX];
-    snprintf(manifest_path, sizeof(manifest_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
+    snprintf(manifest_path, sizeof(manifest_path),
+             EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
              wf_id);
-    script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
-    EOS_CHECK_PTR_RETURN(pkg);
-    pkg->type = SCRIPT_TYPE_WATCHFACE;
-    EOS_LOG_D("script_engine_get_manifest");
-    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
+    script_pkg_t pkg = {0};
+    pkg.type = SCRIPT_TYPE_WATCHFACE;
+    if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
     {
         EOS_LOG_E("Read manifest failed: %s", manifest_path);
         return;
     }
-    EOS_LOG_D("App Info:\n"
-              "id=%s | name=%s | version=%s |\n"
-              "author:%s | description:%s",
-              pkg->id, pkg->name, pkg->version,
-              pkg->author, pkg->description);
     char script_path[PATH_MAX];
-    snprintf(script_path, sizeof(script_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
+    snprintf(script_path, sizeof(script_path),
+             EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
              wf_id);
+
+    // 设置脚本基础路径，用于解析相对路径的模块导入
+    char base_path[PATH_MAX];
+    snprintf(base_path, sizeof(base_path), EOS_WATCHFACE_INSTALLED_DIR "%s/", wf_id);
+    pkg.base_path = eos_strdup(base_path);
     if (!eos_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
+        eos_pkg_free(&pkg);
         return;
     }
-    pkg->script_str = eos_fs_read_file(script_path);
-    // 设置长按回调 进入 watchface list 使用普通 nav 导航
-    lv_obj_add_event_cb(watchface_screen, _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
+    pkg.script_str = eos_fs_read_file(script_path);
+    // 设置长按回调 进入 watchface list
+    lv_obj_add_event_cb(eos_activity_get_view(a), _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // 正式运行表盘脚本（脚本禁止阻塞线程）
-    script_engine_result_t ret = script_engine_run(pkg);
+    script_engine_result_t ret = script_engine_run(&pkg);
     if (ret != SE_OK)
     {
+        // 显示错误信息
         lv_obj_t *list = eos_std_info_create(
-            watchface_screen,
+            eos_activity_get_view(a),
             EOS_COLOR_RED,
             RI_BUG_LINE,
-            current_lang[STR_ID_WATCHFACE_RUN_ERR_TITLE],
-            current_lang[STR_ID_WATCHFACE_RUN_ERR]);
+            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR_TITLE),
+            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR));
         lv_obj_set_style_pad_top(list, 30, 0);
         char info_str[1024];
         snprintf(info_str, sizeof(info_str), "Code: %d\nWFID: %s\nError: %s", ret, wf_id, script_engine_get_error_info());
         lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-        lv_obj_t *btn = eos_button_create(list, current_lang[STR_ID_WATCHFACE_SWITCH], _watchface_long_pressed_cb, NULL);
+        lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_WATCHFACE_SWITCH), _watchface_long_pressed_cb, NULL);
         EOS_LOG_E("Watchface encounter a fatal error");
     }
-    eos_free((void *)wf_id);
+
+    eos_pkg_free(&pkg);
+}
+
+void eos_watchface_on_destroy(eos_activity_t *a)
+{
+    EOS_LOG_I("Exit watchface activity");
+    if(script_engine_request_stop() != SE_OK)
+    {
+        EOS_LOG_E("Script engine request stop failed");
+        return;
+    }
+
+    // 隐藏控制中心和消息列表
+    eos_control_center_hide();
+    eos_msg_list_hide();
+
+    // 删除 View
+    lv_obj_delete(eos_activity_get_view(a));
+}
+
+eos_activity_t *eos_watchface_get_activity(void)
+{
+    return _watchface_activity;
 }
 
 eos_result_t eos_watchface_init(void)
@@ -348,6 +451,14 @@ eos_result_t eos_watchface_init(void)
         EOS_LOG_E("Watchface already initialized");
         return EOS_FAILED;
     }
+    // 创建表盘 Activity
+    _watchface_activity = eos_activity_create(&watchface_lifecycle);
+    if (!_watchface_activity)
+    {
+        EOS_LOG_E("Create watchface activity failed");
+        return EOS_FAILED;
+    }
+    eos_activity_set_type(_watchface_activity, EOS_ACTIVITY_TYPE_WATCHFACE);
 
     return EOS_OK;
 }

@@ -13,7 +13,7 @@
  *
  * ## 使用方法
  *
- * 只需要在需要字符串的标签`lv_label`的文字处，使用`current_lang[<String ID>]`即可获取当前语言的字符串。
+ * 只需要在需要字符串的标签`lv_label`的文字处，使用`eos_lang_get_text(<String ID>)`即可获取当前语言的字符串。
  *
  * 示例：
  *
@@ -23,9 +23,9 @@
  * eos_lang_init();
  *
  * // Somewhere
- * eos_lang_set(LANG_EN);
+ * eos_lang_set_current_id(LANG_EN);
  * lv_obj_t *label = lv_label_create(eos_screen_active());
- * lv_label_set_text(label, current_lang[STR_ID_LANGUAGE]);
+ * lv_label_set_text(label, eos_lang_get_text(STR_ID_LANGUAGE));
  * lv_obj_center(label);
  *
  * ```
@@ -107,7 +107,7 @@ typedef enum {
     STR_ID_SETTINGS_APPS_AUTHOR,
     STR_ID_SETTINGS_APPS_VERSION,
     STR_ID_SETTINGS_APPS_DESCRIPTON,
-    STR_ID_SETTINGS_APPS_UINSTALL,
+    STR_ID_SETTINGS_APPS_UNINSTALL,
     STR_ID_SETTINGS_APPS_CLEAR_DATA,
     STR_ID_SETTINGS_GENERAL,
     STR_ID_SETTINGS_GENERAL_LANGUAGE,
@@ -124,11 +124,13 @@ typedef enum {
     STR_ID_SETTINGS_SOUNDS_AND_ALERTS,
     STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_SILENT_MODE,
     STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_VOLUME,
+    STR_ID_SETTINGS_APPS_CLEAR_DATA_SUCCESS,
     STR_ID_APP_FLASH_LIGHT_DISMISS,
     STR_ID_TOAST_SHOW_MUTE,
     STR_ID_TOAST_SHOW_UNMUTE,
     STR_ID_SECOND,
-
+    STR_ID_SYS_INIT_FAILED,
+    STR_ID_SYS_INIT_FAILED_CONTENT,
     STR_ID_SENSOR_START,
     STR_ID_SENSOR_ACCE,      /**< 加速度传感器     */
     STR_ID_SENSOR_GYRO,      /**< 重力传感器       */
@@ -151,13 +153,6 @@ typedef enum {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 获取当前语言的字符串
- *
- * 例如当前语言是英语，那么 `current_lang[STR_ID_LANGUAGE]` 等于 `"English"`
- */
-extern const char** current_lang;
-extern const char *language_list[LANG_MAX_NUMBER];
-/**
  * @brief 初始化语言系统
  */
 void eos_lang_init(void);
@@ -166,31 +161,45 @@ void eos_lang_init(void);
  * @param lang 目标语言类型 `language_id_t`
  * @warning 需要先初始化语言系统
  */
-void eos_lang_set(language_id_t lang);
+void eos_lang_set_current_id(language_id_t lang);
 /**
  * @brief 获取当前语言类型
  * @return language_id_t 语言类型
  */
-language_id_t eos_lang_get(void);
+language_id_t eos_lang_get_current_id(void);
 /**
- * @brief 通过语言字符串获得语言类型
- *
- * 例如`English`返回`LANG_EN`
- * @param language_str 字符串
+ * @brief 根据语言名称解析语言 ID
+ * @param language_name 语言名称（如 "English"）
  * @return language_id_t 语言类型
  */
-language_id_t eos_lang_get_with_str(const char *language_str);
+language_id_t eos_lang_parse_name(const char *language_name);
 /**
- * @brief 获取当前语言字符串
- * @return char* 语言字符串（例如：简体中文）
+ * @brief 获取指定语言 ID 对应的语言名称
+ * @param lang 语言类型
+ * @return const char* 语言名称
  */
-char *eos_lang_get_language_str(void);
+const char *eos_lang_get_name(language_id_t lang);
+/**
+ * @brief 获取当前语言名称
+ * @return const char* 语言名称
+ */
+const char *eos_lang_get_current_name(void);
+/**
+ * @brief 获取当前语言下的文本
+ * @param id 字符串 ID
+ * @return const char* 字符串
+ */
+const char *eos_lang_get_text(lang_string_id_t id);
+/**
+ * @brief 兼容旧接口：根据语言字符串获得语言类型
+ */
+language_id_t eos_lang_get_current_id_with_str(const char *language_str);
 /**
  * @brief 通过字符串 ID 设置标签的字符串
  * @param label 标签对象
  * @param str_id 字符串 ID
  */
-void eos_label_set_text_id(lv_obj_t *label, uint32_t str_id);
+void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id);
 /**
  * @brief 支持格式化字符串
  * @param label

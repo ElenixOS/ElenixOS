@@ -16,7 +16,6 @@
 #define EOS_LOG_TAG "Sensor"
 #include "elena_os_log.h"
 #include "elena_os_port.h"
-#include "elena_os_nav.h"
 #include "elena_os_basic_widgets.h"
 #include "elena_os_event.h"
 #include "elena_os_config.h"

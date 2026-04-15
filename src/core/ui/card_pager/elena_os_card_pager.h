@@ -58,6 +58,11 @@ typedef enum
 } eos_card_pager_dir_t;
 
 typedef struct eos_card_pager_node_t eos_card_pager_node_t;     // 预定义
+typedef struct eos_card_pager_t eos_card_pager_t;
+
+typedef void (*eos_card_pager_page_changed_cb_t)(eos_card_pager_t *cp,
+                                                  uint8_t current_page_index,
+                                                  void *user_data);
 
 /**
  * @brief 双向链表存储页面
@@ -73,7 +78,7 @@ struct eos_card_pager_node_t
 /**
  * @brief 卡片式页面结构体定义
  */
-typedef struct
+struct eos_card_pager_t
 {
     lv_obj_t *container;
     lv_obj_t *background;
@@ -85,7 +90,9 @@ typedef struct
     eos_slide_widget_t *sw2;
     eos_card_pager_dir_t dir;
     bool loop;
-} eos_card_pager_t;
+    eos_card_pager_page_changed_cb_t page_changed_cb;
+    void *page_changed_user_data;
+};
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -157,6 +164,10 @@ void eos_card_pager_move_page(eos_card_pager_t *cp, uint8_t page_index);
  *       如果移动的是当前显示页面，会更新当前页面索引
  */
 bool eos_card_pager_move_node(eos_card_pager_t *cp, uint8_t from_index, uint8_t to_index);
+
+void eos_card_pager_set_page_changed_cb(eos_card_pager_t *cp,
+                                        eos_card_pager_page_changed_cb_t cb,
+                                        void *user_data);
 #ifdef __cplusplus
 }
 #endif

@@ -1,10 +1,11 @@
-![ElenaOS LOGO](./logo.png)
+<div style="display: flex; align-items: center;">
+  <img src="./assets/logo-light.png#gh-light-mode-only" />
+  <img src="./assets/logo-dark.png#gh-dark-mode-only" />
+</div>
 
-[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) ![Platform](https://img.shields.io/badge/platform-Embedded-lightgrey)
+[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) [![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net) ![release](https://img.shields.io/github/v/tag/Sab1e-dev/ElenaOS)
 
 ---
-
->本项目处于开发阶段
 
 ## 简述
 

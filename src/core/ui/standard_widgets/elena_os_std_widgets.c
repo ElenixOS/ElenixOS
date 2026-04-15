@@ -15,7 +15,6 @@
 #include "elena_os_basic_widgets.h"
 #include "elena_os_icon.h"
 #include "elena_os_font.h"
-#include "elena_os_nav.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -38,9 +37,9 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
     eos_label_set_font_size(title_label, EOS_FONT_SIZE_LARGE);
 
     lv_obj_t *label = lv_label_create(list);
-    if (eos_lang_get() == LANG_EN)
+    if (eos_lang_get_current_id() == LANG_EN)
         lv_obj_set_width(label, lv_pct(90));
-    else if (eos_lang_get() == LANG_ZH)
+    else if (eos_lang_get_current_id() == LANG_ZH)
         lv_obj_set_width(label, lv_pct(95));
     else
         lv_obj_set_width(label, lv_pct(80));

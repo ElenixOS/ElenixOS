@@ -17,7 +17,6 @@
 // #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "BasicWidgets"
 #include "elena_os_log.h"
-#include "elena_os_nav.h"
 #include "elena_os_img.h"
 #include "elena_os_event.h"
 #include "script_engine_core.h"
@@ -29,12 +28,10 @@
 #include "elena_os_anim.h"
 #include "elena_os_font.h"
 #include "elena_os_crown.h"
-#include "elena_os_anim_effects.h"
-#include "elena_os_scene.h"
 #include "lvgl_private.h"
 #include "elena_os_app_header.h"
+#include "elena_os_activity.h"
 #include "elena_os_app_list.h"
-#include "elena_os_screen_mgr.h"
 #include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -52,9 +49,45 @@
 
 #define _LIST_CONTAINER_MARGIN_BOTTOM 8
 
+#define _LIST_TRANSITION_HALF_SCALE 128
+#define _LIST_TRANSITION_NORMAL_SCALE 256
+#define _LIST_TRANSITION_DELAY_PCT 20
+#define _LIST_TRANSITION_MAX_VISIBLE_ITEMS 64
+#define _LIST_TRANSITION_STATE_HISTORY_CAP 16
+
 #define _MAX_CANVAS_SIZE EOS_DISPLAY_WIDTH * EOS_DISPLAY_HEIGHT * lv_color_format_get_size(LV_COLOR_FORMAT_ARGB8888)
 
 /* Variables --------------------------------------------------*/
+
+typedef struct
+{
+    lv_obj_t *list;
+    lv_obj_t *button;
+    eos_activity_t *activity;
+    int32_t button_hidden_x;
+} eos_list_transition_state_t;
+
+static eos_list_transition_state_t g_list_transition_state = {0};
+static eos_list_transition_state_t g_list_transition_state_history[_LIST_TRANSITION_STATE_HISTORY_CAP] = {0};
+static uint32_t g_list_transition_state_history_count = 0U;
+static int32_t g_list_transition_selected_index = -1;
+
+static void _list_transition_clear_state(void);
+static void _list_transition_remove_state_at(uint32_t idx);
+static void _list_transition_prune_invalid_states(void);
+static void _list_transition_record_state(lv_obj_t *list, lv_obj_t *button, eos_activity_t *activity);
+static bool _list_transition_select_state_for_activity(eos_activity_t *expected_activity);
+static lv_obj_t *_list_transition_resolve_button_target(lv_obj_t *list, lv_obj_t *target);
+static void _list_transition_list_clicked_cb(lv_event_t *e);
+static void _list_transition_list_delete_cb(lv_event_t *e);
+static void _list_transition_set_scale_cb(void *var, int32_t value);
+static void _list_transition_set_translate_x_cb(void *var, int32_t value);
+static void _list_transition_init_scale_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static void _list_transition_init_translate_x_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
+static bool _list_transition_is_obj_visible_in_list(lv_obj_t *list, lv_obj_t *obj);
+static bool _list_transition_is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
+static uint32_t _list_transition_collect_visible_children(lv_obj_t *list, lv_obj_t **out_objs, uint32_t cap);
+static uint32_t _list_transition_collect_all_children(lv_obj_t *list, lv_obj_t **out_objs, uint32_t cap);
 
 /* Function Implementations -----------------------------------*/
 
@@ -151,15 +184,18 @@ void eos_draw_buf_destory(lv_draw_buf_t *draw_buf)
 
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
 {
+    static lv_style_t style_pressed;
+    static bool style_pressed_inited = false;
+
     lv_obj_t *btn = lv_button_create(parent);
-    lv_obj_add_event_cb(btn, eos_nav_back_prev_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, eos_activity_back_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_set_style_border_width(btn, 0, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
 
     lv_obj_t *btn_label = lv_label_create(btn);
     if (show_text)
     {
-        lv_label_set_text_fmt(btn_label, "%s", current_lang[STR_ID_BACK]);
+        lv_label_set_text_fmt(btn_label, "%s", eos_lang_get_text(STR_ID_BACK));
     }
     else
     {
@@ -172,11 +208,15 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     lv_obj_set_style_transform_pivot_x(btn, _BACK_BTN_WIDTH / 2, 0);
     lv_obj_set_style_transform_pivot_y(btn, _BACK_BTN_HEIGHT / 2, 0);
 
-    static lv_style_t style_pressed;
-    lv_style_init(&style_pressed);
-
-    lv_style_set_transform_scale(&style_pressed, 350);
-    lv_style_set_bg_color(&style_pressed, lv_color_lighten(EOS_THEME_SECONDARY_COLOR, 64));
+    if (!style_pressed_inited)
+    {
+        /* Shared styles must be initialized only once, otherwise LVGL will leak the
+         * previously allocated property list on every back button recreation. */
+        lv_style_init(&style_pressed);
+        lv_style_set_transform_scale(&style_pressed, 350);
+        lv_style_set_bg_color(&style_pressed, lv_color_lighten(EOS_THEME_SECONDARY_COLOR, 64));
+        style_pressed_inited = true;
+    }
 
     lv_obj_add_style(btn, &style_pressed, LV_STATE_PRESSED);
 
@@ -205,15 +245,535 @@ lv_obj_t *eos_list_create(lv_obj_t *parent)
     lv_obj_set_style_pad_top(list, _LIST_HEAD_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_style_pad_bottom(list, _LIST_TAIL_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_flex_align(list, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_add_event_cb(list, _list_transition_list_clicked_cb, LV_EVENT_PRESSED, list);
+    lv_obj_add_event_cb(list, _list_transition_list_clicked_cb, LV_EVENT_CLICKED, list);
+    lv_obj_add_event_cb(list, _list_transition_list_delete_cb, LV_EVENT_DELETE, list);
     return list;
 }
 
-static void _list_button_clicked_cb(lv_event_t *e)
+static void _list_transition_clear_state(void)
 {
-    lv_obj_t *btn = lv_event_get_target(e);
+    g_list_transition_state.list = NULL;
+    g_list_transition_state.button = NULL;
+    g_list_transition_state.activity = NULL;
+    g_list_transition_state.button_hidden_x = 0;
+    g_list_transition_selected_index = -1;
+}
+
+static void _list_transition_remove_state_at(uint32_t idx)
+{
+    if (idx >= g_list_transition_state_history_count)
+    {
+        return;
+    }
+
+    for (uint32_t i = idx; i + 1U < g_list_transition_state_history_count; i++)
+    {
+        g_list_transition_state_history[i] = g_list_transition_state_history[i + 1U];
+    }
+    g_list_transition_state_history_count--;
+
+    if (g_list_transition_selected_index == (int32_t)idx)
+    {
+        g_list_transition_selected_index = -1;
+    }
+    else if (g_list_transition_selected_index > (int32_t)idx)
+    {
+        g_list_transition_selected_index--;
+    }
+}
+
+static void _list_transition_prune_invalid_states(void)
+{
+    for (uint32_t i = 0U; i < g_list_transition_state_history_count;)
+    {
+        eos_list_transition_state_t *s = &g_list_transition_state_history[i];
+        bool valid = s->list && s->button && s->activity &&
+                     lv_obj_is_valid(s->list) && lv_obj_is_valid(s->button) &&
+                     _list_transition_is_descendant_of(s->button, s->list);
+        if (!valid)
+        {
+            _list_transition_remove_state_at(i);
+            continue;
+        }
+        i++;
+    }
+}
+
+static void _list_transition_record_state(lv_obj_t *list, lv_obj_t *button, eos_activity_t *activity)
+{
+    if (!(list && button && activity))
+    {
+        return;
+    }
+
+    _list_transition_prune_invalid_states();
+
+    eos_list_transition_state_t new_state = {
+        .list = list,
+        .button = button,
+        .activity = activity,
+        .button_hidden_x = 0,
+    };
+
+    for (uint32_t i = 0U; i < g_list_transition_state_history_count; i++)
+    {
+        if (g_list_transition_state_history[i].list == list)
+        {
+            _list_transition_remove_state_at(i);
+            break;
+        }
+    }
+
+    if (g_list_transition_state_history_count >= _LIST_TRANSITION_STATE_HISTORY_CAP)
+    {
+        _list_transition_remove_state_at(0U);
+    }
+
+    g_list_transition_state_history[g_list_transition_state_history_count] = new_state;
+    g_list_transition_selected_index = (int32_t)g_list_transition_state_history_count;
+    g_list_transition_state_history_count++;
+    g_list_transition_state = new_state;
+}
+
+static bool _list_transition_select_state_for_activity(eos_activity_t *expected_activity)
+{
+    if (!expected_activity)
+    {
+        return false;
+    }
+
+    _list_transition_prune_invalid_states();
+
+    lv_obj_t *expected_view = eos_activity_get_view(expected_activity);
+    if (!(expected_view && lv_obj_is_valid(expected_view)))
+    {
+        return false;
+    }
+
+    for (uint32_t i = g_list_transition_state_history_count; i > 0U; i--)
+    {
+        eos_list_transition_state_t *s = &g_list_transition_state_history[i - 1U];
+        if (!_list_transition_is_descendant_of(s->list, expected_view))
+        {
+            continue;
+        }
+        if (!_list_transition_is_descendant_of(s->button, s->list))
+        {
+            continue;
+        }
+
+        g_list_transition_selected_index = (int32_t)(i - 1U);
+        g_list_transition_state = *s;
+        return true;
+    }
+
+    return false;
+}
+
+static void _list_transition_list_delete_cb(lv_event_t *e)
+{
     lv_obj_t *list = lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(btn && list);
-    eos_anim_list_bind(eos_screen_active(), list, btn);
+    if (!list)
+    {
+        return;
+    }
+
+    for (uint32_t i = g_list_transition_state_history_count; i > 0U; i--)
+    {
+        if (g_list_transition_state_history[i - 1U].list == list)
+        {
+            _list_transition_remove_state_at(i - 1U);
+        }
+    }
+
+    if (g_list_transition_state.list == list)
+    {
+        _list_transition_clear_state();
+    }
+}
+
+static lv_obj_t *_list_transition_resolve_button_target(lv_obj_t *list, lv_obj_t *target)
+{
+    if (!(list && target))
+    {
+        EOS_LOG_D("resolve_button: list=%p, target=%p -> NULL", list, target);
+        return NULL;
+    }
+
+    lv_obj_t *obj = target;
+    int depth = 0;
+    while (obj && obj != list)
+    {
+        if (lv_obj_has_flag(obj, LV_OBJ_FLAG_USER_1))
+        {
+            EOS_LOG_D("resolve_button: found button at depth %d, obj=%p", depth, obj);
+            return obj;
+        }
+        obj = lv_obj_get_parent(obj);
+        depth++;
+    }
+
+    EOS_LOG_D("resolve_button: no USER_1 flag found, depth=%d", depth);
+    return NULL;
+}
+
+static void _list_transition_list_clicked_cb(lv_event_t *e)
+{
+    lv_obj_t *list = lv_event_get_user_data(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    if (!(code == LV_EVENT_PRESSED || code == LV_EVENT_CLICKED))
+    {
+        return;
+    }
+
+    EOS_LOG_D("list_clicked: code=%d, list=%p, target=%p", code, list, target);
+    if (!(list && target))
+    {
+        EOS_LOG_D("list_clicked: list or target is NULL, skip");
+        return;
+    }
+
+    lv_obj_t *button = _list_transition_resolve_button_target(list, target);
+    if (!button)
+    {
+        EOS_LOG_D("list_clicked: button is NULL after resolve, skip");
+        return;
+    }
+
+    // 提前去掉按压态，避免转场后对象残留 pressed 缩放。
+    lv_obj_clear_state(button, LV_STATE_PRESSED);
+
+    eos_activity_t *click_activity = eos_activity_get_previous();
+    if (!click_activity)
+    {
+        click_activity = eos_activity_get_current();
+    }
+    if (!click_activity)
+    {
+        EOS_LOG_D("list_clicked: previous/current activity is NULL, fallback to visible_activity");
+        click_activity = eos_activity_get_visible();
+    }
+    EOS_LOG_D("list_clicked: saving state list=%p, button=%p, click_activity=%p", list, button, click_activity);
+    _list_transition_record_state(list, button, click_activity);
+}
+
+bool eos_list_transition_should_animate(eos_activity_t *from, eos_activity_t *to, bool back)
+{
+    eos_activity_t *expected_activity = back ? to : from;
+    EOS_LOG_D("should_animate: from=%p, to=%p, back=%d, expected=%p", from, to, back, expected_activity);
+
+    if (!expected_activity)
+    {
+        EOS_LOG_D("should_animate: FAIL gate 1: expected activity is NULL");
+        return false;
+    }
+
+    if (!_list_transition_select_state_for_activity(expected_activity))
+    {
+        EOS_LOG_D("should_animate: FAIL gate 2: no matching list transition state for expected activity");
+        return false;
+    }
+
+    if (g_list_transition_state.activity != expected_activity)
+    {
+        EOS_LOG_D("should_animate: activity mismatch tolerated, saved=%p, expected=%p", g_list_transition_state.activity, expected_activity);
+    }
+
+    EOS_LOG_D("should_animate: PASS - will animate");
+    return true;
+}
+
+static void _list_transition_set_scale_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_transform_scale((lv_obj_t *)var, value, 0);
+}
+
+static void _list_transition_set_translate_x_cb(void *var, int32_t value)
+{
+    lv_obj_set_style_translate_x((lv_obj_t *)var, value, 0);
+}
+
+static void _list_transition_init_scale_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _list_transition_set_scale_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static void _list_transition_init_translate_x_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration)
+{
+    lv_anim_init(anim);
+    lv_anim_set_var(anim, obj);
+    lv_anim_set_values(anim, start, end);
+    lv_anim_set_exec_cb(anim, _list_transition_set_translate_x_cb);
+    lv_anim_set_path_cb(anim, lv_anim_path_ease_in_out);
+    lv_anim_set_duration(anim, duration);
+}
+
+static bool _list_transition_is_obj_visible_in_list(lv_obj_t *list, lv_obj_t *obj)
+{
+    if (!(list && obj && lv_obj_is_valid(list) && lv_obj_is_valid(obj)))
+    {
+        return false;
+    }
+
+    if (lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN))
+    {
+        return false;
+    }
+
+    lv_area_t list_area;
+    lv_area_t obj_area;
+    lv_obj_get_coords(list, &list_area);
+    lv_obj_get_coords(obj, &obj_area);
+
+    if (obj_area.x2 < list_area.x1 || obj_area.x1 > list_area.x2 ||
+        obj_area.y2 < list_area.y1 || obj_area.y1 > list_area.y2)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+static bool _list_transition_is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor)
+{
+    if (!(obj && ancestor && lv_obj_is_valid(obj) && lv_obj_is_valid(ancestor)))
+    {
+        return false;
+    }
+
+    lv_obj_t *cur = obj;
+    while (cur)
+    {
+        if (cur == ancestor)
+        {
+            return true;
+        }
+        cur = lv_obj_get_parent(cur);
+    }
+
+    return false;
+}
+
+static uint32_t _list_transition_collect_visible_children(lv_obj_t *list, lv_obj_t **out_objs, uint32_t cap)
+{
+    if (!(list && out_objs && cap > 0U))
+    {
+        return 0U;
+    }
+
+    uint32_t cnt = 0U;
+    uint32_t child_cnt = lv_obj_get_child_count(list);
+    for (uint32_t i = 0U; i < child_cnt && cnt < cap; i++)
+    {
+        lv_obj_t *child = lv_obj_get_child(list, i);
+        if (_list_transition_is_obj_visible_in_list(list, child))
+        {
+            out_objs[cnt++] = child;
+        }
+    }
+
+    return cnt;
+}
+
+static uint32_t _list_transition_collect_all_children(lv_obj_t *list, lv_obj_t **out_objs, uint32_t cap)
+{
+    if (!(list && out_objs && cap > 0U))
+    {
+        return 0U;
+    }
+
+    uint32_t cnt = 0U;
+    uint32_t child_cnt = lv_obj_get_child_count(list);
+    for (uint32_t i = 0U; i < child_cnt && cnt < cap; i++)
+    {
+        lv_obj_t *child = lv_obj_get_child(list, i);
+        if (child && !lv_obj_has_flag(child, LV_OBJ_FLAG_HIDDEN))
+        {
+            out_objs[cnt++] = child;
+        }
+    }
+
+    return cnt;
+}
+
+void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool back)
+{
+    if (!(at && from && to))
+    {
+        return;
+    }
+
+    if (!eos_list_transition_should_animate(from, to, back))
+    {
+        return;
+    }
+
+    eos_activity_t *list_activity = back ? to : from;
+    eos_activity_t *page_activity = back ? from : to;
+    lv_obj_t *list_view = eos_activity_get_view(list_activity);
+    lv_obj_t *list = g_list_transition_state.list;
+    lv_obj_t *button = g_list_transition_state.button;
+    if (!(list_view && list && button))
+    {
+        return;
+    }
+
+    lv_obj_t *page_snapshot = eos_activity_take_snapshot(page_activity, false);
+    if (!page_snapshot)
+    {
+        return;
+    }
+
+    if (back)
+    {
+        // 返回时确保列表页参与动画渲染
+        lv_obj_clear_flag(list_view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(list, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    lv_obj_update_layout(list_view);
+    lv_obj_update_layout(list);
+    lv_coord_t btn_w = lv_obj_get_width(button);
+    lv_area_t btn_area;
+    lv_obj_get_coords(button, &btn_area);
+
+    lv_obj_t *visible_items[_LIST_TRANSITION_MAX_VISIBLE_ITEMS] = {0};
+    uint32_t visible_item_cnt = _list_transition_collect_visible_children(list, visible_items, _LIST_TRANSITION_MAX_VISIBLE_ITEMS);
+    lv_obj_t *all_items[_LIST_TRANSITION_MAX_VISIBLE_ITEMS] = {0};
+    uint32_t all_item_cnt = 0U;
+    if (back && visible_item_cnt == 0U)
+    {
+        // 某些返回时序下可见区域采集会失败，兜底为列表下全部子对象
+        visible_item_cnt = _list_transition_collect_all_children(list, visible_items, _LIST_TRANSITION_MAX_VISIBLE_ITEMS);
+    }
+    if (back)
+    {
+        all_item_cnt = _list_transition_collect_all_children(list, all_items, _LIST_TRANSITION_MAX_VISIBLE_ITEMS);
+    }
+    lv_anim_t list_scale_anims[_LIST_TRANSITION_MAX_VISIBLE_ITEMS] = {0};
+
+    uint32_t total_duration = EOS_SCREEN_SWITCH_DURATION;
+    if (total_duration == 0U)
+    {
+        total_duration = 1U;
+    }
+
+    uint32_t page_delay = (total_duration * _LIST_TRANSITION_DELAY_PCT) / 100U;
+    if (page_delay >= total_duration)
+    {
+        page_delay = total_duration > 1U ? total_duration - 1U : 0U;
+    }
+
+    uint32_t page_duration = total_duration - page_delay;
+    if (page_duration == 0U)
+    {
+        page_duration = 1U;
+    }
+
+    int32_t computed_hidden_x = -(btn_area.x1 + btn_w + 16);
+    int32_t style_translate_x = lv_obj_get_style_translate_x(button, 0);
+    int32_t button_hidden_x = computed_hidden_x;
+    if (g_list_transition_state.button_hidden_x < 0)
+    {
+        button_hidden_x = g_list_transition_state.button_hidden_x;
+    }
+
+    int32_t button_start_x;
+    int32_t button_end_x;
+    if (back)
+    {
+        button_start_x = (style_translate_x < 0) ? style_translate_x : button_hidden_x;
+        button_end_x = 0;
+    }
+    else
+    {
+        button_start_x = 0;
+        button_end_x = button_hidden_x;
+        g_list_transition_state.button_hidden_x = button_hidden_x;
+        if (g_list_transition_selected_index >= 0 && (uint32_t)g_list_transition_selected_index < g_list_transition_state_history_count)
+        {
+            g_list_transition_state_history[g_list_transition_selected_index].button_hidden_x = button_hidden_x;
+        }
+    }
+    int32_t page_start_x = back ? 0 : EOS_DISPLAY_WIDTH;
+    int32_t page_end_x = back ? EOS_DISPLAY_WIDTH : 0;
+
+    lv_anim_t button_translate_anim;
+    lv_anim_t page_translate_anim;
+
+    // 按钮左移时允许内容溢出，避免被 list/view 父对象裁剪
+    lv_obj_add_flag(list_view, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+    lv_obj_add_flag(list, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+
+    if (back)
+    {
+        // 返回时即便部分条目不在可见区，也要复原到正常缩放，避免残留半缩放。
+        for (uint32_t i = 0U; i < all_item_cnt; i++)
+        {
+            lv_obj_t *obj = all_items[i];
+            bool in_visible = false;
+            for (uint32_t j = 0U; j < visible_item_cnt; j++)
+            {
+                if (visible_items[j] == obj)
+                {
+                    in_visible = true;
+                    break;
+                }
+            }
+
+            if (!in_visible)
+            {
+                lv_obj_set_style_transform_scale(obj, _LIST_TRANSITION_NORMAL_SCALE, 0);
+            }
+        }
+
+        for (uint32_t i = 0U; i < visible_item_cnt; i++)
+        {
+            lv_obj_t *obj = visible_items[i];
+            lv_obj_set_style_transform_pivot_x(obj, lv_obj_get_width(obj) / 2, 0);
+            lv_obj_set_style_transform_pivot_y(obj, lv_obj_get_height(obj) / 2, 0);
+            lv_obj_set_style_transform_scale(obj, _LIST_TRANSITION_HALF_SCALE, 0);
+            _list_transition_init_scale_anim(&list_scale_anims[i], obj, _LIST_TRANSITION_HALF_SCALE, _LIST_TRANSITION_NORMAL_SCALE, total_duration);
+            lv_anim_timeline_add(at, 0, &list_scale_anims[i]);
+        }
+
+        lv_obj_set_style_translate_x(button, button_start_x, 0);
+        lv_obj_set_style_translate_x(page_snapshot, page_start_x, 0);
+
+        _list_transition_init_translate_x_anim(&button_translate_anim, button, button_start_x, button_end_x, page_duration);
+        _list_transition_init_translate_x_anim(&page_translate_anim, page_snapshot, page_start_x, page_end_x, total_duration);
+
+        lv_anim_timeline_add(at, page_delay, &button_translate_anim);
+        lv_anim_timeline_add(at, 0, &page_translate_anim);
+    }
+    else
+    {
+        for (uint32_t i = 0U; i < visible_item_cnt; i++)
+        {
+            lv_obj_t *obj = visible_items[i];
+            lv_obj_set_style_transform_pivot_x(obj, lv_obj_get_width(obj) / 2, 0);
+            lv_obj_set_style_transform_pivot_y(obj, lv_obj_get_height(obj) / 2, 0);
+            lv_obj_set_style_transform_scale(obj, _LIST_TRANSITION_NORMAL_SCALE, 0);
+            _list_transition_init_scale_anim(&list_scale_anims[i], obj, _LIST_TRANSITION_NORMAL_SCALE, _LIST_TRANSITION_HALF_SCALE, total_duration);
+            lv_anim_timeline_add(at, 0, &list_scale_anims[i]);
+        }
+
+        lv_obj_set_style_translate_x(button, button_start_x, 0);
+        lv_obj_set_style_translate_x(page_snapshot, page_start_x, 0);
+
+        _list_transition_init_translate_x_anim(&button_translate_anim, button, button_start_x, button_end_x, total_duration);
+        _list_transition_init_translate_x_anim(&page_translate_anim, page_snapshot, page_start_x, page_end_x, page_duration);
+
+        lv_anim_timeline_add(at, 0, &button_translate_anim);
+        lv_anim_timeline_add(at, page_delay, &page_translate_anim);
+    }
 }
 
 static void _list_container_common_style(lv_obj_t *container)
@@ -233,6 +793,7 @@ static void _list_container_common_style(lv_obj_t *container)
 lv_obj_t *_list_btn_container_create(lv_obj_t *list)
 {
     lv_obj_t *btn = lv_button_create(list);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_set_size(btn, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
     _list_container_common_style(btn);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
@@ -241,7 +802,6 @@ lv_obj_t *_list_btn_container_create(lv_obj_t *list)
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
-    lv_obj_add_event_cb(btn, _list_button_clicked_cb, LV_EVENT_CLICKED, list);
 
     lv_obj_update_layout(btn);
     lv_obj_set_style_transform_pivot_x(btn, lv_obj_get_width(btn) / 2, 0);
@@ -255,6 +815,7 @@ lv_obj_t *eos_list_add_button(lv_obj_t *list, const void *icon, const char *txt)
 {
     lv_obj_t *obj = _list_btn_container_create(list);
     lv_obj_t *img, *label;
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_USER_1);
     if (icon)
     {
         img = lv_image_create(obj);
@@ -307,6 +868,7 @@ lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, co
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     eos_round_icon_create(btn, bg_color, icon_src);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
@@ -322,6 +884,7 @@ lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_co
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     eos_round_icon_create(btn, bg_color, icon_src);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
@@ -337,6 +900,7 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, txt);
@@ -352,6 +916,7 @@ lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
 {
     // 创建按钮
     lv_obj_t *btn = _list_btn_container_create(list);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     // 文字
     lv_obj_t *label = lv_label_create(btn);
     eos_label_set_text_id(label, id);
@@ -707,7 +1272,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     }
 
     // 创建并配置画布
-    lv_obj_t *canvas = lv_canvas_create(eos_screen_active());
+    lv_obj_t *canvas = lv_canvas_create(lv_screen_active());
     EOS_CHECK_PTR_RETURN_FREE(canvas, canvas_buf);
 
     lv_obj_remove_style_all(canvas);
@@ -779,6 +1344,9 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(obj, 0, 0);
     lv_obj_set_style_radius(obj, 0, 0);
+
+    // 如果此前已经为这个对象设置过圆角背景，先释放旧的图像缓冲区。
+    lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
 
     // 移除旧的事件回调（如果存在）
     lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);

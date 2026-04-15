@@ -24,3 +24,5 @@ lv_timer_get_idle
 lv_timer_get_time_until_next
 lv_timer_get_next
 lv_timer_get_user_data
+
+lv_style_transition_dsc_init

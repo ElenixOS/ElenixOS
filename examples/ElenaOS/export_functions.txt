@@ -5,7 +5,6 @@ lv_disp_get_scr_act
 lv_obj_*
 lv_screen_*
 lv_arc_*
-lv_arclabel_*
 lv_bar_*
 lv_button_*
 lv_checkbox_*
@@ -20,3 +19,5 @@ lv_timer_*
 
 lv_palette_*
 lv_trigo_*
+
+lv_style_*

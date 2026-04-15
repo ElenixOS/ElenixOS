@@ -78,6 +78,8 @@ void eos_pkg_free(script_pkg_t *pkg)
         eos_free((void *)pkg->description);
     if (pkg->script_str)
         eos_free((void *)pkg->script_str);
+    if (pkg->base_path)
+        eos_free((void *)pkg->base_path);
     pkg->id = NULL;
     pkg->name = NULL;
     pkg->type = SCRIPT_TYPE_UNKNOWN;
@@ -85,4 +87,5 @@ void eos_pkg_free(script_pkg_t *pkg)
     pkg->author = NULL;
     pkg->description = NULL;
     pkg->script_str = NULL;
+    pkg->base_path = NULL;
 }

@@ -32,22 +32,18 @@ typedef enum
     EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< 滑动未超过阈值自动回弹 */
     EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< 滑动时（包括手动滑动以及动画执行）触发 */
     EOS_EVENT_SLIDE_WIDGET_DONE,                /**< 滑动完成 */
+    EOS_EVENT_SLIDE_WIDGET_OPENED,              /**< 滑动组件已拉出（全局广播） */
+    EOS_EVENT_SLIDE_WIDGET_CLOSED,              /**< 滑动组件已拉回（全局广播） */
     EOS_EVENT_APP_UNINSTALLED,                  /**< 应用已卸载 */
     EOS_EVENT_APP_INSTALLED,                    /**< 应用已安装 */
-    EOS_EVENT_GLOBAL_SCREEN_LOAD_START,         /**< 屏幕加载已开始，在调用`lv_screen_load()`后立即触发 */
-    EOS_EVENT_GLOBAL_SCREEN_LOADED,             /**< 屏幕加载已完成 */
     EOS_EVENT_SYSTEM_SLEEP,                     /**< 系统进入睡眠模式 */
     EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< 系统已唤醒 */
     EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< 屏幕常亮模式已启动 */
     EOS_EVENT_SYSTEM_CONFIG_UPDATE,             /**< 配置文件已更新 */
     EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< 删除圆角，参见`eos_obj_set_corner_radius_bg()` */
-    EOS_EVENT_NAVIGATION_INIT,                  /**< 导航栈已初始化 */
-    EOS_EVENT_NAVIGATION_ENTER_NEW,             /**< 导航栈进入了新的 Screen */
-    EOS_EVENT_NAVIGATION_BACK_PREV,             /**< 导航栈返回了上一个 Screen */
-    EOS_EVENT_NAVIGATION_CLEAN_UP_START,        /**< 导航栈开始退出（准备清理） */
-    EOS_EVENT_NAVIGATION_CLEAN_UP,              /**< 导航栈已退出（彻底清理） */
     EOS_EVENT_SCRIPT_STARTED,                   /**< 脚本已启动 */
     EOS_EVENT_SCRIPT_EXITED,                    /**< 脚本已退出 */
+    EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity页面切换完成，param为当前activity view */
     /* 此处添加新的事件 */
     EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
     EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */

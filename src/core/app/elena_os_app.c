@@ -534,7 +534,7 @@ void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id)
     eos_event_add_cb(obj,
                      _app_delete_cb,
                      EOS_EVENT_APP_UNINSTALLED,
-                     (void *)eos_strdup(app_id));
+                     (void *)app_id);
 }
 
 eos_result_t eos_app_init(void)

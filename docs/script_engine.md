@@ -38,20 +38,24 @@ flowchart BT
         Scheduler["脚本调度器"]
         State["脚本状态管理"]
 
-        subgraph API["API 绑定层"]
+        subgraph SNI["Script Native Interface"]
             direction BT
             LVGL["LVGL UI API"]
             ElenaOS["ElenaOS 系统 API"]
+            SNI_TB["SNI 类型桥接层"]
+
+            SNI_TB-->LVGL
+            SNI_TB-->ElenaOS
         end
     end
 
     JerryScriptCore -->|创建</br>运行</br>停止</br>...| Realm
-    JerryScriptCore --> API
+    JerryScriptCore --> SNI
     State --> JerryScriptCore
     Scheduler --> JerryScriptCore
 
 
-    API -->|注册| Realm
+    SNI -->|注册| Realm
     Realm --> application
 ```
 

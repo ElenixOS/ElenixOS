@@ -16,6 +16,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "elena_os_core.h"
+#include "elena_os_activity.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -23,9 +24,10 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建表盘列表页面
+ * @brief 进入表盘列表页面
+ * @return eos_activity_t* 表盘列表页面的 Activity
  */
-void eos_watchface_list_create(void);
+void eos_watchface_list_enter(void);
 #ifdef __cplusplus
 }
 #endif

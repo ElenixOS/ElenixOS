@@ -3,16 +3,6 @@
  * @brief 传感器定义
  * @author Sab1e
  * @date 2025-09-14
- * @details
- *
- * # Sensor
- *
- * ## 简述
- *
- * 本模块提供了 ElenaOS 中对传感器对象的统一抽象与管理，
- * 支持多类型、多实例的注册、查找和异步数据上报。
- *
- * >[!NOTE] 传感器读取函数参见`elena_os_port.c`
  */
 
 #ifndef ELENA_OS_SENSOR_H

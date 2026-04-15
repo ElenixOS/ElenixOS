@@ -141,6 +141,20 @@ static void _obj_delete_cb(lv_event_t *e)
     }
 }
 
+static bool _has_obj_delete_guard_cb(lv_obj_t *obj)
+{
+    uint32_t cnt = lv_obj_get_event_count(obj);
+    for (uint32_t i = 0; i < cnt; i++)
+    {
+        lv_event_dsc_t *dsc = lv_obj_get_event_dsc(obj, i);
+        if (!dsc)
+            continue;
+        if (lv_event_dsc_get_cb(dsc) == _obj_delete_cb)
+            return true;
+    }
+    return false;
+}
+
 void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data)
 {
     EOS_CHECK_PTR_RETURN(obj && cb);
@@ -169,7 +183,10 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
     lv_obj_add_event_cb(obj, cb, event, user_data);
 
     // 当对象被删除时自动清理删除此回调
-    lv_obj_add_event_cb(obj, _obj_delete_cb, LV_EVENT_DELETE, NULL);
+    if (!_has_obj_delete_guard_cb(obj))
+    {
+        lv_obj_add_event_cb(obj, _obj_delete_cb, LV_EVENT_DELETE, NULL);
+    }
 }
 
 void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user_data)
@@ -208,6 +225,7 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
               (void *)obj, (int)event, (void *)cb, user_data, g_broadcast_depth);
 
     event_node_t **curr = &event_list_head;
+    bool removed = false;
 
     while (*curr)
     {
@@ -235,6 +253,7 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
 
         if (match)
         {
+            removed = true;
             if (g_broadcast_depth > 0)
             {
                 n->marked_for_delete = true;
@@ -244,6 +263,8 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
                 {
                     lv_obj_remove_event_cb(n->obj, cb);
                 }
+
+                curr = &(*curr)->next;
             }
             else
             {
@@ -255,14 +276,19 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
                 }
 
                 eos_free(n);
+                continue;
             }
-            return;
         }
-
-        curr = &(*curr)->next;
+        else
+        {
+            curr = &(*curr)->next;
+        }
     }
 
-    EOS_LOG_W("Callback not found for removal");
+    if (!removed)
+    {
+        EOS_LOG_W("Callback not found for removal");
+    }
 }
 
 void eos_event_remove_cb(lv_obj_t *obj,

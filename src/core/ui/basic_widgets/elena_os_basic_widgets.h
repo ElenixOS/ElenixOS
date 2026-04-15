@@ -17,6 +17,7 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_lang.h"
+#include "elena_os_activity.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -117,6 +118,22 @@ void eos_switch_set_state(lv_obj_t *sw, bool checked);
  * @return lv_obj_t* 列表对象
  */
 lv_obj_t *eos_list_create(lv_obj_t *parent);
+/**
+ * @brief 判断 eos_list_create 创建的列表是否存在待播放的切换动画
+ * @param from 来源 Activity
+ * @param to 目标 Activity
+ * @param back 是否为返回切换
+ * @return bool true 表示可播放专用列表动画
+ */
+bool eos_list_transition_should_animate(eos_activity_t *from, eos_activity_t *to, bool back);
+/**
+ * @brief 播放 eos_list_create 列表专用切换动画
+ * @param at 动画时间线
+ * @param from 来源 Activity
+ * @param to 目标 Activity
+ * @param back 是否为返回切换
+ */
+void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool back);
 /**
  * @brief 创建一个返回按钮
  * @param parent 父对象

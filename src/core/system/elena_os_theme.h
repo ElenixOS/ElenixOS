@@ -38,12 +38,14 @@ extern "C" {
 #define EOS_THEME_PRIMARY_COLOR     EOS_COLOR_BLUE
 #define EOS_THEME_SECONDARY_COLOR   EOS_COLOR_DARK_GREY_2
 #define EOS_THEME_DANGEROS_COLOR    EOS_COLOR_RED
+#define EOS_THEME_LOGO_PRIMARY_COLOR lv_color_hex(0xDE2A00)
 
 #define EOS_THEME_BUTTON_HEIGHT 100
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
 /**
  * @brief 设置系统主题色
  * @param primary_color 主色
@@ -51,11 +53,13 @@ extern "C" {
  * @param font 字体
  */
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font_t *font);
+
 /**
- * @brief 获取当前的 Screen 样式对象
+ * @brief 获取当前的 View 样式对象
  * @return lv_style_t*
  */
-lv_style_t *eos_theme_get_screen_style(void);
+lv_style_t *eos_theme_get_view_style(void);
+
 /**
  * @brief 获取当前的 Label 样式对象
  * @return lv_style_t*

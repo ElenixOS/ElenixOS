@@ -1,0 +1,327 @@
+{
+  "classes": {
+    "obj": {
+      "c_type": "lv_obj_t",
+      "constructor": "lv_obj_create",
+      "base": null,
+      "methods": [
+        {
+          "name": "lv_obj_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "button": {
+      "c_type": "lv_button_t",
+      "constructor": "lv_button_create",
+      "base": "obj",
+      "methods": [],
+      "static_methods": [],
+      "constants": []
+    },
+    "label": {
+      "c_type": "lv_label_t",
+      "constructor": "lv_label_create",
+      "base": "obj",
+      "methods": [
+        {
+          "name": "lv_label_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "name": "obj",
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "arc": {
+      "c_type": "lv_arc_t",
+      "constructor": "lv_arc_create",
+      "base": "obj",
+      "methods": [],
+      "static_methods": [],
+      "constants": []
+    },
+    "bar": {
+      "c_type": "lv_bar_t",
+      "constructor": "lv_bar_create",
+      "base": "obj",
+      "methods": [
+        {
+          "name": "lv_bar_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "name": "obj",
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "screen": {
+      "c_type": "lv_obj_t",
+      "constructor": null,
+      "base": "obj",
+      "methods": [],
+      "static_methods": [
+        "lv_screen_active"
+      ],
+      "constants": []
+    },
+    "color": {
+      "c_type": "lv_color_t",
+      "constructor": null,
+      "base": null,
+      "methods": [],
+      "static_methods": [
+        "lv_color_hex"
+      ],
+      "constants": []
+    },
+    "timer": {
+      "c_type": "lv_timer_t",
+      "base": null,
+      "constructor": "lv_timer_create",
+      "methods": [
+        {
+          "name": "lv_timer_*",
+          "arg_match": [
+            {
+              "name": "timer",
+              "nth": 1,
+              "type": "lv_timer_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "anim": {
+      "c_type": "lv_anim_t",
+      "base": null,
+      "constructor": "lv_anim_init",
+      "methods": [
+        {
+          "name": "lv_anim_*",
+          "arg_match": [
+            {
+              "name": "a",
+              "nth": 1,
+              "type": "lv_anim_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "buttonmatrix": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_buttonmatrix_create",
+      "methods": [
+        {
+          "name": "lv_buttonmatrix_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": [
+        "LV_BUTTONMATRIX_CTRL_HIDDEN",
+        "LV_BUTTONMATRIX_CTRL_NO_REPEAT",
+        "LV_BUTTONMATRIX_CTRL_DISABLED",
+        "LV_BUTTONMATRIX_CTRL_CHECKABLE",
+        "LV_BUTTONMATRIX_CTRL_CHECKED",
+        "LV_BUTTONMATRIX_CTRL_CLICK_TRIG",
+        "LV_BUTTONMATRIX_CTRL_POPOVER",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_1",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_2",
+        "LV_BUTTONMATRIX_CTRL_RESERVED_3",
+        "LV_BUTTONMATRIX_CTRL_CUSTOM_1",
+        "LV_BUTTONMATRIX_CTRL_CUSTOM_2"
+      ]
+    },
+    "calendar": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_calendar_create",
+      "methods": [
+        {
+          "name": "lv_calendar_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "chart": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_chart_create",
+      "methods": [
+        {
+          "name": "lv_chart_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "canvas": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_canvas_create",
+      "methods": [
+        {
+          "name": "lv_canvas_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "checkbox": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_checkbox_create",
+      "methods": [
+        {
+          "name": "lv_checkbox_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "dropdown": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_dropdown_create",
+      "methods": [
+        {
+          "name": "lv_dropdown_*",
+          "arg_match": [
+            {
+              "name": "obj",
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "image": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_image_create",
+      "methods": [
+        {
+          "name": "lv_image_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    },
+    "imagebutton": {
+      "c_type": "lv_obj_t",
+      "base": "obj",
+      "constructor": "lv_imagebutton_create",
+      "methods": [
+        {
+          "name": "lv_imagebutton_*",
+          "arg_match": [
+            {
+              "nth": 1,
+              "type": "lv_obj_t*"
+            }
+          ]
+        }
+      ],
+      "static_methods": [],
+      "constants": []
+    }
+  },
+  "scan": {
+    "function": {
+      "blacklist": [
+        "*_fmt",
+        "*_id*",
+        "*_text_static",
+        "lv_anim_custom_*",
+        "lv_anim_set_exec_cb",
+        "lv_anim_set_user_data",
+        "lv_anim_get_user_data",
+        "lv_buttonmatrix_get_map",
+        "lv_buttonmatrix_set_button_draw_cb",
+        "lv_timer_set_user_data",
+        "lv_timer_get_user_data",
+        "lv_timer_create_basic",
+        "lv_obj_init_draw_*_dsc",
+        "lv_calendar_get_highlighted_dates",
+        "lv_calendar_get_showed_date",
+        "lv_calendar_get_today_date"
+      ]
+    },
+    "constant": {
+      "whitelist": [
+        "*"
+      ],
+      "blacklist": [
+        "STR_SYMBOL_*"
+      ]
+    }
+  }
+}

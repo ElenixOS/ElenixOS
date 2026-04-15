@@ -72,6 +72,7 @@ typedef enum
     EOS_SLIDE_WIDGET_STATE_THRESHOLD, /**< 超过阈值，滑动确认（执行展开/触发操作） */
     EOS_SLIDE_WIDGET_STATE_REVERTING, /**< 正在回弹（未超过阈值自动返回） */
     EOS_SLIDE_WIDGET_STATE_ANIMATING, /**< 手动触发动画 */
+    EOS_SLIDE_WIDGET_STATE_OPEN,      /**< 面板已完全打开 */
 } eos_slide_widget_state_t;
 
 typedef struct
@@ -85,11 +86,13 @@ typedef struct
     lv_coord_t touch_obj_target;
     eos_threshold_t threshold; /**< 阈值：(当前点 - 基点)/（目标点 - 基点）> threshold时触发阈值 */
     eos_slide_widget_state_t state;
+    eos_slide_widget_state_t settle_state; /**< 当前动画完成后的收敛状态 */
     lv_coord_t _indev_start;            /**< 触摸起始点 */
     lv_coord_t last_touch_displacement; /**< 上一次移动的位移量 */
     bool bidirectional;                 /**< 是否支持双向滑动 */
     bool move_foreground_on_pressed;    /**< 当被点击时是否移动到父级前方，默认打开，在父级对象为`lv_list_class`时自动关闭 */
     bool reversed;      /**< 是否反向 */
+    bool owns_touch_obj; /**< 是否拥有并负责释放 touch_obj */
 } eos_slide_widget_t;
 
 /* Public function prototypes --------------------------------*/
@@ -141,6 +144,9 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
  */
 void eos_slide_widget_set_bidirectional(eos_slide_widget_t *sw, bool enable);
 void eos_slide_widget_set_move_foreground_on_pressed(eos_slide_widget_t *sw, bool enable);
+void eos_slide_widget_set_anim_transition(eos_slide_widget_t *sw,
+                                          eos_slide_widget_state_t transit_state,
+                                          eos_slide_widget_state_t settle_state);
 void eos_slide_widget_delete(eos_slide_widget_t *sw);
 #ifdef __cplusplus
 }

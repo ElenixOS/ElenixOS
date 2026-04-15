@@ -38,33 +38,32 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_lang.h"
+#include "elena_os_config.h"
+#include "elena_os_activity.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
 
-void eos_app_header_set_title_anim(lv_obj_t *current_scr, lv_obj_t *next_scr, bool is_anim_entering);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param title 标题字符串
- */
-void eos_app_header_set_title(lv_obj_t *scr, const char *title);
-/**
- * @brief 应用头设置标题名称
- * @param scr Screen 对象
- * @param id 多语言的字符串 ID
- */
-void eos_app_header_set_title_str_id(lv_obj_t *scr, language_id_t id);
+#if EOS_APP_HEADER_ENABLE
+
 /**
  * @brief 隐藏应用头
  */
 void eos_app_header_hide(void);
 /**
  * @brief 显示应用头
+ * @param a 要显示应用头的活动
  */
-void eos_app_header_show(void);
+void eos_app_header_show(eos_activity_t *a);
+/**
+ * @brief 动画显示或隐藏应用头
+ * @param a 目标活动（显示时用于刷新标题与颜色，隐藏时可传NULL）
+ * @param visible 是否显示
+ * @param duration_ms 动画时长（毫秒），为0时立即切换
+ */
+void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms);
 /**
  * @brief 初始化应用头
  *
@@ -78,34 +77,54 @@ void eos_app_header_show(void);
  */
 void eos_app_header_init(void);
 /**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param title 标题 字符串（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_app_header_bind_screen(lv_obj_t *scr, const char *title);
-/**
- * @brief 将目标 screen 与应用头绑定，以便 screen 加载时显示应用头，screen 删除时隐藏应用头
- * @param scr 目标应用头
- * @param id 标题 ID（一般是应用名称），可以通过`eos_app_header_set_title`进行修改
- */
-void eos_app_header_bind_screen_str_id(lv_obj_t *scr, lang_string_id_t id);
-/**
- * @brief 临时设置一次标题文字颜色（当被绑定的 Screen 被删除时恢复原色）
- * @param title_text_color 标题文本颜色
- */
-void eos_app_header_set_title_color_once(lv_color_t title_text_color);
-/**
- * @brief 设置应用头的父对象
- */
-void eos_app_header_set_parent(lv_obj_t *parent);
-/**
- * @brief 恢复父级对象
- */
-void eos_app_header_parent_reset(void);
-/**
  * @brief 判断应用头当前是否可见
  */
 bool eos_app_header_is_visible(void);
+/**
+ * @brief 附加app header到指定View
+ * @param view 要附加的View
+ */
+void eos_app_header_attach_to_view(lv_obj_t *view);
+/**
+ * @brief 从View中分离app header，恢复到原始父对象
+ */
+void eos_app_header_detach_from_view(void);
+/**
+ * @brief 播放标题变化动画
+ * @param from 从哪个activity切换
+ * @param to 切换到哪个activity
+ * @param need_anim 是否需要动画
+ * @param reverse_anim 是否反向执行动画
+ */
+void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim);
+#else
+
+static inline void eos_app_header_hide(void)
+{
+}
+
+static inline void eos_app_header_show(eos_activity_t *a)
+{
+	(void)a;
+}
+
+static inline void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
+{
+	(void)a;
+	(void)visible;
+	(void)duration_ms;
+}
+
+static inline void eos_app_header_init(void)
+{
+}
+
+static inline bool eos_app_header_is_visible(void)
+{
+	return false;
+}
+
+#endif
 #ifdef __cplusplus
 }
 #endif

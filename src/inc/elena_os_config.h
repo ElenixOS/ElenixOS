@@ -53,6 +53,13 @@ extern "C"
 #define EOS_ANIMATION_ENABLE 0
 
 /**
+ * 选择是否启用 AppHeader
+ */
+#ifndef EOS_APP_HEADER_ENABLE
+#define EOS_APP_HEADER_ENABLE 1
+#endif
+
+/**
  * 选择是否将图标的字符串构建入 JerryScript
  */
 #define EOS_ICON_STR_BUILD_IN 0
@@ -123,9 +130,7 @@ extern "C"
 #define EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE \
     (LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM)
 
-#if EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE
-    #define EOS_MEM_TRACK_ENABLE LV_USE_MEM_MONITOR /**< 是否启用内存检测 */
-#endif /* EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE */
+#define EOS_MEM_TRACK_ENABLE 1 /**< 是否启用内存检测 */
 
 /************************** 传感器配置 **************************/
 

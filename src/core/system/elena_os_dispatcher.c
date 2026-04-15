@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include "elena_os_port.h"
 #include "elena_os_config.h"
+#include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 typedef struct
 {
@@ -63,7 +64,7 @@ void eos_dispatcher_init(void)
     sem = eos_sem_create(1, 1);
 
     s_capacity = 8; // 初始容量
-    s_queue = (eos_dispatcher_item_t *)malloc(sizeof(eos_dispatcher_item_t) * s_capacity);
+    s_queue = eos_malloc(sizeof(eos_dispatcher_item_t) * s_capacity);
     if (!s_queue)
     {
         // 内存分配失败
@@ -79,7 +80,7 @@ void eos_dispatcher_init(void)
 static int _queue_expand(void)
 {
     int new_capacity = s_capacity * 2;
-    eos_dispatcher_item_t *new_queue = (eos_dispatcher_item_t *)malloc(sizeof(eos_dispatcher_item_t) * new_capacity);
+    eos_dispatcher_item_t *new_queue = eos_malloc(sizeof(eos_dispatcher_item_t) * new_capacity);
     if (!new_queue)
         return -1;
 
@@ -90,7 +91,7 @@ static int _queue_expand(void)
         new_queue[i++] = s_queue[idx];
     }
 
-    free(s_queue);
+    eos_free(s_queue);
     s_queue = new_queue;
     s_head = 0;
     s_tail = i;

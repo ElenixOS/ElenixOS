@@ -10,12 +10,11 @@
 #include <stdio.h>
 
 /* Macros and Definitions -------------------------------------*/
-#define BINDING_OBJ script_engine_eos_obj
 
 /* Variables --------------------------------------------------*/
-extern jerry_value_t script_engine_eos_obj;
 
 /* Function Implementations -----------------------------------*/
+
 /**
  * @brief 将所有图标宏名与Unicode值映射注册到 JerryScript 全局对象
  */
@@ -8992,6 +8991,8 @@ void eos_icon_register(void)
             continue;
         jerry_value_t key = jerry_string_sz(icons[i].name);
         jerry_value_t val = jerry_string_sz(icons[i].value);
+        // TODO: 待解决绑定字符过多导致占用大量存储空间的问题
+        // 例如使用哈希算法进行映射
         jerry_value_free(jerry_object_set(BINDING_OBJ, key, val));
         jerry_value_free(key);
         jerry_value_free(val);

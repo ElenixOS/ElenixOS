@@ -10,7 +10,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "elena_os_scene.h"
 #include "elena_os_dispatcher.h"
 #include "elena_os_control_center.h"
 #include "elena_os_pm.h"

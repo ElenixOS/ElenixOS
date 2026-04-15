@@ -58,6 +58,13 @@ void eos_app_header_hide(void);
  */
 void eos_app_header_show(eos_activity_t *a);
 /**
+ * @brief 动画显示或隐藏应用头
+ * @param a 目标活动（显示时用于刷新标题与颜色，隐藏时可传NULL）
+ * @param visible 是否显示
+ * @param duration_ms 动画时长（毫秒），为0时立即切换
+ */
+void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms);
+/**
  * @brief 初始化应用头
  *
  * 应用头将被放置在 lv_layer_top() 层中
@@ -99,6 +106,13 @@ static inline void eos_app_header_hide(void)
 static inline void eos_app_header_show(eos_activity_t *a)
 {
 	(void)a;
+}
+
+static inline void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
+{
+	(void)a;
+	(void)visible;
+	(void)duration_ms;
 }
 
 static inline void eos_app_header_init(void)

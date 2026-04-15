@@ -845,6 +845,33 @@ void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible)
     }
 }
 
+void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool visible, uint32_t duration_ms)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+
+    // 检查是否是Watchface Activity，如果是则不能设置为可见
+    if (visible && activity == eos_activity_get_watchface())
+    {
+        EOS_LOG_D("Cannot set app header visible for watchface activity");
+        return;
+    }
+
+    activity->is_app_header_visible = visible;
+
+    eos_activity_t *current = eos_activity_get_current();
+    if (current != activity)
+        return;
+
+    if (visible)
+    {
+        eos_app_header_set_visible_animated(activity, true, duration_ms);
+    }
+    else
+    {
+        eos_app_header_set_visible_animated(NULL, false, duration_ms);
+    }
+}
+
 static void _update_app_header_if_needed(eos_activity_t *activity)
 {
     // 检查当前activity是否是当前显示的activity

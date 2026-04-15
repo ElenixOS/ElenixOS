@@ -158,6 +158,14 @@ eos_activity_anim_cb_t eos_activity_get_anim_route(eos_activity_type_t from_type
 void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible);
 
 /**
+ * @brief 以动画方式设置 Activity 的标题可见性
+ * @param activity Activity 指针
+ * @param visible 是否可见
+ * @param duration_ms 动画时长（毫秒），为0时立即切换
+ */
+void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool visible, uint32_t duration_ms);
+
+/**
  * @brief 判断 Activity 的标题是否可见
  * @param activity Activity 指针
  * @return bool true 可见，false 不可见

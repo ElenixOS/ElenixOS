@@ -65,6 +65,25 @@ static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
 static void _clock_update_cb(lv_timer_t *timer);
 
+static void _app_header_set_opa_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *obj = (lv_obj_t *)var;
+    if (!obj || !lv_obj_is_valid(obj))
+        return;
+
+    lv_obj_set_style_opa(obj, (lv_opa_t)value, 0);
+}
+
+static void _app_header_fade_out_ready_cb(lv_anim_t *a)
+{
+    lv_obj_t *obj = (lv_obj_t *)a->var;
+    if (!obj || !lv_obj_is_valid(obj))
+        return;
+
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_opa(obj, LV_OPA_COVER, 0);
+}
+
 static void _app_header_apply_activity_mode(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(app_header);
@@ -381,6 +400,50 @@ void eos_app_header_show(eos_activity_t *a)
     _app_header_apply_activity_mode(target_activity);
     _app_header_update_clock_label(app_header->clock_label);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+}
+
+void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+
+    if (!(app_header->container && lv_obj_is_valid(app_header->container)))
+        return;
+
+    if (duration_ms == 0)
+    {
+        if (visible)
+            eos_app_header_show(a);
+        else
+            eos_app_header_hide();
+        return;
+    }
+
+    lv_obj_t *container = app_header->container;
+    lv_anim_del(container, _app_header_set_opa_anim_cb);
+
+    lv_anim_t anim;
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, container);
+    lv_anim_set_exec_cb(&anim, _app_header_set_opa_anim_cb);
+    lv_anim_set_duration(&anim, duration_ms);
+
+    if (visible)
+    {
+        eos_app_header_show(a);
+        lv_obj_set_style_opa(container, LV_OPA_TRANSP, 0);
+        lv_anim_set_values(&anim, LV_OPA_TRANSP, LV_OPA_COVER);
+        lv_anim_start(&anim);
+    }
+    else
+    {
+        if (lv_obj_has_flag(container, LV_OBJ_FLAG_HIDDEN))
+            return;
+
+        lv_obj_set_style_opa(container, LV_OPA_COVER, 0);
+        lv_anim_set_values(&anim, LV_OPA_COVER, LV_OPA_TRANSP);
+        lv_anim_set_ready_cb(&anim, _app_header_fade_out_ready_cb);
+        lv_anim_start(&anim);
+    }
 }
 
 /**

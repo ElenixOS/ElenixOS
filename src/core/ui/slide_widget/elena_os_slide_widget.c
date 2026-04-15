@@ -347,7 +347,7 @@ static void _slide_widget_delete_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(sw);
     EOS_LOG_I("Deleting slide widget for target obj %p", lv_event_get_target(e));
 
-    if (sw->touch_obj)
+    if (sw->touch_obj && sw->owns_touch_obj)
     {
 
         if (lv_obj_is_valid(sw->touch_obj))
@@ -422,7 +422,7 @@ void eos_slide_widget_delete(eos_slide_widget_t *sw)
     {
         lv_obj_remove_event_cb(sw->target_obj, _slide_widget_delete_cb);
     }
-    if (sw->touch_obj)
+    if (sw->touch_obj && sw->owns_touch_obj)
     {
         if (lv_obj_is_valid(sw->touch_obj))
         {
@@ -501,6 +501,7 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
     EOS_CHECK_PTR_RETURN_VAL(sw && touch_obj && target_obj, NULL);
 
     _slide_widget_init_common(sw, touch_obj, target_obj, dir, target, threshold);
+    sw->owns_touch_obj = false;
     return sw;
 }
 
@@ -526,5 +527,6 @@ eos_slide_widget_t *eos_slide_widget_create(
     lv_obj_set_pos(t, 0, 0);
 
     _slide_widget_init_common(sw, t, target_obj, dir, target, threshold);
+    sw->owns_touch_obj = true;
     return sw;
 }

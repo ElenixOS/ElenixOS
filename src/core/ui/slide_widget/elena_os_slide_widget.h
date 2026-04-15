@@ -92,6 +92,7 @@ typedef struct
     bool bidirectional;                 /**< 是否支持双向滑动 */
     bool move_foreground_on_pressed;    /**< 当被点击时是否移动到父级前方，默认打开，在父级对象为`lv_list_class`时自动关闭 */
     bool reversed;      /**< 是否反向 */
+    bool owns_touch_obj; /**< 是否拥有并负责释放 touch_obj */
 } eos_slide_widget_t;
 
 /* Public function prototypes --------------------------------*/

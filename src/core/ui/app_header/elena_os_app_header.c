@@ -65,6 +65,50 @@ static eos_app_header_t *app_header = NULL;
 /* Function Implementations -----------------------------------*/
 static void _clock_update_cb(lv_timer_t *timer);
 
+static void _app_header_apply_activity_mode(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN(app_header);
+
+    bool time_only = false;
+    lv_color_t clock_color = EOS_COLOR_WHITE;
+    if (activity)
+    {
+        time_only = eos_activity_is_app_header_time_only(activity);
+        if (time_only)
+        {
+            clock_color = eos_activity_get_app_header_time_only_text_color(activity);
+        }
+    }
+
+    if (app_header->container && lv_obj_is_valid(app_header->container))
+    {
+        lv_opa_t bg_opa = time_only ? LV_OPA_TRANSP : LV_OPA_COVER;
+        lv_obj_set_style_bg_opa(app_header->container, bg_opa, 0);
+    }
+
+    if (app_header->clock_label && lv_obj_is_valid(app_header->clock_label))
+    {
+        lv_obj_set_style_text_color(app_header->clock_label, clock_color, 0);
+        lv_obj_remove_flag(app_header->clock_label, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (app_header->title_label && lv_obj_is_valid(app_header->title_label))
+    {
+        if (time_only)
+            lv_obj_add_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_remove_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (app_header->back_btn && lv_obj_is_valid(app_header->back_btn))
+    {
+        if (time_only)
+            lv_obj_add_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_remove_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 static bool _app_header_can_reparent(lv_obj_t *new_parent)
 {
     if (!app_header)
@@ -116,6 +160,15 @@ void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool nee
           lv_obj_has_class(app_header->title_label, &lv_label_class)))
         return;
 
+    bool from_time_only = from ? eos_activity_is_app_header_time_only(from) : false;
+    bool to_time_only = to ? eos_activity_is_app_header_time_only(to) : false;
+
+    // 任一侧为仅时间模式时，直接切换显示模式，不执行标题/返回键转场动画。
+    if (from_time_only || to_time_only)
+    {
+        need_anim = false;
+    }
+
     // 如果不需要动画，直接更新标题和颜色
     if (!need_anim) {
         // 从to activity获取标题
@@ -126,6 +179,7 @@ void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool nee
         // 从to activity获取标题颜色
         lv_color_t color = eos_activity_get_title_color(to);
         lv_obj_set_style_text_color(app_header->title_label, color, 0);
+        _app_header_apply_activity_mode(to);
         return;
     }
 
@@ -323,6 +377,8 @@ void eos_app_header_show(eos_activity_t *a)
         color = eos_activity_get_title_color(eos_activity_get_current());
     if (lv_obj_is_valid(app_header->title_label))
         lv_obj_set_style_text_color(app_header->title_label, color, 0);
+
+    _app_header_apply_activity_mode(target_activity);
     _app_header_update_clock_label(app_header->clock_label);
     lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
 }
@@ -388,13 +444,6 @@ bool eos_app_header_is_visible(void)
 {
     EOS_CHECK_PTR_RETURN_VAL(app_header, false);
     return !lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
-}
-
-void eos_app_header_set_title_color(lv_color_t title_text_color)
-{
-    EOS_CHECK_PTR_RETURN(app_header && app_header->title_label);
-    if (lv_obj_is_valid(app_header->title_label))
-        lv_obj_set_style_text_color(app_header->title_label, title_text_color, 0);
 }
 
 static void _update_title_label(lv_event_t *e)

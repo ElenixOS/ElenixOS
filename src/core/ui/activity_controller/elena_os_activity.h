@@ -165,6 +165,34 @@ void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible)
 bool eos_activity_is_app_header_visible(eos_activity_t *activity);
 
 /**
+ * @brief 设置 Activity 的 AppHeader 是否仅显示时间标签
+ * @param activity Activity 指针
+ * @param time_only true 仅显示时间，false 显示完整 AppHeader
+ */
+void eos_activity_set_app_header_time_only(eos_activity_t *activity, bool time_only);
+
+/**
+ * @brief 判断 Activity 的 AppHeader 是否仅显示时间标签
+ * @param activity Activity 指针
+ * @return bool true 仅显示时间，false 显示完整 AppHeader
+ */
+bool eos_activity_is_app_header_time_only(eos_activity_t *activity);
+
+/**
+ * @brief 设置 Activity 在 AppHeader 仅时间模式下的时间字体颜色
+ * @param activity Activity 指针
+ * @param color 时间字体颜色
+ */
+void eos_activity_set_app_header_time_only_text_color(eos_activity_t *activity, lv_color_t color);
+
+/**
+ * @brief 获取 Activity 在 AppHeader 仅时间模式下的时间字体颜色
+ * @param activity Activity 指针
+ * @return lv_color_t 时间字体颜色
+ */
+lv_color_t eos_activity_get_app_header_time_only_text_color(eos_activity_t *activity);
+
+/**
  * @brief 获取 Activity 对应的 View
  * @param activity Activity 指针
  * @return lv_obj_t* View 对象，失败返回 NULL

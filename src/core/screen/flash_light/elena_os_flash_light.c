@@ -199,8 +199,8 @@ void eos_flash_light_enter(void)
     if(!a) return;
 
     eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
-    eos_activity_set_title_id(a, STR_ID_APP_FLASH_LIGHT_DISMISS);
-    eos_activity_set_app_header_visible(a, false);
+    eos_activity_set_app_header_visible(a, true);
+    eos_activity_set_app_header_time_only(a, true);
 
     lv_obj_t *view = eos_activity_get_view(a);
     if(!view) {
@@ -217,7 +217,7 @@ void eos_flash_light_enter(void)
         lv_obj_t *page = eos_card_pager_create_page(cp);
         lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
         page = eos_card_pager_create_page(cp);
-        lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
+        lv_obj_set_style_bg_color(page, lv_palette_main(LV_PALETTE_RED), 0);
         eos_card_pager_move_node(cp, 0, 1);
         eos_card_pager_move_page(cp, 1);
     }

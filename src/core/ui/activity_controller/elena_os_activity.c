@@ -65,6 +65,8 @@ struct eos_activity_t
     eos_activity_type_t type;
     uint8_t snapshot_ref_count;
     bool is_app_header_visible;
+    bool is_app_header_time_only;
+    lv_color_t app_header_time_only_text_color;
     bool destroy_on_exit; // 是否在 exit 时销毁此 activity
     struct
     {
@@ -864,6 +866,38 @@ bool eos_activity_is_app_header_visible(eos_activity_t *activity)
     return activity->is_app_header_visible;
 }
 
+void eos_activity_set_app_header_time_only(eos_activity_t *activity, bool time_only)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+
+    activity->is_app_header_time_only = time_only;
+
+    // 立即更新app header
+    _update_app_header_if_needed(activity);
+}
+
+bool eos_activity_is_app_header_time_only(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, false);
+    return activity->is_app_header_time_only;
+}
+
+void eos_activity_set_app_header_time_only_text_color(eos_activity_t *activity, lv_color_t color)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+
+    activity->app_header_time_only_text_color = color;
+
+    // 立即更新app header
+    _update_app_header_if_needed(activity);
+}
+
+lv_color_t eos_activity_get_app_header_time_only_text_color(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, EOS_COLOR_WHITE);
+    return activity->app_header_time_only_text_color;
+}
+
 lv_color_t eos_activity_get_title_color(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN_VAL(activity, _DEFAULT_TITLE_COLOR);
@@ -982,6 +1016,8 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     activity->type = EOS_ACTIVITY_TYPE_APP;
     activity->snapshot_ref_count = 0;
     activity->is_app_header_visible = false;
+    activity->is_app_header_time_only = false;
+    activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
     activity->destroy_on_exit = false;
     activity->title.color = _DEFAULT_TITLE_COLOR;
     activity->title.type = _TITLE_TYPE_INVALID;

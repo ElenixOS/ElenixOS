@@ -677,7 +677,7 @@ static void _settings_view_device_info(lv_event_t *e)
     lv_obj_t *view = NULL;
     eos_activity_t *a = _create_activity_with_header(STR_ID_SETTINGS_GENERAL_DEVICE_INFO, &view);
     EOS_CHECK_PTR_RETURN(a && view);
-    eos_app_header_set_title_color(EOS_THEME_LOGO_PRIMARY_COLOR);
+    eos_activity_set_title_color(a, EOS_THEME_LOGO_PRIMARY_COLOR);
 
     lv_obj_t *list = eos_list_create(view);
     lv_obj_set_style_pad_row(list, 0, 0);

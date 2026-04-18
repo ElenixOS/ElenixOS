@@ -5,37 +5,41 @@
 
 [![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) [![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net) ![release](https://img.shields.io/github/v/tag/Sab1e-dev/ElenaOS)
 
+<div>
+  <a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a>
+</div>
+
 ---
 
-## 简述
+## Overview
 
-ElenaOS 是一款开源的智能手表操作系统，基于 LVGL 构建图形界面，表盘与应用程序运行在 JerryScript 驱动的统一脚本引擎（Script Engine）之上。
+ElenaOS is an open-source smartwatch operating system. Its graphical interface is built on LVGL, while watch faces and applications run on a unified script engine powered by JerryScript.
 
-系统采用脚本化的应用运行模型，通过 JavaScript 描述 UI 结构与交互逻辑，并由底层原生代码负责图形渲染、事件调度与硬件资源管理，从而在资源受限的嵌入式平台上实现灵活、高效的应用开发体验。
+The system adopts a script-driven app model: JavaScript describes UI structure and interaction logic, and native code handles rendering, event scheduling, and hardware resource management. This design enables a flexible and efficient development experience on resource-constrained embedded platforms.
 
-ElenaOS 在设计上强调可移植性与可扩展性，提供清晰的抽象层与统一接口，便于移植至不同 MCU 与硬件平台。同时，表盘与应用程序共享同一运行环境和 API 体系，降低系统复杂度并提升整体一致性。
+ElenaOS is designed with portability and extensibility in mind. It provides clear abstraction layers and unified interfaces, making it easier to port across different MCUs and hardware platforms. Watch faces and applications share the same runtime environment and API system, reducing system complexity and improving overall consistency.
 
-在用户体验方面，ElenaOS 的整体 UI 与交互风格参考 Apple Watch，注重动画流畅性、手势操作与界面层级关系，结合 LVGL 的动画系统与事件机制，力求在嵌入式设备上提供接近原生智能手表的视觉与交互体验。
+From a user experience perspective, ElenaOS draws inspiration from Apple Watch interaction patterns, with a focus on smooth animations, gesture operations, and interface hierarchy. By leveraging LVGL's animation system and event mechanism, ElenaOS aims to deliver a near-native smartwatch visual and interaction experience on embedded devices.
 
-ElenaOS 既适用于个人项目与学习研究，也适合作为可定制的智能穿戴系统基础框架，为开发者提供从底层到应用层的完整解决方案。
+ElenaOS is suitable for personal projects and learning purposes, and also serves as a customizable foundational framework for wearable systems, offering developers a complete solution from low-level components to application-layer development.
 
-## 快速开始
+## Quick Start
 
-请参考[快速开始](./docs/quick_start.md)。
+See [Quick Start](./docs/quick_start.md).
 
-## 参考文档
+## Documentation
 
-1. [构建与使用](./docs/build.md)
-1. [表盘与应用程序（脚本引擎）](./docs/script_engine.md)
-1. [ElenaOS开发者工具](./docs/dev_tools.md)
+1. [Build and Usage](./docs/build.md)
+1. [Watch Faces and Applications (Script Engine)](./docs/script_engine.md)
+1. [ElenaOS Developer Tools](./docs/dev_tools.md)
 
-## 开源协议
+## License
 
-本软件遵循 Apache License 2.0 开源协议发布。该协议允许个人和组织自由使用、修改及分发本软件及其衍生作品，可用于商业用途，但需保留原始版权声明、许可证文本及相关声明。软件按“原样”提供，不附带任何形式的担保。
+This project is released under the Apache License 2.0. You may freely use, modify, and redistribute this software and derivative works, including for commercial use, provided that original copyright notices, license text, and related notices are retained. The software is provided "as is", without warranties of any kind.
 
-## 第三方软件
+## Third-Party Software
 
-ElenaOS 在开发过程中使用了以下开源项目，在此对相关作者和社区表示感谢：
+ElenaOS uses the following open-source projects during development. We sincerely thank their authors and communities:
 
 - LVGL: https://lvgl.io
 - JerryScript: https://jerryscript.net

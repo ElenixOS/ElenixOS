@@ -23,6 +23,12 @@ From a user experience perspective, ElenaOS draws inspiration from Apple Watch i
 
 ElenaOS is suitable for personal projects and learning purposes, and also serves as a customizable foundational framework for wearable systems, offering developers a complete solution from low-level components to application-layer development.
 
+## Demo (Work in Progress)
+
+<img width="400" alt="demo" src="https://github.com/user-attachments/assets/c97ce713-a5a6-4146-a66a-a47eee03a787" />
+
+<img width="400" alt="demo1" src="https://github.com/user-attachments/assets/b88671d4-87e4-4b55-bd67-223c431f4271" />
+
 ## Quick Start
 
 See [Quick Start](./docs/quick_start.md).

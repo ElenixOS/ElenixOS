@@ -696,7 +696,6 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
         return NULL;
     }
 
-#if EOS_APP_HEADER_ENABLE
     bool prev_header_visible = eos_app_header_is_visible();
     eos_activity_t *prev_visible_activity = eos_activity_get_visible();
     bool need_attach_header = include_header && activity->is_app_header_visible;
@@ -705,6 +704,9 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
         eos_app_header_show(activity);
         eos_app_header_attach_to_view(view);
     }
+
+    lv_obj_update_layout(view);
+    lv_refr_now(lv_obj_get_display(view));
 
     lv_result_t snapshot_result = lv_snapshot_take_to_draw_buf(view, _SNAPSHOT_COLOR_FORMAT, snapshot);
 
@@ -728,10 +730,6 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
             eos_app_header_hide();
         }
     }
-#else
-    LV_UNUSED(include_header);
-    lv_result_t snapshot_result = lv_snapshot_take_to_draw_buf(view, _SNAPSHOT_COLOR_FORMAT, snapshot);
-#endif
 
     if (snapshot_result != LV_RESULT_OK)
     {
@@ -874,9 +872,9 @@ void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool
 
 static void _update_app_header_if_needed(eos_activity_t *activity)
 {
-    // 检查当前activity是否是当前显示的activity
-    eos_activity_t *current = eos_activity_get_current();
-    if (current != activity)
+    // 仅对当前可见 activity 立即更新，避免转场期间提前显示 header。
+    eos_activity_t *visible = eos_activity_get_visible();
+    if (visible != activity)
         return;
 
     // 检查app header是否可见

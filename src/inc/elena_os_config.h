@@ -53,13 +53,6 @@ extern "C"
 #define EOS_ANIMATION_ENABLE 0
 
 /**
- * 选择是否启用 AppHeader
- */
-#ifndef EOS_APP_HEADER_ENABLE
-#define EOS_APP_HEADER_ENABLE 1
-#endif
-
-/**
  * 选择是否将图标的字符串构建入 JerryScript
  */
 #define EOS_ICON_STR_BUILD_IN 0

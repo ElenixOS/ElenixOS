@@ -38,15 +38,12 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "elena_os_lang.h"
-#include "elena_os_config.h"
 #include "elena_os_activity.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
-
-#if EOS_APP_HEADER_ENABLE
 
 /**
  * @brief 隐藏应用头
@@ -97,34 +94,6 @@ void eos_app_header_detach_from_view(void);
  * @param reverse_anim 是否反向执行动画
  */
 void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim);
-#else
-
-static inline void eos_app_header_hide(void)
-{
-}
-
-static inline void eos_app_header_show(eos_activity_t *a)
-{
-	(void)a;
-}
-
-static inline void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
-{
-	(void)a;
-	(void)visible;
-	(void)duration_ms;
-}
-
-static inline void eos_app_header_init(void)
-{
-}
-
-static inline bool eos_app_header_is_visible(void)
-{
-	return false;
-}
-
-#endif
 #ifdef __cplusplus
 }
 #endif

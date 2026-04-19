@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app_list.c
- * @brief 应用列表页面
+ * @brief 应用列表页面 - 使用bubble_grid布局
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -36,6 +36,7 @@
 #include "elena_os_font.h"
 #include "elena_os_std_widgets.h"
 #include "elena_os_activity.h"
+#include "../ui/bubble_grid/elena_os_bubble_grid.h"
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
@@ -89,17 +90,16 @@ typedef struct
 
 /* Function Implementations -----------------------------------*/
 static void _app_list_icon_clicked_cb(lv_event_t *e);
-static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path);
 static void _app_installed_cb(lv_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
-static void _app_list_refresh(lv_obj_t *container);
+static void _app_list_refresh(lv_obj_t *bubble_grid);
 static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to);
 static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to);
 static void _register_anim_routes_once(void);
 static const char *_app_list_get_launch_app_id(eos_activity_t *activity);
 static void _app_list_set_last_launch_app_id(const char *app_id);
-static lv_obj_t *_app_list_find_icon_by_app_id(eos_activity_t *activity, const char *app_id);
-static void _app_list_record_icon_center(lv_obj_t *icon_obj);
+static lv_obj_t *_app_list_get_bubble_grid(eos_activity_t *activity);
+static void _app_list_record_icon_center_point(int32_t x, int32_t y);
 static bool _app_list_calc_focus_pivot(lv_obj_t *snapshot_obj, lv_obj_t *icon_obj, int32_t *pivot_x, int32_t *pivot_y);
 static bool _app_list_calc_focus_pivot_by_global_center(lv_obj_t *obj, int32_t *pivot_x, int32_t *pivot_y);
 static void _app_list_set_transform_scale_cb(void *var, int32_t value);
@@ -116,7 +116,9 @@ static bool _anim_routes_registered = false;
 static bool _app_list_last_icon_center_valid = false;
 static int32_t _app_list_last_icon_center_x = 0;
 static int32_t _app_list_last_icon_center_y = 0;
+static int32_t _app_list_last_click_index = -1;
 static char _app_list_last_launch_app_id[64] = {0};
+static uint32_t _app_list_icon_count = 0;
 
 /************************** 生命周期 **************************/
 
@@ -191,11 +193,17 @@ static void _app_list_set_last_launch_app_id(const char *app_id)
              app_id);
 }
 
-static lv_obj_t *_app_list_find_icon_by_app_id(eos_activity_t *activity, const char *app_id)
+static lv_obj_t *_app_list_get_bubble_grid(eos_activity_t *activity)
 {
-    if (!(activity && app_id))
+    if (!activity)
     {
         return NULL;
+    }
+
+    lv_obj_t *bubble_grid = (lv_obj_t *)eos_activity_get_user_data(activity);
+    if (bubble_grid)
+    {
+        return bubble_grid;
     }
 
     lv_obj_t *view = eos_activity_get_view(activity);
@@ -204,37 +212,13 @@ static lv_obj_t *_app_list_find_icon_by_app_id(eos_activity_t *activity, const c
         return NULL;
     }
 
-    uint32_t child_count = lv_obj_get_child_count(view);
-    for (uint32_t i = 0; i < child_count; ++i)
-    {
-        lv_obj_t *child = lv_obj_get_child(view, (int32_t)i);
-        if (!child)
-        {
-            continue;
-        }
-
-        const char *child_app_id = (const char *)lv_obj_get_user_data(child);
-        if (child_app_id && strcmp(child_app_id, app_id) == 0)
-        {
-            return child;
-        }
-    }
-
-    return NULL;
+    return lv_obj_get_child(view, 0);
 }
 
-static void _app_list_record_icon_center(lv_obj_t *icon_obj)
+static void _app_list_record_icon_center_point(int32_t x, int32_t y)
 {
-    if (!icon_obj)
-    {
-        _app_list_last_icon_center_valid = false;
-        return;
-    }
-
-    lv_area_t icon_area;
-    lv_obj_get_coords(icon_obj, &icon_area);
-    _app_list_last_icon_center_x = icon_area.x1 + (lv_area_get_width(&icon_area) / 2);
-    _app_list_last_icon_center_y = icon_area.y1 + (lv_area_get_height(&icon_area) / 2);
+    _app_list_last_icon_center_x = x;
+    _app_list_last_icon_center_y = y;
     _app_list_last_icon_center_valid = true;
 }
 
@@ -361,7 +345,13 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
 
     const char *focus_app_id = opening ? _app_list_get_launch_app_id(to) : _app_list_get_launch_app_id(from);
     lv_obj_t *list_view = opening ? eos_activity_get_view(from) : eos_activity_get_view(to);
-    lv_obj_t *focus_icon = list_view ? _app_list_find_icon_by_app_id(opening ? from : to, focus_app_id) : NULL;
+    lv_obj_t *bubble_grid = _app_list_get_bubble_grid(opening ? from : to);
+    lv_obj_t *focus_icon = NULL;
+    if (bubble_grid && _app_list_last_click_index >= 0)
+    {
+        focus_icon = eos_bubble_get_icon_obj(bubble_grid, (uint32_t)_app_list_last_click_index);
+    }
+    LV_UNUSED(focus_app_id);
 
     /* Closing animation (APP -> APP_LIST) should not render app header on top. */
     bool include_header_in_snapshot = opening;
@@ -392,7 +382,7 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
     lv_obj_set_style_transform_pivot_x(app_snapshot, pivot_x, 0);
     lv_obj_set_style_transform_pivot_y(app_snapshot, pivot_y, 0);
 
-    EOS_LOG_D("Pivot(%d,%d)",pivot_x,pivot_y);
+    EOS_LOG_D("Pivot(%d,%d)", pivot_x, pivot_y);
 
     uint32_t total_duration = (uint32_t)_APP_LIST_ANIM_DURATION;
     if (total_duration == 0U)
@@ -496,7 +486,7 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
                                 app_snapshot,
                                 _APP_LIST_ANIM_TO_OPA_END,
                                 _APP_LIST_ANIM_TO_OPA_START,
-                    to_duration);
+                                to_duration);
         lv_anim_timeline_add(at, 0, &app_scale_anim);
         lv_anim_timeline_add(at, 0, &app_opa_anim);
     }
@@ -505,23 +495,39 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
 static void _app_list_on_resueme(eos_activity_t *a)
 {
     // 初始化应用列表
-    lv_obj_t *container = eos_activity_get_view(a);
-    EOS_CHECK_PTR_RETURN(container);
-    _app_list_refresh(container);
+    lv_obj_t *bubble_grid = _app_list_get_bubble_grid(a);
+    EOS_CHECK_PTR_RETURN(bubble_grid);
+    _app_list_refresh(bubble_grid);
 }
 
 /************************** 应用入口 **************************/
 /**
- * @brief 系统内置应用入口
+ * @brief 应用点击事件回调（处理系统应用和脚本应用）
+ * 从bubble_grid的LV_EVENT_CLICKED事件中获取应用ID
  */
-static void _app_list_sys_app_cb(lv_event_t *e)
+static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
-    const char *app_id = (const char *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(app_id);
-    _app_list_set_last_launch_app_id(app_id);
-    lv_obj_t *icon_obj = lv_event_get_target(e);
-    _app_list_record_icon_center(icon_obj);
+    lv_obj_t *bubble_grid = lv_event_get_current_target(e);
+    EOS_CHECK_PTR_RETURN(bubble_grid);
 
+    eos_bubble_click_event_t *click_event = (eos_bubble_click_event_t *)lv_event_get_param(e);
+    EOS_CHECK_PTR_RETURN(click_event);
+
+    const char *app_id = (const char *)click_event->icon_user_data;
+    EOS_CHECK_PTR_RETURN(app_id);
+
+    _app_list_set_last_launch_app_id(app_id);
+    _app_list_last_click_index = (int32_t)click_event->index;
+
+    lv_indev_t *indev = lv_indev_get_act();
+    if (indev)
+    {
+        lv_point_t p;
+        lv_indev_get_point(indev, &p);
+        _app_list_record_icon_center_point(p.x, p.y);
+    }
+
+    // 检查是否为系统内置应用
     for (int i = 0; i < EOS_SYS_APP_LAST; i++)
     {
         if (strcmp(app_id, eos_sys_app_id_list[i]) == 0)
@@ -531,32 +537,8 @@ static void _app_list_sys_app_cb(lv_event_t *e)
             return;
         }
     }
-}
 
-static void _register_anim_routes_once(void)
-{
-    if (_anim_routes_registered)
-    {
-        return;
-    }
-
-    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP_LIST, EOS_ACTIVITY_TYPE_APP, _app_list_open_app_anim_cb);
-    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP, EOS_ACTIVITY_TYPE_APP_LIST, _app_list_close_app_anim_cb);
-    _anim_routes_registered = true;
-}
-
-/**
- * @brief 脚本应用入口
- */
-static void _app_list_icon_clicked_cb(lv_event_t *e)
-{
-    const char *app_id = (const char *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(app_id);
-    _app_list_set_last_launch_app_id(app_id);
-
-    lv_obj_t *icon_obj = lv_event_get_target(e);
-    _app_list_record_icon_center(icon_obj);
-
+    // 脚本应用入口逻辑
     if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
     {
         EOS_LOG_E("Another script running");
@@ -576,6 +558,7 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         eos_pkg_free(&pkg);
         return;
     }
+
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
@@ -636,19 +619,45 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
     eos_activity_enter(a);
 }
 
+static void _register_anim_routes_once(void)
+{
+    if (_anim_routes_registered)
+    {
+        return;
+    }
+
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP_LIST, EOS_ACTIVITY_TYPE_APP, _app_list_open_app_anim_cb);
+    eos_activity_register_anim_route(EOS_ACTIVITY_TYPE_APP, EOS_ACTIVITY_TYPE_APP_LIST, _app_list_close_app_anim_cb);
+    _anim_routes_registered = true;
+}
+
 /************************** 刷新应用列表 **************************/
 /**
- * @brief 刷新应用列表
- * @param container 应用列表的容器对象
+ * @brief 刷新应用列表 - 使用bubble_grid
+ * @param bubble_grid 应用列表的bubble_grid对象
  */
-static void _app_list_refresh(lv_obj_t *container)
+static void _app_list_refresh(lv_obj_t *bubble_grid)
 {
-    lv_obj_clean(container);
+    if (!bubble_grid)
+    {
+        return;
+    }
+
+    // 清空上一次图标槽位，避免删除组件内部对象导致悬挂指针。
+    for (uint32_t i = 0; i < _app_list_icon_count; ++i)
+    {
+        eos_bubble_set_icon_src(bubble_grid, i, NULL);
+        eos_bubble_set_icon_user_data(bubble_grid, i, NULL);
+    }
+
+    uint32_t icon_index = 0;
+
     // 加载应用顺序
     char *json_str = eos_fs_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
     eos_free(json_str);
-    // 按JSON顺序添加其他应用
+
+    // 按JSON顺序添加应用图标
     if (app_order)
     {
         cJSON *item = NULL;
@@ -664,11 +673,9 @@ static void _app_list_refresh(lv_obj_t *container)
                 {
                     if (strcmp(order_id, eos_sys_app_id_list[si]) == 0)
                     {
-                        char icon_path[PATH_MAX];
-                        snprintf(icon_path, sizeof(icon_path), "%s", eos_sys_app_icon_list[si]);
-                        lv_obj_t *sys_icon = _app_icon_create(container, icon_path);
-                        lv_obj_add_event_cb(sys_icon, _app_list_sys_app_cb, LV_EVENT_CLICKED, (void *)eos_sys_app_id_list[si]);
-                        lv_obj_set_user_data(sys_icon, (void *)eos_sys_app_id_list[si]);
+                        eos_bubble_set_icon_src(bubble_grid, icon_index, eos_sys_app_icon_list[si]);
+                        eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)eos_sys_app_id_list[si]);
+                        icon_index++;
                         is_sys = true;
                         break;
                     }
@@ -690,17 +697,16 @@ static void _app_list_refresh(lv_obj_t *container)
                 {
                     snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
                 }
-                lv_obj_t *app_icon = _app_icon_create(container, icon_path);
-                lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);
-                lv_obj_set_user_data(app_icon, (void *)app_id);
-                eos_app_obj_auto_delete(app_icon, app_id);
+                eos_bubble_set_icon_src(bubble_grid, icon_index, icon_path);
+                eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)app_id);
+                icon_index++;
             }
         }
         cJSON_Delete(app_order);
     }
     else
     {
-        // 如果没有JSON顺序文件，按默认顺序添加（app_list 已包含系统应用与已安装应用）
+        // 如果没有JSON顺序文件，按默认顺序添加
         size_t app_list_size = eos_app_get_installed();
         for (size_t i = 0; i < app_list_size; i++)
         {
@@ -708,17 +714,15 @@ static void _app_list_refresh(lv_obj_t *container)
             if (!app_id)
                 continue;
 
-            // 系统内置应用使用内置图标与入口
+            // 系统内置应用使用内置图标
             bool is_sys = false;
             for (int si = 0; si < EOS_SYS_APP_LAST; si++)
             {
                 if (strcmp(app_id, eos_sys_app_id_list[si]) == 0)
                 {
-                    char icon_path[PATH_MAX];
-                    snprintf(icon_path, sizeof(icon_path), "%s", eos_sys_app_icon_list[si]);
-                    lv_obj_t *sys_icon = _app_icon_create(container, icon_path);
-                    lv_obj_add_event_cb(sys_icon, _app_list_sys_app_cb, LV_EVENT_CLICKED, (void *)eos_sys_app_id_list[si]);
-                    lv_obj_set_user_data(sys_icon, (void *)eos_sys_app_id_list[si]);
+                    eos_bubble_set_icon_src(bubble_grid, icon_index, eos_sys_app_icon_list[si]);
+                    eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)eos_sys_app_id_list[si]);
+                    icon_index++;
                     is_sys = true;
                     break;
                 }
@@ -726,7 +730,7 @@ static void _app_list_refresh(lv_obj_t *container)
             if (is_sys)
                 continue;
 
-            // 非系统应用：从安装目录读取 icon
+            // 非系统应用
             char icon_path[PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                      app_id);
@@ -734,60 +738,16 @@ static void _app_list_refresh(lv_obj_t *container)
             {
                 snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
             }
-            lv_obj_t *app_icon = _app_icon_create(container, icon_path);
-            lv_obj_add_event_cb(app_icon, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, (void *)app_id);
-            lv_obj_set_user_data(app_icon, (void *)app_id);
-            eos_app_obj_auto_delete(app_icon, app_id);
+            eos_bubble_set_icon_src(bubble_grid, icon_index, icon_path);
+            eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)app_id);
+            icon_index++;
         }
     }
+
+    _app_list_icon_count = icon_index;
 }
 
 /************************** 动画 **************************/
-
-/************************** 辅助函数 **************************/
-/**
- * @brief 创建应用图标
- */
-static lv_obj_t *_app_icon_create(lv_obj_t *parent, const char *icon_path)
-{
-    lv_obj_t *app_icon = lv_image_create(parent);
-    lv_obj_set_size(app_icon, 100, 100);
-    lv_obj_set_style_shadow_width(app_icon, 0, 0);
-    lv_obj_set_style_margin_all(app_icon, 0, 0);
-    lv_obj_set_style_pad_all(app_icon, 0, 0);
-    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_flag(app_icon, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    eos_img_set_src(app_icon, icon_path);
-    eos_img_set_size(app_icon, 100, 100);
-    lv_obj_center(app_icon);
-    // lv_obj_add_event_cb(app_icon, _app_icon_clicked_cb, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_update_layout(app_icon);
-    lv_obj_set_style_transform_pivot_x(app_icon, lv_obj_get_width(app_icon) / 2, 0);
-    lv_obj_set_style_transform_pivot_y(app_icon, lv_obj_get_height(app_icon) / 2, 0);
-    lv_obj_set_style_transform_scale(app_icon, 230, LV_STATE_PRESSED);
-    lv_obj_set_style_image_recolor(app_icon, EOS_COLOR_BLACK, LV_STATE_PRESSED);
-    lv_obj_set_style_image_recolor_opa(app_icon, LV_OPA_40, LV_STATE_PRESSED);
-
-    return app_icon;
-}
-
-/**
- * @brief 当应用安装时自动调用此回调以便显示新的应用
- */
-static void _app_installed_cb(lv_event_t *e)
-{
-    lv_obj_t *container = lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(container);
-    _app_list_refresh(container);
-}
-
-static void _container_delete_cb(lv_event_t *e)
-{
-    lv_obj_t *container = lv_event_get_target(e);
-    EOS_CHECK_PTR_RETURN(container);
-    eos_event_remove_cb(container, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
-}
 
 static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to)
 {
@@ -799,9 +759,29 @@ static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *
     _app_list_play_transition_anim(at, from, to, false);
 }
 
+/************************** 辅助函数 **************************/
+
+/**
+ * @brief 当应用安装时自动调用此回调以便显示新的应用
+ */
+static void _app_installed_cb(lv_event_t *e)
+{
+    lv_obj_t *bubble_grid = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(bubble_grid);
+    _app_list_refresh(bubble_grid);
+}
+
+static void _container_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *bubble_grid = lv_event_get_target(e);
+    EOS_CHECK_PTR_RETURN(bubble_grid);
+    eos_event_remove_cb(bubble_grid, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
+}
+
 void eos_app_list_enter(void)
 {
     _register_anim_routes_once();
+    _app_list_icon_count = 0;
 
     eos_activity_t *a = eos_activity_create(&app_list_lifecycle);
     if (!a)
@@ -811,23 +791,32 @@ void eos_app_list_enter(void)
     }
     eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP_LIST);
 
-    lv_obj_t *container = eos_activity_get_view(a);
-    // 初始化样式
-    lv_obj_set_style_pad_all(container, 20, 0);
-    lv_obj_set_style_pad_column(container, 20, 0); // 列间距
-    lv_obj_set_style_pad_row(container, 20, 0);
-    lv_obj_set_size(container, lv_pct(100), lv_pct(100));
-    lv_obj_set_scroll_dir(container, LV_DIR_VER);
-    lv_obj_center(container);
-    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
-    lv_obj_set_flex_align(container,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_START,
-                          LV_FLEX_ALIGN_START);
+    lv_obj_t *view = eos_activity_get_view(a);
+    lv_obj_set_size(view, lv_pct(100), lv_pct(100));
+
+    // 创建bubble_grid作为应用列表容器
+    lv_obj_t *bubble_grid = eos_bubble_create(view);
+    if (!bubble_grid)
+    {
+        EOS_LOG_E("Failed to create bubble_grid");
+        eos_activity_back();
+        return;
+    }
+
+    // 设置bubble_grid大小和位置
+    lv_obj_set_size(bubble_grid, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    lv_obj_center(bubble_grid);
+    eos_activity_set_user_data(a, bubble_grid);
+
+    // 注册点击事件回调
+    lv_obj_add_event_cb(bubble_grid, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, NULL);
+
     // 设置回调
-    lv_obj_add_event_cb(container, _container_delete_cb, LV_EVENT_DELETE, NULL);
-    eos_event_add_cb(container, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)container);
-    _app_list_refresh(container);
+    lv_obj_add_event_cb(bubble_grid, _container_delete_cb, LV_EVENT_DELETE, NULL);
+    eos_event_add_cb(bubble_grid, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)bubble_grid);
+
+    // 刷新应用列表
+    _app_list_refresh(bubble_grid);
 
     eos_activity_enter(a);
 }

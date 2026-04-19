@@ -8,8 +8,6 @@
 #include "elena_os_app_header.h"
 #include "elena_os_config.h"
 
-#if EOS_APP_HEADER_ENABLE
-
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -573,5 +571,3 @@ void eos_app_header_init(void)
     app_header->is_anim_entering = false;
     app_header->attached_to_view = false;
 }
-
-#endif /* EOS_APP_HEADER_ENABLE */

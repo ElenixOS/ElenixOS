@@ -23,6 +23,12 @@ ElenaOS 在设计上强调可移植性与可扩展性，提供清晰的抽象层
 
 ElenaOS 既适用于个人项目与学习研究，也适合作为可定制的智能穿戴系统基础框架，为开发者提供从底层到应用层的完整解决方案。
 
+## 演示 (正在开发中)
+
+<img width="400" alt="demo" src="https://github.com/user-attachments/assets/c97ce713-a5a6-4146-a66a-a47eee03a787" />
+
+<img width="400" alt="demo1" src="https://github.com/user-attachments/assets/b88671d4-87e4-4b55-bd67-223c431f4271" />
+
 ## 快速开始
 
 请参考[快速开始](./docs/quick_start.md)。

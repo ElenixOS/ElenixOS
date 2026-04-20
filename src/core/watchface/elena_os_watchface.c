@@ -319,7 +319,7 @@ static void _create_builtin_watchface(eos_activity_t *a)
     lv_obj_align(time_label, LV_ALIGN_CENTER, 0, -10);
 
     lv_obj_t *hint = lv_label_create(view);
-    lv_label_set_text(hint, "Basic fallback watchface");
+    lv_label_set_text(hint, "Hello World!");
     lv_obj_set_style_text_color(hint, lv_color_hex(0x91A4BF), 0);
     lv_obj_align(hint, LV_ALIGN_CENTER, 0, 36);
 

@@ -31,13 +31,11 @@ ElenaOS 既适用于个人项目与学习研究，也适合作为可定制的智
 
 ## 快速开始
 
-请参考[快速开始](./docs/quick_start.md)。
+请参考[快速开始]([./docs/quick_start.md](https://elenaos.averin.cn/docs/getting_started/quick_start))。
 
 ## 参考文档
 
-1. [构建与使用](./docs/build.md)
-1. [表盘与应用程序（脚本引擎）](./docs/script_engine.md)
-1. [ElenaOS开发者工具](./docs/dev_tools.md)
+请参考[ElenaOS 文档](https://elenaos.averin.cn)。
 
 ## 开源协议
 

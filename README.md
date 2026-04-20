@@ -31,13 +31,11 @@ ElenaOS is suitable for personal projects and learning purposes, and also serves
 
 ## Quick Start
 
-See [Quick Start](./docs/quick_start.md).
+See [Quick Start](https://elenaos.averin.cn/docs/getting_started/quick_start).
 
 ## Documentation
 
-1. [Build and Usage](./docs/build.md)
-1. [Watch Faces and Applications (Script Engine)](./docs/script_engine.md)
-1. [ElenaOS Developer Tools](./docs/dev_tools.md)
+See [ElenaOS Documentation](https://elenaos.averin.cn).
 
 ## License
 

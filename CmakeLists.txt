@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.12)
-
 project(ElenaOS C)
 
+# Define a compile-time constant for the ElenaOS system root directory
 add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
 
-# 遍历源文件
+# Recursively gather all source files
 file(GLOB_RECURSE ELENAOS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/font/*.c
 )
 
-# 遍历头文件目录
+# Recursively gather all header files and extract unique directories for include paths
 file(GLOB_RECURSE HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 )
@@ -22,18 +22,20 @@ foreach(h ${HEADER_FILES})
 endforeach()
 list(REMOVE_DUPLICATES ELENAOS_INC_DIRS)
 
-# 定义库
+# Define library target
 add_library(elenaos_lib STATIC ${ELENAOS_SRC})
 
 target_include_directories(elenaos_lib
     PUBLIC
         ${ELENAOS_INC_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-core/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-ext/include
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/uthash/include
 )
 
-# 添加第三方库
+# Link against necessary libraries
+
 # cJSON
 add_library(cjson STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON/cJSON.c
@@ -47,6 +49,13 @@ target_link_libraries(elenaos_lib PRIVATE cjson)
 add_compile_options(-Wno-gnu-folding-constant)
 set(JERRY_VM_HALT 1 CACHE INTERNAL "Enable VM halt feature")
 set(JERRY_MEM_STATS 1 CACHE INTERNAL "Enable memory stats")
+set(JERRY_CMDLINE OFF CACHE BOOL "Build jerry command line tool?" FORCE)
+set(JERRY_CMDLINE_TEST OFF CACHE BOOL "Build jerry test command line tool?" FORCE)
+set(JERRY_CMDLINE_SNAPSHOT OFF CACHE BOOL "Build jerry snapshot command line tool?" FORCE)
+set(JERRY_LIBFUZZER OFF CACHE BOOL "Build jerry with libfuzzer support?" FORCE)
+set(UNITTESTS OFF CACHE BOOL "Build unit tests?" FORCE)
+set(DOCTESTS OFF CACHE BOOL "Build doc tests?" FORCE)
+set(ENABLE_AMALGAM OFF CACHE BOOL "Enable amalgamated build?" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript)
 target_link_libraries(elenaos_lib PRIVATE jerry-core jerry-ext jerry-port)
 

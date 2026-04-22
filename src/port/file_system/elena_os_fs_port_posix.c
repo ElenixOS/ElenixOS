@@ -105,8 +105,11 @@ int eos_fs_mkdir(const char *path)
 {
     if (!path)
         return -1;
-    /* 0755 权限 */
+#ifdef _WIN32
+    return mkdir(path) == 0 ? 0 : -1;
+#else
     return mkdir(path, 0755) == 0 ? 0 : -1;
+#endif
 }
 
 /* 删除空目录 */

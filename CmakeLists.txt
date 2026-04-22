@@ -27,11 +27,11 @@ add_library(elenaos_lib STATIC ${ELENAOS_SRC})
 
 target_include_directories(elenaos_lib
     PUBLIC
-        ${ELENAOS_INC_DIRS}
+    ${ELENAOS_INC_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-ext/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/uthash/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/uthash/src
 )
 
 # Link against necessary libraries

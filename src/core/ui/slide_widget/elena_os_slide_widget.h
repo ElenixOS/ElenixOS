@@ -3,27 +3,6 @@
  * @brief 滑动组件
  * @author Sab1e
  * @date 2025-10-18
- * @details
- *
- * # Slide Widget
- *
- * ## 简述
- *
- * 此组件为最基本的滑动组件，用于将目标对象从base滑动到target。
- * 当`触摸长度（垂直方向或水平方向）/(target-base) `超过阈值时，触发滑动动画，自动滑至target，否则自动滑至base。
- *
- * ## 提示
- *
- * 可以通过设置`threshold`为`EOS_THRESHOLD_INFINITE`以实现禁用目标对象移动但仍然可跟随触摸滑动的效果。
- *
- * ## 注意
- *
- * 所有事件都是发送给目标对象，即`target_obj`。
- *
- * 示例：
- * ```c
- * lv_obj_add_event_cb(sw->target_obj, my_callback, EOS_EVENT_SLIDE_WIDGET_DONE, NULL);
- * ```
  */
 
 #ifndef ELENA_OS_SLIDE_WIDGET_H

@@ -3,33 +3,6 @@
  * @brief 卡片式页面
  * @author Sab1e
  * @date 2025-10-17
- * @details
- *
- * # CardPager
- *
- * ## 简述
- *
- * 卡片式换页组件，页面列表使用链表控制，支持循环翻页。
- *
- * ## 示例
- *
- * ```c
- * eos_card_pager_t *cp = eos_card_pager_create(eos_screen_active(), EOS_CARD_PAGER_DIR_HOR);
- * lv_obj_t *page = eos_card_pager_create_page(cp);
- * lv_obj_set_style_bg_color(page, EOS_COLOR_GREEN, 0);
- * page = eos_card_pager_create_page(cp);
- * lv_obj_set_style_bg_color(page, EOS_COLOR_YELLOW, 0);
- * page = eos_card_pager_create_page(cp);
- * lv_obj_set_style_bg_color(page, EOS_COLOR_ORANGE, 0);
- * page = eos_card_pager_create_page(cp);
- * lv_obj_set_style_bg_color(page, EOS_COLOR_RED, 0);
- * eos_card_pager_remove_page(cp,3);
- * page = eos_card_pager_create_page(cp);
- * lv_obj_set_style_bg_color(page, EOS_COLOR_MINT, 0);
- * eos_card_pager_set_loop(cp, false); // 开启循环
- * eos_card_pager_move_node(cp,0,3);
- * eos_card_pager_move_page(cp,4);
- * ```
  */
 
 #ifndef ELENA_OS_CARD_PAGER_H

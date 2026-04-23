@@ -3,40 +3,6 @@
  * @brief 多语言系统
  * @author Sab1e
  * @date 2025-08-14
- * @details
- *
- * # Lang
- *
- * ## 简述
- *
- * 多语言系统主要用于多种语言的动态切换。
- *
- * ## 使用方法
- *
- * 只需要在需要字符串的标签`lv_label`的文字处，使用`eos_lang_get_text(<String ID>)`即可获取当前语言的字符串。
- *
- * 示例：
- *
- * ```c
- *
- * // System init
- * eos_lang_init();
- *
- * // Somewhere
- * eos_lang_set_current_id(LANG_EN);
- * lv_obj_t *label = lv_label_create(eos_screen_active());
- * lv_label_set_text(label, eos_lang_get_text(STR_ID_LANGUAGE));
- * lv_obj_center(label);
- *
- * ```
- *
- * 显示：
- * -------------
- * |           |
- * |  English  |
- * |           |
- * -------------
- *
  */
 
 #ifndef ELENA_OS_LANG_H

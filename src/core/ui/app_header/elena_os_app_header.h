@@ -3,27 +3,6 @@
  * @brief 应用的顶部导航头
  * @author Sab1e
  * @date 2025-11-25
- * @details
- *
- * # 应用头（AppHeader）
- *
- * ## 简介
- *
- * 应用头上方显示应用信息、当前时间以及返回按钮的控件。
- *
- * ## 使用方法
- *
- * 系统启动时使用`eos_app_header_init()`来初始化应用头，只能初始化一次。
- *
- * 可以直接使用`eos_app_header_bind_screen()`或`eos_app_header_bind_screen_str_id()`将当前的 Screen 绑定以显示应用头。
- *
- * >[!NOTE]: 以`_str_id`结尾的函数即输入 ID 以便适配多语言系统。
- *
- * 后续如果想修改应用头的标题，则需要使用`eos_app_header_set_title()`或`eos_app_header_set_title_str_id()`来设置新的标题。
- *
- * 当被绑定的 Screen 删除时，会自动清理资源（字符串）。
- *
- * >[!NOTE]: 应用头标题字符串会自动复制传入的字符串，以防止源字符串被清除。
  */
 
 #ifndef ELENA_OS_APP_HEADER_H

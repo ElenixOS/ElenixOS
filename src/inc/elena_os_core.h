@@ -3,18 +3,6 @@
  * @brief Elena OS 核心头文件
  * @author Sab1e
  * @date 2025-08-10
- * @details
- *
- * # Elena OS
- *
- * ## 系统启动
- *
- * 启动 Elena OS 只需要调用`eos_run()`即可。
- *
- * ## 侧键
- *
- * 侧键需要在按键的回调函数中调用`eos_side_btn_handler()`并设置按键状态。
- *
  */
 
 #ifndef ELENA_OS_CORE_H

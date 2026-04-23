@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @file ttf_mgr.py
-@brief 处理字体文件，导入 LVGL 符号字体并重新排列符号 Unicode
+@brief Process font files, import LVGL symbol glyphs, and remap Unicode code points
 """
 
 from fontTools.ttLib import TTFont
@@ -11,15 +11,15 @@ from fontTools.ttLib.tables._g_l_y_f import Glyph
 import copy
 import os
 
-# LVGL符号字体和你的目标字体
+# LVGL symbol font and target font
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 lvgl_font_path = os.path.normpath(os.path.join(BASE_DIR, "../../lvgl/scripts/built_in_font/FontAwesome5-Solid+Brands+Regular.woff"))
 target_font_path = os.path.normpath(os.path.join(BASE_DIR, "../third_party/RemixIcon/fonts/remixicon.ttf"))
 output_font_path = os.path.normpath(os.path.join(BASE_DIR, "../third_party/RemixIcon/fonts/remixicon.ttf"))
 
-move_only = True  # True: 不导入 LVGL，只移动 target_font 原符号；False: 导入 LVGL 并移动原符号
+move_only = True  # True: do not import LVGL, only remap target font symbols; False: import LVGL and remap existing symbols
 
-# LVGL符号表，示例
+# LVGL symbol table example
 lvgl_symbols = {
     "LV_SYMBOL_AUDIO": 0xF001,
     "LV_SYMBOL_VIDEO": 0xF008,
@@ -83,7 +83,7 @@ lvgl_symbols = {
     "LV_SYMBOL_NEW_LINE": 0xF8A2
 }
 
-# 载入字体
+# Load fonts
 target_font = TTFont(target_font_path)
 
 if not move_only:
@@ -95,18 +95,18 @@ target_cmap = target_font.getBestCmap()
 target_glyf = target_font['glyf']
 target_hmtx = target_font['hmtx']
 
-# 重新排列目标字体原符号
+# Remap existing target-font symbols
 existing_unicode = sorted(target_cmap.keys())
-start_unicode = 0xE000  # 自定义起始 Unicode
+start_unicode = 0xE000  # custom Unicode start
 unicode_mapping = {}
 for u in existing_unicode:
-    # 如果 move_only 为 True，不考虑 LVGL Unicode
+    # If move_only is True, ignore LVGL Unicode set
     if not move_only and u in lvgl_symbols.values():
         continue
     unicode_mapping[u] = start_unicode
     start_unicode += 1
 
-# 复制 LVGL 字形
+# Copy LVGL glyphs
 if not move_only:
     scale = target_font['head'].unitsPerEm / lvgl_font['head'].unitsPerEm
     for name, uni in lvgl_symbols.items():
@@ -114,31 +114,31 @@ if not move_only:
             glyph_name = lvgl_cmap[uni]
             lv_glyph = lvgl_glyf[glyph_name]
 
-            # 缩放字形
+            # Scale glyph
             pen = TTGlyphPen(None)
             tpen = TransformPen(pen, (scale, 0, 0, scale, 0, 0))
             lv_glyph.draw(tpen)
             scaled_glyph = pen.glyph()
 
-            # 保存到目标字体
+            # Save to target font
             target_glyf[glyph_name] = scaled_glyph
 
-            # 同步水平度量
+            # Synchronize horizontal metrics
             lv_advanceWidth, lv_lsb = lvgl_font['hmtx'][glyph_name]
             target_hmtx[glyph_name] = (int(lv_advanceWidth * scale), int(lv_lsb * scale))
 
-            # 更新 cmap
+            # Update cmap
             target_cmap[uni] = glyph_name
 
-# 更新 cmap
+# Update cmap
 for old_uni, new_uni in unicode_mapping.items():
     glyph_name = target_cmap[old_uni]
     target_cmap[new_uni] = glyph_name
     del target_cmap[old_uni]
 
-# 写回 cmap 表
+# Write cmap table back
 target_font['cmap'].tables[0].cmap = target_cmap
 
-# 保存
+# Save
 target_font.save(output_font_path)
-print("✅ 字体处理完成，保存到", output_font_path)
+print("✅ Font processing completed, saved to", output_font_path)

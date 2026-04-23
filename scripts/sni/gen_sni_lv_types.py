@@ -4,10 +4,10 @@ import sys
 import datetime
 """
 @file gen_sni_lv_types.py
-@brief 从 lv_types_output.json 和 lvgl.json 生成 sni_lv_types.c 文件
+@brief Generate sni_lv_types.c from lv_types_output.json and lvgl.json
 """
 
-# 类型映射字典
+# Type mapping dictionary
 type_mapping = {
     'int': 'SNI_T_INT32',
     'int32_t': 'SNI_T_INT32',
@@ -249,7 +249,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     # Add header
     code.append("/**")
     code.append(" * @file sni_lv_types.c")
-    code.append(" * @brief LVGL 类型表")
+    code.append(" * @brief LVGL type table")
     code.append(" * @author Auto-generated")
     code.append(f" * @date {datetime.datetime.now().strftime('%Y-%m-%d')}")
     code.append(" */")
@@ -265,7 +265,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     code.append("")
 
     # Generate property tables
-    code.append("/************************** 属性表 **************************/")
+    code.append("/************************** Property tables **************************/")
     code.append("")
 
     property_tables = []
@@ -379,7 +379,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
         value_obj_descriptions.append(value_obj_name)
 
     # Generate registry
-    code.append("/************************** 注册表 **************************/")
+    code.append("/************************** Registry **************************/")
     code.append("")
     code.append("const sni_val_obj_t *sni_lv_types[] = {")
 
@@ -393,7 +393,7 @@ def generate_sni_lv_types(lv_types_json, lvgl_json, output_file, sni_types_path)
     code.append("")
 
     # Generate initialization function
-    code.append("/************************** 初始化函数 **************************/")
+    code.append("/************************** Initialization **************************/")
     code.append("void sni_lv_types_init(void)")
     code.append("{")
     code.append("    for (size_t i = 0;")

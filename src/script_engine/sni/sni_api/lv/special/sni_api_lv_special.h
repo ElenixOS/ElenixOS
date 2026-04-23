@@ -1,6 +1,6 @@
 /**
  * @file sni_api_lv_special.h
- * @brief LVGL SNI 手写特殊包装函数声明
+ * @brief LVGL SNI handwritten special wrapper function declarations
  * @author Sab1e
  * @date 2026-03-14
  */

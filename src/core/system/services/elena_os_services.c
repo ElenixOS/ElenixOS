@@ -1,6 +1,6 @@
 /**
  * @file elena_os_services.c
- * @brief 服务
+ * @brief Services
  * @author Sab1e
  * @date 2025-11-06
  */

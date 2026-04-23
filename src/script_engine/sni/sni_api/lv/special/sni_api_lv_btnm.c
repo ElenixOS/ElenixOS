@@ -1,6 +1,6 @@
 /**
  * @file sni_api_lv_btnm.c
- * @brief LVGL buttonmatrix SNI 手写特殊包装函数实现
+ * @brief LVGL Button Matrix SNI Handwritten Special Wrapper Function Implementation
  * @author Sab1e
  * @date 2026-03-15
  */

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_pkg_mgr.h
- * @brief 包管理器
+ * @brief Package manager
  * @author Sab1e
  * @date 2025-08-22
  */
@@ -23,10 +23,10 @@ extern "C"
 /* Public macros ----------------------------------------------*/
 #define EOS_PKG_APP_MAGIC           "EAPK"
 #define EOS_PKG_WATCHFACE_MAGIC     "EWPK"
-#define EOS_PKG_READ_BLOCK          512     /*< 数据读取时的分块大小 */
-#define EOS_PKG_NAME_LEN_MAX        256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
-#define EOS_PKG_ID_LEN_MAX          256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
-#define EOS_PKG_VERSION_LEN_MAX     256     /*< 最后一个字节强制为"\0"，名称长度最大255字节 */
+#define EOS_PKG_READ_BLOCK          512     /*< Block size for data reading */
+#define EOS_PKG_NAME_LEN_MAX        256     /*< Last byte is forced to "\0", maximum name length 255 bytes */
+#define EOS_PKG_ID_LEN_MAX          256     /*< Last byte is forced to "\0", maximum name length 255 bytes */
+#define EOS_PKG_VERSION_LEN_MAX     256     /*< Last byte is forced to "\0", maximum name length 255 bytes */
 
 #define EOS_PKG_MAGIC_OFFSET        0
 #define EOS_PKG_NAME_OFFSET         EOS_PKG_MAGIC_OFFSET + 4
@@ -38,48 +38,48 @@ extern "C"
 
 /* Public typedefs --------------------------------------------*/
 /**
- * @brief 定义软件包的文件头
+ * @brief Define package file header
  */
 typedef struct
 {
     char magic[4];                              // Magic Number
-    char pkg_name[EOS_PKG_NAME_LEN_MAX];        // 软件包名
-    char pkg_id[EOS_PKG_ID_LEN_MAX];            // 软件 ID
-    char pkg_version[EOS_PKG_VERSION_LEN_MAX];  // 软件版本
-    uint32_t file_count;   // 文件数量
-    uint32_t reserved;     // 保留字段，方便将来扩展
+    char pkg_name[EOS_PKG_NAME_LEN_MAX];        // Package name
+    char pkg_id[EOS_PKG_ID_LEN_MAX];            // Software ID
+    char pkg_version[EOS_PKG_VERSION_LEN_MAX];  // Software version
+    uint32_t file_count;   // File count
+    uint32_t reserved;     // Reserved field for future expansion
 } eos_pkg_header_t;
 
 /**
- * @brief 没有使用此结构体，但是 eos_pkg_mgr_unpack 是按照此结构体解析的
- * 此结构体用于定义单个文件/目录的信息结构
+ * @brief This structure is not used, but eos_pkg_mgr_unpack parses according to this structure
+ * This structure is used to define the information structure of a single file/directory
  ***********************************
     typedef struct
     {
-        uint32_t name_len;  // 文件名长度
-        char name[];        // 文件名（不定长）
-        uint32_t is_dir;    // 是否目录 (0=文件,1=目录)
-        uint32_t offset;    // 数据在包中的偏移
-        uint32_t size;      // 文件大小
+        uint32_t name_len;  // File name length
+        char name[];        // File name (variable length)
+        uint32_t is_dir;    // Whether directory (0=file,1=directory)
+        uint32_t offset;    // Offset of data in package
+        uint32_t size;      // File size
     } eos_pkg_entry_t;
  ************************************/
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 读取文件包头
- * @param pkg_path 软件包路径
- * @param header 软件包头结构体指针
- * @return eos_result_t 执行结果
+ * @brief Read package header
+ * @param pkg_path Package path
+ * @param header Package header structure pointer
+ * @return eos_result_t Execution result
  */
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header);
 
 /**
- * @brief 解包 EAPK/EWPK 文件（例如：app.eapk, watchface.ewpk）
- * @param pkg_path 包文件路径
- * @param output_path 输出目录
- * @param pkg_type 包类型(SCRIPT_TYPE_APPLICATION/SCRIPT_TYPE_WATCHFACE)
- * @return eos_result_t 执行结果
+ * @brief Unpack EAPK/EWPK files (e.g., app.eapk, watchface.ewpk)
+ * @param pkg_path Package file path
+ * @param output_path Output directory
+ * @param pkg_type Package type (SCRIPT_TYPE_APPLICATION/SCRIPT_TYPE_WATCHFACE)
+ * @return eos_result_t Execution result
  */
 eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, const script_pkg_type_t pkg_type);
 #ifdef __cplusplus

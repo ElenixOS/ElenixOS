@@ -1,6 +1,6 @@
 /**
  * @file elena_os_port.h
- * @brief ElenaOS 移植
+ * @brief ElenaOS porting
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -23,7 +23,7 @@ extern "C" {
 #include "elena_os_time.h"
 /* Public macros ----------------------------------------------*/
 /**
- * @brief 函数弱定义宏
+ * @brief Function weak definition macro
  */
 #ifdef __CC_ARM /* ARM Compiler */
     #define EOS_WEAK __weak
@@ -44,105 +44,108 @@ extern "C" {
 #define EOS_TIMEOUT_INFINITE UINT32_MAX
 
 /* Public typedefs --------------------------------------------*/
-typedef struct eos_sem_t eos_sem_t;   /**< 信号量 */
+typedef struct eos_sem_t eos_sem_t;   /**< Semaphore */
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建一个信号量
- * @param initial_count 初始计数
- * @param max_count 最大计数
- * @return 指向信号量对象的指针，如果失败返回 NULL
+ * @brief Create a semaphore
+ * @param initial_count Initial count
+ * @param max_count Maximum count
+ * @return Pointer to semaphore object, returns NULL if failed
  */
 eos_sem_t* eos_sem_create(uint32_t initial_count, uint32_t max_count);
 /**
- * @brief 销毁信号量
+ * @brief Destroy semaphore
  */
 void eos_sem_destroy(eos_sem_t* sem);
 /**
- * @brief 等待信号量
- * @param timeout_ms 超时时间（毫秒），0 表示非阻塞，EOS_TIMEOUT_INFINITE 表示无限等待
- * @return true 成功获取
- * @return false 超时或失败
+ * @brief Wait for semaphore
+ * @param timeout_ms Timeout time (milliseconds), 0 for non-blocking, EOS_TIMEOUT_INFINITE for infinite wait
+ * @return true Successfully obtained
+ * @return false Timeout or failed
  */
 bool eos_sem_take(eos_sem_t* sem, uint32_t timeout_ms);
 /**
- * @brief 释放信号量
+ * @brief Release semaphore
  */
 void eos_sem_give(eos_sem_t* sem);
 /**
- * @brief 延时指定时间（非阻塞）
- * @param ms 毫秒数
+ * @brief Delay for specified time (non-blocking)
+ * @param ms Milliseconds
  */
 void eos_delay(uint32_t ms);
 /**
- * @brief 系统重置
+ * @brief System reset
  */
 void eos_cpu_reset();
 /**
- * @brief 启用蓝牙
- * @warning 为避免阻塞 UI 线程，禁止在此处初始化蓝牙协议栈等操作，此处只向其他线程发送蓝牙启动消息。
- * @note 创建线程也属于易阻塞线程的操作
+ * @brief Enable Bluetooth
+ * @warning To avoid blocking UI thread, do not initialize Bluetooth protocol stack here, only send Bluetooth start message to other threads.
+ * @note Creating threads also belongs to operations that easily block threads
  */
 void eos_bluetooth_enable(void);
 /**
- * @brief 关闭蓝牙
+ * @brief Disable Bluetooth
  */
 void eos_bluetooth_disable(void);
 /**
- * @brief 获取当前时间结构体
- * @return eos_datetime_t 时间结构体
- * @note 推荐使用RTC获取时间
- * @warning 请自行同步时间，确保获取的是准确时间
+ * @brief Get current time structure
+ * @return eos_datetime_t Time structure
+ * @note Recommended to use RTC to get time
+ * @warning Please sync time by yourself to ensure accurate time
  */
 eos_datetime_t eos_time_get_core(void);
 /**
- * @brief 设置屏幕亮度
- * @param brightness 亮度值（0~100）
+ * @brief Set screen brightness
+ * @param brightness Brightness value (0~100)
  */
 void eos_display_set_brightness(uint8_t brightness);
 /**
- * @brief 定位手机
+ * @brief Locate phone
  *
- * 通过蓝牙或其他方式让手机响铃来定位手机。
+ * Make phone ring via Bluetooth or other methods to locate phone.
  */
 void eos_locate_phone(void);
 /**
- * @brief 设置扬声器音量
- * @param volume 音量
+ * @brief Set speaker volume
+ * @param volume Volume
  */
 void eos_speaker_set_volume(uint8_t volume);
 /**
- * @brief 系统进入休眠模式（低功耗状态）
+ * @brief System enters sleep mode (low power state)
  *
- * 此函数内需要完成：
+ * This function needs to complete:
  *
- * - 停止触摸
+ * - Stop touch
  *
- * - 关闭屏幕
+ * - Turn off screen
  *
- * - 关闭其他外设
+ * - Turn off other peripherals
  *
- * - CPU 降频、进入低功耗
+ * - CPU frequency reduction, enter low power
+ *
  */
 void eos_sys_sleep(void);
 /**
- * @brief 系统进入屏幕常亮模式
+ * @brief System enters always-on display mode
  *
- * 此函数内需要完成：
+ * This function needs to complete:
  *
- * - 停止触摸
+ * - Stop touch
  *
- * - 关闭其他外设
+ * - Turn off other peripherals
  *
- * - CPU 降频、进入低功耗
+ * - CPU frequency reduction, enter low power
+ *
  */
 void eos_sys_aod(void);
 /**
- * @brief 系统退出休眠模式
+ * @brief System exits sleep mode
  *
- * 此函数内需要完成：
+ * This function needs to complete:
  *
- * - 唤醒`eos_sys_sleep()`关闭的外设，关闭低功耗模式
+ * - Wake up peripherals turned off by `eos_sys_sleep()`, turn off low power mode
+ *
  */
 void eos_sys_wake(void);
 #ifdef __cplusplus

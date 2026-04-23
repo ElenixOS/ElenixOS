@@ -1,6 +1,6 @@
 /**
  * @file elena_os_event.h
- * @brief 事件系统
+ * @brief Event system
  * @author Sab1e
  * @date 2025-08-17
  */
@@ -21,58 +21,58 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief 全局广播事件类型定义
- * @note 此处可添加新的事件
+ * @brief Global broadcast event type definitions
+ * @note New events can be added here
  */
 typedef enum
 {
     EOS_EVENT_BASE = LV_EVENT_LAST,
     EOS_EVENT_UNKNOWN = EOS_EVENT_BASE,
-    EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,   /**< 滑动超过阈值 */
-    EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< 滑动未超过阈值自动回弹 */
-    EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< 滑动时（包括手动滑动以及动画执行）触发 */
-    EOS_EVENT_SLIDE_WIDGET_DONE,                /**< 滑动完成 */
-    EOS_EVENT_SLIDE_WIDGET_OPENED,              /**< 滑动组件已拉出（全局广播） */
-    EOS_EVENT_SLIDE_WIDGET_CLOSED,              /**< 滑动组件已拉回（全局广播） */
-    EOS_EVENT_APP_UNINSTALLED,                  /**< 应用已卸载 */
-    EOS_EVENT_APP_INSTALLED,                    /**< 应用已安装 */
-    EOS_EVENT_SYSTEM_SLEEP,                     /**< 系统进入睡眠模式 */
-    EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< 系统已唤醒 */
-    EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< 屏幕常亮模式已启动 */
-    EOS_EVENT_SYSTEM_CONFIG_UPDATE,             /**< 配置文件已更新 */
-    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< 删除圆角，参见`eos_obj_set_corner_radius_bg()` */
-    EOS_EVENT_SCRIPT_STARTED,                   /**< 脚本已启动 */
-    EOS_EVENT_SCRIPT_EXITED,                    /**< 脚本已退出 */
-    EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity页面切换完成，param为当前activity view */
-    /* 此处添加新的事件 */
-    EOS_EVENT_SENSOR_REPORT_START,     /**< 用于传感器事件序号对齐   */
-    EOS_EVENT_SENSOR_REPORT_ACCE,      /**< 加速度传感器           */
-    EOS_EVENT_SENSOR_REPORT_GYRO,      /**< 重力传感器             */
-    EOS_EVENT_SENSOR_REPORT_MAG,       /**< 磁传感器              */
-    EOS_EVENT_SENSOR_REPORT_TEMP,      /**< 温度传感器             */
-    EOS_EVENT_SENSOR_REPORT_HUMI,      /**< 相对湿度传感器          */
-    EOS_EVENT_SENSOR_REPORT_BARO,      /**< 气压传感器              */
-    EOS_EVENT_SENSOR_REPORT_LIGHT,     /**< 环境光传感器            */
-    EOS_EVENT_SENSOR_REPORT_PROXIMITY, /**< 距离传感器              */
-    EOS_EVENT_SENSOR_REPORT_HR,        /**< 心率传感器              */
-    EOS_EVENT_SENSOR_REPORT_TVOC,      /**< TOVC传感器             */
-    EOS_EVENT_SENSOR_REPORT_NOISE,     /**< 噪声传感器             */
-    EOS_EVENT_SENSOR_REPORT_STEP,      /**< 计步传感器             */
-    EOS_EVENT_SENSOR_REPORT_FORCE,     /**< 力传感器               */
-    EOS_EVENT_SENSOR_REPORT_BAT,       /**< 电池电量传感器          */
-    EOS_EVENT_SENSOR_REPORT_END,       /**< 用于传感器事件序号对齐   */
+    EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,   /**< Slide exceeded threshold */
+    EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< Slide auto-reverted without exceeding threshold */
+    EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< Triggered during sliding (including manual sliding and animation) */
+    EOS_EVENT_SLIDE_WIDGET_DONE,                /**< Slide completed */
+    EOS_EVENT_SLIDE_WIDGET_OPENED,              /**< Slide widget has been pulled out (global broadcast) */
+    EOS_EVENT_SLIDE_WIDGET_CLOSED,              /**< Slide widget has been pulled back (global broadcast) */
+    EOS_EVENT_APP_UNINSTALLED,                  /**< Application has been uninstalled */
+    EOS_EVENT_APP_INSTALLED,                    /**< Application has been installed */
+    EOS_EVENT_SYSTEM_SLEEP,                     /**< System entered sleep mode */
+    EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< System has been awakened */
+    EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< Screen always-on mode has been activated */
+    EOS_EVENT_SYSTEM_CONFIG_UPDATE,             /**< Configuration file has been updated */
+    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< Remove rounded corners, see `eos_obj_set_corner_radius_bg()` */
+    EOS_EVENT_SCRIPT_STARTED,                   /**< Script has started */
+    EOS_EVENT_SCRIPT_EXITED,                    /**< Script has exited */
+    EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity page transition completed, param is current activity view */
+    /* Add new events here */
+    EOS_EVENT_SENSOR_REPORT_START,     /**< Used for sensor event sequence alignment   */
+    EOS_EVENT_SENSOR_REPORT_ACCE,      /**< Accelerometer sensor           */
+    EOS_EVENT_SENSOR_REPORT_GYRO,      /**< Gyroscope sensor             */
+    EOS_EVENT_SENSOR_REPORT_MAG,       /**< Magnetometer sensor              */
+    EOS_EVENT_SENSOR_REPORT_TEMP,      /**< Temperature sensor             */
+    EOS_EVENT_SENSOR_REPORT_HUMI,      /**< Relative humidity sensor          */
+    EOS_EVENT_SENSOR_REPORT_BARO,      /**< Barometric pressure sensor              */
+    EOS_EVENT_SENSOR_REPORT_LIGHT,     /**< Ambient light sensor            */
+    EOS_EVENT_SENSOR_REPORT_PROXIMITY, /**< Proximity sensor              */
+    EOS_EVENT_SENSOR_REPORT_HR,        /**< Heart rate sensor              */
+    EOS_EVENT_SENSOR_REPORT_TVOC,      /**< TOVC sensor             */
+    EOS_EVENT_SENSOR_REPORT_NOISE,     /**< Noise sensor             */
+    EOS_EVENT_SENSOR_REPORT_STEP,      /**< Step counter sensor             */
+    EOS_EVENT_SENSOR_REPORT_FORCE,     /**< Force sensor               */
+    EOS_EVENT_SENSOR_REPORT_BAT,       /**< Battery level sensor          */
+    EOS_EVENT_SENSOR_REPORT_END,       /**< Used for sensor event sequence alignment   */
 } eos_event_code_t;
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 添加事件回调
- * @param obj 对象指针（对象被删除时回自动删除此回调）
- * @param event 事件类型
- * @param cb 回调函数
- * @param user_data 用户数据
- * @note eos_event_code_t 兼容 lv_event_code_t，因此可以直接传入事件号。
- * 示例：
+ * @brief Add event callback
+ * @param obj Object pointer (callback will be automatically removed when object is deleted)
+ * @param event Event type
+ * @param cb Callback function
+ * @param user_data User data
+ * @note eos_event_code_t is compatible with lv_event_code_t, so event code can be passed directly.
+ * Example:
  *
  * `eos_event_add_cb(obj,cb,LV_EVENT_ALL,NULL);`
  *
@@ -82,52 +82,52 @@ typedef enum
 void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data);
 
 /**
- * @brief 移除事件回调
- * - 如果未在广播：立即从链表中移除并释放，同时调用 lv_obj_remove_event_cb
- * - 如果当前正在广播：标记删除（延迟清理）
- * @param obj 对象指针
- * @param event 事件类型
- * @param cb 回调函数
+ * @brief Remove event callback
+ * - If not broadcasting: immediately remove from linked list and release, also call lv_obj_remove_event_cb
+ * - If currently broadcasting: mark for deletion (deferred cleanup)
+ * @param obj Object pointer
+ * @param event Event type
+ * @param cb Callback function
  */
 void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb);
 
 /**
- * @brief 广播事件
- * - 支持嵌套广播
- * - 在广播期间，对象或节点被删除时仅标记，广播结束后统一清理
- * @param event 要广播的事件类型
- * @param param 事件参数
+ * @brief Broadcast event
+ * - Supports nested broadcasting
+ * - During broadcast, when object or node is deleted, only mark it, and clean up uniformly after broadcast ends
+ * @param event Event type to broadcast
+ * @param param Event parameter
  */
 void eos_event_broadcast(lv_event_code_t event, void *param);
 
 /**
- * @brief 允许在外部主动清理（例如系统空闲时调用）
+ * @brief Allow active cleanup to be triggered externally (e.g., called during system idle)
  */
 void eos_event_cleanup_now(void);
 
 /**
- * @brief 添加全局回调
- * @param cb 回调函数
- * @param event 事件类型
- * @param user_data 用户数据
+ * @brief Add global callback
+ * @param cb Callback function
+ * @param event Event type
+ * @param user_data User data
  */
 void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user_data);
 /**
- * @brief 移除指定事件下的指定回调函数
- * @param event 事件类型
- * @param cb 回调函数
+ * @brief Remove specified callback function under specified event
+ * @param event Event type
+ * @param cb Callback function
  */
 void eos_event_remove_global_cb(lv_event_code_t event, lv_event_cb_t cb);
 /**
- * @brief 移除指定事件下的指定回调函数（通过user_data区分）
- * @param event 事件类型
- * @param cb 回调函数
- * @param user_data 用户数据，用于区分相同回调的不同注册
+ * @brief Remove specified callback function under specified event (distinguished by user_data)
+ * @param event Event type
+ * @param cb Callback function
+ * @param user_data User data, used to distinguish different registrations of the same callback
  */
 void eos_event_remove_global_cb_with_user_data(lv_event_code_t event, lv_event_cb_t cb, void *user_data);
 /**
- * @brief 移除指定全局回调函数的所有事件注册
- * @param cb 回调函数
+ * @brief Remove all event registrations for specified global callback function
+ * @param cb Callback function
  */
 void eos_event_remove_all_global_cbs(lv_event_cb_t cb);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_font.h
- * @brief 字体系统
+ * @brief Font system
  * @author Sab1e
  * @date 2025-10-31
  */
@@ -35,16 +35,15 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 字体系统初始化
- * @return lv_font_t* 创建成功则返回默认字体指针，否则返回NULL
+ * @brief Font system initialization
+ * @return lv_font_t* Returns default font pointer on success, otherwise returns NULL
  */
 lv_font_t * eos_font_init(void);
-
 /**
- * @brief 设置标签对象的字体大小
- * @param label 目标标签
- * @param size 字号，支持任意大小，单位：像素
- * @note `EOS_FONT_BASE_SIZE`为字体源的大小，`size`大于此字号时会失真。
+ * @brief Set font size for label object
+ * @param label Target label
+ * @param size Font size, supports any size in pixels
+ * @note `EOS_FONT_BASE_SIZE` is the font source size, values larger than this will be distorted.
  */
 void eos_label_set_font_size(lv_obj_t *label, eos_font_size_t size);
 #ifdef __cplusplus

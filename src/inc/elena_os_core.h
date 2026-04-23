@@ -1,6 +1,6 @@
 /**
  * @file elena_os_core.h
- * @brief Elena OS 核心头文件
+ * @brief Elena OS core header file
  * @author Sab1e
  * @date 2025-08-10
  */
@@ -22,30 +22,30 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief ElenaOS 返回值状态
+ * @brief ElenaOS return value status
  */
 typedef enum
 {
-    EOS_OK = 0,                  /**< 操作成功 */
-    EOS_FAILED,                  /**< 操作失败 */
-    EOS_ERR_MEM,                 /**< 操作失败：内存相关错误 */
-    EOS_ERR_STACK_EMPTY,         /**< 操作失败：栈空 */
-    EOS_ERR_STACK_FULL,          /**< 操作失败：栈满 */
-    EOS_ERR_VAR_NOT_NULL,        /**< 操作失败：变量不为空 */
-    EOS_ERR_VAR_NULL,            /**< 操作失败：变量为空 */
-    EOS_ERR_NOT_INITIALIZED,     /**< 操作失败：未初始化 */
-    EOS_ERR_ALREADY_INITIALIZED, /**< 操作失败：已初始化 */
-    EOS_ERR_BUSY,                /**< 操作失败：正忙         */
-    EOS_ERR_FILE_ERROR,          /**< 操作失败：文件相关错误*/
-    EOS_ERR_JSON_ERROR,          /**< 操作失败：JSON相关错误*/
-    EOS_ERR_VALUE_MISMATCH,      /**< 操作失败：值不匹配*/
-    EOS_ERR_TIMEOUT,             /**< 操作失败：超时 */
-    EOS_ERR_INVALID_STATE,       /**< 操作识别：状态机无效状态 */
+    EOS_OK = 0,                  /**< Operation successful */
+    EOS_FAILED,                  /**< Operation failed */
+    EOS_ERR_MEM,                 /**< Operation failed: memory related error */
+    EOS_ERR_STACK_EMPTY,         /**< Operation failed: stack empty */
+    EOS_ERR_STACK_FULL,          /**< Operation failed: stack full */
+    EOS_ERR_VAR_NOT_NULL,        /**< Operation failed: variable not null */
+    EOS_ERR_VAR_NULL,            /**< Operation failed: variable null */
+    EOS_ERR_NOT_INITIALIZED,     /**< Operation failed: not initialized */
+    EOS_ERR_ALREADY_INITIALIZED, /**< Operation failed: already initialized */
+    EOS_ERR_BUSY,                /**< Operation failed: busy         */
+    EOS_ERR_FILE_ERROR,          /**< Operation failed: file related error*/
+    EOS_ERR_JSON_ERROR,          /**< Operation failed: JSON related error*/
+    EOS_ERR_VALUE_MISMATCH,      /**< Operation failed: value mismatch*/
+    EOS_ERR_TIMEOUT,             /**< Operation failed: timeout */
+    EOS_ERR_INVALID_STATE,       /**< Operation failed: state machine invalid state */
     EOS_ERR_UNKNOWN,
 } eos_result_t;
 
 /**
- * @brief 按钮按下状态
+ * @brief Button press state
  */
 typedef enum
 {
@@ -59,13 +59,13 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief ElenaOS 入口函数
+ * @brief ElenaOS entry function
  */
 void eos_run(void);
 /**
- * @brief 启动 ElenaOS Logo 页面
- * @param anim 是否显示 Logo 渐变动画
- * @note 只会被显示一次，在系统正式启动完成前会一直显示。
+ * @brief Start ElenaOS Logo page
+ * @param anim Whether to display Logo fade animation
+ * @note Will only be displayed once and will remain until the system is fully started.
  */
 void eos_logo_play(bool anim);
 #ifdef __cplusplus

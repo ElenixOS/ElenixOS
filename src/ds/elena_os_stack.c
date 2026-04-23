@@ -1,6 +1,6 @@
 /**
  * @file elena_os_stack.c
- * @brief 栈
+ * @brief Stack
  * @author Sab1e
  * @date 2026-03-20
  */

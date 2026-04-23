@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sensor.c
- * @brief 传感器
+ * @brief Sensor
  * @author Sab1e
  * @date 2025-09-14
  */

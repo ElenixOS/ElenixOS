@@ -1,11 +1,11 @@
 /**
  * @file elena_os_config.h
- * @brief 系统配置
+ * @brief System configuration
  * @author Sab1e
  * @date 2025-09-13
  */
 
-#if 1 /* 启用配置 */
+#if 1 /* Enable configuration */
 
 #ifndef ELENA_OS_CONFIG_H
 #define ELENA_OS_CONFIG_H
@@ -24,42 +24,42 @@ extern "C"
 
 /* Public macros ----------------------------------------------*/
 
-/* 配置开始 ----------------------------------------------------*/
+/* Configuration start ----------------------------------------------------*/
 
-#define ELENA_WATCH_MARKETING_NAME "Elena Watch"    /**< 型号名称 */
-#define ELENA_WATCH_MODEL_NUMBER "S2508(0)"        /**< 型号 */
+#define ELENA_WATCH_MARKETING_NAME "Elena Watch"    /**< Model name */
+#define ELENA_WATCH_MODEL_NUMBER "S2508(0)"        /**< Model */
 
 /**
- * 选择编译模式
- * 可用模式:
- *  - DEBUG:        调试模式，启用所有初始化检查。
- *  - RELEASE:      发布模式，关闭所有初始化检查。
+ * Select compilation mode
+ * Available modes:
+ *  - DEBUG:        Debug mode, enable all initialization checks.
+ *  - RELEASE:      Release mode, disable all initialization checks.
  */
 #ifndef EOS_COMPILE_MODE
 #define EOS_COMPILE_MODE DEBUG
 #endif
 
 /**
- * 选择系统启动模式
- * 可用模式:
- *  - NORMAL_MODE:      正常模式，直接进入表盘
- *  - TEST_MODE:        测试模式，进入测试页面
+ * Select system startup mode
+ * Available modes:
+ *  - NORMAL_MODE:      Normal mode, directly enter watch face
+ *  - TEST_MODE:        Test mode, enter test page
  */
 #define EOS_SYSTEM_MODE NORMAL_MODE
 
 /**
- * 选择是否启用动画
+ * Select whether to enable animation
  */
 #define EOS_ANIMATION_ENABLE 0
 
 /**
- * 选择是否将图标的字符串构建入 JerryScript
+ * Select whether to build icon strings into JerryScript
  */
 #define EOS_ICON_STR_BUILD_IN 0
 
 /**
- * 选择系统监控类型
- * 可用模式:
+ * Select system monitoring type
+ * Available modes:
  *  - EOS_SYSMON_DISABLE
  *  - EOS_SYSMON_USE_INTERNAL
  *  - EOS_SYSMON_USE_CUSTOM
@@ -70,28 +70,28 @@ extern "C"
     #define EOS_SYSMON_HANDLER my_sysmon_handler();
 #endif /* EOS_SYSMON_TYPE */
 
-/************************** 模块 **************************/
+/************************** Modules **************************/
 
 /**
- * 启用虚拟显示器模块
+ * Enable virtual display module
  */
 #define EOS_USE_VIRTUAL_DISPLAY 1
 
-/************************** 内存配置 **************************/
+/************************** Memory configuration **************************/
 
 /**
- * 选择内存分配模式
- * 可用选项:
- *  - EOS_MEM_PROVIDER_STDLIB_CLIB:    使用标准库的内存分配函数
- *  - EOS_MEM_PROVIDER_AUTO:           使用自动分配方法
- *  - EOS_MEM_PROVIDER_CUSTOM:         使用自定义的分配函数（覆盖弱定义的`eos_malloc_core()`等函数即可）
+ * Select memory allocation mode
+ * Available options:
+ *  - EOS_MEM_PROVIDER_STDLIB_CLIB:    Use standard library memory allocation functions
+ *  - EOS_MEM_PROVIDER_AUTO:           Use automatic allocation method
+ *  - EOS_MEM_PROVIDER_CUSTOM:         Use custom allocation functions (just override the weakly defined `eos_malloc_core()` and other functions)
  */
 #ifndef EOS_MEM_ALLOC_PROVIDER
     #define EOS_MEM_ALLOC_PROVIDER EOS_MEM_PROVIDER_STDLIB_CLIB
 #endif /* EOS_MEM_ALLOC_PROVIDER */
 
 #if EOS_MEM_ALLOC_PROVIDER == EOS_MEM_PROVIDER_AUTO
-    #define EOS_MEM_POOL_ALLOC_THRESHOLD 32/*KB*/ * 1024/*B*/    /**< 分配阈值，单位：字节 */
+    #define EOS_MEM_POOL_ALLOC_THRESHOLD 32/*KB*/ * 1024/*B*/    /**< Allocation threshold, unit: bytes */
 
     #define EOS_MEM_PROVIDER_AUTO_INCLUDE    "mem_mgr.h"
 
@@ -109,41 +109,41 @@ extern "C"
 #endif /* EOS_MEM_ALLOC_PROVIDER */
 
 /**
- * 是否让 ElenaOS 覆盖 LVGL 的标准库 malloc
+ * Whether to let ElenaOS override LVGL's standard library malloc
  *
- * - 当此项关闭时：
- *   LVGL 在需要分配显示相关的大块内存（如图片、截图缓冲等）时，
- *   最终都会调用 ElenaOS 的 `eos_malloc()` 来完成分配，
- *   因此这些显示用内存实际上仍由 ElenaOS 分配和管理。
+ * - When this is disabled:
+ *   When LVGL needs to allocate large memory for display-related purposes (such as images, screenshot buffers, etc.),
+ *   it will eventually call ElenaOS's `eos_malloc()` to complete the allocation,
+ *   so these display memories are actually still allocated and managed by ElenaOS.
  *
- * - 当此项开启时：
- *   LVGL 的所有内存申请（包括显示相关和其它内部数据）都将完全交由
- *   ElenaOS 的分配函数处理，由 ElenaOS 统一管理全部内存。
+ * - When this is enabled:
+ *   All memory requests from LVGL (including display-related and other internal data) will be completely handled by
+ *   ElenaOS's allocation functions, with ElenaOS uniformly managing all memory.
  */
 #define EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE \
     (LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM)
 
-#define EOS_MEM_TRACK_ENABLE 1 /**< 是否启用内存检测 */
+#define EOS_MEM_TRACK_ENABLE 1 /**< Whether to enable memory tracking */
 
-/************************** 传感器配置 **************************/
+/************************** Sensor configuration **************************/
 
-#define EOS_SENSOR_CFG_INST_MAX 1 /**< 传感器实例最大值，同一类型的传感器允许存在的最大值，一般设置为`1`即可 */
+#define EOS_SENSOR_CFG_INST_MAX 1 /**< Maximum sensor instances, the maximum number of sensors of the same type allowed, generally set to `1` */
 
-/************************** 字体配置 **************************/
+/************************** Font configuration **************************/
 
 /**
- * 选择字体源类型
+ * Select font source type
  *
- * `EOS_FONT_C_*`使用 LVGL Font Converter 生成的 C 文字字库，或 LVGL 内置的字体
+ * `EOS_FONT_C_*` uses C font libraries generated by LVGL Font Converter, or LVGL built-in fonts
  *
- * 可用格式:
- *  - EOS_FONT_C_MULTI:     存储多种点阵字体，多级字号使用不同字体
- *  - EOS_FONT_TTF:         使用文件系统的TTF字体文件
+ * Available formats:
+ *  - EOS_FONT_C_MULTI:     Store multiple bitmap fonts, different font sizes use different fonts
+ *  - EOS_FONT_TTF:         Use TTF font files from the file system
  */
 #define EOS_FONT_TYPE EOS_FONT_C_MULTI
 
 /**
- * 配置字体对应字号，下面三个配置分配对应三种字体：
+ * Configure font sizes, the following three configurations correspond to three fonts:
  * - EOS_FONT_SIZE_LARGE
  * - EOS_FONT_SIZE_MEDIUM
  * - EOS_FONT_SIZE_SMALL
@@ -173,10 +173,10 @@ extern "C"
 #elif EOS_FONT_TYPE == EOS_FONT_TTF
 
 /**
- * 选择 TTF 数据格式
- * 可用格式:
- *  - EOS_FONT_TTF_DATA:    将 TTF 字体数据编译进固件
- *  - EOS_FONT_TTF_FILE:    从文件系统加载 TTF 字体文件
+ * Select TTF data format
+ * Available formats:
+ *  - EOS_FONT_TTF_DATA:    Compile TTF font data into firmware
+ *  - EOS_FONT_TTF_FILE:    Load TTF font files from the file system
  */
 #define EOS_FONT_TTF_TYPE EOS_FONT_TTF_FILE
 
@@ -189,36 +189,36 @@ extern "C"
 #endif /* EOS_FONT_TTF_TYPE */
 
 /**
- * 启用额外功能
+ * Enable additional features
  */
 #define EOS_FONT_TTF_ENABLE_EXTENDED 0
 
 #if EOS_FONT_TTF_ENABLE_EXTENDED
-    #define EOS_FONT_TTF_KERNING 0      /**< 字距，单位：px */
-    #define EOS_FONT_TTF_CACHE_SIZE 256 /**< TTF 字体缓存大小 */
+    #define EOS_FONT_TTF_KERNING 0      /**< Kerning, unit: px */
+    #define EOS_FONT_TTF_CACHE_SIZE 256 /**< TTF font cache size */
 #endif /* EOS_FONT_TTF_ENABLE_EXTENDED */
 
 #endif /* EOS_FONT_TYPE */
 
-/************************** 显示配置 **************************/
+/************************** Display configuration **************************/
 
-#define EOS_DISPLAY_WIDTH 390    /**< 绘制宽度 */
-#define EOS_DISPLAY_HEIGHT 450     /**< 绘制高度 */
+#define EOS_DISPLAY_WIDTH 390    /**< Drawing width */
+#define EOS_DISPLAY_HEIGHT 450     /**< Drawing height */
 
-#define EOS_DISPLAY_RADIUS 80 /**< 显示器圆角半径 */
+#define EOS_DISPLAY_RADIUS 80 /**< Display corner radius */
 
-#define EOS_DISPLAY_BRIGHTNESS_MIN 5 /**< 亮度为0即关闭屏幕 */
+#define EOS_DISPLAY_BRIGHTNESS_MIN 5 /**< Brightness 0 means turn off the screen */
 #define EOS_DISPLAY_BRIGHTNESS_MAX 100
 
-/************************** 系统文件目录配置 **************************/
+/************************** System file directory configuration **************************/
 
 #ifndef EOS_SYS_ROOT_DIR
-    #define EOS_SYS_ROOT_DIR "/" /**< 系统根目录 例如：`/user/elenaos/` */
+    #define EOS_SYS_ROOT_DIR "/" /**< System root directory For example: `/user/elenaos/` */
 #endif /* EOS_SYS_ROOT_DIR */
 
 /**
- * 选择文件系统接口类型
- * 可选选项:
+ * Select file system interface type
+ * Optional options:
  *  - EOS_FS_POSIX
  *  - EOS_FS_FATFS
  *  - EOS_FS_LITTLEFS
@@ -230,19 +230,19 @@ extern "C"
 #endif /* EOS_FS_TYPE */
 
 #if EOS_FS_TYPE == EOS_FS_CUSTOM
-    #define EOS_FS_FILE_TYPE void*          /**< 文件的数据类型 */
-    #define EOS_FS_DIR_TYPE void*           /**< 目录的数据类型 */
-    #define EOS_FILE_INVALID NULL           /**< 无效的文件 */
-    #define EOS_DIR_INVALID NULL            /**< 无效的目录 */
+    #define EOS_FS_FILE_TYPE void*          /**< File data type */
+    #define EOS_FS_DIR_TYPE void*           /**< Directory data type */
+    #define EOS_FILE_INVALID NULL           /**< Invalid file */
+    #define EOS_DIR_INVALID NULL            /**< Invalid directory */
 #endif /* EOS_FS_TYPE */
 
-#define EOS_DFW_ENABLE 0        /**< 是否启用延后文件写入器 */
+#define EOS_DFW_ENABLE 0        /**< Whether to enable delayed file writer */
 
-/************************** 电量检测 **************************/
+/************************** Battery detection **************************/
 
-#define EOS_BATTERY_DISPLAY_UPDATE_MS 5 * 60 * 1000 /**< 电池电量显示更新时间 */
+#define EOS_BATTERY_DISPLAY_UPDATE_MS 5 * 60 * 1000 /**< Battery level display update time */
 
-/************************** 音量配置 **************************/
+/************************** Volume configuration **************************/
 
 #define EOS_SPEAKER_VOLUME_MIN 0
 #define EOS_SPEAKER_VOLUME_MAX 100
@@ -251,16 +251,16 @@ extern "C"
 
 #define EOS_ASYNC_SEM_TIMEOUT 1000
 
-/************************** 日志 **************************/
+/************************** Log **************************/
 
-// 是否启用断言
+// Whether to enable assertion
 #define EOS_USE_ASSERT 1
 #define EOS_ASSERT_HANDLER __builtin_trap();
 
-// 是否启用彩色日志
+// Whether to enable colorful log
 #define EOS_LOG_USE_COLOR 0
 
-/* 配置结束 ----------------------------------------------------*/
+/* Configuration end ----------------------------------------------------*/
 
 #ifdef __cplusplus
 }
@@ -268,4 +268,4 @@ extern "C"
 
 #endif /* ELENA_OS_CONFIG_H */
 
-#endif /* 启用配置 */
+#endif /* Enable configuration */

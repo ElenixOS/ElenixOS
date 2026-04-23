@@ -1,8 +1,8 @@
 /**
  * @file elena_os_version.h
- * @brief 版本定义
+ * @brief Version definitions
  *
- * 遵循[Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+ * Follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
  * @author Sab1e
  * @date 2025-08-21
  */

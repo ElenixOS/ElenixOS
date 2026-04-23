@@ -1,6 +1,6 @@
 /**
  * @file elena_os_activity.h
- * @brief Activity 控制器
+ * @brief Activity controller
  * @author Sab1e
  * @date 2026-03-21
  */
@@ -50,242 +50,242 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化 Activity 控制器
- * @param initial_activity 初始 Activity，不能为空
- * @return eos_result_t EOS_OK 成功，EOS_FAILED 失败
+ * @brief Initialize Activity controller
+ * @param initial_activity Initial Activity, cannot be NULL
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed
  */
 eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity);
 
 /**
- * @brief 反初始化 Activity 控制器并释放所有 Activity
+ * @brief Deinitialize Activity controller and release all Activities
  */
 void eos_activity_controller_deinit(void);
 
 /**
- * @brief 创建一个 Activity
- * @return eos_activity_t* 创建成功返回 Activity 指针，失败返回 NULL
+ * @brief Create an Activity
+ * @return eos_activity_t* Returns Activity pointer on success, NULL on failure
  */
 eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle);
 
 /**
- * @brief 获取 Activity 的用户数据
- * @param activity Activity 指针
- * @return void* 用户数据指针，失败返回 NULL
+ * @brief Get Activity user data
+ * @param activity Activity pointer
+ * @return void* User data pointer, returns NULL on failure
  */
 void *eos_activity_get_user_data(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 的用户数据
- * @param activity Activity 指针
- * @param user_data 用户数据指针
+ * @brief Set Activity user data
+ * @param activity Activity pointer
+ * @param user_data User data pointer
  */
 void eos_activity_set_user_data(eos_activity_t *activity, void *user_data);
 
 /**
- * @brief 获取 Activity 的标题
- * @param activity Activity 指针
- * @return const char* 标题字符串，失败返回 NULL
+ * @brief Get Activity title
+ * @param activity Activity pointer
+ * @return const char* Title string, returns NULL on failure
  */
 const char *eos_activity_get_title(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 的标题
- * @param activity Activity 指针
- * @param title 标题字符串
+ * @brief Set Activity title
+ * @param activity Activity pointer
+ * @param title Title string
  */
 void eos_activity_set_title(eos_activity_t *activity, const char *title);
 
 /**
- * @brief 设置 Activity 的标题
- * @param activity Activity 指针
- * @param id 标题字符串ID
+ * @brief Set Activity title
+ * @param activity Activity pointer
+ * @param id Title string ID
  */
 void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id);
 
 /**
- * @brief 获取 Activity 的标题颜色
- * @param activity Activity 指针
- * @return lv_color_t 标题颜色
+ * @brief Get Activity title color
+ * @param activity Activity pointer
+ * @return lv_color_t Title color
  */
 lv_color_t eos_activity_get_title_color(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 的标题颜色
- * @param activity Activity 指针
- * @param color 标题颜色
+ * @brief Set Activity title color
+ * @param activity Activity pointer
+ * @param color Title color
  */
 void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color);
 
 /**
- * @brief 设置 Activity 的页面类型
- * @param activity Activity 指针
- * @param type 页面类型
+ * @brief Set Activity page type
+ * @param activity Activity pointer
+ * @param type Page type
  */
 void eos_activity_set_type(eos_activity_t *activity, eos_activity_type_t type);
 
 /**
- * @brief 获取 Activity 的页面类型
- * @param activity Activity 指针
- * @return eos_activity_type_t 页面类型
+ * @brief Get Activity page type
+ * @param activity Activity pointer
+ * @return eos_activity_type_t Page type
  */
 eos_activity_type_t eos_activity_get_type(eos_activity_t *activity);
 
 /**
- * @brief 注册页面切换动画路由
- * @param from_type 来源页面类型
- * @param to_type 目标页面类型
- * @param cb 动画回调
- * @return eos_result_t EOS_OK 成功，EOS_FAILED 失败
+ * @brief Register page transition animation route
+ * @param from_type Source page type
+ * @param to_type Target page type
+ * @param cb Animation callback
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed
  */
 eos_result_t eos_activity_register_anim_route(eos_activity_type_t from_type,
                                               eos_activity_type_t to_type,
                                               eos_activity_anim_cb_t cb);
 
 /**
- * @brief 查询页面切换动画路由
- * @param from_type 来源页面类型
- * @param to_type 目标页面类型
- * @return eos_activity_anim_cb_t 动画回调，未找到返回 NULL
+ * @brief Query page transition animation route
+ * @param from_type Source page type
+ * @param to_type Target page type
+ * @return eos_activity_anim_cb_t Animation callback, returns NULL if not found
  */
 eos_activity_anim_cb_t eos_activity_get_anim_route(eos_activity_type_t from_type,
                                                    eos_activity_type_t to_type);
 
 /**
- * @brief 设置 Activity 的标题可见性
- * @param activity Activity 指针
- * @param visible 是否可见
+ * @brief Set Activity title visibility
+ * @param activity Activity pointer
+ * @param visible Whether visible
  */
 void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible);
 
 /**
- * @brief 以动画方式设置 Activity 的标题可见性
- * @param activity Activity 指针
- * @param visible 是否可见
- * @param duration_ms 动画时长（毫秒），为0时立即切换
+ * @brief Set Activity title visibility with animation
+ * @param activity Activity pointer
+ * @param visible Whether visible
+ * @param duration_ms Animation duration (milliseconds), switches immediately when 0
  */
 void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool visible, uint32_t duration_ms);
 
 /**
- * @brief 判断 Activity 的标题是否可见
- * @param activity Activity 指针
- * @return bool true 可见，false 不可见
+ * @brief Check if Activity title is visible
+ * @param activity Activity pointer
+ * @return bool true visible, false not visible
  */
 bool eos_activity_is_app_header_visible(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 的 AppHeader 是否仅显示时间标签
- * @param activity Activity 指针
- * @param time_only true 仅显示时间，false 显示完整 AppHeader
+ * @brief Set whether Activity AppHeader shows only time label
+ * @param activity Activity pointer
+ * @param time_only true shows only time, false shows full AppHeader
  */
 void eos_activity_set_app_header_time_only(eos_activity_t *activity, bool time_only);
 
 /**
- * @brief 判断 Activity 的 AppHeader 是否仅显示时间标签
- * @param activity Activity 指针
- * @return bool true 仅显示时间，false 显示完整 AppHeader
+ * @brief Check if Activity AppHeader shows only time label
+ * @param activity Activity pointer
+ * @return bool true shows only time, false shows full AppHeader
  */
 bool eos_activity_is_app_header_time_only(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 在 AppHeader 仅时间模式下的时间字体颜色
- * @param activity Activity 指针
- * @param color 时间字体颜色
+ * @brief Set Activity time font color in AppHeader time-only mode
+ * @param activity Activity pointer
+ * @param color Time font color
  */
 void eos_activity_set_app_header_time_only_text_color(eos_activity_t *activity, lv_color_t color);
 
 /**
- * @brief 获取 Activity 在 AppHeader 仅时间模式下的时间字体颜色
- * @param activity Activity 指针
- * @return lv_color_t 时间字体颜色
+ * @brief Get Activity time font color in AppHeader time-only mode
+ * @param activity Activity pointer
+ * @return lv_color_t Time font color
  */
 lv_color_t eos_activity_get_app_header_time_only_text_color(eos_activity_t *activity);
 
 /**
- * @brief 获取 Activity 对应的 View
- * @param activity Activity 指针
- * @return lv_obj_t* View 对象，失败返回 NULL
+ * @brief Get Activity corresponding View
+ * @param activity Activity pointer
+ * @return lv_obj_t* View object, returns NULL on failure
  */
 lv_obj_t *eos_activity_get_view(eos_activity_t *activity);
 
 /**
- * @brief 设置 Activity 的 View
- * @param activity Activity 指针
- * @param view View 对象，失败返回 NULL
+ * @brief Set Activity View
+ * @param activity Activity pointer
+ * @param view View object, returns NULL on failure
  */
 void eos_activity_set_view(eos_activity_t *activity, lv_obj_t *view);
 
 /**
- * @brief 获取根 Screen
- * @return lv_obj_t* 根 Screen 对象，失败返回 NULL
+ * @brief Get root Screen
+ * @return lv_obj_t* Root Screen object, returns NULL on failure
  */
 lv_obj_t *eos_activity_get_root_screen(void);
 
 /**
- * @brief 获取 Activity 视图快照
- * @param activity Activity 指针
- * @param include_header 是否包含 Header（仅当前 Activity 且 Header 可见时有效）
- * @return lv_obj_t* 快照图像对象（lv_image），失败返回 NULL
- * @note 图像资源会在该对象删除时自动释放
+ * @brief Get Activity view snapshot
+ * @param activity Activity pointer
+ * @param include_header Whether to include Header (only valid when current Activity and Header is visible)
+ * @return lv_obj_t* Snapshot image object (lv_image), returns NULL on failure
+ * @note Image resources are automatically released when the object is deleted
  */
 lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_header);
 
 /**
- * @brief 获取 Watchface Activity
- * @return eos_activity_t* Watchface Activity 指针，失败返回 NULL
+ * @brief Get Watchface Activity
+ * @return eos_activity_t* Watchface Activity pointer, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_watchface(void);
 
 /**
- * @brief 获取当前 Activity 的 View
- * @return lv_obj_t* 当前 Activity 的 View 对象，失败返回 NULL
+ * @brief Get current Activity View
+ * @return lv_obj_t* Current Activity View object, returns NULL on failure
  */
 lv_obj_t *eos_view_active(void);
 
 /**
- * @brief 进入指定 Activity
- * @param activity Activity 指针
+ * @brief Enter specified Activity
+ * @param activity Activity pointer
  */
 void eos_activity_enter(eos_activity_t *activity);
 
 /**
- * @brief 返回上一个 Activity 并销毁当前 Activity
- * @return eos_result_t EOS_OK 成功，EOS_FAILED 失败
+ * @brief Return to previous Activity and destroy current Activity
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed
  */
 eos_result_t eos_activity_back(void);
 
 /**
- * @brief 返回上一个 Activity 并销毁当前 Activity 的 Wrapper
- * @param e 事件对象
+ * @brief Wrapper for returning to previous Activity and destroying current Activity
+ * @param e Event object
  */
 void eos_activity_back_cb(lv_event_t *e);
 
 /**
- * @brief 获取当前 Activity
- * @return eos_activity_t* 当前 Activity，失败返回 NULL
+ * @brief Get current Activity
+ * @return eos_activity_t* Current Activity, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_current(void);
 
 /**
- * @brief 获取当前已完成显示的 Activity
- * @return eos_activity_t* 已完成显示的 Activity，失败返回 NULL
+ * @brief Get current completed display Activity
+ * @return eos_activity_t* Completed display Activity, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_visible(void);
 
 /**
- * @brief 获取前一个 Activity（用于事件回调中获取起源页面）
- * @return eos_activity_t* 前一个 Activity，失败返回 NULL
+ * @brief Get previous Activity (used in event callbacks to get the source page)
+ * @return eos_activity_t* Previous Activity, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_previous(void);
 
 /**
- * @brief 当前是否有 Activity 切换动画正在进行
- * @return bool true 正在切换，false 空闲
+ * @brief Check if Activity transition animation is in progress
+ * @return bool true transitioning, false idle
  */
 bool eos_activity_is_transition_in_progress(void);
 
 /**
- * @brief 获取栈底 Activity（通常是表盘 Activity）
- * @return eos_activity_t* 栈底 Activity，失败返回 NULL
+ * @brief Get bottom Activity in stack (usually watchface Activity)
+ * @return eos_activity_t* Bottom Activity in stack, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_bottom(void);
 

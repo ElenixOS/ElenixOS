@@ -1,6 +1,6 @@
 /**
  * @file sni_api_export.h
- * @brief API 导出层
+ * @brief API export layer
  * @author Sab1e
  * @date 2026-03-06
  */
@@ -57,12 +57,12 @@ struct sni_class_desc_t
 {
     const char *name;
 
-    jerry_external_handler_t constructor;   /**< 构造函数；为 NULL 时该类按静态类导出 */
+    jerry_external_handler_t constructor;   /**< Constructor; when NULL, the class is exported as a static class */
 
     const sni_class_desc_t *base_class;
 
-    const sni_method_desc_t *methods;       /**< 实例方法 */
-    const sni_property_desc_t *properties;  /**< 属性 */
+    const sni_method_desc_t *methods;       /**< Instance methods */
+    const sni_property_desc_t *properties;  /**< Properties */
 
     const sni_method_desc_t *static_methods;
     const sni_constant_desc_t *constants;
@@ -71,33 +71,33 @@ struct sni_class_desc_t
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 根据类描述表创建一个 API 对象
- * @param classes 类描述表指针数组，最后一个元素必须为 NULL
- * @return jerry_value_t API 对象
+ * @brief Create an API object based on class description table
+ * @param classes Class description table pointer array, the last element must be NULL
+ * @return jerry_value_t API object
  */
 jerry_value_t sni_api_build(const sni_class_desc_t *const classes[]);
 
 /**
- * @brief 将 API 对象挂载到指定的 realm 中
- * @param realm 目标 realm 对象
- * @param api_obj API 对象
- * @param name 挂载名称
- * @return bool 是否挂载成功
+ * @brief Mount API object to specified realm
+ * @param realm Target realm object
+ * @param api_obj API object
+ * @param name Mount name
+ * @return bool Whether mount successful
  */
 bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name);
 
 /**
- * @brief 将常量描述数组注册到目标对象
- * @param constants 常量描述数组（以 name == NULL 结尾）
- * @param target 目标对象
- * @return bool 是否注册成功
+ * @brief Register constant description array to target object
+ * @param constants Constant description array (ends with name == NULL)
+ * @param target Target object
+ * @return bool Whether registration successful
  */
 bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_value_t target);
 
 /**
- * @brief 抛出一个错误异常
- * @param message 错误信息
- * @return jerry_value_t 错误异常对象
+ * @brief Throw an error exception
+ * @param message Error message
+ * @return jerry_value_t Error exception object
  */
 jerry_value_t sni_api_throw_error(const char *message);
 

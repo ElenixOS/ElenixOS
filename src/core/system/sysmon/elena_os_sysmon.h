@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sysmon.h
- * @brief 系统资源占用监控
+ * @brief System resource usage monitoring
  * @author Sab1e
  * @date 2025-11-29
  */

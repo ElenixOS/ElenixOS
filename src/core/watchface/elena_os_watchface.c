@@ -1,6 +1,6 @@
 /**
  * @file elena_os_watchface.c
- * @brief 表盘
+ * @brief Watchface
  * @author Sab1e
  * @date 2025-08-22
  */
@@ -32,7 +32,7 @@
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
- * @brief 应用结构体
+ * @brief Application structure
  */
 typedef script_pkg_t eos_watchface_t;
 
@@ -107,7 +107,7 @@ void _eos_watchface_list_add(eos_watchface_list_t *list, const char *id)
         list->capacity *= 2;
         list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
     }
-    list->data[list->size] = eos_strdup(id); // 复制字符串
+    list->data[list->size] = eos_strdup(id); // Copy string
     list->size++;
 }
 
@@ -125,7 +125,7 @@ eos_result_t _eos_watchface_list_get_installed()
     eos_dir_t dir;
     char name_buf[256];
 
-    // 打开应用程序安装目录
+    // Open application installation directory
     dir = eos_fs_opendir(EOS_WATCHFACE_INSTALLED_DIR);
     if (!dir)
     {
@@ -133,24 +133,24 @@ eos_result_t _eos_watchface_list_get_installed()
         return EOS_OK;
     }
 
-    // 遍历目录中的所有条目
+    // Traverse all entries in the directory
     while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
     {
-        // 跳过 "." 和 ".." 目录
+        // Skip "." and ".." directories
         if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
         {
             continue;
         }
 
-        // 构建完整路径
+        // Build full path
         char full_path[PATH_MAX];
         snprintf(full_path, sizeof(full_path), EOS_WATCHFACE_INSTALLED_DIR "%s", name_buf);
 
-        // 检查是否为目录
+        // Check if it is a directory
         if (eos_is_dir(full_path))
         {
             EOS_LOG_D("Found installed watchface: %s", name_buf);
-            // 添加到应用程序列表
+            // Add to application list
             _eos_watchface_list_add(&watchface_list, name_buf);
         }
     }
@@ -175,7 +175,7 @@ eos_result_t _eos_watchface_list_refresh()
 eos_result_t eos_watchface_install(const char *eapk_path)
 {
     EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
-    // 获取软件包头
+    // Get package header
     eos_pkg_header_t header;
     if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
     {
@@ -192,19 +192,19 @@ eos_result_t eos_watchface_install(const char *eapk_path)
         EOS_LOG_E("Builtin fallback watchface cannot be installed over");
         return EOS_FAILED;
     }
-    // 拼接路径
+    // Construct path
     char path[PATH_MAX];
     snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", header.pkg_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", header.pkg_id);
     EOS_LOG_D("WATCHFACE_PATH: %s", path);
-    // 检查应用是否存在
+    // Check if application exists
     if (eos_is_dir(path))
     {
-        // 如果存在则删除
+        // If exists, delete it
         eos_fs_rm_recursive(path);
     }
-    // 创建应用名称的文件夹
+    // Create folder with application name
     if (eos_fs_mkdir(path) == 0)
     {
         EOS_LOG_I("Created dir: %s\n", path);
@@ -213,7 +213,7 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     {
         return -EOS_ERR_FILE_ERROR;
     }
-    // 安装应用程序
+    // Install application
     script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;
     eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
     if (ret != EOS_OK)
@@ -236,7 +236,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
         return EOS_FAILED;
     }
 
-    // 卸载应用程序
+    // Uninstall application
     char path[PATH_MAX];
     snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", watchface_id);
     char data_path[PATH_MAX];
@@ -255,7 +255,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
         return EOS_FAILED;
     }
 
-    // 清理应用数据
+    // Clean up application data
     if (eos_is_dir(data_path))
     {
         ret = eos_fs_rm_recursive(path);
@@ -340,10 +340,10 @@ void eos_watchface_on_enter(eos_activity_t *a)
     lv_obj_add_style(view, eos_theme_get_view_style(), 0);
     eos_activity_set_view(a, view);
 
-    // 显示消息列表和控制中心
+    // Show message list and control center
     eos_msg_list_show();
     eos_control_center_show();
-    // JSON中获取表盘id
+    // Get watchface ID from JSON
     char wf_id[EOS_PKG_ID_LEN_MAX];
     char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
     snprintf(wf_id, sizeof(wf_id),
@@ -363,7 +363,7 @@ void eos_watchface_on_enter(eos_activity_t *a)
         return;
     }
 
-    // 直接通过表盘id 获取相关信息并存储到script_package
+    // Get watchface related info directly through watchface ID and store to script_package
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path),
              EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_MANIFEST_FILE_NAME,
@@ -380,7 +380,7 @@ void eos_watchface_on_enter(eos_activity_t *a)
              EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME,
              wf_id);
 
-    // 设置脚本基础路径，用于解析相对路径的模块导入
+    // Set script base path for resolving relative path module imports
     char base_path[PATH_MAX];
     snprintf(base_path, sizeof(base_path), EOS_WATCHFACE_INSTALLED_DIR "%s/", wf_id);
     pkg.base_path = eos_strdup(base_path);
@@ -391,13 +391,13 @@ void eos_watchface_on_enter(eos_activity_t *a)
         return;
     }
     pkg.script_str = eos_fs_read_file(script_path);
-    // 设置长按回调 进入 watchface list
+    // Set long press callback to enter watchface list
     lv_obj_add_event_cb(eos_activity_get_view(a), _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
-    // 正式运行表盘脚本（脚本禁止阻塞线程）
+    // Run watchface script (script must not block thread)
     script_engine_result_t ret = script_engine_run(&pkg);
     if (ret != SE_OK)
     {
-        // 显示错误信息
+        // Display error information
         lv_obj_t *list = eos_std_info_create(
             eos_activity_get_view(a),
             EOS_COLOR_RED,
@@ -424,11 +424,11 @@ void eos_watchface_on_destroy(eos_activity_t *a)
         return;
     }
 
-    // 隐藏控制中心和消息列表
+    // Hide control center and message list
     eos_control_center_hide();
     eos_msg_list_hide();
 
-    // 删除 View
+    // Delete View
     lv_obj_delete(eos_activity_get_view(a));
 }
 
@@ -442,7 +442,7 @@ eos_result_t eos_watchface_init(void)
     EOS_LOG_D("Init eos_watchface");
     if (!_is_watchface_initialized)
     {
-        // 初始化 从文件系统中读取应用列表
+        // Initialize by reading application list from file system
         _eos_watchface_list_refresh();
         _is_watchface_initialized = true;
     }
@@ -451,7 +451,7 @@ eos_result_t eos_watchface_init(void)
         EOS_LOG_E("Watchface already initialized");
         return EOS_FAILED;
     }
-    // 创建表盘 Activity
+    // Create watchface Activity
     _watchface_activity = eos_activity_create(&watchface_lifecycle);
     if (!_watchface_activity)
     {

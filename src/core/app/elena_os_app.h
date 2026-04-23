@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app.h
- * @brief 应用系统
+ * @brief Application system
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -21,71 +21,71 @@ extern "C" {
 #include "lvgl.h"
 
 /* Public macros ----------------------------------------------*/
-/************************** 路径定义 **************************/
+/************************** Path Definitions **************************/
 #define EOS_APP_DIR EOS_SYS_DIR "app/"
 #define EOS_APP_INSTALLED_DIR EOS_APP_DIR "apps/"
 #define EOS_APP_DATA_DIR EOS_APP_DIR "app_data/"
-/************************** 文件名定义 **************************/
+/************************** File Name Definitions **************************/
 #define EOS_APP_ICON_FILE_NAME  "icon.bin"
 #define EOS_APP_MANIFEST_FILE_NAME "manifest.json"
 #define EOS_APP_SCRIPT_ENTRY_FILE_NAME "main.js"
-/************************** 配置文件 **************************/
+/************************** Configuration Files **************************/
 #define EOS_APP_LIST_APP_ORDER_PATH EOS_SYS_CONFIG_DIR "app_order.json"
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 将目标 ID 的应用移动到指定位置，以便 app_list 排序
- * @param app_id 目标 ID
- * @param new_index 新的索引值
+ * @brief Move app with target ID to specified position for app_list sorting
+ * @param app_id Target ID
+ * @param new_index New index value
  * @return eos_result_t
  */
 eos_result_t eos_app_order_move(const char *app_id, size_t new_index);
 /**
- * @brief 获取当前已安装的应用数量
+ * @brief Get the number of currently installed apps
  */
 uint32_t eos_app_get_installed(void);
 /**
- * @brief 根据索引值获取应用的 id
- * @param index 索引值（0基）
- * @return const char* id 字符串
+ * @brief Get app id by index
+ * @param index Index value (0-based)
+ * @return const char* id string
  */
 const char* eos_app_list_get_id(size_t index);
 /**
- * @brief 判断指定 id 字符串的代码是否存在于应用列表中
- * @param app_id id 字符串
+ * @brief Check if app with specified id exists in the list
+ * @param app_id id string
  * @return true
  * @return false
  */
 bool eos_app_list_contains(const char* app_id);
 /**
- * @brief 从应用列表中获取与输入字符串匹配的 ID（避免重复分配内存）
- * @param id 要查找的原始 ID（如 header.pkg_id）
- * @return 列表中已存在的字符串指针（生命周期由列表管理），若未找到则返回 NULL
+ * @brief Get existing ID from app list that matches input string (avoid duplicate memory allocation)
+ * @param id Original ID to find (e.g., header.pkg_id)
+ * @return Existing string pointer in the list (lifecycle managed by the list), returns NULL if not found
  */
 const char *eos_app_list_get_existing_id(const char *id);
 /**
- * @brief 安装应用
- * @param eapk_path eapk 安装包路径
- * @return eos_result_t 安装结果
+ * @brief Install app
+ * @param eapk_path eapk package path
+ * @return eos_result_t Installation result
  */
 eos_result_t eos_app_install(const char *eapk_path);
 /**
- * @brief 卸载应用
- * @param app_id 应用 id
- * @return eos_result_t 卸载结果
+ * @brief Uninstall app
+ * @param app_id App id
+ * @return eos_result_t Uninstallation result
  */
 eos_result_t eos_app_uninstall(const char *app_id);
 /**
- * @brief 当应用被删除时，自动删除指定对象
- * @param obj 目标对象
- * @param app_id 目标应用 ID
+ * @brief Automatically delete specified object when app is deleted
+ * @param obj Target object
+ * @param app_id Target app ID
  */
 void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id);
 /**
- * @brief 初始化应用系统
- * @return eos_result_t 初始化结果
+ * @brief Initialize app system
+ * @return eos_result_t Initialization result
  */
 eos_result_t eos_app_init(void);
 #ifdef __cplusplus

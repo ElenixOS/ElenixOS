@@ -1,6 +1,6 @@
 /**
  * @file elena_os_std_widgets.h
- * @brief 系统标准组件
+ * @brief System standard widgets
  * @author Sab1e
  * @date 2025-12-07
  */
@@ -23,13 +23,13 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建消息页面
- * @param scr Screen 对象
- * @param icon_bg_color 圆形图标背景色
- * @param icon 图标源
- * @param title_txt 标题文本
- * @param txt 正文文本
- * @return lv_obj_t* 返回消息页面容器列表
+ * @brief Create info page
+ * @param scr Screen object
+ * @param icon_bg_color Circular icon background color
+ * @param icon Icon source
+ * @param title_txt Title text
+ * @param txt Content text
+ * @return lv_obj_t* Returns message page container list
  */
 lv_obj_t *eos_std_info_create(lv_obj_t *scr,
                               lv_color_t icon_bg_color,
@@ -38,10 +38,10 @@ lv_obj_t *eos_std_info_create(lv_obj_t *scr,
                               const char *txt);
 
 /**
- * @brief 创建一个标题与注释组合
- * @param parent 父对象
- * @param title 标题内容
- * @param comment 注释内容
+ * @brief Create title and comment combination
+ * @param parent Parent object
+ * @param title Title content
+ * @param comment Comment content
  */
 void eos_std_title_comment_create(lv_obj_t *parent,
                                   const char *title,

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_activity.c
- * @brief Activity 控制器
+ * @brief Activity controller
  * @author Sab1e
  * @date 2026-03-21
  */
@@ -54,7 +54,7 @@ typedef struct
 
     eos_activity_t *from;
     eos_activity_t *to;
-    bool destroy_from; // 是否在动画完成后销毁 from activity
+    bool destroy_from;
     bool cleanup_scheduled;
     eos_activity_snapshot_node_t *snapshots;
 } eos_activity_anim_ctx_t;
@@ -67,7 +67,7 @@ struct eos_activity_t
     bool is_app_header_visible;
     bool is_app_header_time_only;
     lv_color_t app_header_time_only_text_color;
-    bool destroy_on_exit; // 是否在 exit 时销毁此 activity
+    bool destroy_on_exit;
     struct
     {
         lv_color_t color;
@@ -89,7 +89,7 @@ typedef struct
     eos_activity_t *watchface_activity;
     eos_activity_t *current_activity;
     eos_activity_t *visible_activity;
-    eos_activity_t *previous_activity; // 前一个 activity，用于事件回调中获取真正的源页面
+    eos_activity_t *previous_activity;
     eos_stack_t *activity_stack;
     lv_obj_t *root_screen;
     bool transition_in_progress;
@@ -256,13 +256,10 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     }
     anim_ctx->snapshots = NULL;
 
-    // 如果需要销毁 from activity
     if (anim_ctx->destroy_from && anim_ctx->from)
     {
-        // 在删除View之前，恢复header的父级对象
         if (!eos_activity_is_app_header_visible(anim_ctx->to))
         {
-            // 从有header进入无header，动画完成后隐藏header
             eos_app_header_hide();
         }
         _activity_run_destroy(anim_ctx->from);
@@ -270,7 +267,6 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     }
     else if (!eos_activity_is_app_header_visible(anim_ctx->to) && eos_activity_is_app_header_visible(anim_ctx->from))
     {
-        // 从有header进入无header，且不需要销毁from activity，动画完成后隐藏header
         eos_app_header_hide();
     }
 
@@ -312,7 +308,7 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         return;
     }
 
-    g_activity_ctx.previous_activity = cur_activity; // 保存前一个 activity
+    g_activity_ctx.previous_activity = cur_activity;
     g_activity_ctx.current_activity = next_activity;
 
     if (cur_activity == g_activity_ctx.watchface_activity && next_activity != g_activity_ctx.watchface_activity)
@@ -332,11 +328,9 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         }
     }
 
-    // 隐藏控制中心和消息列表，确保在其他Activity中不显示
     eos_control_center_hide();
     eos_msg_list_hide();
 
-    // 执行生命周期回调
     if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_destroy)
     {
         cur_activity->lifecycle->on_destroy(cur_activity);
@@ -357,44 +351,34 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         next_activity->lifecycle->on_resume(next_activity);
     }
 
-    // 处理AppHeader逻辑
     if (eos_activity_is_app_header_visible(next_activity))
     {
-        // NextView有app_header
         if (cur_activity)
         {
             bool need_anim = false;
             bool reverse_anim = false;
 
-            // 从有header进入有header才有动画
             if (eos_activity_is_app_header_visible(cur_activity))
             {
                 need_anim = true;
 
-                // 检查是否是back操作
                 if (cur_activity->destroy_on_exit)
                 {
                     reverse_anim = true;
                 }
             }
-            // 从无header进入有header无需动画
 
             _play_title_changed_anim(cur_activity, next_activity, need_anim, reverse_anim);
         }
     }
     else
     {
-        // NextView没有app_header，将header附加到当前View
         if (cur_activity && cur_activity->view && lv_obj_is_valid(cur_activity->view) && eos_activity_is_app_header_visible(cur_activity))
         {
-            // 只有从有header进入无header时，才将header附加到当前View
             eos_app_header_attach_to_view(cur_activity->view);
-            // 不立即隐藏header，让它随View执行动画
-            // eos_app_header_hide()会在动画完成后调用
         }
         else
         {
-            // 从无header进入无header，直接隐藏header
             eos_app_header_hide();
         }
     }
@@ -410,7 +394,6 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         }
     }
 
-    // 如果需要动画，创建动画上下文并启动动画
     bool transition_started = false;
     if (cur_activity && (anim_cb || list_anim_available))
     {
@@ -450,25 +433,18 @@ static void _activity_switch_to(eos_activity_t *next_activity)
         }
     }
 
-    // 显示 next_activity（在动画启动之后显示，确保动画的初始位置设置不会被覆盖）
-    // _activity_show(next_activity); // Commented out to delay showing next_activity
-
-    // 如果没有动画但需要销毁 from activity，直接销毁
     if (!transition_started)
     {
         if (cur_activity && cur_activity->destroy_on_exit)
         {
-            // 在删除View之前，恢复header的父级对象
             if (!eos_activity_is_app_header_visible(next_activity))
             {
-                // 从有header进入无header，直接隐藏header
                 eos_app_header_hide();
             }
             _activity_run_destroy(cur_activity);
         }
         else if (!eos_activity_is_app_header_visible(next_activity) && cur_activity && eos_activity_is_app_header_visible(cur_activity))
         {
-            // 从有header进入无header，且不需要销毁from activity，直接隐藏header
             eos_app_header_hide();
         }
 
@@ -488,14 +464,12 @@ static lv_obj_t *_view_create(lv_obj_t *parent)
         parent = g_activity_ctx.root_screen;
     }
 
-    // 创建 View（实质上是一个全屏的 lv_obj）
     lv_obj_t *view = lv_obj_create(parent);
     if (!view)
     {
         return NULL;
     }
 
-    // 设置默认样式
     lv_obj_remove_style_all(view);
     lv_obj_add_style(view, eos_theme_get_view_style(), 0);
     lv_obj_update_layout(view);
@@ -547,20 +521,16 @@ static void _anim_timeline_start(eos_activity_t *from, eos_activity_t *to, eos_a
         return;
     }
 
-    // 计算持续时间
     uint32_t playtime = lv_anim_timeline_get_playtime(anim_ctx->at);
     if (playtime == 0)
     {
-        // 如果没有动画，直接清理
         _anim_clean_up_activity(&anim_ctx->dummy_anim);
         return;
     }
 
-    // 设置 dummy 动画的持续时间并添加到时间线
     lv_anim_set_duration(&anim_ctx->dummy_anim, playtime);
     lv_anim_timeline_add(anim_ctx->at, 0, &anim_ctx->dummy_anim);
 
-    // 启动动画
     lv_anim_timeline_start(anim_ctx->at);
 }
 
@@ -795,7 +765,6 @@ void eos_activity_set_title(eos_activity_t *activity, const char *title)
         activity->title.type = _TITLE_TYPE_INVALID;
     }
 
-    // 立即更新app header
     _update_app_header_if_needed(activity);
 }
 
@@ -810,7 +779,6 @@ void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id)
     activity->title.id = id;
     activity->title.type = _TITLE_TYPE_ID;
 
-    // 立即更新app header
     _update_app_header_if_needed(activity);
 }
 
@@ -818,7 +786,6 @@ void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible)
 {
     EOS_CHECK_PTR_RETURN(activity);
 
-    // 检查是否是Watchface Activity，如果是则不能设置为可见
     if (visible && activity == eos_activity_get_watchface())
     {
         EOS_LOG_D("Cannot set app header visible for watchface activity");
@@ -827,14 +794,12 @@ void eos_activity_set_app_header_visible(eos_activity_t *activity, bool visible)
 
     activity->is_app_header_visible = visible;
 
-    // 立即更新app header
     if (visible)
     {
         _update_app_header_if_needed(activity);
     }
     else
     {
-        // 检查当前activity是否是当前显示的activity
         eos_activity_t *current = eos_activity_get_current();
         if (current == activity)
         {
@@ -847,7 +812,6 @@ void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool
 {
     EOS_CHECK_PTR_RETURN(activity);
 
-    // 检查是否是Watchface Activity，如果是则不能设置为可见
     if (visible && activity == eos_activity_get_watchface())
     {
         EOS_LOG_D("Cannot set app header visible for watchface activity");
@@ -872,16 +836,13 @@ void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool
 
 static void _update_app_header_if_needed(eos_activity_t *activity)
 {
-    // 仅对当前可见 activity 立即更新，避免转场期间提前显示 header。
     eos_activity_t *visible = eos_activity_get_visible();
     if (visible != activity)
         return;
 
-    // 检查app header是否可见
     if (!activity->is_app_header_visible)
         return;
 
-    // 立即更新app header
     eos_app_header_show(activity);
 }
 
@@ -897,7 +858,6 @@ void eos_activity_set_app_header_time_only(eos_activity_t *activity, bool time_o
 
     activity->is_app_header_time_only = time_only;
 
-    // 立即更新app header
     _update_app_header_if_needed(activity);
 }
 
@@ -913,7 +873,6 @@ void eos_activity_set_app_header_time_only_text_color(eos_activity_t *activity, 
 
     activity->app_header_time_only_text_color = color;
 
-    // 立即更新app header
     _update_app_header_if_needed(activity);
 }
 
@@ -934,7 +893,6 @@ void eos_activity_set_title_color(eos_activity_t *activity, lv_color_t color)
     EOS_CHECK_PTR_RETURN(activity);
     activity->title.color = color;
 
-    // 立即更新app header
     _update_app_header_if_needed(activity);
 }
 
@@ -1118,10 +1076,8 @@ eos_result_t eos_activity_back(void)
     eos_activity_t *current = eos_stack_pop(g_activity_ctx.activity_stack);
     EOS_CHECK_PTR_RETURN_VAL(current, EOS_FAILED);
 
-    // 标记此 activity 在 exit 时需要销毁
     current->destroy_on_exit = true;
 
-    // 确定要切换到的 activity
     eos_activity_t *prev = NULL;
     if (eos_stack_get_size(g_activity_ctx.activity_stack) == 0)
     {
@@ -1134,7 +1090,6 @@ eos_result_t eos_activity_back(void)
 
     EOS_CHECK_PTR_RETURN_VAL(prev, EOS_FAILED);
 
-    // 切换到上一个 activity，destroy_on_exit 标志会控制是否销毁当前 activity
     _activity_switch_to(prev);
 
     return EOS_OK;

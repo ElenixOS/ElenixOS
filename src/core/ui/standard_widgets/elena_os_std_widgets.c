@@ -1,6 +1,6 @@
 /**
  * @file elena_os_std_widgets.c
- * @brief 系统标准组件
+ * @brief System standard widgets
  * @author Sab1e
  * @date 2025-12-07
  */

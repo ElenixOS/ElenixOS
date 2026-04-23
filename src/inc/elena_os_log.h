@@ -1,6 +1,6 @@
 /**
  * @file elena_os_log.h
- * @brief 日志系统
+ * @brief Log system
  * @author Sab1e
  * @date 2025-08-14
  */
@@ -23,7 +23,7 @@ extern "C" {
 #include "elena_os_port.h"
 /* Public macros ----------------------------------------------*/
 
-/************************** 彩色日志 **************************/
+/************************** Colorful Log **************************/
 #if EOS_LOG_USE_COLOR
 #define EOS_LOG_COLOR_RESET   "\033[0m"
 #define EOS_LOG_COLOR_RED     "\033[31m"
@@ -49,7 +49,7 @@ extern "C" {
     printf(color "[%s:%d %s()] %s: " fmt EOS_LOG_COLOR_RESET "\n", \
            __FILE__, __LINE__, __func__, level, ##__VA_ARGS__)
 
-/************************** 日志宏 **************************/
+/************************** Log Macros **************************/
 
 #ifdef EOS_LOG_DISABLE
 
@@ -72,19 +72,19 @@ extern "C" {
 #define EOS_LOG_E(fmt, ...) EOS_LOG_ALL("ERROR", EOS_LOG_COLOR_RED, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
 
 #endif /* EOS_LOG_DISABLE */
-/************************** 内存检查 **************************/
+/************************** Memory Check **************************/
 
 #if EOS_SYSMON_TYPE == EOS_SYSMON_USE_INTERNAL
     #define EOS_MEM(tag)                            \
     do                                              \
-    {                                               \
+    {                                              \
         EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
         eos_sysmon_print();                         \
     } while (0)
 #elif EOS_SYSMON_TYPE == EOS_SYSMON_USE_CUSTOM
     #define EOS_MEM(tag)                            \
     do                                              \
-    {                                               \
+    {                                              \
         EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
         EOS_SYSMON_HANDLER                          \
     } while (0)
@@ -92,7 +92,7 @@ extern "C" {
     #define EOS_MEM(tag)
 #endif /* EOS_SYSMON_TYPE */
 
-/************************** 指针检查 **************************/
+/************************** Pointer Check **************************/
 #define EOS_CHECK_PTR_RETURN(ptr) \
     do { \
         if (!(ptr)) { \
@@ -128,7 +128,7 @@ extern "C" {
         } \
     } while(0)
 
-/************************** 断言宏 **************************/
+/************************** Assertion Macros **************************/
 #if EOS_USE_ASSERT
 #define EOS_ASSERT(expr) \
     do { \
@@ -141,7 +141,7 @@ extern "C" {
 #define EOS_ASSERT(expr) ((void)0)
 #endif /* EOS_USE_ASSERT */
 
-/************************** 打印坐标 **************************/
+/************************** Print Coordinates **************************/
 
 #define EOS_DEBUG_PRINT_POS(obj) EOS_LOG_D("Obj[%p] (%d,%d)", obj, lv_obj_get_x(obj), lv_obj_get_y(obj))
 

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_touch.h
- * @brief 获取触摸设备
+ * @brief Get touch device
  * @author Sab1e
  * @date 2025-11-24
  */
@@ -22,8 +22,8 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 获取第一个触摸设备
- * @return lv_indev_t* 获取成功则返回触摸设备指针，否则返回 NULL
+ * @brief Get the first touch device
+ * @return lv_indev_t* Returns touch device pointer if successful, otherwise returns NULL
  */
 lv_indev_t *eos_touch_get_indev(void);
 #ifdef __cplusplus

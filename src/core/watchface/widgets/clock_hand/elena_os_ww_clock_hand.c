@@ -1,6 +1,6 @@
 /**
  * @file elena_os_ww_clock_hand.c
- * @brief 时钟指针
+ * @brief Clock hand
  * @author Sab1e
  * @date 2025-12-18
  */

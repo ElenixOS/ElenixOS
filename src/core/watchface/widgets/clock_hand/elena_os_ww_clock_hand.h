@@ -1,6 +1,6 @@
 /**
  * @file elena_os_ww_clock_hand.h
- * @brief 头文件说明
+ * @brief Clock hand
  * @author Sab1e
  * @date 2025-12-18
  */
@@ -27,8 +27,8 @@ typedef enum{
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 将指针放到指定位置（控制锚点为旋转中心点）
- * @param hand 指针对象
+ * @brief Place pointer at specified position (control anchor point as rotation center)
+ * @param hand Pointer object
  * @param target_x x
  * @param target_y y
  */
@@ -37,19 +37,19 @@ void eos_clock_hand_place_pivot(lv_obj_t *hand,
                          lv_coord_t target_y);
 
 /**
- * @brief 以指针旋转中心点为锚点，相对父对象居中
- * @param hand 指针对象
+ * @brief Center relative to parent object using pointer rotation center as anchor
+ * @param hand Pointer object
  */
 void eos_clock_hand_center(lv_obj_t *hand);
 
 /**
- * @brief 创建一个时钟指针
- * @param parent 指针父对象
- * @param src 指针图像源
- * @param t 指针类型`eos_clock_hand_type_t`
- * @param hand_pivot_x 旋转中心点 x 坐标（相对图像）
- * @param hand_pivot_y 旋转中心点 y 坐标（相对图像）
- * @return lv_obj_t* 返回创建的指针图像对象
+ * @brief Create a clock hand
+ * @param parent Pointer parent object
+ * @param src Pointer image source
+ * @param t Pointer type `eos_clock_hand_type_t`
+ * @param hand_pivot_x Rotation center x coordinate (relative to image)
+ * @param hand_pivot_y Rotation center y coordinate (relative to image)
+ * @return lv_obj_t* Returns created pointer image object
  */
 lv_obj_t *eos_clock_hand_create(lv_obj_t *parent,
                                 const char *src,

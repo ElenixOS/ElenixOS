@@ -1,6 +1,6 @@
 /**
  * @file elena_os_watchface_list.h
- * @brief 表盘列表
+ * @brief Watchface list
  * @author Sab1e
  * @date 2025-08-25
  */
@@ -24,8 +24,8 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 进入表盘列表页面
- * @return eos_activity_t* 表盘列表页面的 Activity
+ * @brief Enter watchface list page
+ * @return eos_activity_t* Watchface list page Activity
  */
 void eos_watchface_list_enter(void);
 #ifdef __cplusplus

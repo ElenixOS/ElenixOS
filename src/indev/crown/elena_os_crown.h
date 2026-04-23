@@ -1,6 +1,6 @@
 /**
  * @file elena_os_crown.h
- * @brief 表冠
+ * @brief Crown
  * @author Sab1e
  * @date 2025-11-13
  */
@@ -22,36 +22,36 @@ extern "C" {
 typedef int16_t eos_crown_encoder_diff_t;
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 设置编码器反向
- * @param reverse true = 反向，false = 正向
+ * @brief Set encoder reverse
+ * @param reverse true = reverse, false = forward
  */
 void eos_crown_encoder_set_reverse(bool reverse);
 /**
- * @brief 设置编码器的滚动对象
- * @param obj 目标滚动对象
+ * @brief Set encoder scroll object
+ * @param obj Target scroll object
  */
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj);
 /**
- * @brief 根据活动 View 自动设置编码器的滚动对象，对象总是获取最先创建的对象(Firstly created)
- * @param view 目标 View
+ * @brief Automatically set encoder scroll object based on active View, always gets the first created object
+ * @param view Target View
  */
 void eos_crown_encoder_set_target_view(lv_obj_t *view);
 /**
- * @brief 激活当前可见 overlay 的滚动对象，按 overlay 优先级统一选择
+ * @brief Activate scroll object of currently visible overlay, uniformly selected by overlay priority
  */
 void eos_crown_encoder_activate_current_overlay_scrollable(void);
 /**
- * @brief 上报表冠按钮的状态
- * @param state 状态值
+ * @brief Report crown button state
+ * @param state State value
  */
 void eos_crown_button_report(eos_button_state_t state);
 /**
- * @brief 上报表冠编码器增量
- * @param diff 增量
+ * @brief Report crown encoder increment
+ * @param diff Increment
  */
 void eos_crown_encoder_report(eos_crown_encoder_diff_t diff);
 /**
- * @brief 初始化
+ * @brief Initialize
  */
 void eos_crown_init(void);
 #ifdef __cplusplus

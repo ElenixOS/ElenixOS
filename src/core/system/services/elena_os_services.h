@@ -1,6 +1,6 @@
 /**
  * @file elena_os_services.h
- * @brief 系统服务
+ * @brief System services
  * @author Sab1e
  * @date 2025-10-07
  */
@@ -23,20 +23,20 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 电池电量获取函数
- * @return uint8_t 返回电池电量，范围：0～100
+ * @brief Get battery level
+ * @return uint8_t Returns battery level, range: 0~100
  */
 uint8_t eos_battery_service_get_level(void);
 
 /**
- * @brief 电池是否正在充电
+ * @brief Check if battery is charging
  * @return true
  * @return false
  */
 bool eos_battery_service_get_charging(void);
 
 /**
- * @brief 启动服务
+ * @brief Start services
  */
 void eos_services_start(void);
 #ifdef __cplusplus

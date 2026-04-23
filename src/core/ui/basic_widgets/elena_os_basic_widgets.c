@@ -1,6 +1,6 @@
 /**
  * @file elena_os_basic_widgets.c
- * @brief 基本控件
+ * @brief Basic widgets
  * @author Sab1e
  * @date 2025-08-17
  */
@@ -232,7 +232,7 @@ void eos_switch_set_state(lv_obj_t *sw, bool checked)
     }
 }
 
-/************************** 列表相关 **************************/
+/************************** List Related **************************/
 
 lv_obj_t *eos_list_create(lv_obj_t *parent)
 {
@@ -442,7 +442,7 @@ static void _list_transition_list_clicked_cb(lv_event_t *e)
         return;
     }
 
-    // 提前去掉按压态，避免转场后对象残留 pressed 缩放。
+    // Clear pressed state in advance to avoid residual pressed scaling after transition.
     lv_obj_clear_state(button, LV_STATE_PRESSED);
 
     eos_activity_t *click_activity = eos_activity_get_previous();
@@ -633,7 +633,7 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
 
     if (back)
     {
-        // 返回时确保列表页参与动画渲染
+        // Ensure list page participates in animation rendering when returning
         lv_obj_clear_flag(list_view, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(list, LV_OBJ_FLAG_HIDDEN);
     }
@@ -650,7 +650,7 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     uint32_t all_item_cnt = 0U;
     if (back && visible_item_cnt == 0U)
     {
-        // 某些返回时序下可见区域采集会失败，兜底为列表下全部子对象
+        // In some return sequences, visible area collection may fail, fallback to all child objects under list
         visible_item_cnt = _list_transition_collect_all_children(list, visible_items, _LIST_TRANSITION_MAX_VISIBLE_ITEMS);
     }
     if (back)
@@ -708,13 +708,13 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     lv_anim_t button_translate_anim;
     lv_anim_t page_translate_anim;
 
-    // 按钮左移时允许内容溢出，避免被 list/view 父对象裁剪
+    // Allow content overflow when button moves left to avoid clipping by list/view parent objects
     lv_obj_add_flag(list_view, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
     lv_obj_add_flag(list, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
 
     if (back)
     {
-        // 返回时即便部分条目不在可见区，也要复原到正常缩放，避免残留半缩放。
+        // When returning, even if some items are not in the visible area, restore to normal scale to avoid residual half-scaling.
         for (uint32_t i = 0U; i < all_item_cnt; i++)
         {
             lv_obj_t *obj = all_items[i];
@@ -779,7 +779,7 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
 static void _list_container_common_style(lv_obj_t *container)
 {
     lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scroll_dir(container, LV_DIR_NONE); // 禁止滚动
+    lv_obj_set_scroll_dir(container, LV_DIR_NONE); // Disable scrolling
     lv_obj_set_style_bg_color(container, EOS_THEME_SECONDARY_COLOR, 0);
     lv_obj_set_style_border_width(container, 0, 0);
     lv_obj_set_style_pad_all(container, EOS_LIST_CONTAINER_PAD_ALL, 0);
@@ -797,7 +797,7 @@ lv_obj_t *_list_btn_container_create(lv_obj_t *list)
     lv_obj_set_size(btn, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
     _list_container_common_style(btn);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
-    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // 水平排布
+    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // Horizontal layout
     lv_obj_set_flex_align(btn,
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_CENTER,
@@ -845,7 +845,7 @@ lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height)
 
 lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const void *icon_src)
 {
-    // 绘制圆形背景
+    // Draw circular background
     lv_obj_t *round = lv_obj_create(parent);
     lv_obj_set_style_border_width(round, 0, 0);
     lv_obj_remove_flag(round, LV_OBJ_FLAG_SCROLLABLE);
@@ -853,7 +853,7 @@ lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const voi
     lv_obj_set_style_pad_all(round, 0, 0);
     lv_obj_set_style_radius(round, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(round, bg_color, 0);
-    // 绘制图像
+    // Draw image
     lv_obj_t *icon = lv_label_create(round);
     lv_label_set_text(icon, icon_src);
     lv_obj_set_style_translate_y(icon, 2, 0);
@@ -866,11 +866,11 @@ lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const voi
 
 lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, const char *txt)
 {
-    // 创建按钮
+    // Create button
     lv_obj_t *btn = _list_btn_container_create(list);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     eos_round_icon_create(btn, bg_color, icon_src);
-    // 文字
+    // Text
     lv_obj_t *label = lv_label_create(btn);
     lv_obj_set_style_margin_left(label, 14, 0);
     lv_label_set_text(label, txt);
@@ -882,11 +882,11 @@ lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, co
 
 lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, lang_string_id_t id)
 {
-    // 创建按钮
+    // Create button
     lv_obj_t *btn = _list_btn_container_create(list);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
     eos_round_icon_create(btn, bg_color, icon_src);
-    // 文字
+    // Text
     lv_obj_t *label = lv_label_create(btn);
     eos_label_set_text_id(label, id);
     lv_obj_set_style_margin_left(label, 14, 0);
@@ -898,15 +898,15 @@ lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_co
 
 lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
 {
-    // 创建按钮
+    // Create button
     lv_obj_t *btn = _list_btn_container_create(list);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
-    // 文字
+    // Text
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, txt);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
-    // 文字
+    // Text
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
@@ -914,15 +914,15 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
 
 lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
 {
-    // 创建按钮
+    // Create button
     lv_obj_t *btn = _list_btn_container_create(list);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_USER_1);
-    // 文字
+    // Text
     lv_obj_t *label = lv_label_create(btn);
     eos_label_set_text_id(label, id);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
-    // 文字
+    // Text
     label = lv_label_create(btn);
     lv_label_set_text(label, RI_ARROW_RIGHT_S_LINE);
     return btn;
@@ -953,22 +953,22 @@ static void _list_switch_container_clicked_cb(lv_event_t *e)
 
 lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt)
 {
-    // 创建容器
+    // Create container
     lv_obj_t *container = _list_btn_container_create(list);
     lv_obj_set_size(container, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
-    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW); // 水平排布
+    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW); // Horizontal layout
     lv_obj_set_flex_align(container,
                           LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
 
-    // 文字
+    // Text
     lv_obj_t *label = lv_label_create(container);
     lv_label_set_text(label, txt);
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_flex_grow(label, 1);
 
-    // 开关
+    // Switch
     lv_obj_t *sw = lv_switch_create(container);
     lv_obj_set_height(sw, _LIST_SWITCH_WIDTH);
     lv_obj_update_layout(sw);
@@ -1024,19 +1024,19 @@ static void _list_slider_delete_cb(lv_event_t *e)
 
 lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title)
 {
-    // 创建外层透明容器
+    // Create outer transparent container
     lv_obj_t *outer_container = lv_obj_create(list);
-    lv_obj_remove_style_all(outer_container);                       // 移除默认样式
-    lv_obj_set_size(outer_container, lv_pct(100), LV_SIZE_CONTENT); // 高度自适应
-    lv_obj_set_style_bg_opa(outer_container, LV_OPA_TRANSP, 0);     // 设置透明背景
-    lv_obj_set_flex_flow(outer_container, LV_FLEX_FLOW_COLUMN);     // 垂直布局
+    lv_obj_remove_style_all(outer_container);                       // Remove default style
+    lv_obj_set_size(outer_container, lv_pct(100), LV_SIZE_CONTENT); // Height adaptive
+    lv_obj_set_style_bg_opa(outer_container, LV_OPA_TRANSP, 0);     // Set transparent background
+    lv_obj_set_flex_flow(outer_container, LV_FLEX_FLOW_COLUMN);     // Vertical layout
 
-    // 添加左上角标签
+    // Add top-left label
     lv_obj_t *txt_label = eos_list_add_title(outer_container, title);
 
-    // 创建内层容器（水平居中）
+    // Create inner container (horizontally centered)
     lv_obj_t *inner_container = eos_list_add_container(outer_container);
-    lv_obj_set_style_align(inner_container, LV_ALIGN_CENTER, 0); // 水平居中
+    lv_obj_set_style_align(inner_container, LV_ALIGN_CENTER, 0); // Horizontally centered
     lv_obj_set_style_margin_hor(inner_container, 0, 0);
 
     return inner_container;
@@ -1089,7 +1089,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     list_slider->minus_label_scale = 255;
     list_slider->plus_label_scale = 255;
 
-    // 创建外层透明容器
+    // Create outer transparent container
     lv_obj_t *inner_container = eos_list_add_title_container(list, txt);
     lv_obj_set_style_pad_all(inner_container, 0, 0);
     lv_obj_set_size(inner_container, lv_pct(100), EOS_LIST_CONTAINER_HEIGHT);
@@ -1100,7 +1100,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     const uint8_t pct_slider = 50;
     const uint8_t pct_btn = (100 - pct_slider) / 2;
 
-    /************************** 左侧 **************************/
+    /************************** Left Side **************************/
     list_slider->minus_btn = lv_obj_create(inner_container);
     lv_obj_set_size(list_slider->minus_btn, lv_pct(pct_btn), EOS_LIST_CONTAINER_HEIGHT);
     lv_obj_set_style_margin_all(list_slider->minus_btn, 0, 0);
@@ -1119,7 +1119,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_set_style_transform_pivot_x(list_slider->minus_label, lv_obj_get_width(list_slider->minus_label) / 2, 0);
     lv_obj_set_style_transform_pivot_y(list_slider->minus_label, lv_obj_get_height(list_slider->minus_label) / 2, 0);
 
-    /************************** 右侧 **************************/
+    /************************** Right Side **************************/
     list_slider->plus_btn = lv_obj_create(inner_container);
     lv_obj_set_size(list_slider->plus_btn, lv_pct(pct_btn), EOS_LIST_CONTAINER_HEIGHT);
     lv_obj_set_style_margin_all(list_slider->plus_btn, 0, 0);
@@ -1148,7 +1148,7 @@ eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt)
     lv_obj_set_style_radius(obj, 0, 0);
     lv_obj_center(obj);
 
-    // 滑块
+    // Slider
     const uint8_t slider_height = 5;
     const uint8_t slider_main_bg_darken_lvl = 180;
     list_slider->slider = lv_slider_create(obj);
@@ -1174,11 +1174,11 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
     lv_obj_set_size(row, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row,
-                          LV_FLEX_ALIGN_SPACE_BETWEEN, // 主轴两端对齐
-                          LV_FLEX_ALIGN_CENTER,        // 交叉轴居中
+                          LV_FLEX_ALIGN_SPACE_BETWEEN, // Main axis space between
+                          LV_FLEX_ALIGN_CENTER,        // Cross axis center
                           LV_FLEX_ALIGN_CENTER);
 
-    // 左边图像
+    // Left image
     if (left_img_path)
     {
         lv_obj_t *icon = lv_image_create(row);
@@ -1186,19 +1186,19 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
         eos_img_set_size(icon, icon_w, icon_h);
     }
 
-    // 左边文本
+    // Left text
     if (left_text)
     {
         lv_obj_t *left_label = lv_label_create(row);
         lv_label_set_text(left_label, left_text);
     }
 
-    // 右边文本
+    // Right text
     if (right_text)
     {
         lv_obj_t *right_label = lv_label_create(row);
         lv_label_set_text(right_label, right_text);
-        lv_obj_set_flex_grow(right_label, 1); // 吃掉中间空间
+        lv_obj_set_flex_grow(right_label, 1); // Fill middle space
         lv_obj_set_style_text_align(right_label, LV_TEXT_ALIGN_RIGHT, 0);
         lv_label_set_long_mode(right_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     }
@@ -1206,7 +1206,7 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
     return row;
 }
 
-/************************** 任意圆角 **************************/
+/************************** Arbitrary Corner Radius **************************/
 
 static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
 {
@@ -1226,23 +1226,23 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
 {
     EOS_CHECK_PTR_RETURN(obj);
 
-    // 获取对象尺寸
+    // Get object size
     lv_obj_update_layout(obj);
     lv_coord_t obj_w = lv_obj_get_width(obj);
     lv_coord_t obj_h = lv_obj_get_height(obj);
 
-    // 检查有效尺寸
+    // Check valid size
     if (obj_w <= 0 || obj_h <= 0)
     {
         EOS_LOG_E("Invalid object size: %dx%d", obj_w, obj_h);
         return;
     }
 
-    // 限制半径
+    // Limit radius
     lv_coord_t max_r = LV_MIN(obj_w, obj_h) / 2;
     radius = LV_MIN(radius, max_r);
 
-    // 如果半径为0，使用无圆角的快速路径
+    // If radius is 0, use fast path without corner radius
     if (radius == 0)
     {
         EOS_LOG_W("Invalid object radius: %d", radius);
@@ -1254,7 +1254,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
         return;
     }
 
-    // 分配内存
+    // Allocate memory
     static const uint32_t cf_bytes = 4; // ARGB8888
     const uint32_t canvas_buf_size = (uint32_t)obj_w * obj_h * cf_bytes;
 
@@ -1271,18 +1271,18 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
         return;
     }
 
-    // 创建并配置画布
+    // Create and configure canvas
     lv_obj_t *canvas = lv_canvas_create(lv_screen_active());
     EOS_CHECK_PTR_RETURN_FREE(canvas, canvas_buf);
 
     lv_obj_remove_style_all(canvas);
     lv_canvas_set_buffer(canvas, canvas_buf, obj_w, obj_h, LV_COLOR_FORMAT_ARGB8888);
 
-    // 绘制逻辑
+    // Drawing logic
     lv_layer_t layer;
     lv_canvas_init_layer(canvas, &layer);
 
-    // 绘制主圆角矩形
+    // Draw main rounded rectangle
     lv_draw_rect_dsc_t rect_main;
     lv_draw_rect_dsc_init(&rect_main);
     rect_main.radius = radius;
@@ -1292,7 +1292,7 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     lv_area_t coords = {0, 0, obj_w - 1, obj_h - 1};
     lv_draw_rect(&layer, &rect_main, &coords);
 
-    // 覆盖不需要圆角的角落
+    // Cover corners that don't need rounding
     if (radius > 0)
     {
         lv_draw_rect_dsc_t corner_rect_dsc;
@@ -1302,10 +1302,10 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
         corner_rect_dsc.radius = 0;
 
         const lv_area_t corners_areas[] = {
-            {0, 0, radius, radius},                                 // 左上
-            {obj_w - radius, 0, obj_w - 1, radius},                 // 右上
-            {obj_w - radius, obj_h - radius, obj_w - 1, obj_h - 1}, // 右下
-            {0, obj_h - radius, radius, obj_h - 1}                  // 左下
+            {0, 0, radius, radius},                                 // Top left
+            {obj_w - radius, 0, obj_w - 1, radius},                 // Top right
+            {obj_w - radius, obj_h - radius, obj_w - 1, obj_h - 1}, // Bottom right
+            {0, obj_h - radius, radius, obj_h - 1}                  // Bottom left
         };
 
         const eos_corner_round_t corner_flags[] = {
@@ -1321,11 +1321,11 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
         }
     }
 
-    // 完成绘制
+    // Complete drawing
     lv_canvas_finish_layer(canvas, &layer);
     lv_obj_delete_async(canvas);
 
-    // 创建图像描述符
+    // Create image descriptor
     lv_image_dsc_t *dsc = eos_malloc_zeroed(sizeof(lv_image_dsc_t));
     EOS_CHECK_PTR_RETURN_FREE(dsc, canvas_buf);
 
@@ -1340,18 +1340,18 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
         .data = canvas_buf,
         .data_size = canvas_buf_size};
 
-    // 设置样式
+    // Set style
     lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(obj, 0, 0);
     lv_obj_set_style_radius(obj, 0, 0);
 
-    // 如果此前已经为这个对象设置过圆角背景，先释放旧的图像缓冲区。
+    // If this object has previously been set with a corner radius background, release the old image buffer first.
     lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
 
-    // 移除旧的事件回调（如果存在）
+    // Remove old event callback (if exists)
     lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);
 
-    // 添加新的事件回调
+    // Add new event callback
     if (
         (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
                              LV_EVENT_DELETE, dsc) == NULL) ||

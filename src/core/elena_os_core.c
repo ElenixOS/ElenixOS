@@ -1,6 +1,6 @@
 /**
  * @file elena_os_core.c
- * @brief Elena OS 核心代码实现
+ * @brief Elena OS core code implementation
  * @author Sab1e
  * @date 2025-08-10
  */
@@ -108,14 +108,14 @@ void eos_logo_play(bool anim)
         lv_screen_load(scr);
     }
 
-    // 创建全屏容器
+    // Create full screen container
     lv_obj_t *logo_container = lv_obj_create(scr);
     lv_obj_set_style_bg_color(logo_container, EOS_COLOR_BLACK, 0);
     lv_obj_set_size(logo_container, lv_pct(100), lv_pct(100));
     lv_obj_set_style_border_width(logo_container, 0, 0);
     lv_obj_move_foreground(logo_container);
 
-    // 创建LOGO图片对象
+    // Create LOGO image object
     lv_obj_t *logo_img = lv_image_create(logo_container);
     eos_img_set_src(logo_img, EOS_IMG_LOGO);
     lv_obj_center(logo_img);
@@ -147,7 +147,7 @@ void eos_logo_play(bool anim)
 void eos_run(void)
 {
     eos_logo_play(true);
-    /************************** 系统组件初始化 **************************/
+    /************************** System components initialization **************************/
 #if EOS_DFW_ENABLE
     eos_dfw_init();
 #endif /* EOS_DFW_ENABLE */
@@ -176,12 +176,12 @@ void eos_run(void)
     if (!watchface_activity)
         _sys_init_err_handler("Failed to get watchface activity");
 
-    // Activity controller 会自动删除 Logo Screen
+    // Activity controller will automatically delete Logo Screen
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
         _sys_init_err_handler("Failed to initialize activity controller");
 
-    /************************** 系统启动 **************************/
-    // 开始绘制
+    /************************** System startup **************************/
+    // Start rendering
     while (1)
     {
         eos_dispatch_tick();

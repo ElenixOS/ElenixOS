@@ -1,6 +1,6 @@
 /**
  * @file elena_os_swipe_panel.c
- * @brief 滑动面板实现
+ * @brief Swipe panel implementation
  * @author Sab1e
  * @date 2025-08-10
  */
@@ -48,16 +48,16 @@ static void _update_handle_bar_position(eos_swipe_panel_t *sp, eos_swipe_dir_t d
     switch (dir)
     {
     case EOS_SWIPE_DIR_DOWN:
-        lv_obj_align(sp->handle_bar, LV_ALIGN_BOTTOM_MID, 0, -TOUCH_BAR_MARGIN); // 底部上方10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_BOTTOM_MID, 0, -TOUCH_BAR_MARGIN); // 10px above bottom
         break;
     case EOS_SWIPE_DIR_UP:
-        lv_obj_align(sp->handle_bar, LV_ALIGN_TOP_MID, 0, TOUCH_BAR_MARGIN); // 顶部下方10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_TOP_MID, 0, TOUCH_BAR_MARGIN); // 10px below top
         break;
     case EOS_SWIPE_DIR_LEFT:
-        lv_obj_align(sp->handle_bar, LV_ALIGN_LEFT_MID, TOUCH_BAR_MARGIN, 0); // 右侧10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_LEFT_MID, TOUCH_BAR_MARGIN, 0); // 10px right
         break;
     case EOS_SWIPE_DIR_RIGHT:
-        lv_obj_align(sp->handle_bar, LV_ALIGN_RIGHT_MID, -TOUCH_BAR_MARGIN, 0); // 左侧10px
+        lv_obj_align(sp->handle_bar, LV_ALIGN_RIGHT_MID, -TOUCH_BAR_MARGIN, 0); // 10px left
         break;
     }
 
@@ -101,19 +101,19 @@ void eos_swipe_panel_pull_back(eos_swipe_panel_t *sp)
     switch (sp->dir)
     {
     case EOS_SWIPE_DIR_UP:
-        target = EOS_DISPLAY_HEIGHT; // 向上拉回时完全隐藏
+        target = EOS_DISPLAY_HEIGHT; // Completely hide when pulling back up
         break;
     case EOS_SWIPE_DIR_DOWN:
-        target = -EOS_DISPLAY_HEIGHT; // 向下拉回时完全隐藏
+        target = -EOS_DISPLAY_HEIGHT; // Completely hide when pulling back down
         break;
     case EOS_SWIPE_DIR_LEFT:
-        target = EOS_DISPLAY_WIDTH; // 向左拉回时完全隐藏
+        target = EOS_DISPLAY_WIDTH; // Completely hide when pulling back left
         break;
     case EOS_SWIPE_DIR_RIGHT:
-        target = -EOS_DISPLAY_WIDTH; // 向右拉回时完全隐藏
+        target = -EOS_DISPLAY_WIDTH; // Completely hide when pulling back right
         break;
     }
-    // 显式声明本次动画是“回弹关闭”路径。
+    // Explicitly declare this animation is the "rebound close" path.
     eos_slide_widget_set_anim_transition(sp->sw,
                                          EOS_SLIDE_WIDGET_STATE_REVERTING,
                                          EOS_SLIDE_WIDGET_STATE_IDLE);
@@ -151,7 +151,7 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
 
     sp->dir = dir;
 
-    // 根据方向调整手势区域尺寸
+    // Adjust gesture area size based on direction
     switch (sp->sw->dir)
     {
     case EOS_SLIDE_DIR_VER:
@@ -162,7 +162,7 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
         break;
     }
 
-    // 更新主对象位置
+    // Update main object position
     switch (dir)
     {
     case EOS_SWIPE_DIR_UP:
@@ -203,7 +203,7 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
         break;
     }
 
-    // 更新handle_bar位置
+    // Update handle_bar position
     _update_handle_bar_position(sp, dir);
 }
 

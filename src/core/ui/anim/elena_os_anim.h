@@ -1,70 +1,70 @@
 /**
  * @file elena_os_anim.h
- * @brief 动画库
+ * @brief Animation library
  * @author Sab1e
  * @date 2025-08-14
  * @details
  *
- * # 动画系统
+ * # Animation System
  *
- * 基于 LVGL 动画封装的动画库，为 ElenaOS 提供统一且易用的动画接口。
- * 该库将常用动画效果进行归纳与标准化，并以枚举类型 `eos_anim` 统一表示，
- * 便于在系统中以一致的方式创建和使用标准动画。
+ * An animation library wrapped based on LVGL animation, providing unified and easy-to-use animation interfaces for ElenaOS.
+ * This library summarizes common animation effects and standardizes them, representing them with the enum type `eos_anim`,
+ * facilitating consistent creation and usage of standard animations throughout the system.
  *
- * ## 使用方法
+ * ## Usage
  *
- * ### 使用专用函数创建不同类型的动画，例如缩放动画、透明度动画：
+ * ### Create different types of animations using dedicated functions, such as scale animation and fade animation:
  *
  * ```c
  * eos_anim_t *anim = eos_anim_scale_create(obj, w_start, w_end, h_start, h_end, duration);
  * eos_anim_t *fade_anim = eos_anim_fade_create(obj, opa_start, opa_end, duration);
  * ```
  *
- * ### 动画播放完成后触发的回调：
+ * ### Callbacks triggered when animation playback completes:
  *
  * ```c
  * eos_anim_add_cb(anim, user_cb, user_data);
  * ```
  *
- * ### 启动动画
+ * ### Start animation
  *
  * ```c
  * eos_anim_start(anim);
  * ```
  *
- * ### 快捷方式（直接创建并播放）
+ * ### Shortcuts (create and play directly)
  *
  * ```c
  * eos_anim_scale_start(obj, w_start, w_end, h_start, h_end, duration);
  * ```
  *
- *  - 不需要手动管理动画对象。
- *  - 完成后自动释放。
+ *  - No need to manually manage animation objects.
+ *  - Automatically released after completion.
  *
- * ### 删除动画
+ * ### Delete animation
  *
- * 如果想提前停止或手动清理动画：
+ * If you want to stop early or manually clean up the animation:
  *
  * ```c
  * eos_anim_del(anim);
  * ```
  *
- * ## 轻动画
+ * ## Lite Animation
  *
- * 轻动画（Lite Anim）是基于 LVGL 动画系统的轻量封装，
- * 提供统一且简洁的接口，用于创建单一类型的 LVGL 动画。
- * 每个轻动画在调用后会立即生成并启动，无需额外配置，
- * 适合场景内快速使用的简单过渡效果。
+ * Lite Animation is a lightweight wrapper based on the LVGL animation system,
+ * providing a unified and concise interface for creating single-type LVGL animations.
+ * Each lite animation generates and starts immediately after being called,
+ * suitable for quick-use simple transition effects within scenes.
  *
- * >[!NOTE] 轻动画传入的播放完成回调与标准动画库不同，
- * 轻动画直接使用 LVGL 默认回调函数。
+ * >[!NOTE] The playback completion callback for lite animations differs from the standard animation library.
+ * Lite animations directly use LVGL default callback functions.
  *
- * ## 注意事项
+ * ## Notes
  *
- *  - 动画对象 eos_anim_t 会自动释放。
- *  - 支持多动画并行，通过 anim_count 管理子动画完成情况。
- *  - 可扩展不同类型的动画（缩放、透明度、宽高、位置等）。
- *  - 多个动画可以同时启动，但同类型动画可能出现竞态。
+ *  - Animation object eos_anim_t will be automatically released.
+ *  - Supports multiple animations in parallel, managed by anim_count for sub-animation completion.
+ *  - Extensible for different types of animations (scale, opacity, size, position, etc.).
+ *  - Multiple animations can start simultaneously, but same type animations may have race conditions.
  */
 
 #ifndef ELENA_OS_ANIM_H
@@ -83,40 +83,40 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief 所有动画类型，可以继续添加。
+ * @brief All animation types, can continue to add more.
  */
 typedef enum
 {
-    EOS_ANIM_SCALE,          /**< 缩放动画 */
-    EOS_ANIM_FADE,           /**< 透明度渐变动画 */
-    EOS_ANIM_MOVE,           /**< 位置移动动画 */
-    EOS_ANIM_TRANSFORM_SCALE /**< 缩放动画，支持 Label */
-    // 此处可以添加其他动画类型
+    EOS_ANIM_SCALE,          /**< Scale animation */
+    EOS_ANIM_FADE,           /**< Opacity fade animation */
+    EOS_ANIM_MOVE,           /**< Position move animation */
+    EOS_ANIM_TRANSFORM_SCALE /**< Scale animation, supports Label */
+    // More animation types can be added here
 } eos_anim;
-typedef struct eos_anim_t eos_anim_t; // 预定义
+typedef struct eos_anim_t eos_anim_t; // Forward declaration
 /**
- * @brief 回调函数的类型定义
+ * @brief Callback function type definition
  */
 typedef void (*eos_anim_cb_t)(eos_anim_t *a);
 /**
- * @brief ElenaOS 动画对象的结构体
+ * @brief ElenaOS animation object structure
  */
 struct eos_anim_t
 {
-    lv_anim_timeline_t *anim_timeline; /**< 动画的时间线指针 */
-    eos_anim type;                     /**< 动画类型 */
-    uint32_t anim_count;               /**< 该类型总的动画数量 */
-    uint32_t anim_completed_count;     /**< 当前动画已经播放完毕的数量（用于判断动画是不是全部播放完毕）*/
-    eos_anim_cb_t user_cb;             /**< 用户设定的回调函数 */
+    lv_anim_timeline_t *anim_timeline; /**< Animation timeline pointer */
+    eos_anim type;                     /**< Animation type */
+    uint32_t anim_count;               /**< Total animation count for this type */
+    uint32_t anim_completed_count;     /**< Current completed animation count (used to determine if all animations are finished) */
+    eos_anim_cb_t user_cb;             /**< User-defined callback function */
     lv_obj_t *tar_obj;
-    bool auto_delete_obj; /**< 动画播放完成时自动删除被绑定对象 */
-    void *user_data;      /**< 用户数据 */
+    bool auto_delete_obj; /**< Automatically delete bound object when animation completes */
+    void *user_data;      /**< User data */
     union
-    { /**< 用于存储动画对象的共用体 */
+    { /**< Union for storing animation objects */
         struct
         {
-            lv_anim_t a_width;  /**< 缩放动画的宽度动画对象 */
-            lv_anim_t a_height; /**< 缩放动画的高度动画对象 */
+            lv_anim_t a_width;  /**< Scale animation width animation object */
+            lv_anim_t a_height; /**< Scale animation height animation object */
         } scale;
         struct
         {
@@ -124,86 +124,86 @@ struct eos_anim_t
         } fade;
         struct
         {
-            lv_anim_t a_x; /**< X 轴位置动画 */
-            lv_anim_t a_y; /**< Y 轴位置动画 */
+            lv_anim_t a_x; /**< X-axis position animation */
+            lv_anim_t a_y; /**< Y-axis position animation */
         } move;
         struct
         {
             lv_anim_t a_scale;
         } transform_scale;
-        // 此处可以添加其他动画类型的结构
+        // Other animation type structures can be added here
     } anim;
     union
-    { /**< 用于存储动画对象的共用体 */
+    { /**< Union for storing animation objects */
         struct
         {
-            bool layered; /**< 是否随子对象调整透明度 */
+            bool layered; /**< Whether to adjust opacity with child objects */
         } fade;
         struct
         {
-            bool disable_x; /**< 是否随子对象调整透明度 */
-            bool disable_y; /**< 是否随子对象调整透明度 */
+            bool disable_x; /**< Whether to adjust opacity with child objects */
+            bool disable_y; /**< Whether to adjust opacity with child objects */
         } move;
-        // 此处可以添加其他动画类型的结构
+        // Other animation type structures can be added here
     } cfg;
 };
 /* Public function prototypes --------------------------------*/
 
-/************************** 通用 **************************/
+/************************** Common **************************/
 
 /**
- * @brief 当动画播放完毕时自动删除`tar_obj`
- * @param anim 目标动画
+ * @brief Automatically delete `tar_obj` when animation finishes
+ * @param anim Target animation
  */
 void eos_anim_set_auto_delete(eos_anim_t *anim);
 
 /**
- * @brief 开始播放动画
- * @param anim 由create函数创建的动画对象
- * @return 成功返回true，失败返回false
+ * @brief Start playing animation
+ * @param anim Animation object created by create function
+ * @return Returns true on success, false on failure
  */
 bool eos_anim_start(eos_anim_t* anim);
 
 /**
- * @brief 给动画设置播放完毕时的回调
- * @param anim 要设置的动画
- * @param user_cb 回调函数
- * @param user_data 用户数据指针（需要用户自行管理生命周期）
+ * @brief Set callback for animation completion
+ * @param anim Animation to set
+ * @param user_cb Callback function
+ * @param user_data User data pointer (user is responsible for managing lifecycle)
  */
 void eos_anim_add_cb(eos_anim_t *anim,
                         eos_anim_cb_t user_cb,
                         void *user_data);
 
 /**
- * @brief 获取动画对象的用户数据
+ * @brief Get animation object's user data
  */
 void* eos_anim_get_user_data(eos_anim_t *anim);
 /**
- * @brief 删除动画对象
- * @param anim 动画对象指针
- * @note 如果动画正在运行会自动停止
+ * @brief Delete animation object
+ * @param anim Animation object pointer
+ * @note Will automatically stop if animation is running
  */
 void eos_anim_del(eos_anim_t* anim);
 /**
- * @brief 添加透明阻碍层，禁止用户输入
+ * @brief Add transparent blocker layer to disable user input
  */
 void eos_anim_blocker_show(void);
 /**
- * @brief 移除透明阻碍层
+ * @brief Remove transparent blocker layer
  */
 void eos_anim_blocker_hide(void);
 
-/************************** 动画 **************************/
+/************************** Animation **************************/
 
 /**
- * @brief 创建缩放动画对象
- * @param tar_obj 目标对象
- * @param w_start 起始宽度
- * @param w_end 结束宽度
- * @param h_start 起始高度
- * @param h_end 结束高度
- * @param duration 持续时间(ms)
- * @return 创建的动画对象指针，失败返回NULL
+ * @brief Create scale animation object
+ * @param tar_obj Target object
+ * @param w_start Start width
+ * @param w_end End width
+ * @param h_start Start height
+ * @param h_end End height
+ * @param duration Duration (ms)
+ * @return Created animation object pointer, returns NULL on failure
  */
 eos_anim_t* eos_anim_scale_create(lv_obj_t* tar_obj,
                                 int32_t w_start, int32_t w_end,
@@ -211,8 +211,8 @@ eos_anim_t* eos_anim_scale_create(lv_obj_t* tar_obj,
                                 uint32_t duration, bool auto_delete);
 
 /**
- * @brief 创建并立即播放缩放动画，无法设置回调
- * @note 动画完成后会自动删除
+ * @brief Create and immediately play scale animation, cannot set callback
+ * @note Animation will be automatically deleted after completion
  */
 void eos_anim_scale_start(lv_obj_t* tar_obj,
                                 int32_t w_start, int32_t w_end,
@@ -220,14 +220,14 @@ void eos_anim_scale_start(lv_obj_t* tar_obj,
                                 uint32_t duration, bool auto_delete);
 
 /**
- * @brief 创建透明度渐变动画
+ * @brief Create opacity fade animation
  */
 eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
                                  int32_t opa_start,
                                  int32_t opa_end,
                                  uint32_t duration, bool auto_delete);
 /**
- * @brief 创建并立即播放透明度渐变动画
+ * @brief Create and immediately play opacity fade animation
  */
 void eos_anim_fade_start(lv_obj_t *tar_obj,
                          int32_t opa_start,
@@ -235,7 +235,7 @@ void eos_anim_fade_start(lv_obj_t *tar_obj,
                          uint32_t duration, bool auto_delete);
 
 /**
- * @brief 创建并返回一个移动动画对象（位置从 start_x,start_y -> end_x,end_y）
+ * @brief Create and return a move animation object (position from start_x,start_y -> end_x,end_y)
  */
 eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
                                  int32_t start_x, int32_t start_y,
@@ -243,7 +243,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
                                  uint32_t duration, bool auto_delete);
 
 /**
- * @brief 创建并立即播放移动动画
+ * @brief Create and immediately play move animation
  */
 void eos_anim_move_start(lv_obj_t *tar_obj,
                          int32_t start_x, int32_t start_y,
@@ -251,20 +251,20 @@ void eos_anim_move_start(lv_obj_t *tar_obj,
                          uint32_t duration, bool auto_delete);
 
 /**
- * @brief Fade 动画是否按层调整透明度
+ * @brief Whether Fade animation adjusts opacity by layer
  */
 void eos_anim_fade_set_layered(eos_anim_t *a, bool layered);
 
 /**
- * @brief 创建变换缩放动画（基于 transform_scale）
- * @note 缩放是整体缩放，即宽高同时缩放
+ * @brief Create transform scale animation (based on transform_scale)
+ * @note Scaling is overall scaling, i.e., width and height scale simultaneously
  */
 eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
                                             int32_t scale_start, int32_t scale_end,
                                             uint32_t duration, bool auto_delete);
 
 /**
- * @brief 启动变换缩放动画（带高级配置）
+ * @brief Start transform scale animation (with advanced configuration)
  */
 void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
                                       int32_t scale_start, int32_t scale_end,
@@ -272,23 +272,23 @@ void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
                                       uint16_t repeat_count, bool auto_delete);
 
 /**
- * @brief 启动简单的变换缩放动画（默认参数）
+ * @brief Start simple transform scale animation (default parameters)
  */
 void eos_anim_transform_scale_start(lv_obj_t *tar_obj,
                                     int32_t scale_start, int32_t scale_end,
                                     uint32_t duration, bool auto_delete);
 
-/************************** 轻动画 **************************/
+/************************** Lite Animation **************************/
 
 /**
- * @brief 创建水平移动动画
- * @param target_obj 目标对象
- * @param start 起始 X 坐标
- * @param end 结束 X 坐标
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create horizontal move animation
+ * @param target_obj Target object
+ * @param start Start X coordinate
+ * @param end End X coordinate
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
@@ -296,14 +296,14 @@ void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
                                   lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建垂直移动动画
- * @param target_obj 目标对象
- * @param start 起始 Y 坐标
- * @param end 结束 Y 坐标
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create vertical move animation
+ * @param target_obj Target object
+ * @param start Start Y coordinate
+ * @param end End Y coordinate
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
@@ -311,14 +311,14 @@ void eos_lite_anim_move_ver_start(lv_obj_t *target_obj,
                                   lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建宽度缩放动画
- * @param target_obj 目标对象
- * @param start 起始宽度
- * @param end 结束宽度
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create width scale animation
+ * @param target_obj Target object
+ * @param start Start width
+ * @param end End width
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
@@ -326,14 +326,14 @@ void eos_lite_anim_scale_w_start(lv_obj_t *target_obj,
                                  lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建高度缩放动画
- * @param target_obj 目标对象
- * @param start 起始高度
- * @param end 结束高度
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create height scale animation
+ * @param target_obj Target object
+ * @param start Start height
+ * @param end End height
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
                                  int32_t start, int32_t end,
@@ -341,14 +341,14 @@ void eos_lite_anim_scale_h_start(lv_obj_t *target_obj,
                                  lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建基于 transform_scale 的缩放动画
- * @param target_obj 目标对象
- * @param start 起始缩放值
- * @param end 结束缩放值
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create transform scale animation
+ * @param target_obj Target object
+ * @param start Start scale value
+ * @param end End scale value
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
                                          int32_t start, int32_t end,
@@ -356,14 +356,14 @@ void eos_lite_anim_transform_scale_start(lv_obj_t *target_obj,
                                          lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建透明度渐变动画
- * @param target_obj 目标对象
- * @param start 起始透明度（0-255），适用`LV_OPA_*`
- * @param end 结束透明度（0-255），适用`LV_OPA_*`
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create fade animation
+ * @param target_obj Target object
+ * @param start Start opacity (0-255), use `LV_OPA_*`
+ * @param end End opacity (0-255), use `LV_OPA_*`
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_fade_start(lv_obj_t *target_obj,
                               int32_t start, int32_t end,
@@ -371,14 +371,14 @@ void eos_lite_anim_fade_start(lv_obj_t *target_obj,
                               lv_anim_completed_cb_t completed_cb, void *user_data);
 
 /**
- * @brief 创建透明度渐变动画
- * @param target_obj 目标对象
- * @param start 起始透明度（0-255），适用`LV_OPA_*`
- * @param end 结束透明度（0-255），适用`LV_OPA_*`
- * @param duration 动画持续时间（毫秒）
- * @param delay 动画延迟时间（毫秒）
- * @param completed_cb 动画完成回调，可为 NULL
- * @param user_data 绑定到`lv_anim_t`上的用户数据，可为 NULL
+ * @brief Create fade animation
+ * @param target_obj Target object
+ * @param start Start opacity (0-255), use `LV_OPA_*`
+ * @param end End opacity (0-255), use `LV_OPA_*`
+ * @param duration Animation duration (ms)
+ * @param delay Animation delay (ms)
+ * @param completed_cb Animation completion callback, can be NULL
+ * @param user_data User data bound to `lv_anim_t`, can be NULL
  */
 void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
                               int32_t start, int32_t end,

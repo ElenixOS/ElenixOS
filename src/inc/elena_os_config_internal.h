@@ -1,6 +1,6 @@
 /**
  * @file elena_os_config_internal.h
- * @brief 配置文件内部定义
+ * @brief Configuration file internal definitions
  * @author Sab1e
  * @date 2025-10-08
  */

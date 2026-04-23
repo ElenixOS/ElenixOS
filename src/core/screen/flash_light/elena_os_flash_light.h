@@ -1,6 +1,6 @@
 /**
  * @file elena_os_flash_light.h
- * @brief 手电筒
+ * @brief Flashlight
  * @author Sab1e
  * @date 2025-10-14
  */
@@ -24,11 +24,11 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 快捷显示手电筒，主要用于`control_center`。
+ * @brief Quick display flashlight, mainly used for `control_center`.
  */
 void eos_flash_light_show(void);
 /**
- * @brief 进入手电筒页面，用于应用列表。
+ * @brief Enter flashlight page, used for app list.
  */
 void eos_flash_light_enter(void);
 

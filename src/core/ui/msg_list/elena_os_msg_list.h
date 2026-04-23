@@ -1,6 +1,6 @@
 /**
  * @file elena_os_msg_list.h
- * @brief 下拉消息列表
+ * @brief Drop-down message list
  * @author Sab1e
  * @date 2025-08-13
  */
@@ -21,11 +21,11 @@ extern "C" {
 
 /* Public typedefs --------------------------------------------*/
 
-typedef struct eos_msg_list_t eos_msg_list_t;   // 预定义
+typedef struct eos_msg_list_t eos_msg_list_t;   // Forward declaration
 
 /**
- * @brief 消息列表项结构体
- * 层级结构：
+ * @brief Message list item structure
+ * Hierarchy:
  * container{
  * row1[icon title_label   time_label]
  *      msg_label
@@ -39,13 +39,13 @@ typedef struct {
     lv_obj_t *title_label;
     lv_obj_t *msg_label;
     lv_obj_t *time_label;
-    const char *msg_str;     /**< 消息字符串 */
+    const char *msg_str;     /**< Message string */
     bool is_deleted;
 } eos_msg_list_item_t;
 
 /**
- * @brief 消息列表结构体
- * 层级结构：
+ * @brief Message list structure
+ * Hierarchy:
  * swipe_obj{
  *      list{
  *          clear_all_btn
@@ -57,71 +57,71 @@ typedef struct {
  * }
  */
 struct eos_msg_list_t {
-    eos_swipe_panel_t *swipe_panel;     /**< 拖拽对象指针 */
-    lv_obj_t *list;             /**< 列表对象指针 */
-    lv_obj_t *clear_all_btn;    /**< 清除所有消息按钮指针 */
-    lv_obj_t *no_msg_label;     /**< 无消息时的提示标签 */
-    uint16_t animating_count;   /**< 一键清除按下后，动画中的消息数量 */
+    eos_swipe_panel_t *swipe_panel;     /**< Drag object pointer */
+    lv_obj_t *list;             /**< List object pointer */
+    lv_obj_t *clear_all_btn;    /**< Clear all messages button pointer */
+    lv_obj_t *no_msg_label;     /**< No message prompt label */
+    uint16_t animating_count;   /**< Number of animating messages after clear-all press */
 };
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 创建消息项
- * @param list 消息项的父消息列表
- * @return eos_msg_list_item_t* 指向创建的消息项指针（动态内存分配）
+ * @brief Create message item
+ * @param list Parent message list of the message item
+ * @return eos_msg_list_item_t* Pointer to the created message item (dynamic memory allocation)
  */
 eos_msg_list_item_t *eos_msg_list_item_create(eos_msg_list_t *list);
 /**
- * @brief 删除消息项
- * @param item 要删除的消息项指针
+ * @brief Delete message item
+ * @param item Pointer to the message item to delete
  */
 void eos_msg_list_item_delete(eos_msg_list_item_t *item);
 /**
- * @brief 设置消息内容
- * @param item 目标消息项
- * @param msg 消息字符串
+ * @brief Set message content
+ * @param item Target message item
+ * @param msg Message string
  */
 void eos_msg_list_item_set_msg(eos_msg_list_item_t *item, const char *msg);
 
 /**
- * @brief 设置标题
- * @param item 目标消息项
- * @param title 消息标题（APP）字符串
+ * @brief Set title
+ * @param item Target message item
+ * @param title Message title (APP) string
  */
 void eos_msg_list_item_set_title(eos_msg_list_item_t *item, const char *title);
 
 /**
- * @brief 设置时间文本
- * @param item 目标消息项
- * @param time 消息接收时间字符串（例：“12:30”、“一小时前”）
+ * @brief Set time text
+ * @param item Target message item
+ * @param time Message receive time string (e.g.: "12:30", "One hour ago")
  */
 void eos_msg_list_item_set_time(eos_msg_list_item_t *item, const char *time);
 /**
- * @brief 设置图标
- * @param item 目标消息项
- * @param src 图像源
+ * @brief Set icon
+ * @param item Target message item
+ * @param src Image source
  */
 void eos_msg_list_item_icon_set_src(eos_msg_list_item_t *item, const char *src);
 /**
- * @brief 删除消息列表
- * @param list 目标列表
+ * @brief Delete message list
+ * @param list Target list
  */
 void eos_msg_list_delete(eos_msg_list_t *list);
 /**
- * @brief 获取消息列表实例
+ * @brief Get message list instance
  * @return eos_msg_list_t*
  */
 eos_msg_list_t *eos_msg_list_get_instance(void);
 /**
- * @brief 初始化消息列表
+ * @brief Initialize message list
  */
 void eos_msg_list_init(void);
 /**
- * @brief 显示消息列表
+ * @brief Show message list
  */
 void eos_msg_list_show(void);
 /**
- * @brief 隐藏消息列表
+ * @brief Hide message list
  */
 void eos_msg_list_hide(void);
 #ifdef __cplusplus

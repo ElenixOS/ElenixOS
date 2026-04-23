@@ -1,6 +1,6 @@
 /**
  * @file elena_os_mem_auto.c
- * @brief 自动分配内存
+ * @brief Auto memory allocation
  * @author Sab1e
  * @date 2025-11-18
  */
@@ -31,8 +31,8 @@ typedef enum
 
 typedef struct
 {
-    uint8_t type;                                  /**< 内存类型 */
-    uint8_t pad[sizeof(void *) - sizeof(uint8_t)]; /**< 内存对齐 */
+    uint8_t type;                                  /**< Memory type */
+    uint8_t pad[sizeof(void *) - sizeof(uint8_t)]; /**< Memory alignment */
 } eos_mem_header_t;
 
 /* Variables --------------------------------------------------*/
@@ -101,15 +101,15 @@ void *eos_realloc_core(void *ptr, size_t new_size)
 {
     EOS_CHECK_PTR_RETURN_VAL(ptr, eos_malloc_core(new_size));
 
-    // 获取原内存块信息
+    // Get original memory block info
     eos_mem_header_t *old_hdr = (eos_mem_header_t *)ptr - 1;
-    eos_mem_type_t original_type = old_hdr->type; // 保持原内存类型
+    eos_mem_type_t original_type = old_hdr->type; // Keep original memory type
 
     EOS_LOG_D("Realloc:  %zu, keep pool: %s",
               new_size,
               original_type == EOS_MEM_POOL_FAST ? "EOS_MEM_POOL_FAST" : "EOS_MEM_POOL_LARGE");
 
-    // 始终在原始内存池中realloc
+    // Always realloc in the original memory pool
     size_t total = new_size + sizeof(eos_mem_header_t);
     eos_mem_header_t *new_hdr;
 
@@ -129,7 +129,7 @@ void *eos_realloc_core(void *ptr, size_t new_size)
         return NULL;
     }
 
-    // 保持原来的内存类型
+    // Keep the original memory type
     new_hdr->type = original_type;
 
     EOS_LOG_D("Realloc success in original pool");

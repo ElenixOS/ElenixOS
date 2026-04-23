@@ -1,6 +1,6 @@
 /**
  * @file elena_os_font_c_multi.c
- * @brief 多字体资源
+ * @brief Multi-font resource
  * @author Sab1e
  * @date 2025-11-05
  */

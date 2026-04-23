@@ -1,6 +1,6 @@
 /**
  * @file elena_os_radio_list.c
- * @brief 单选列表页面
+ * @brief Radio list page
  * @author Sab1e
  * @date 2025-11-25
  */
@@ -96,7 +96,7 @@ uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     lv_label_set_text(title_label, txt);
     lv_obj_align(title_label, LV_ALIGN_LEFT_MID, 0, 0);
 
-    // 注意：如果要添加或删除item内的对象，需要修改`_radio_item_clicked_cb`中label的索引值
+    // Note: If you want to add or remove objects within the item, you need to modify the label index in `_radio_item_clicked_cb`
     lv_obj_t *check_label = lv_label_create(item);
     lv_label_set_text(check_label, RI_CHECK_FILL);
     lv_obj_set_style_text_color(check_label, EOS_COLOR_GREEN, 0);

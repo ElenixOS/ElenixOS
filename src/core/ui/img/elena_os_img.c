@@ -1,6 +1,6 @@
 /**
  * @file elena_os_img.c
- * @brief 图片显示
+ * @brief Image display
  * @author Sab1e
  * @date 2025-08-12
  */
@@ -26,7 +26,7 @@
 /* Function Implementations -----------------------------------*/
 
 /**
- * @brief 删除事件回调函数
+ * @brief Delete event callback function
  */
 static void _img_delete_event_cb(lv_event_t *e)
 {
@@ -67,20 +67,20 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
 
 void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
 {
-    // 路径为空则不设置源
+    // Do not set source if path is empty
     if (!bin_path)
         return;
     EOS_CHECK_PTR_RETURN(img_obj);
 
     EOS_LOG_I("Load image bin: %s", bin_path);
 
-    // 清除回调
+    // Clear callback
     lv_obj_remove_event_cb(img_obj, _img_delete_event_cb);
 
-    // 避免数据泄漏
+    // Avoid data leakage
     lv_image_set_src(img_obj, NULL);
 
-    // 打开新图像文件
+    // Open new image file
     eos_file_t fp = eos_fs_open_read(bin_path);
     if (fp == EOS_FILE_INVALID)
     {
@@ -88,7 +88,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
         return;
     }
 
-    // 获取文件大小
+    // Get file size
     uint32_t file_size = 0;
     eos_fs_size(fp, &file_size);
 
@@ -99,7 +99,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
         return;
     }
 
-    // 分配内存
+    // Allocate memory
     void *bin_data = eos_malloc(file_size);
     if (!bin_data)
     {
@@ -108,9 +108,9 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
         return;
     }
 
-    // 读取文件内容到内存
+    // Read file content to memory
     ssize_t bytes_read = eos_fs_read(fp, bin_data, file_size);
-    eos_fs_close(fp); // 读取完成后立即关闭文件描述符
+    eos_fs_close(fp); // Close file descriptor immediately after reading
 
     if (bytes_read != file_size)
     {
@@ -119,7 +119,7 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
         return;
     }
 
-    // 动态分配图像描述符
+    // Dynamically allocate image descriptor
     lv_image_dsc_t *img_dsc = eos_malloc_zeroed(sizeof(lv_image_dsc_t));
     if (!img_dsc)
     {
@@ -138,13 +138,13 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
         return;
     }
 
-    // 直接赋值图像描述符头
+    // Directly assign image descriptor header
     img_dsc->data_size = file_size - sizeof(lv_image_header_t);
     img_dsc->data = (const uint8_t *)bin_data + sizeof(lv_image_header_t);
 
-    // 设置图像源
+    // Set image source
     lv_image_set_src(img_obj, img_dsc);
-    // 添加删除事件回调，并将用户数据附加到回调
+    // Add delete event callback and attach user data to callback
     lv_obj_add_event_cb(img_obj, _img_delete_event_cb, LV_EVENT_DELETE, img_dsc);
     EOS_LOG_D("Image Set OK");
 }

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_font_ttf.c
- * @brief TTF 文件
+ * @brief TTF file
  * @author Sab1e
  * @date 2025-11-05
  */

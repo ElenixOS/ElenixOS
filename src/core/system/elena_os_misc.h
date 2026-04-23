@@ -1,6 +1,6 @@
 /**
  * @file elena_os_misc.h
- * @brief 各种工具函数
+ * @brief Various utility functions
  * @author Sab1e
  * @date 2025-08-22
  */
@@ -24,23 +24,23 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 是否为有效的文件名
- * @param name 文件名称
- * @return eos_result_t 判断结果
+ * @brief Check if it's a valid filename
+ * @param name File name
+ * @return eos_result_t Judgment result
  */
 bool eos_is_valid_filename(const char *name);
 /**
- * @brief 用于创建给定字符串 s 的副本。
- * @param s 目标字符串
- * @return const char* 创建成功则返回新分配的字符串指针
+ * @brief Create a copy of the given string s.
+ * @param s Source string
+ * @return const char* Returns newly allocated string pointer on success
  *
- * 内存分配失败则返回 NULL
- * @note 使用`eos_free(str)`释放复制的字符串
+ * Returns NULL if memory allocation fails
+ * @note Use `eos_free(str)` to release the copied string
  */
 const char *eos_strdup(const char *s);
 /**
- * @brief 释放并清空脚本包内的数据
- * @param pkg 目标脚本包
+ * @brief Release and clear data inside script package
+ * @param pkg Target script package
  */
 void eos_pkg_free(script_pkg_t *pkg);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_darray.c
- * @brief 动态数组
+ * @brief Dynamic array
  * @author Sab1e
  * @date 2025-12-03
  */
@@ -95,7 +95,7 @@ bool eos_darray_set(eos_darray_t *arr, size_t index, void *data)
     if (!arr)
         return false;
 
-    // 如果索引超过当前容量，先扩容直到够
+    // If index exceeds current capacity, expand until sufficient
     while (index >= arr->capacity)
     {
         if (!_darray_expand(arr))

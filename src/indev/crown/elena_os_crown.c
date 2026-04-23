@@ -1,6 +1,6 @@
 /**
  * @file elena_os_crown.c
- * @brief 表冠
+ * @brief Crown
  * @author Sab1e
  * @date 2025-11-13
  */

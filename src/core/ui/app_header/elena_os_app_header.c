@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app_header.c
- * @brief 应用的顶部导航头
+ * @brief Application top navigation header
  * @author Sab1e
  * @date 2025-11-25
  */
@@ -44,7 +44,7 @@
 #define _ANIM_BACK_BTN_MOVE_DISTANCE _ANIM_TITLE_MOVE_DISTANCE
 
 /**
- * @brief 应用内上方的头部结构体定义
+ * @brief Application top header structure definition
  */
 typedef struct
 {
@@ -53,9 +53,9 @@ typedef struct
     lv_obj_t *title_label;
     lv_obj_t *back_btn;
     lv_timer_t *clock_timer;
-    lv_obj_t *original_parent; // 原始父对象，用于恢复
-    bool is_anim_entering; // 动画方向
-    bool attached_to_view; // 是否附加到View
+    lv_obj_t *original_parent; // Original parent object for restoration
+    bool is_anim_entering; // Animation direction
+    bool attached_to_view; // Whether attached to View
 } eos_app_header_t;
 
 /* Variables --------------------------------------------------*/
@@ -286,7 +286,7 @@ void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool nee
 }
 
 /**
- * @brief 更新LVGL字符串，显示当前时间
+ * @brief Update LVGL string to display current time
  */
 static inline void _app_header_update_clock_label(lv_obj_t *label)
 {
@@ -297,7 +297,7 @@ static inline void _app_header_update_clock_label(lv_obj_t *label)
 }
 
 /**
- * @brief 时间刷新的回调，由 LVGL 的定时器触发
+ * @brief Time refresh callback, triggered by LVGL timer
  */
 static void _clock_update_cb(lv_timer_t *timer)
 {
@@ -307,7 +307,7 @@ static void _clock_update_cb(lv_timer_t *timer)
     {
         return;
     }
-    // 更新显示文字
+    // Update display text
     _app_header_update_clock_label(label);
 }
 
@@ -445,8 +445,8 @@ void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32
 }
 
 /**
- * @brief 附加app header到指定View
- * @param view 要附加的View
+ * @brief Attach app header to specified View
+ * @param view View to attach to
  */
 void eos_app_header_attach_to_view(lv_obj_t *view)
 {
@@ -477,7 +477,7 @@ void eos_app_header_attach_to_view(lv_obj_t *view)
 }
 
 /**
- * @brief 从View中分离app header，恢复到原始父对象
+ * @brief Detach app header from View, restore to original parent object
  */
 void eos_app_header_detach_from_view(void)
 {

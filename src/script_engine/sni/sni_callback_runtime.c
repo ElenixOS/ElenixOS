@@ -1,6 +1,6 @@
 /**
  * @file sni_callback_runtime.c
- * @brief SNI 回调运行时
+ * @brief SNI callback runtime
  * @author Sab1e
  * @date 2026-03-14
  */
@@ -215,11 +215,11 @@ static void sni_cb_timer_handle_destroy_cb(void *native_ptr)
     HASH_FIND_PTR(s_timer_ctx_map, &timer, ctx);
     if (ctx)
     {
-        /* ctx 还在 hash 中，说明用户未主动删除，这里负责完整清理 */
+        // ctx is still in hash table, user did not explicitly delete it, clean up here
         sni_cb_timer_cleanup_impl(ctx);
         lv_timer_delete(timer);
     }
-    /* ctx 不在 hash 中说明已通过 sni_cb_timer_delete 显式清理，跳过 */
+    // ctx is not in hash table, it has been explicitly deleted
 }
 
 static void sni_cb_style_handle_destroy_cb(void *native_ptr)

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sys.c
- * @brief 系统配置
+ * @brief System configuration
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -298,7 +298,6 @@ double eos_sys_cfg_get_number(const char *key, double default_value)
 
 eos_result_t _create_default_cfg_json(const char *path)
 {
-    // 创建 JSON 对象
     cJSON *root = cJSON_CreateObject();
     if (!root)
     {
@@ -308,7 +307,6 @@ eos_result_t _create_default_cfg_json(const char *path)
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_DEVICE_NAME_STR, EOS_SYS_DEFAULT_DEVICE_NAME);
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_LANGUAGE_STR, EOS_SYS_DEFAULT_LANG_STR);
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, EOS_SYS_DEFAULT_WATCHFACE_ID_STR);
-    // 转换为字符串
     char *json_str = cJSON_PrintUnformatted(root);
     if (!json_str)
     {
@@ -316,10 +314,8 @@ eos_result_t _create_default_cfg_json(const char *path)
         return -EOS_ERR_JSON_ERROR;
     }
 
-    // 写入文件
     int ret = eos_create_file_if_not_exist(path, json_str);
 
-    // 释放内存
     cJSON_free(json_str);
     cJSON_Delete(root);
 
@@ -329,7 +325,6 @@ eos_result_t _create_default_cfg_json(const char *path)
 void eos_sys_init()
 {
     EOS_LOG_D("Init eos_sys");
-    // 判断系统文件是否存在
     eos_fs_mkdir_if_not_exist(EOS_SYS_DIR);
     eos_fs_mkdir_if_not_exist(EOS_SYS_CONFIG_DIR);
 
@@ -345,7 +340,6 @@ void eos_sys_init()
     eos_fs_mkdir_if_not_exist(EOS_SYS_RES_IMG_DIR);
     eos_fs_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
 
-    // 如果系统文件不存在则创建
     eos_file_t fp = eos_fs_open_read(EOS_SYS_CONFIG_FILE_PATH);
     uint32_t size = 0;
     eos_fs_size(fp, &size);
@@ -361,8 +355,7 @@ void eos_sys_init()
         }
     }
 
-    /************************** 加载系统设置 **************************/
-    // 蓝牙设置
+    /************************** Load system settings **************************/
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
     {
         eos_bluetooth_enable();
@@ -374,14 +367,12 @@ void eos_sys_init()
         EOS_LOG_I("Bluetooth disable");
     }
 
-    // 显示设置
     uint8_t brightness = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
     eos_display_set_brightness(brightness);
     EOS_LOG_I("Display brightness set: %d", brightness);
 
-    // 静音设置
     bool mute = eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false);
     if (mute)
     {
@@ -395,19 +386,18 @@ void eos_sys_init()
         EOS_LOG_I("Volume: %d", volume);
     }
 
-    // 震动强度
     uint8_t strength = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_VIBRATOR_STRENGTH_NORMAL);
     eos_vibrator_set_strength(strength);
     EOS_LOG_I("Vibrator strength: %d", strength);
 }
 
 /**
- * @brief 系统恢复出厂设置
- * @warning 未测试
+ * @brief System factory reset
+ * @warning Untested
  */
 void eos_sys_factory_reset()
 {
-    // TODO: 完成此功能
+    // TODO: Complete this function
     // int ret = rmdir(EOS_SYS_DIR);
     // if (ret != 0)
     // {

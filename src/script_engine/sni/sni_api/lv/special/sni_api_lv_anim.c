@@ -1,6 +1,6 @@
 /**
  * @file sni_api_lv_anim.c
- * @brief LVGL anim 类特殊包装函数实现
+ * @brief LVGL Animation Class Special Wrapper Function Implementation
  * @author Sab1e
  * @date 2026-03-15
  */

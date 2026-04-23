@@ -1,6 +1,6 @@
 /**
  * @file elena_os_theme.c
- * @brief 主题色
+ * @brief Theme colors
  * @author Sab1e
  * @date 2025-08-27
  */
@@ -50,11 +50,10 @@ static lv_style_t style_slider_pressed_color;
 static lv_font_t *global_font = NULL;
 /* Function Implementations -----------------------------------*/
 
-/************************** 防抖 **************************/
+/************************** Debounce **************************/
 static void _debounce_timer_cb(lv_timer_t *t)
 {
     lv_obj_t *btn = lv_timer_get_user_data(t);
-    // 防止按钮删除自身时按钮无效
     if (btn && lv_obj_is_valid(btn) && lv_obj_has_class(btn, &lv_obj_class))
         lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
 }
@@ -66,7 +65,7 @@ static void _object_clicked_cb(lv_event_t *e)
     lv_timer_t *t = lv_timer_create(_debounce_timer_cb, _DEBOUNCE_PERIOD, btn);
     lv_timer_set_repeat_count(t, 1);
 }
-/************************** 初始化样式 **************************/
+/************************** Initialize styles **************************/
 
 void _init_style_button(void)
 {
@@ -119,7 +118,7 @@ void _init_style_slider(void)
     lv_style_set_bg_opa(&style_slider_main, LV_OPA_COVER);
     lv_style_set_bg_color(&style_slider_main, SLIDER_BG_COLOR);
     lv_style_set_radius(&style_slider_main, LV_RADIUS_CIRCLE);
-    lv_style_set_pad_ver(&style_slider_main, -2); /*Makes the indicator larger*/
+    lv_style_set_pad_ver(&style_slider_main, -2);
 
     lv_style_init(&style_slider_indicator);
     lv_style_set_bg_opa(&style_slider_indicator, LV_OPA_COVER);
@@ -133,7 +132,7 @@ void _init_style_slider(void)
     lv_style_set_border_color(&style_slider_knob, EOS_COLOR_WHITE);
     lv_style_set_border_width(&style_slider_knob, 4);
     lv_style_set_radius(&style_slider_knob, LV_RADIUS_CIRCLE);
-    lv_style_set_pad_all(&style_slider_knob, 6); /*Makes the knob larger*/
+    lv_style_set_pad_all(&style_slider_knob, 6);
     lv_style_set_transition(&style_slider_knob, &transition_dsc);
 
     lv_style_init(&style_slider_pressed_color);
@@ -170,13 +169,12 @@ static void _theme_apply_cb(lv_theme_t *th, lv_obj_t *obj)
     else if (lv_obj_check_type(obj, &lv_list_class))
     {
         lv_obj_add_style(obj, &style_list, 0);
-        eos_crown_encoder_set_target_obj(obj); // 保证创建时可以设置滚动对象
+        eos_crown_encoder_set_target_obj(obj);
     }
     /************************** SWITCH **************************/
     else if (lv_obj_check_type(obj, &lv_switch_class))
     {
         lv_obj_add_event_cb(obj, _object_clicked_cb, LV_EVENT_CLICKED, NULL);
-        // 开关开启的状态
         lv_obj_add_style(obj, &style_switch_main, LV_PART_MAIN);
         lv_obj_add_style(obj, &style_switch_indicator, LV_PART_INDICATOR | LV_STATE_CHECKED);
     }

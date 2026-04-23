@@ -1,6 +1,6 @@
 /**
  * @file elena_os_bubble_grid.c
- * @brief 模块简要说明
+ * @brief Bubble grid
  * @author Sab1e
  * @date 2026-04-19
  */

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_swipe_panel.h
- * @brief 滑动面板头文件
+ * @brief Swipe panel header file
  * @author Sab1e
  * @date 2025-08-10
  */
@@ -22,16 +22,16 @@ extern "C" {
 
 /* Public typedefs --------------------------------------------*/
 /**
- * @brief SwipePanel 拖拽的方向
+ * @brief SwipePanel drag direction
  */
 typedef enum{
-    EOS_SWIPE_DIR_UP=0,      // 从下往上滑拉出 swipe_obj
-    EOS_SWIPE_DIR_DOWN=1,    // 从上往下滑拉出 swipe_obj
-    EOS_SWIPE_DIR_LEFT=2,    // 从右往左滑拉出 swipe_obj
-    EOS_SWIPE_DIR_RIGHT=3    // 从左往右滑拉出 swipe_obj
+    EOS_SWIPE_DIR_UP=0,      // Slide up to reveal swipe_obj
+    EOS_SWIPE_DIR_DOWN=1,    // Slide down to reveal swipe_obj
+    EOS_SWIPE_DIR_LEFT=2,    // Slide left to reveal swipe_obj
+    EOS_SWIPE_DIR_RIGHT=3   // Slide right to reveal swipe_obj
 } eos_swipe_dir_t;
 /**
- * @brief SwipePanel 结构体定义
+ * @brief SwipePanel structure definition
  */
 typedef struct {
     eos_slide_widget_t *sw;
@@ -42,71 +42,71 @@ typedef struct {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 滑动面板拉入屏幕
- * @param sp 目标滑动面板
+ * @brief Slide the swipe panel into screen
+ * @param sp Target swipe panel
  */
 void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp);
 /**
- * @brief 滑动面板拉出屏幕
- * @param sp 目标滑动面板
+ * @brief Slide the swipe panel out of screen
+ * @param sp Target swipe panel
  */
 void eos_swipe_panel_slide_up(eos_swipe_panel_t *sp);
 /**
- * @brief 删除 SwipePanel
- * @param swipe_panel 滑动面板
+ * @brief Delete SwipePanel
+ * @param swipe_panel Swipe panel
  */
 void eos_swipe_panel_delete(eos_swipe_panel_t *swipe_panel);
 
 /**
- * @brief 创建 SwipePanel
- * @param parent 滑动面板的父级对象
- * @return 指向创建成功的 SwipePanel
- * @note 不使用时需要使用 eos_swipe_panel_delete 删除此控件，否则可能内存泄漏
+ * @brief Create SwipePanel
+ * @param parent Parent object of the swipe panel
+ * @return Pointer to the created SwipePanel
+ * @note Must be deleted with eos_swipe_panel_delete when not in use, otherwise memory leak may occur
  */
 eos_swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent);
 
 /**
- * @brief 设置拖拽方向
- * @param swipe_panel 滑动面板
- * @param dir 拖拽方向，例如 EOS_SWIPE_DIR_DOWN 就是向下拖拽拉出 swipe_obj
+ * @brief Set drag direction
+ * @param swipe_panel Swipe panel
+ * @param dir Drag direction, e.g., EOS_SWIPE_DIR_DOWN means dragging down to reveal swipe_obj
  */
 void eos_swipe_panel_set_dir(eos_swipe_panel_t *swipe_panel, const eos_swipe_dir_t dir);
 
 /**
- * @brief 隐藏 HandleBar (小白条)
- * @param swipe_panel 滑动面板
+ * @brief Hide HandleBar (small white bar)
+ * @param swipe_panel Swipe panel
  */
 void eos_swipe_panel_hide_handle_bar(eos_swipe_panel_t *swipe_panel);
 
 /**
- * @brief 显示 HandleBar (小白条)
- * @param swipe_panel 滑动面板
+ * @brief Show HandleBar (small white bar)
+ * @param swipe_panel Swipe panel
  */
 void eos_swipe_panel_show_handle_bar(eos_swipe_panel_t *swipe_panel);
 
 /**
- * @brief 外部触发拉回动画，自动拉回屏幕外面
- * @param swipe_panel 滑动面板
+ * @brief Externally trigger pull-back animation, automatically pull back outside screen
+ * @param swipe_panel Swipe panel
  */
 void eos_swipe_panel_pull_back(eos_swipe_panel_t *swipe_panel);
 
 /**
- * @brief 触发拉动动画，将滑动面板拉到指定像素位置（绝对坐标）
+ * @brief Trigger pull animation, pull swipe panel to specified pixel position (absolute coordinates)
  *
- * 滑动面板为水平方向时，target 控制的是x轴坐标
+ * When swipe panel is horizontal, target controls x-axis coordinate
  *
- * 滑动面板为垂直方向时，target 控制的是y轴坐标
- * @param swipe_panel 滑动面板
- * @param target 目标位置，单位像素
- * @param anim 是否启用动画
+ * When swipe panel is vertical, target controls y-axis coordinate
+ * @param swipe_panel Swipe panel
+ * @param target Target position in pixels
+ * @param anim Whether to enable animation
  */
 void eos_swipe_panel_move(eos_swipe_panel_t *swipe_panel, int32_t target, bool anim);
 /**
- * @brief 显示滑动面板
+ * @brief Show swipe panel
  */
 void eos_swipe_panel_show(eos_swipe_panel_t *sp);
 /**
- * @brief 隐藏滑动面板
+ * @brief Hide swipe panel
  */
 void eos_swipe_panel_hide(eos_swipe_panel_t *sp);
 #ifdef __cplusplus

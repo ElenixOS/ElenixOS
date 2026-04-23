@@ -1,6 +1,6 @@
 /**
  * @file elena_os_watchface.h
- * @brief 表盘
+ * @brief Watchface
  * @author Sab1e
  * @date 2025-08-22
  */
@@ -32,43 +32,43 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 获取当前已安装的表盘数量，即列表大小
- * @return size_t 列表大小
+ * @brief Get the number of currently installed watchfaces, i.e., list size
+ * @return size_t List size
  */
 size_t eos_watchface_list_size(void);
 /**
- * @brief 根据索引值获取表盘的 id
- * @param index 索引值（0基）
- * @return const char* id 字符串
+ * @brief Get watchface id by index
+ * @param index Index value (0-based)
+ * @return const char* id string
  */
 const char* eos_watchface_list_get_id(size_t index);
 /**
- * @brief 判断指定 id 字符串的代码是否存在于表盘列表中
- * @param watchface_id id 字符串
+ * @brief Check if watchface with specified id exists in the list
+ * @param watchface_id id string
  * @return true
  * @return false
  */
 bool eos_watchface_list_contains(const char* watchface_id);
 /**
- * @brief 安装表盘
- * @param eapk_path eapk 安装包路径
- * @return eos_result_t 安装结果
+ * @brief Install watchface
+ * @param eapk_path eapk package path
+ * @return eos_result_t Installation result
  */
 eos_result_t eos_watchface_install(const char *eapk_path);
 /**
- * @brief 卸载表盘
- * @param watchface_id 表盘 id
- * @return eos_result_t 卸载结果
+ * @brief Uninstall watchface
+ * @param watchface_id Watchface id
+ * @return eos_result_t Uninstallation result
  */
 eos_result_t eos_watchface_uninstall(const char *watchface_id);
 /**
- * @brief 初始化表盘系统
- * @return eos_result_t 初始化结果
+ * @brief Initialize watchface system
+ * @return eos_result_t Initialization result
  */
 eos_result_t eos_watchface_init(void);
 /**
- * @brief 获取初始化阶段创建的表盘 Activity
- * @return eos_activity_t* 表盘 Activity 指针，失败返回 NULL
+ * @brief Get watchface Activity created during initialization
+ * @return eos_activity_t* Watchface Activity pointer, returns NULL on failure
  */
 eos_activity_t *eos_watchface_get_activity(void);
 #ifdef __cplusplus

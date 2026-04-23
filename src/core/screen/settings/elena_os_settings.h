@@ -1,6 +1,6 @@
 /**
  * @file elena_os_settings.h
- * @brief 系统设置
+ * @brief System settings
  * @author Sab1e
  * @date 2025-09-24
  */
@@ -24,16 +24,16 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 进入设置页面
- * @return eos_activity_t* 设置页面活动指针，失败时返回 NULL
+ * @brief Enter settings page
+ * @return eos_activity_t* Settings page activity pointer, returns NULL on failure
  */
 void eos_settings_enter(void);
 /**
- * @brief 启用静音模式
+ * @brief Enable silent mode
  */
 void eos_settings_slient_mode_on(void);
 /**
- * @brief 关闭静音模式
+ * @brief Disable silent mode
  */
 void eos_settings_slient_mode_off(void);
 #ifdef __cplusplus

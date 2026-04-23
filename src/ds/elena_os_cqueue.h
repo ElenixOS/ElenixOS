@@ -1,6 +1,6 @@
 /**
  * @file elena_os_cqueue.h
- * @brief 可扩容的循环队列 FIFO
+ * @brief Resizable circular queue FIFO
  * @author Sab1e
  * @date 2025-11-22
  */
@@ -24,40 +24,40 @@ typedef struct eos_cqueue_t eos_cqueue_t;
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建一个循环队列
- * @param init_capacity 初始容量
- * @return eos_cqueue_t* 创建成功则返回循环队列指针，否则返回 NULL
+ * @brief Create a circular queue
+ * @param init_capacity Initial capacity
+ * @return eos_cqueue_t* Returns circular queue pointer if creation succeeds, otherwise returns NULL
  */
 eos_cqueue_t *eos_cqueue_create(size_t init_capacity);
 /**
- * @brief 循环队列入队
- * @param cq 目标循环队列
- * @param data 要存储的数据
- * @return true 入队成功
- * @return false 入队失败
+ * @brief Enqueue to circular queue
+ * @param cq Target circular queue
+ * @param data Data to store
+ * @return true Enqueue successful
+ * @return false Enqueue failed
  */
 bool eos_cqueue_enqueue(eos_cqueue_t *cq, void *data);
 /**
- * @brief 循环队列出队
- * @param cq 目标循环队列
- * @return void* 出队成功则返回队首的数据指针，否则返回 NULL
+ * @brief Dequeue from circular queue
+ * @param cq Target circular queue
+ * @return void* Returns pointer to dequeued data if successful, otherwise returns NULL
  */
 void *eos_cqueue_dequeue(eos_cqueue_t *cq);
 /**
- * @brief 销毁循环队列
+ * @brief Destroy circular queue
  */
 void eos_cqueue_destroy(eos_cqueue_t *cq);
 /**
- * @brief 获取循环队列大小
- * @param cq 循环队列指针
- * @return size_t 队列内元素总数，队列指针无效则返回 0
+ * @brief Get circular queue size
+ * @param cq Circular queue pointer
+ * @return size_t Total number of elements in the queue, returns 0 if queue pointer is invalid
  */
 size_t eos_cqueue_get_size(eos_cqueue_t *cq);
 /**
- * @brief 从循环队列中按索引读取元素
- * @param cq 循环队列指针
- * @param index 索引（0对应head）
- * @return 队列中元素指针，索引越界返回NULL
+ * @brief Read element from circular queue by index
+ * @param cq Circular queue pointer
+ * @param index Index (0 corresponds to head)
+ * @return Queue element pointer, returns NULL if index out of bounds
  */
 void *eos_cqueue_peek(eos_cqueue_t *cq, size_t index);
 

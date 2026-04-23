@@ -1,6 +1,6 @@
 /**
  * @file elena_os_dispatcher.c
- * @brief 任务调度器
+ * @brief Task dispatcher
  * @author Sab1e
  * @date 2025-11-10
  */
@@ -38,11 +38,10 @@ void eos_dispatcher_init(void)
 #endif /* EOS_COMPILE_MODE */
     sem = eos_sem_create(1, 1);
 
-    s_capacity = 8; // 初始容量
+    s_capacity = 8;
     s_queue = eos_malloc(sizeof(eos_dispatcher_item_t) * s_capacity);
     if (!s_queue)
     {
-        // 内存分配失败
         s_capacity = 0;
     }
     s_head = 0;
@@ -59,7 +58,6 @@ static int _queue_expand(void)
     if (!new_queue)
         return -1;
 
-    // 拷贝旧队列内容
     int i = 0;
     for (int idx = s_head; idx != s_tail; idx = (idx + 1) % s_capacity)
     {
@@ -87,7 +85,6 @@ void eos_dispatcher_call(eos_dispatcher_cb_t cb, void *user_data)
     int next = (s_tail + 1) % s_capacity;
     if (next == s_head)
     {
-        // 队列满，尝试扩容
         if (_queue_expand() < 0)
         {
             eos_sem_give(sem);

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app.c
- * @brief 应用系统
+ * @brief Application system
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -27,15 +27,15 @@
 /* Macros and Definitions -------------------------------------*/
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
 /**
- * @brief 应用列表结构体
+ * @brief Application list structure
  *
- * 可变数组
+ * Dynamic array
  */
 typedef struct
 {
-    char **data;     /**< 应用唯一ID */
-    size_t size;     /**< 应用列表已存储的ID数量 */
-    size_t capacity; /**< 应用列表的容量 */
+    char **data;     /**< Application unique ID */
+    size_t size;     /**< Number of IDs stored in application list */
+    size_t capacity; /**< Capacity of application list */
 } eos_app_list_t;
 static eos_app_list_t app_list;
 static bool app_list_initialized = false;
@@ -53,7 +53,7 @@ static eos_result_t _eos_app_order_remove(const char *app_id);
 static cJSON *app_order_json = NULL;
 
 /**
- * @brief 添加应用顺序保存函数
+ * @brief Add application order save function
  */
 static eos_result_t _eos_app_order_save(void)
 {
@@ -83,7 +83,7 @@ static eos_result_t _eos_app_order_save(void)
 }
 
 /**
- * @brief 添加应用顺序加载函数
+ * @brief Add application order load function
  */
 static eos_result_t _eos_app_order_load(void)
 {
@@ -93,10 +93,10 @@ static eos_result_t _eos_app_order_load(void)
         app_order_json = NULL;
     }
 
-    // 检查文件是否存在
+    // Check if file exists
     if (!eos_is_file(EOS_APP_LIST_APP_ORDER_PATH))
     {
-        // 创建默认的JSON结构，确保所有系统内置应用被加入默认顺序
+        // Create default JSON structure, ensure all system built-in apps are added to default order
         app_order_json = cJSON_CreateArray();
         for (int i = 0; i < EOS_SYS_APP_LAST; i++)
         {
@@ -117,7 +117,7 @@ static eos_result_t _eos_app_order_load(void)
 
     if (!app_order_json)
     {
-        // 解析失败，创建新的JSON，加入所有系统内置应用
+        // Parsing failed, create new JSON, add all system built-in apps
         app_order_json = cJSON_CreateArray();
         for (int i = 0; i < EOS_SYS_APP_LAST; i++)
         {
@@ -127,7 +127,7 @@ static eos_result_t _eos_app_order_load(void)
         return _eos_app_order_save();
     }
 
-    // 确保所有系统内置应用存在于顺序列表中
+    // Ensure all system built-in apps exist in order list
     for (int si = 0; si < EOS_SYS_APP_LAST; si++)
     {
         const char *sys_id = eos_sys_app_id_list[si];
@@ -153,7 +153,7 @@ static eos_result_t _eos_app_order_load(void)
     return EOS_OK;
 }
 
-// 添加应用到顺序列表
+// Add application to order list
 static eos_result_t _eos_app_order_add(const char *app_id)
 {
     if (!app_order_json || !app_id)
@@ -161,22 +161,22 @@ static eos_result_t _eos_app_order_add(const char *app_id)
         return EOS_FAILED;
     }
 
-    // 检查是否已存在
+    // Check if already exists
     cJSON *item = NULL;
     cJSON_ArrayForEach(item, app_order_json)
     {
         if (cJSON_IsString(item) && strcmp(item->valuestring, app_id) == 0)
         {
-            return EOS_OK; // 已存在
+            return EOS_OK; // Already exists
         }
     }
 
-    // 添加到数组末尾
+    // Add to end of array
     cJSON_AddItemToArray(app_order_json, cJSON_CreateString(app_id));
     return _eos_app_order_save();
 }
 
-// 从顺序列表中移除应用
+// Remove application from order list
 static eos_result_t _eos_app_order_remove(const char *app_id)
 {
     if (!app_order_json || !app_id)
@@ -184,7 +184,7 @@ static eos_result_t _eos_app_order_remove(const char *app_id)
         return EOS_FAILED;
     }
 
-    // 系统内置应用不能被移除
+    // System built-in apps cannot be removed
     for (int si = 0; si < EOS_SYS_APP_LAST; si++)
     {
         if (eos_sys_app_id_list[si] && strcmp(app_id, eos_sys_app_id_list[si]) == 0)
@@ -193,24 +193,24 @@ static eos_result_t _eos_app_order_remove(const char *app_id)
         }
     }
 
-    // 查找应用在数组中的位置
+    // Find application position in array
     int index = 0;
     cJSON *item = NULL;
     cJSON_ArrayForEach(item, app_order_json)
     {
         if (cJSON_IsString(item) && strcmp(item->valuestring, app_id) == 0)
         {
-            // 使用索引删除元素
+            // Delete element using index
             cJSON_DeleteItemFromArray(app_order_json, index);
             return _eos_app_order_save();
         }
         index++;
     }
 
-    return EOS_OK; // 未找到也算成功
+    return EOS_OK; // Not found is also considered success
 }
 
-// 移动应用到指定位置
+// Move application to specified position
 eos_result_t eos_app_order_move(const char *app_id, size_t new_index)
 {
     if (!app_order_json || !app_id)
@@ -219,15 +219,15 @@ eos_result_t eos_app_order_move(const char *app_id, size_t new_index)
         return EOS_FAILED;
     }
 
-    // 获取当前数组大小
+    // Get current array size
     size_t array_size = cJSON_GetArraySize(app_order_json);
     if (new_index >= array_size)
     {
         EOS_LOG_E("Out of index");
-        return EOS_FAILED; // 索引超出范围
+        return EOS_FAILED; // Index out of range
     }
 
-    // 查找应用在数组中的当前位置
+    // Find current position of application in array
     int current_index = -1;
     cJSON *item = NULL;
     for (int i = 0; i < array_size; i++)
@@ -243,20 +243,20 @@ eos_result_t eos_app_order_move(const char *app_id, size_t new_index)
     if (current_index == -1)
     {
         EOS_LOG_E("App not found");
-        return EOS_FAILED; // 未找到应用
+        return EOS_FAILED; // Application not found
     }
 
-    // 如果已经在指定位置，直接返回
+    // If already at specified position, return directly
     if (current_index == new_index)
     {
         EOS_LOG_D("App already in target index");
         return EOS_OK;
     }
 
-    // 移除应用
+    // Remove application
     cJSON *app_item = cJSON_DetachItemFromArray(app_order_json, current_index);
 
-    // 插入到新位置
+    // Insert at new position
     if (new_index < array_size - 1)
     {
         cJSON_InsertItemInArray(app_order_json, new_index, app_item);
@@ -309,7 +309,7 @@ const char *eos_app_list_get_existing_id(const char *id)
 }
 
 /**
- * @brief 初始化应用列表
+ * @brief Initialize application list
  */
 void _eos_app_list_init(eos_app_list_t *list, size_t capacity)
 {
@@ -319,7 +319,7 @@ void _eos_app_list_init(eos_app_list_t *list, size_t capacity)
 }
 
 /**
- * @brief 向应用列表添加新的应用
+ * @brief Add new application to application list
  */
 void _eos_app_list_add(eos_app_list_t *list, const char *id)
 {
@@ -328,12 +328,12 @@ void _eos_app_list_add(eos_app_list_t *list, const char *id)
         list->capacity *= 2;
         list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
     }
-    list->data[list->size] = eos_strdup(id); // 复制字符串
+    list->data[list->size] = eos_strdup(id); // Copy string
     list->size++;
 }
 
 /**
- * @brief 释放列表的数据
+ * @brief Free list data
  */
 void _eos_app_list_free(eos_app_list_t *list)
 {
@@ -345,14 +345,14 @@ void _eos_app_list_free(eos_app_list_t *list)
 }
 
 /**
- * @brief 从 Flash 获取已安装的应用
+ * @brief Get installed applications from Flash
  */
 eos_result_t _eos_app_list_get_installed(void)
 {
     eos_dir_t dir;
     char name_buf[256];
 
-    // 打开应用程序安装目录
+    // Open application installation directory
     dir = eos_fs_opendir(EOS_APP_INSTALLED_DIR);
     if (dir == NULL)
     {
@@ -360,21 +360,21 @@ eos_result_t _eos_app_list_get_installed(void)
         return EOS_FAILED;
     }
 
-    // 遍历目录中的所有条目
+    // Iterate through all entries in the directory
     while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
     {
-        // 跳过 "." 和 ".." 目录
+        // Skip "." and ".." directories
         if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
         {
             continue;
         }
 
-        // 构建完整路径
+        // Build full path
         char full_path[PATH_MAX];
         snprintf(full_path, sizeof(full_path),
                  EOS_APP_INSTALLED_DIR "%s", name_buf);
 
-        // 检查是否为目录
+        // Check if it is a directory
         if (eos_fs_type(full_path) == EOS_FS_TYPE_DIR)
         {
             EOS_LOG_D("Found installed app: %s", name_buf);
@@ -389,7 +389,7 @@ eos_result_t _eos_app_list_get_installed(void)
 }
 
 /**
- * @brief 刷新应用列表
+ * @brief Refresh application list
  */
 eos_result_t _eos_app_list_refresh()
 {
@@ -401,7 +401,7 @@ eos_result_t _eos_app_list_refresh()
         return EOS_FAILED;
     }
 
-    // 将系统内置应用加入 app_list
+    // Add system built-in apps to app_list
     for (int i = 0; i < EOS_SYS_APP_LAST; i++)
     {
         const char *sys_id = eos_sys_app_id_list[i];
@@ -540,13 +540,13 @@ void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id)
 eos_result_t eos_app_init(void)
 {
     EOS_LOG_D("Init eos_app");
-    // 初始化 从文件系统中读取应用列表
+    // Initialize - read application list from file system
     _eos_app_list_refresh();
 
-    // 加载应用顺序
+    // Load application order
     _eos_app_order_load();
 
-    // 清理JSON中不存在的应用
+    // Clean up non-existent applications in JSON
     if (app_order_json)
     {
         cJSON *item = NULL;
@@ -556,7 +556,7 @@ eos_result_t eos_app_init(void)
             if (cJSON_IsString(item))
             {
                 const char *app_id = item->valuestring;
-                // 跳过所有系统内置应用
+                // Skip all system built-in applications
                 bool is_sys = false;
                 for (int si = 0; si < EOS_SYS_APP_LAST; si++)
                 {
@@ -569,23 +569,23 @@ eos_result_t eos_app_init(void)
 
                 if (!is_sys && !eos_app_list_contains(app_id))
                 {
-                    // 应用不存在，从JSON中移除
+                    // Application does not exist, remove from JSON
                     cJSON_DeleteItemFromArray(app_order_json, index);
                     _eos_app_order_save();
-                    // 由于删除了一个元素，需要重新遍历
+                    // Since an element was deleted, need to re-traverse
                     break;
                 }
             }
             index++;
         }
 
-        // 将已安装但不在 app_order 的应用自动添加到顺序列表（追加到末尾）
+        // Automatically add installed applications not in app_order to order list (append to end)
         for (size_t i = 0; i < app_list.size; i++)
         {
             const char *installed_id = app_list.data[i];
             if (installed_id == NULL)
                 continue;
-            // _eos_app_order_add 内部会跳过已存在的 id
+            // _eos_app_order_add will skip existing ids internally
             _eos_app_order_add(installed_id);
         }
     }

@@ -1,6 +1,6 @@
 /**
  * @file sni_type_bridge.c
- * @brief 类型桥
+ * @brief Type bridge
  * @author Sab1e
  * @date 2026-02-09
  */
@@ -73,7 +73,7 @@ static uint32_t sni_tb_read_bitfield(void *ptr, uint8_t bit_offset, uint8_t bit_
     return (word_value >> bit_offset) & mask;
 }
 
-/************************** Handle 管理函数 **************************/
+/************************** Handle management functions **************************/
 
 static sni_handle_t *sni_map_insert(void *ptr, jerry_value_t js_obj, sni_type_t type)
 {
@@ -169,7 +169,7 @@ static void sni_handle_free_cb(void *native_p, struct jerry_object_native_info_t
     eos_free(handle);
 }
 
-/************************** 类型桥函数 **************************/
+/************************** Type bridge functions **************************/
 
 const char *sni_tb_js2c_string(jerry_value_t js_val)
 {
@@ -672,8 +672,8 @@ void _script_exited_cb(lv_event_t * e)
 
 void sni_tb_init(void)
 {
-    // 初始化类型桥
+    // Initialize type bridge
     sni_lv_types_init();
-    // 注册脚本退出回调
+    // Register script exit callback function
     eos_event_add_global_cb(_script_exited_cb, EOS_EVENT_SCRIPT_EXITED, NULL);
 }

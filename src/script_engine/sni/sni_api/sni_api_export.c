@@ -1,6 +1,6 @@
 /**
  * @file sni_api_export.c
- * @brief API 导出层
+ * @brief API Export Layer
  * @author Sab1e
  * @date 2026-03-06
  */

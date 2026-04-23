@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sensor.h
- * @brief 传感器定义
+ * @brief Sensor definitions
  * @author Sab1e
  * @date 2025-09-14
  */
@@ -19,7 +19,7 @@ extern "C" {
 #include "elena_os_event.h"
 
 /* Public macros ----------------------------------------------*/
-#define EOS_SENSOR_NUMBER       _EOS_SENSOR_MAX - 1   /**< 传感器总数 */
+#define EOS_SENSOR_NUMBER       _EOS_SENSOR_MAX - 1   /**< Total number of sensors */
 
 /* Public typedefs --------------------------------------------*/
 
@@ -31,30 +31,30 @@ typedef enum
 } eos_sensor_state_t;
 
 /**
- * @brief 传感器类型
+ * @brief Sensor types
  */
 typedef enum
 {
     EOS_SENSOR_TYPE_UNKNOWN = 0,
-    EOS_SENSOR_TYPE_ACCE,      /**< 加速度传感器     */
-    EOS_SENSOR_TYPE_GYRO,      /**< 重力传感器       */
-    EOS_SENSOR_TYPE_MAG,       /**< 磁传感器         */
-    EOS_SENSOR_TYPE_TEMP,      /**< 温度传感器       */
-    EOS_SENSOR_TYPE_HUMI,      /**< 相对湿度传感器   */
-    EOS_SENSOR_TYPE_BARO,      /**< 气压传感器       */
-    EOS_SENSOR_TYPE_LIGHT,     /**< 环境光传感器     */
-    EOS_SENSOR_TYPE_PROXIMITY, /**< 距离传感器       */
-    EOS_SENSOR_TYPE_HR,        /**< 心率传感器       */
-    EOS_SENSOR_TYPE_TVOC,      /**< TOVC传感器       */
-    EOS_SENSOR_TYPE_NOISE,     /**< 噪声传感器       */
-    EOS_SENSOR_TYPE_STEP,      /**< 计步传感器       */
-    EOS_SENSOR_TYPE_FORCE,     /**< 力传感器         */
-    EOS_SENSOR_TYPE_BAT,       /**< 电池电量传感器    */
-    _EOS_SENSOR_MAX            /**< 传感器最大的枚举值 */
+    EOS_SENSOR_TYPE_ACCE,      /**< Accelerometer sensor     */
+    EOS_SENSOR_TYPE_GYRO,      /**< Gyroscope sensor       */
+    EOS_SENSOR_TYPE_MAG,       /**< Magnetometer sensor         */
+    EOS_SENSOR_TYPE_TEMP,      /**< Temperature sensor       */
+    EOS_SENSOR_TYPE_HUMI,      /**< Relative humidity sensor   */
+    EOS_SENSOR_TYPE_BARO,      /**< Barometric pressure sensor       */
+    EOS_SENSOR_TYPE_LIGHT,     /**< Ambient light sensor     */
+    EOS_SENSOR_TYPE_PROXIMITY, /**< Proximity sensor       */
+    EOS_SENSOR_TYPE_HR,        /**< Heart rate sensor       */
+    EOS_SENSOR_TYPE_TVOC,      /**< TVOC sensor       */
+    EOS_SENSOR_TYPE_NOISE,     /**< Noise sensor       */
+    EOS_SENSOR_TYPE_STEP,      /**< Step counter sensor       */
+    EOS_SENSOR_TYPE_FORCE,     /**< Force sensor         */
+    EOS_SENSOR_TYPE_BAT,       /**< Battery level sensor    */
+    _EOS_SENSOR_MAX            /**< Maximum enum value for sensors */
 } eos_sensor_type_t;
 
 /**
- * @brief 加速度传感器数据
+ * @brief Accelerometer sensor data
  */
 typedef struct {
     int16_t x;
@@ -63,7 +63,7 @@ typedef struct {
 } eos_acce_data_t;
 
 /**
- * @brief 陀螺仪数据
+ * @brief Gyroscope sensor data
  */
 typedef struct {
     int16_t x;
@@ -72,7 +72,7 @@ typedef struct {
 } eos_gyro_data_t;
 
 /**
- * @brief 磁力计数据
+ * @brief Magnetometer sensor data
  */
 typedef struct {
     int16_t x;
@@ -81,86 +81,86 @@ typedef struct {
 } eos_mag_data_t;
 
 /**
- * @brief 温度传感器数据
+ * @brief Temperature sensor data
  */
 typedef struct {
-    int32_t temp;       /**< 单位: 0.01 °C  */
+    int32_t temp;       /**< Unit: 0.01 °C  */
 } eos_temp_data_t;
 
 /**
- * @brief 湿度传感器数据
+ * @brief Humidity sensor data
  */
 typedef struct {
-    uint32_t humidity;   /**< 单位: 0.01 %RH */
+    uint32_t humidity;   /**< Unit: 0.01 %RH */
 } eos_humi_data_t;
 
 /**
- * @brief 气压传感器数据
+ * @brief Barometric pressure sensor data
  */
 typedef struct {
-    int32_t pressure;   /**< 单位: 0.01 hPa */
+    int32_t pressure;   /**< Unit: 0.01 hPa */
 } eos_baro_data_t;
 
 /**
- * @brief 光照传感器数据
+ * @brief Light sensor data
  */
 typedef struct {
-    uint32_t lux;       /**< 单位: lx */
+    uint32_t lux;       /**< Unit: lx */
 } eos_light_data_t;
 
 /**
- * @brief 距离传感器数据
+ * @brief Proximity sensor data
  */
 typedef struct {
     uint16_t distance_mm;
 } eos_proximity_data_t;
 
 /**
- * @brief 心率传感器数据
+ * @brief Heart rate sensor data
  */
 typedef struct {
-    uint16_t heart_rate;    /**< 单位: bpm */
-    uint16_t spo2;          /**< 单位: 0.01% */
+    uint16_t heart_rate;    /**< Unit: bpm */
+    uint16_t spo2;          /**< Unit: 0.01% */
 } eos_heart_rate_data_t;
 
 /**
- * @brief TVOC传感器数据
+ * @brief TVOC sensor data
  */
 typedef struct {
-    uint16_t tvoc;     /**< 单位: ppb */
+    uint16_t tvoc;     /**< Unit: ppb */
 } eos_tvoc_data_t;
 
 /**
- * @brief 噪声传感器数据
+ * @brief Noise sensor data
  */
 typedef struct {
-    uint16_t noise_db;  /**< 单位: 0.01 dB */
+    uint16_t noise_db;  /**< Unit: 0.01 dB */
 } eos_noise_data_t;
 
 /**
- * @brief 计步传感器数据
+ * @brief Step counter sensor data
  */
 typedef struct {
     uint32_t steps;
 } eos_step_data_t;
 
 /**
- * @brief 力传感器数据
+ * @brief Force sensor data
  */
 typedef struct {
-    uint32_t force;       /**< 单位: 0.01 牛顿 */
+    uint32_t force;       /**< Unit: 0.01 Newtons */
 } eos_force_data_t;
 
 /**
- * @brief 电池电量传感器数据
+ * @brief Battery level sensor data
  */
 typedef struct {
-    uint8_t level;     /**< 单位: % */
-    bool charging;  /**< 充电状态: false-未充电,true-充电中 */
+    uint8_t level;     /**< Unit: % */
+    bool charging;  /**< Charging status: false-not charging, true-charging */
 } eos_bat_data_t;
 
 /**
- * @brief 传感器数据共用体
+ * @brief Sensor data union
  */
 typedef union
 {
@@ -183,7 +183,7 @@ typedef union
 typedef uint8_t eos_sensor_id_t;
 
 /**
- * @brief 传感器结构体
+ * @brief Sensor structure
  */
 typedef struct
 {
@@ -196,45 +196,45 @@ typedef void (*eos_sensor_cb_t)(eos_sensor_t, void *);
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 上报传感器数据
- * @param sensor 传感器指针
+ * @brief Report sensor data
+ * @param sensor Sensor pointer
  */
 void eos_sensor_report(eos_sensor_t *sensor);
 /**
- * @brief 根据传感器类型获取第一个传感器实例
- * @param type 传感器类型
- * @return eos_sensor_t* 获取成功则返回传感器指针，否则返回 NULL
+ * @brief Get first sensor instance by sensor type
+ * @param type Sensor type
+ * @return eos_sensor_t* Returns sensor pointer on success, otherwise returns NULL
  */
 eos_sensor_t *eos_sensor_get(eos_sensor_type_t type);
 /**
- * @brief 根据类型和索引查找传感器实例
- * @param type 传感器类型
- * @param index 传感器数值
- * @return eos_sensor_t* 查找成功则返回传感器指针，否则返回 NULL
+ * @brief Find sensor instance by type and index
+ * @param type Sensor type
+ * @param index Sensor index
+ * @return eos_sensor_t* Returns sensor pointer on success, otherwise returns NULL
  */
 eos_sensor_t *eos_sensor_find(eos_sensor_type_t type, uint8_t index);
 /**
- * @brief 注册传感器实例（自动分配ID）
- * @param type 传感器类型
- * @return eos_sensor_t* 注册成功则返回传感器指针，否则返回 NULL
+ * @brief Register sensor instance (ID is automatically assigned)
+ * @param type Sensor type
+ * @return eos_sensor_t* Returns sensor pointer on success, otherwise returns NULL
  */
 eos_sensor_t *eos_sensor_register(eos_sensor_type_t type);
 /**
- * @brief 获取某类型传感器数量
- * @param type 传感器类型
- * @return uint8_t 数量
+ * @brief Get count of sensors of a certain type
+ * @param type Sensor type
+ * @return uint8_t Count
  */
 uint8_t eos_sensor_get_count(eos_sensor_type_t type);
 /**
- * @brief 获取传感器事件代码
- * @param type 传感器类型
- * @return eos_event_code_t 事件代码
+ * @brief Get sensor event code
+ * @param type Sensor type
+ * @return eos_event_code_t Event code
  */
 eos_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type);
 /**
- * @brief 通过事件代码获取传感器类型
- * @param code 事件代码
- * @return eos_sensor_type_t 传感器类型
+ * @brief Get sensor type by event code
+ * @param code Event code
+ * @return eos_sensor_type_t Sensor type
  */
 eos_sensor_type_t eos_sensor_get_type_by_event_code(eos_event_code_t code);
 #ifdef __cplusplus

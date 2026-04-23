@@ -1,6 +1,6 @@
 /**
  * @file elena_os_control_center.h
- * @brief 上拉控制台
+ * @brief Pull-up control center
  * @author Sab1e
  * @date 2025-09-22
  */
@@ -36,24 +36,24 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 将控制中心拉入屏幕
+ * @brief Pull control center into screen
  */
 void eos_control_panel_slide_change(void);
 /**
- * @brief 显示控制中心
+ * @brief Show control center
  */
 void eos_control_center_show(void);
 /**
- * @brief 隐藏控制中心
+ * @brief Hide control center
  */
 void eos_control_center_hide(void);
 /**
- * @brief 获取控制中心实例
+ * @brief Get control center instance
  * @return eos_control_center_t*
  */
 eos_control_center_t *eos_control_center_get_instance(void);
 /**
- * @brief 初始化控制中心，创建一个控制中心实例
+ * @brief Initialize control center, create a control center instance
  */
 void eos_control_center_init(void);
 #ifdef __cplusplus

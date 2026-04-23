@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app_header.h
- * @brief 应用的顶部导航头
+ * @brief Application top navigation header
  * @author Sab1e
  * @date 2025-11-25
  */
@@ -25,52 +25,52 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 隐藏应用头
+ * @brief Hide app header
  */
 void eos_app_header_hide(void);
 /**
- * @brief 显示应用头
- * @param a 要显示应用头的活动
+ * @brief Show app header
+ * @param a Activity to show app header
  */
 void eos_app_header_show(eos_activity_t *a);
 /**
- * @brief 动画显示或隐藏应用头
- * @param a 目标活动（显示时用于刷新标题与颜色，隐藏时可传NULL）
- * @param visible 是否显示
- * @param duration_ms 动画时长（毫秒），为0时立即切换
+ * @brief Animatically show or hide app header
+ * @param a Target activity (used to refresh title and color when showing, can be NULL when hiding)
+ * @param visible Whether to show
+ * @param duration_ms Animation duration (milliseconds), immediate switch when 0
  */
 void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms);
 /**
- * @brief 初始化应用头
+ * @brief Initialize app header
  *
- * 应用头将被放置在 lv_layer_top() 层中
+ * App header will be placed in lv_layer_top() layer
  *
- * 隐藏应用头请使用`eos_app_header_hide`
+ * To hide app header use `eos_app_header_hide`
  *
- * 显示应用头请使用`eos_app_header_show`
+ * To show app header use `eos_app_header_show`
  *
- * @warning 应用头只能初始化一次
+ * @warning App header can only be initialized once
  */
 void eos_app_header_init(void);
 /**
- * @brief 判断应用头当前是否可见
+ * @brief Check if app header is currently visible
  */
 bool eos_app_header_is_visible(void);
 /**
- * @brief 附加app header到指定View
- * @param view 要附加的View
+ * @brief Attach app header to specified view
+ * @param view View to attach
  */
 void eos_app_header_attach_to_view(lv_obj_t *view);
 /**
- * @brief 从View中分离app header，恢复到原始父对象
+ * @brief Detach app header from view, restore to original parent object
  */
 void eos_app_header_detach_from_view(void);
 /**
- * @brief 播放标题变化动画
- * @param from 从哪个activity切换
- * @param to 切换到哪个activity
- * @param need_anim 是否需要动画
- * @param reverse_anim 是否反向执行动画
+ * @brief Play title change animation
+ * @param from From which activity to switch
+ * @param to Switch to which activity
+ * @param need_anim Whether animation is needed
+ * @param reverse_anim Whether to reverse animation
  */
 void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool need_anim, bool reverse_anim);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_utils.h
- * @brief 工具宏定义
+ * @brief Utility macro definitions
  * @author Sab1e
  * @date 2025-10-20
  */

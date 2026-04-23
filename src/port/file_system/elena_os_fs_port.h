@@ -1,6 +1,6 @@
 /**
  * @file elena_os_fs_port.h
- * @brief 文件系统移植
+ * @brief File system porting
  * @author Sab1e
  * @date 2025-11-18
  */
@@ -69,137 +69,121 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 打开一个文件，只读模式
- * @param path 文件路径
- * @return void* 文件句柄，失败返回 NULL
+ * @brief Open a file in read-only mode
+ * @param path File path
+ * @return void* File handle, returns NULL on failure
  */
 eos_file_t eos_fs_open_read(const char *path);
-
 /**
- * @brief 打开一个文件，只写模式，如果文件不存在会创建
- * @param path 文件路径
- * @return void* 文件句柄，失败返回 NULL
+ * @brief Open a file in write-only mode, creates the file if it does not exist
+ * @param path File path
+ * @return void* File handle, returns NULL on failure
  */
 eos_file_t eos_fs_open_write(const char *path);
-
 /**
- * @brief 从文件中读取数据
- * @param file 文件句柄
- * @param buf 数据缓冲区
- * @param len 要读取的字节数
- * @return int 实际读取的字节数，出错返回 -1
+ * @brief Read data from file
+ * @param file File handle
+ * @param buf Data buffer
+ * @param len Number of bytes to read
+ * @return int Actual number of bytes read, returns -1 on error
  */
 int eos_fs_read(eos_file_t file, void *buf, size_t len);
-
 /**
- * @brief 向文件中写入数据
- * @param file 文件句柄
- * @param buf 数据缓冲区
- * @param len 要写入的字节数
- * @return int 实际写入的字节数，出错返回 -1
+ * @brief Write data to file
+ * @param file File handle
+ * @param buf Data buffer
+ * @param len Number of bytes to write
+ * @return int Actual number of bytes written, returns -1 on error
  */
 int eos_fs_write(eos_file_t file, const void *buf, size_t len);
-
 /**
- * @brief 文件指针定位
- * @param file 文件句柄
- * @param pos 文件偏移位置（从文件头开始）
- * @return int 成功返回 0，失败返回 -1
+ * @brief Position file pointer
+ * @param file File handle
+ * @param pos File offset position (from beginning of file)
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_seek(eos_file_t file, uint32_t pos);
-
 /**
- * @brief 获取文件大小
- * @param file 文件句柄
- * @param size 输出文件大小（单位字节）
- * @return int 成功返回 0，失败返回 -1
+ * @brief Get file size
+ * @param file File handle
+ * @param size Output file size (in bytes)
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_size(eos_file_t file, uint32_t *size);
-
 /**
- * @brief 关闭文件
- * @param file 文件句柄
+ * @brief Close file
+ * @param file File handle
  */
 void eos_fs_close(eos_file_t file);
-
 /**
- * @brief 创建目录（单级）
- * @param path 目录路径
- * @return int 成功返回 0，失败返回 -1
+ * @brief Create directory (single level)
+ * @param path Directory path
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_mkdir(const char *path);
-
 /**
- * @brief 删除空目录
- * @param path 目录路径
- * @return int 成功返回 0，失败返回 -1
+ * @brief Remove empty directory
+ * @param path Directory path
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_rmdir(const char *path);
-
 /**
- * @brief 删除文件
- * @param path 文件路径
- * @return int 成功返回 0，失败返回 -1
+ * @brief Remove file
+ * @param path File path
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_remove(const char *path);
-
 /**
- * @brief 检查文件或目录是否存在
- * @param path 文件或目录路径
- * @return int 1 表示存在，0 表示不存在，<0 表示错误
+ * @brief Check if file or directory exists
+ * @param path File or directory path
+ * @return int 1 if exists, 0 if not exists, <0 on error
  */
 int eos_fs_exists(const char *path);
-
 /**
- * @brief 获取指定路径是文件还是目录
- * @param path 文件或目录路径
- * @return int 参见`eos_fs_type_t`
+ * @brief Get the type of specified path (file or directory)
+ * @param path File or directory path
+ * @return int See `eos_fs_type_t`
  */
 int eos_fs_type(const char *path);
-
 /**
- * @brief 打开目录
- * @param path 目录路径
- * @return eos_dir_t* 打开成功则返回目录指针，否则返回 NULL
+ * @brief Open directory
+ * @param path Directory path
+ * @return eos_dir_t* Returns directory pointer on success, otherwise returns NULL
  */
 eos_dir_t eos_fs_opendir(const char *path);
-
 /**
- * @brief 读取目录中的下一个文件名
+ * @brief Read next filename in directory
  *
- * 该函数从指定的目录流中读取下一个文件或子目录的名称。
- * 每次调用返回目录中的下一个条目，直到目录结束。
+ * This function reads the name of the next file or subdirectory from the specified directory stream.
+ * Each call returns the next entry in the directory until the end of the directory is reached.
  *
- * @param dir 指向已打开的目录流的指针（通过 eos_fs_opendir 打开）
- * @param name 用于存放读取到的文件名的缓冲区
- * @param max_len name 缓冲区的最大长度（包括结尾的 '\0'）
+ * @param dir Pointer to opened directory stream (opened by eos_fs_opendir)
+ * @param name Buffer to store the read filename
+ * @param max_len Maximum length of name buffer (including trailing '\0')
  *
  * @return int
- * @retval 0 读取成功，name 中存放了文件名
- * @retval -1 读取失败（如 dir 为 NULL 或目录读取结束）
+ * @retval 0 Read successful, filename stored in name
+ * @retval -1 Read failed (e.g., dir is NULL or directory reading ended)
  *
- * @note 如果文件名长度超过 max_len-1，则会被截断，并保证以 '\0' 结尾
- * @note 该函数仅返回文件名，不包含路径
+ * @note If filename length exceeds max_len-1, it will be truncated and guaranteed to end with '\0'
+ * @note This function only returns filename, without path
  */
 int eos_fs_readdir(eos_dir_t dir, char *name, size_t max_len);
-
 /**
- * @brief 关闭文件目录
- * @param dir 目标文件目录指针
+ * @brief Close directory
+ * @param dir Target directory pointer
  */
 void eos_fs_closedir(eos_dir_t dir);
-
 /**
- * @brief 移动文件或重命名
+ * @brief Move file or rename
  * @param old_path
  * @param new_path
- * @return int 成功返回 0，失败返回 -1
+ * @return int Returns 0 on success, -1 on failure
  */
 int eos_fs_mv(const char *old_path, const char *new_path);
-
 /**
- * @brief 同步文件数据
- * @param file 文件
+ * @brief Synchronize file data
+ * @param file File
  * @return int
  */
 int eos_fs_sync(eos_file_t file);

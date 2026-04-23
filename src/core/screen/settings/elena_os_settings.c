@@ -1,6 +1,6 @@
 /**
  * @file elena_os_settings.c
- * @brief 设置页面
+ * @brief Settings page
  * @author Sab1e
  * @date 2025-09-24
  */
@@ -52,7 +52,7 @@
 
 /* Function Implementations -----------------------------------*/
 
-/************************** 通用功能 **************************/
+/************************** General Functions **************************/
 
 void eos_settings_slient_mode_on(void)
 {
@@ -67,7 +67,7 @@ void eos_settings_slient_mode_off(void)
     eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false);
 }
 
-/************************** 辅助函数 **************************/
+/************************** Helper Functions **************************/
 
 lv_obj_t *_auto_get_config_switch_create(lv_obj_t *list, const char *txt, const char *config_key, bool default_val)
 {
@@ -91,7 +91,7 @@ static eos_activity_t *_create_activity_with_header(lang_string_id_t id, lv_obj_
     return a;
 }
 
-/************************** 蓝牙 **************************/
+/************************** Bluetooth **************************/
 static void _bluetooth_enable_switch_cb(lv_event_t *e)
 {
     lv_obj_t *bt_sw = lv_event_get_target(e);
@@ -119,7 +119,7 @@ static void _settings_view_bluetooth(lv_event_t *e)
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
     eos_activity_enter(a);
 }
-/************************** 显示设置 **************************/
+/************************** Display Settings **************************/
 
 static void _brightness_slider_value_changed_cb(lv_event_t *e)
 {
@@ -267,18 +267,18 @@ static void _settings_view_display(lv_event_t *e)
     lv_obj_add_event_cb(wd_btn, _wake_duration_entry_button_clicked_cb, LV_EVENT_CLICKED, NULL);
     eos_activity_enter(a);
 }
-/************************** 通知 **************************/
+/************************** Notification **************************/
 static void _settings_view_notification(lv_event_t *e)
 {
     lv_obj_t *view = NULL;
     eos_activity_t *a = _create_activity_with_header(STR_ID_SETTINGS_NOTIFICATION, &view);
     EOS_CHECK_PTR_RETURN(a && view);
     lv_obj_t *list = eos_list_create(view);
-    // TODO: 通知设置
+    // TODO: Notification settings
     eos_activity_enter(a);
 }
 
-/************************** 声音与触感反馈 **************************/
+/************************** Sound and Haptic Feedback **************************/
 
 static void _volume_slider_value_changed_cb(lv_event_t *e)
 {
@@ -419,10 +419,10 @@ static void _settings_view_sound_and_haptics(lv_event_t *e)
     eos_activity_enter(a);
 }
 
-/************************** 应用列表 **************************/
+/************************** App List **************************/
 
 /**
- * @brief 卸载按钮回调
+ * @brief Uninstall button callback
  */
 static void _uninstall_btn_cb(lv_event_t *e)
 {
@@ -452,7 +452,7 @@ static void _clear_data_btn_cb(lv_event_t *e)
 }
 
 /**
- * @brief 应用列表回调，打开应用详情
+ * @brief App list callback, opens app details
  * @param e
  */
 static void _settings_app_list_btn_cb(lv_event_t *e)
@@ -598,11 +598,11 @@ static void _app_installed_cb(lv_event_t *e)
 }
 
 /**
- * @brief 系统设置中的应用列表
+ * @brief App list in system settings
  */
 static void _settings_view_apps(lv_event_t *e)
 {
-    // 创建新的页面用于绘制应用列表
+    // Create a new page to draw the app list
     lv_obj_t *view = NULL;
     eos_activity_t *a = _create_activity_with_header(STR_ID_SETTINGS_APPS, &view);
     EOS_CHECK_PTR_RETURN(a && view);
@@ -619,7 +619,7 @@ static void _settings_view_apps(lv_event_t *e)
     eos_activity_enter(a);
 }
 
-/************************** 通用设置 **************************/
+/************************** General Settings **************************/
 
 static void _language_roller_event_handler(lv_event_t *e)
 {
@@ -772,7 +772,7 @@ static void _settings_view_general(lv_event_t *e)
     eos_activity_enter(a);
 }
 
-/************************** 系统设置程序入口 **************************/
+/************************** System Settings Program Entry **************************/
 static const eos_activity_lifecycle_t _settings_lifecycle = {
     .on_enter = NULL,
     .on_destroy = NULL,

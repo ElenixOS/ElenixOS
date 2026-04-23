@@ -1,6 +1,6 @@
 /**
  * @file elena_os_anim.c
- * @brief 动画库
+ * @brief Animation library
  * @author Sab1e
  * @date 2025-08-14
  */
@@ -24,7 +24,7 @@ static lv_obj_t *blocker = NULL;
 static bool is_blocker_show = false;
 /* Function Implementations -----------------------------------*/
 
-/************************** 1. 基础功能函数 **************************/
+/************************** 1. Basic Functionality **************************/
 
 void eos_anim_del(eos_anim_t *anim)
 {
@@ -77,13 +77,13 @@ void eos_anim_blocker_show(void)
         return;
 
     blocker = lv_obj_create(lv_layer_top());
-    lv_obj_remove_style_all(blocker); // 去掉样式，保持透明
+    lv_obj_remove_style_all(blocker); // Remove style, keep transparent
 #if DEBUG_BLOCKER_VISIBLE
     lv_obj_set_style_bg_color(blocker, EOS_COLOR_MINT, 0);
     lv_obj_set_style_bg_opa(blocker, LV_OPA_40, 0);
 #endif
     lv_obj_set_size(blocker, LV_PCT(100), LV_PCT(100));
-    lv_obj_add_flag(blocker, LV_OBJ_FLAG_CLICKABLE); // 吸收点击
+    lv_obj_add_flag(blocker, LV_OBJ_FLAG_CLICKABLE); // Absorb clicks
     is_blocker_show = true;
 }
 
@@ -99,45 +99,45 @@ void eos_anim_blocker_hide(void)
     }
 }
 
-/************************** 2. 动画执行回调 **************************/
+/************************** 2. Animation Execution Callbacks **************************/
 
 /**
- * @brief 动画播放时设置宽度的回调
+ * @brief Callback to set width during animation playback
  */
 static void _set_width_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_width(var->var, v);
 }
 /**
- * @brief 动画播放时设置高度的回调
+ * @brief Callback to set height during animation playback
  */
 static void _set_height_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_height(var->var, v);
 }
 /**
- * @brief 动画播放时设置 X 位置的回调
+ * @brief Callback to set X position during animation playback
  */
 static void _set_x_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_style_translate_x(var->var, v, 0);
 }
 /**
- * @brief 动画播放时设置 Y 位置的回调
+ * @brief Callback to set Y position during animation playback
  */
 static void _set_y_cb(lv_anim_t *var, int32_t v)
 {
     lv_obj_set_style_translate_y(var->var, v, 0);
 }
 /**
- * @brief 动画播放时设置变换缩放的回调
+ * @brief Callback to set transform scale during animation playback
  */
 static void _set_scale_cb(void *var, int32_t v)
 {
     lv_obj_set_style_transform_scale((lv_obj_t *)var, v, 0);
 }
 /**
- * @brief 动画播放时设置透明度的回调
+ * @brief Callback to set opacity during animation playback
  */
 static void _set_opa_cb(void *var, int32_t v)
 {
@@ -145,14 +145,14 @@ static void _set_opa_cb(void *var, int32_t v)
 }
 
 /**
- * @brief 动画播放时设置透明度的回调
+ * @brief Callback to set opacity during animation playback
  */
 static void _set_opa_layered_cb(void *var, int32_t v)
 {
     lv_obj_set_style_opa_layered((lv_obj_t *)var, (lv_opa_t)v, 0);
 }
 
-/************************** 3. 动画播放完成回调 **************************/
+/************************** 3. Animation Completion Callbacks **************************/
 
 static void _free_anim_later(lv_timer_t *t)
 {
@@ -160,7 +160,7 @@ static void _free_anim_later(lv_timer_t *t)
     eos_anim_del(anim);
 }
 /**
- * @brief 动画播放完毕回调，回调用户函数，自动清理资源
+ * @brief Animation completion callback, calls user function and automatically cleans up resources
  */
 static void _eos_anim_ready_cb(lv_anim_t *a)
 {
@@ -173,17 +173,17 @@ static void _eos_anim_ready_cb(lv_anim_t *a)
         {
             anim->user_cb(anim);
         }
-        // 自动清理资源，延时删除
+        // Automatically clean up resources, delayed deletion
         lv_timer_t *t = lv_timer_create(_free_anim_later, 10, anim);
         lv_timer_set_repeat_count(t, 1);
     }
     eos_anim_blocker_hide();
 }
 
-/************************** 4. 动画初始化函数 **************************/
+/************************** 4. Animation Initialization Functions **************************/
 
 /**
- * @brief 内部函数：初始化宽度动画
+ * @brief Internal function: Initialize width animation
  */
 static void _init_width_anim(lv_anim_t *a, lv_obj_t *obj,
                              int32_t start, int32_t end,
@@ -201,7 +201,7 @@ static void _init_width_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 /**
- * @brief 内部函数：初始化高度动画
+ * @brief Internal function: Initialize height animation
  */
 static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
                               int32_t start, int32_t end,
@@ -220,7 +220,7 @@ static void _init_height_anim(lv_anim_t *a, lv_obj_t *obj,
 }
 
 /**
- * @brief 内部函数：初始化 X 位置动画
+ * @brief Internal function: Initialize X position animation
  */
 static void _init_x_anim(lv_anim_t *a, lv_obj_t *obj,
                          int32_t start, int32_t end,
@@ -239,7 +239,7 @@ static void _init_x_anim(lv_anim_t *a, lv_obj_t *obj,
 }
 
 /**
- * @brief 内部函数：初始化 Y 位置动画
+ * @brief Internal function: Initialize Y position animation
  */
 static void _init_y_anim(lv_anim_t *a, lv_obj_t *obj,
                          int32_t start, int32_t end,
@@ -258,7 +258,7 @@ static void _init_y_anim(lv_anim_t *a, lv_obj_t *obj,
 }
 
 /**
- * @brief 内部函数：初始化变换缩放动画
+ * @brief Internal function: Initialize transform scale animation
  */
 static void _init_scale_anim(lv_anim_t *a, lv_obj_t *obj,
                              int32_t start, int32_t end,
@@ -277,7 +277,7 @@ static void _init_scale_anim(lv_anim_t *a, lv_obj_t *obj,
 }
 
 /**
- * @brief 内部函数：初始化透明度动画
+ * @brief Internal function: Initialize opacity animation
  */
 static void _init_opa_anim(lv_anim_t *a, lv_obj_t *obj,
                            int32_t start, int32_t end,
@@ -296,7 +296,7 @@ static void _init_opa_anim(lv_anim_t *a, lv_obj_t *obj,
 }
 
 /**
- * @brief 内部函数：初始化透明度动画
+ * @brief Internal function: Initialize opacity animation
  */
 static void _init_opa_layered_anim(lv_anim_t *a, lv_obj_t *obj,
                                    int32_t start, int32_t end,
@@ -314,9 +314,9 @@ static void _init_opa_layered_anim(lv_anim_t *a, lv_obj_t *obj,
     lv_anim_set_user_data(a, ctx);
 }
 
-/************************** 5. 动画创建与启动 **************************/
+/************************** 5. Animation Creation and Start **************************/
 
-// 缩放动画组
+// Scale animation group
 eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
                                   int32_t w_start, int32_t w_end,
                                   int32_t h_start, int32_t h_end,
@@ -329,7 +329,7 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
     if (!anim)
         return NULL;
 
-    // 基础初始化
+    // Basic initialization
     anim->type = EOS_ANIM_SCALE;
     anim->anim_count = 0;
     anim->anim_completed_count = 0;
@@ -344,11 +344,11 @@ eos_anim_t *eos_anim_scale_create(lv_obj_t *tar_obj,
         return NULL;
     }
 
-    // 初始化宽度动画
+    // Initialize width animation
     _init_width_anim(&anim->anim.scale.a_width, tar_obj, w_start, w_end, duration, anim);
     anim->anim_count++;
 
-    // 初始化高度动画
+    // Initialize height animation
     _init_height_anim(&anim->anim.scale.a_height, tar_obj, h_start, h_end, duration, anim);
     anim->anim_count++;
 
@@ -372,7 +372,7 @@ void eos_anim_scale_start(lv_obj_t *tar_obj,
     }
 }
 
-// 变换缩放动画组
+// Transform scale animation group
 eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
                                             int32_t scale_start, int32_t scale_end,
                                             uint32_t duration, bool auto_delete)
@@ -384,7 +384,7 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
     if (!anim)
         return NULL;
 
-    // 基础初始化
+    // Basic initialization
     anim->type = EOS_ANIM_TRANSFORM_SCALE;
     anim->anim_count = 0;
     anim->anim_completed_count = 0;
@@ -399,7 +399,7 @@ eos_anim_t *eos_anim_transform_scale_create(lv_obj_t *tar_obj,
         return NULL;
     }
 
-    // 初始化变换缩放动画
+    // Initialize transform scale animation
     _init_scale_anim(&anim->anim.transform_scale.a_scale, tar_obj, scale_start, scale_end, duration, anim);
     anim->anim_count++;
 
@@ -434,7 +434,7 @@ void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
     if (!anim)
         return;
 
-    // 设置高级参数
+    // Set advanced parameters
     if (playback_time > 0)
     {
         EOS_LOG_D("Playback: %d", playback_time);
@@ -451,7 +451,7 @@ void eos_anim_transform_scale_start_ex(lv_obj_t *tar_obj,
     }
 }
 
-// 位移动画组
+// Move animation group
 eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
                                  int32_t start_x, int32_t start_y,
                                  int32_t end_x, int32_t end_y,
@@ -465,7 +465,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (!anim)
         return NULL;
 
-    // 基础初始化
+    // Basic initialization
     anim->type = EOS_ANIM_MOVE;
     anim->anim_count = 0;
     anim->anim_completed_count = 0;
@@ -480,7 +480,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
         return NULL;
     }
 
-    // 初始化 X 动画
+    // Initialize X animation
     if (start_x == end_x)
     {
         anim->cfg.move.disable_x = true;
@@ -491,7 +491,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
         anim->anim_count++;
     }
 
-    // 初始化 Y 动画
+    // Initialize Y animation
     if (start_y == end_y)
     {
         anim->cfg.move.disable_y = true;
@@ -530,7 +530,7 @@ void eos_anim_move_start(lv_obj_t *tar_obj,
     }
 }
 
-// 透明度动画组
+// Opacity animation group
 eos_anim_t *eos_anim_fade_create(lv_obj_t *tar_obj,
                                  int32_t opa_start,
                                  int32_t opa_end,
@@ -610,7 +610,7 @@ void eos_anim_fade_set_layered(eos_anim_t *a, bool layered)
     }
 }
 
-/************************** 轻量动画函数 **************************/
+/************************** Lightweight Animation Functions **************************/
 
 void eos_lite_anim_move_hor_start(lv_obj_t *target_obj,
                                   int32_t start, int32_t end,
@@ -717,7 +717,7 @@ void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
     lv_anim_start(&a);
 }
 
-/************************** 「动画启动」 **************************/
+/************************** Animation Start **************************/
 
 bool eos_anim_start(eos_anim_t *anim)
 {

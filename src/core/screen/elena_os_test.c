@@ -1,6 +1,6 @@
 /**
  * @file elena_os_test.c
- * @brief 系统功能测试
+ * @brief System function test
  * @author Sab1e
  * @date 2025-08-20
  */
@@ -50,9 +50,9 @@ LV_FONT_DECLARE(eos_font_resource_han_rounded_30);
 #define LV_KB_BTN(width) LV_BUTTONMATRIX_CTRL_POPOVER | width
 
 /* Variables --------------------------------------------------*/
-static lv_obj_t *img = NULL;    // 全局图片对象
-static lv_obj_t *ta = NULL;     // 全局文本输入框对象
-extern script_pkg_t script_pkg; // 脚本包
+static lv_obj_t *img = NULL;    // Global image object
+static lv_obj_t *ta = NULL;     // Global text input object
+extern script_pkg_t script_pkg; // Script package
 /* Function Implementations -----------------------------------*/
 
 typedef struct
@@ -71,7 +71,7 @@ typedef struct
     bool global_cb_registered;
 } test_app_debug_ctx_t;
 
-// 所有 LVGL 内置符号
+// All LVGL built-in symbols
 static const symbol_t lv_symbols[] = {
     {LV_SYMBOL_AUDIO, 0xF001},
     {LV_SYMBOL_VIDEO, 0xF008},
@@ -410,7 +410,7 @@ static void _test_app_debug_safe_nav_cleanup(void)
     lv_obj_t *launcher = s_test_app_debug.list_screen;
     if (launcher && lv_obj_is_valid(launcher) && lv_obj_has_class(launcher, &lv_obj_class))
     {
-        // 先无动画回到调试列表，避免清理栈时出现短暂空屏。
+        // First return to debug list without animation to avoid brief blank screen during stack cleanup.
         eos_screen_load_without_anim(launcher);
     }
 
@@ -542,7 +542,7 @@ static void _test_app_debug_create_bar(void)
 
     _test_app_debug_set_global_bar_pos(bar_x, bar_y, bar_w, bar_h);
 
-    /* 拖动柄（左侧） */
+    /* Drag handle (left side) */
     lv_obj_t *drag_handle = lv_obj_create(bar);
     lv_obj_remove_style_all(drag_handle);
     lv_obj_set_size(drag_handle, 44, lv_pct(100));
@@ -555,7 +555,7 @@ static void _test_app_debug_create_bar(void)
     lv_label_set_text(drag_icon, RI_DRAG_MOVE_LINE);
     lv_obj_center(drag_icon);
 
-    /* 重启按钮（仅图标） */
+    /* Restart button (icon only) */
     lv_obj_t *restart_btn = lv_button_create(bar);
     lv_obj_set_size(restart_btn, 72, lv_pct(100));
     lv_obj_add_event_cb(restart_btn, _test_app_debug_restart_btn_cb, LV_EVENT_CLICKED, NULL);
@@ -563,7 +563,7 @@ static void _test_app_debug_create_bar(void)
     lv_label_set_text(restart_icon, RI_RESTART_LINE);
     lv_obj_center(restart_icon);
 
-    /* 退出按钮（仅图标） */
+    /* Exit button (icon only) */
     lv_obj_t *exit_btn = lv_button_create(bar);
     lv_obj_set_size(exit_btn, 72, lv_pct(100));
     lv_obj_set_style_bg_color(exit_btn, EOS_THEME_DANGEROS_COLOR, 0);

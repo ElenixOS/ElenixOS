@@ -1,6 +1,6 @@
 /**
  * @file elena_os_lang.h
- * @brief 多语言系统
+ * @brief Multi-language system
  * @author Sab1e
  * @date 2025-08-14
  */
@@ -21,7 +21,7 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief 语言类型
+ * @brief Language type
  */
 typedef enum{
     LANG_EN=0,
@@ -30,8 +30,8 @@ typedef enum{
 } language_id_t;
 
 /**
- * @brief 字符串索引
- * @note 此处可添加新的字符串ID
+ * @brief String index
+ * @note New string IDs can be added here
  */
 typedef enum {
     STR_ID_LANGUAGE,
@@ -98,76 +98,76 @@ typedef enum {
     STR_ID_SYS_INIT_FAILED,
     STR_ID_SYS_INIT_FAILED_CONTENT,
     STR_ID_SENSOR_START,
-    STR_ID_SENSOR_ACCE,      /**< 加速度传感器     */
-    STR_ID_SENSOR_GYRO,      /**< 重力传感器       */
-    STR_ID_SENSOR_MAG,       /**< 磁传感器         */
-    STR_ID_SENSOR_TEMP,      /**< 温度传感器       */
-    STR_ID_SENSOR_HUMI,      /**< 相对湿度传感器   */
-    STR_ID_SENSOR_BARO,      /**< 气压传感器       */
-    STR_ID_SENSOR_LIGHT,     /**< 环境光传感器     */
-    STR_ID_SENSOR_PROXIMITY, /**< 距离传感器       */
-    STR_ID_SENSOR_HR,        /**< 心率传感器       */
-    STR_ID_SENSOR_TVOC,      /**< TOVC传感器       */
-    STR_ID_SENSOR_NOISE,     /**< 噪声传感器       */
-    STR_ID_SENSOR_STEP,      /**< 计步传感器       */
-    STR_ID_SENSOR_FORCE,     /**< 力传感器         */
-    STR_ID_SENSOR_BAT,        /**< 电池电量传感器    */
-    /* 此处可添加新的字符串ID */
-    STR_ID_MAX_NUMBER   /**< 字符串ID最大值 */
+    STR_ID_SENSOR_ACCE,      /**< Accelerometer sensor     */
+    STR_ID_SENSOR_GYRO,      /**< Gyroscope sensor       */
+    STR_ID_SENSOR_MAG,       /**< Magnetometer sensor         */
+    STR_ID_SENSOR_TEMP,      /**< Temperature sensor       */
+    STR_ID_SENSOR_HUMI,      /**< Relative humidity sensor   */
+    STR_ID_SENSOR_BARO,      /**< Barometric sensor       */
+    STR_ID_SENSOR_LIGHT,     /**< Ambient light sensor     */
+    STR_ID_SENSOR_PROXIMITY, /**< Proximity sensor       */
+    STR_ID_SENSOR_HR,        /**< Heart rate sensor       */
+    STR_ID_SENSOR_TVOC,      /**< TVOC sensor       */
+    STR_ID_SENSOR_NOISE,     /**< Noise sensor       */
+    STR_ID_SENSOR_STEP,      /**< Step counter sensor       */
+    STR_ID_SENSOR_FORCE,     /**< Force sensor         */
+    STR_ID_SENSOR_BAT,        /**< Battery level sensor    */
+    /* New string IDs can be added here */
+    STR_ID_MAX_NUMBER   /**< Maximum string ID */
 } lang_string_id_t;
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化语言系统
+ * @brief Initialize language system
  */
 void eos_lang_init(void);
 /**
- * @brief 设置当前语言
- * @param lang 目标语言类型 `language_id_t`
- * @warning 需要先初始化语言系统
+ * @brief Set current language
+ * @param lang Target language type `language_id_t`
+ * @warning Language system must be initialized first
  */
 void eos_lang_set_current_id(language_id_t lang);
 /**
- * @brief 获取当前语言类型
- * @return language_id_t 语言类型
+ * @brief Get current language type
+ * @return language_id_t Language type
  */
 language_id_t eos_lang_get_current_id(void);
 /**
- * @brief 根据语言名称解析语言 ID
- * @param language_name 语言名称（如 "English"）
- * @return language_id_t 语言类型
+ * @brief Parse language ID from language name
+ * @param language_name Language name (e.g., "English")
+ * @return language_id_t Language type
  */
 language_id_t eos_lang_parse_name(const char *language_name);
 /**
- * @brief 获取指定语言 ID 对应的语言名称
- * @param lang 语言类型
- * @return const char* 语言名称
+ * @brief Get language name corresponding to specified language ID
+ * @param lang Language type
+ * @return const char* Language name
  */
 const char *eos_lang_get_name(language_id_t lang);
 /**
- * @brief 获取当前语言名称
- * @return const char* 语言名称
+ * @brief Get current language name
+ * @return const char* Language name
  */
 const char *eos_lang_get_current_name(void);
 /**
- * @brief 获取当前语言下的文本
- * @param id 字符串 ID
- * @return const char* 字符串
+ * @brief Get text in current language
+ * @param id String ID
+ * @return const char* String
  */
 const char *eos_lang_get_text(lang_string_id_t id);
 /**
- * @brief 兼容旧接口：根据语言字符串获得语言类型
+ * @brief Compatible old interface: Get language type from language string
  */
 language_id_t eos_lang_get_current_id_with_str(const char *language_str);
 /**
- * @brief 通过字符串 ID 设置标签的字符串
- * @param label 标签对象
- * @param str_id 字符串 ID
+ * @brief Set label string by string ID
+ * @param label Label object
+ * @param str_id String ID
  */
 void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id);
 /**
- * @brief 支持格式化字符串
+ * @brief Support formatted strings
  * @param label
  * @param fmt
  * @return eos_label_lang_fmt_t*

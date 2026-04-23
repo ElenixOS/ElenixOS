@@ -1,6 +1,6 @@
 /**
  * @file sni_api_lv.h
- * @brief LVGL API 导出
+ * @brief LVGL API export
  * @author Sab1e
  * @date 2026-03-06
  */
@@ -23,13 +23,13 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化 LVGL API
+ * @brief Initialize LVGL API
  */
 void sni_api_lv_init(void);
 
 /**
- * @brief 挂载 LVGL API 到指定的 Realm
- * @param realm 目标 Realm 值
+ * @brief Mount LVGL API to specified Realm
+ * @param realm Target Realm value
  */
 void sni_api_lv_mount(jerry_value_t realm);
 

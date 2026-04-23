@@ -1,6 +1,6 @@
 /**
  * @file elena_os_sys.h
- * @brief 系统配置
+ * @brief System configuration
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -19,7 +19,7 @@ extern "C" {
 #include "elena_os_config.h"
 /* Public macros ----------------------------------------------*/
 
-/************************** 系统目录配置 **************************/
+/************************** System directory configuration **************************/
 #define EOS_SYS_DIR EOS_SYS_ROOT_DIR ".sys/"
 #define EOS_SYS_CONFIG_DIR EOS_SYS_DIR "config/"
 #define EOS_SYS_CONFIG_FILE_PATH EOS_SYS_CONFIG_DIR "cfg.json"
@@ -28,7 +28,7 @@ extern "C" {
 #define EOS_SYS_RES_IMG_DIR EOS_SYS_RES_DIR "img/"
 
 #define EOS_SYS_RES_FONT_DIR EOS_SYS_RES_DIR "font/"
-/************************** 系统配置信息的键 **************************/
+/************************** Keys for system configuration information **************************/
 #define EOS_SYS_CFG_KEY_DEVICE_NAME_STR "device_name"
 #define EOS_SYS_CFG_KEY_LANGUAGE_STR "language"
 #define EOS_SYS_CFG_KEY_WATCHFACE_ID_STR "wf_id"
@@ -40,7 +40,7 @@ extern "C" {
 #define EOS_SYS_CFG_KEY_AOD_MODE_BOOL "aod_mode"
 #define EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL "wake_on_raise"
 #define EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER "vibrator_strength"
-/************************** 默认值 **************************/
+/************************** Default values **************************/
 #define EOS_SYS_DEFAULT_DEVICE_NAME "Elena Watch"
 #define EOS_SYS_DEFAULT_LANG_STR "English"
 #define EOS_SYS_DEFAULT_WATCHFACE_ID_STR "cn.sab1e.clock"
@@ -49,57 +49,57 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 系统第一次运行时初始化
+ * @brief Initialize on first system run
  */
 void eos_sys_init(void);
 /**
- * @brief 设置布尔类型的配置项
- * @param key 配置项的键
- * @param value 布尔值
- * @return 操作结果
+ * @brief Set boolean type configuration item
+ * @param key Configuration item key
+ * @param value Boolean value
+ * @return Operation result
  */
 eos_result_t eos_sys_cfg_set_bool(const char *key, bool value);
 /**
- * @brief 设置字符串类型的配置项
- * @param key 配置项的键
- * @param value 字符串值
- * @return 操作结果
+ * @brief Set string type configuration item
+ * @param key Configuration item key
+ * @param value String value
+ * @return Operation result
  */
 eos_result_t eos_sys_cfg_set_string(const char *key, const char *value);
 /**
- * @brief 设置数字类型的配置项
- * @param key 配置项的键
- * @param value 数字值
- * @return 操作结果
+ * @brief Set number type configuration item
+ * @param key Configuration item key
+ * @param value Number value
+ * @return Operation result
  */
 eos_result_t eos_sys_cfg_set_number(const char *key, double value);
 /**
- * @brief 获取布尔类型的配置项
- * @param key 配置项的键
- * @param default_value 默认值（当配置项不存在或类型不匹配时返回）
- * @return 获取到的布尔值或默认值
+ * @brief Get boolean type configuration item
+ * @param key Configuration item key
+ * @param default_value Default value (returned when configuration item does not exist or type mismatch)
+ * @return Retrieved boolean value or default value
  */
 bool eos_sys_cfg_get_bool(const char *key, bool default_value);
 /**
- * @brief 获取字符串类型的配置项
- * @param key 配置项的键
- * @param default_value 默认值（当配置项不存在或类型不匹配时返回）
- * @return 获取到的字符串值或默认值
- * @warning 返回的字符串在不需要时需要使用`eos_malloc(str)`释放
+ * @brief Get string type configuration item
+ * @param key Configuration item key
+ * @param default_value Default value (returned when configuration item does not exist or type mismatch)
+ * @return Retrieved string value or default value
+ * @warning The returned string needs to be freed using `eos_malloc(str)` when no longer needed
  */
 char *eos_sys_cfg_get_string(const char *key, const char *default_value);
 /**
- * @brief 获取数字类型的配置项
- * @param key 配置项的键
- * @param default_value 默认值（当配置项不存在或类型不匹配时返回）
- * @return 获取到的数字值或默认值
+ * @brief Get number type configuration item
+ * @param key Configuration item key
+ * @param default_value Default value (returned when configuration item does not exist or type mismatch)
+ * @return Retrieved number value or default value
  */
 double eos_sys_cfg_get_number(const char *key, double default_value);
 /**
- * @brief 添加新的设置项到系统配置文件
- * @param key 要添加的设置项键名（字符串）
- * @param value 要添加的设置项值（字符串）
- * @return 返回结果
+ * @brief Add new configuration item to system configuration file
+ * @param key Configuration item key to add (string)
+ * @param value Configuration item value to add (string)
+ * @return Returns result
  */
 eos_result_t eos_sys_add_config_item(const char *key, const char *value);
 #ifdef __cplusplus

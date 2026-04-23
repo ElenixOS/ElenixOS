@@ -1,6 +1,6 @@
 /**
  * @file elena_os_toast.h
- * @brief 临时消息提示框
+ * @brief Temporary message toast
  * @author Sab1e
  * @date 2025-10-24
  */
@@ -24,27 +24,27 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 显示一个 Toast 提示
- * @param icon_src 图标文件路径，设置为 NULL 时不显示图标
- * @param message 消息内容
- * @return lv_obj_t* 返回创建的 Toast 对象指针
+ * @brief Show a Toast message
+ * @param icon_src Icon file path, set to NULL to not display icon
+ * @param message Message content
+ * @return lv_obj_t* Returns the created Toast object pointer
  */
 lv_obj_t * eos_toast_show(const char *icon_src, const char *message);
 
 /**
- * @brief 显示一个支持字符图标颜色的 Toast 提示
- * @param icon_char 字符图标（如 RI_ 宏），设置为 NULL 时不显示图标
- * @param icon_color 图标颜色
- * @param message 消息内容
- * @return lv_obj_t* 返回创建的 Toast 对象指针
+ * @brief Show a Toast message with character icon color support
+ * @param icon_char Character icon (such as RI_ macro), set to NULL to not display icon
+ * @param icon_color Icon color
+ * @param message Message content
+ * @return lv_obj_t* Returns the created Toast object pointer
  */
 lv_obj_t *eos_toast_show_char_icon(const char *icon_char, lv_color_t icon_color, const char *message);
 /**
- * @brief 支持格式化字符串的 Toast 提示
+ * @brief Toast message with formatted string support
  */
 lv_obj_t *eos_toast_show_fmt(const char *icon_src, const char *fmt, ...);
 /**
- * @brief 初始化 Toast 系统
+ * @brief Initialize Toast system
  */
 void eos_toast_init(void);
 #ifdef __cplusplus

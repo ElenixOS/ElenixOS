@@ -1,8 +1,8 @@
 /**
  * @file sni_lv_types.c
- * @brief LVGL 类型表
+ * @brief LVGL type table
  * @author Auto-generated
- * @date 2026-03-14
+ * @date 2026-04-23
  */
 
 #include "sni_lv_types.h"
@@ -14,7 +14,7 @@
 #include "sni_type_bridge.h"
 #include "lvgl.h"
 
-/************************** 属性表 **************************/
+/************************** Property tables **************************/
 
 const sni_val_prop_t lv_anim_bezier3_para_props[] = {
     {
@@ -334,7 +334,7 @@ const sni_val_obj_t lv_sqrt_res_prop = {
     .props = lv_sqrt_res_props,
 };
 
-/************************** 注册表 **************************/
+/************************** Registry **************************/
 
 const sni_val_obj_t *sni_lv_types[] = {
     &lv_anim_bezier3_para_prop,
@@ -353,7 +353,7 @@ const sni_val_obj_t *sni_lv_types[] = {
 
 const size_t sni_lv_types_count = sizeof(sni_lv_types) / sizeof(sni_lv_types[0]);
 
-/************************** 初始化函数 **************************/
+/************************** Initialization **************************/
 void sni_lv_types_init(void)
 {
     for (size_t i = 0;

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_control_center.c
- * @brief 上拉控制台
+ * @brief Pull-up control center
  * @author Sab1e
  * @date 2025-09-22
  */
@@ -42,7 +42,7 @@ static eos_control_center_t *control_center_instance = NULL;
 /* Function Implementations -----------------------------------*/
 void eos_control_panel_slide_change(void);
 
-/************************** 列表回调 **************************/
+/************************** List callback **************************/
 #if EOS_ANIMATION_ENABLE
 static void _list_scroll_cb(lv_event_t *e)
 {
@@ -64,13 +64,13 @@ static void _list_scroll_cb(lv_event_t *e)
 
         if (i % 2 == 0)
         {
-            // 左列 -> 右上角
+            // Left column -> Upper right corner
             lv_obj_set_style_transform_pivot_x(child, w, 0);
             lv_obj_set_style_transform_pivot_y(child, 0, 0);
         }
         else
         {
-            // 右列 -> 左上角
+            // Right column -> Upper left corner
             lv_obj_set_style_transform_pivot_x(child, 0, 0);
             lv_obj_set_style_transform_pivot_y(child, 0, 0);
         }
@@ -88,8 +88,8 @@ static void _list_scroll_cb(lv_event_t *e)
 
         lv_coord_t diff = list_bottom - child_center;
         const lv_coord_t range = list_h / 10;
-        const int16_t max_scale = 256; // 原比例
-        const int16_t min_scale = 180; // 最小比例（刚进入时）
+        const int16_t max_scale = 256; // Original scale
+        const int16_t min_scale = 180; // Minimum scale (when just entering)
 
         int16_t scale = min_scale + (diff * (max_scale - min_scale)) / range;
         if (scale > max_scale)
@@ -109,7 +109,7 @@ static void _slide_widget_reached_threshold_cb(lv_event_t *e)
         eos_crown_encoder_set_target_obj(container);
 }
 
-/************************** 基础组件 **************************/
+/************************** Basic components **************************/
 
 static lv_obj_t *_control_center_create_switch_btn(lv_obj_t *parent, const char *symbol, lv_color_t color)
 {
@@ -206,7 +206,7 @@ static lv_obj_t *_control_center_create_btn(lv_obj_t *parent, const char *symbol
     return btn;
 }
 
-/************************** 功能组件 **************************/
+/************************** Functional components **************************/
 
 static void _control_center_bluetooth_switch_btn_cb(lv_event_t *e)
 {
@@ -232,14 +232,14 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
     lv_obj_t *label = (lv_obj_t *)lv_obj_get_user_data(slider);
     EOS_CHECK_PTR_RETURN(label);
 
-    // 获取 Slider 当前值
+    // Get current Slider value
     int16_t value = lv_slider_get_value(slider);
     eos_display_set_brightness(value);
 
-    // 将 Slider 值映射为角度
+    // Map Slider value to angle
     int32_t angle = (int32_t)value * 18;
 
-    // 设置 Label 旋转
+    // Set Label rotation
     lv_obj_set_style_transform_rotation(label, angle, 0);
 }
 
@@ -327,7 +327,7 @@ static void _control_center_volume_value_changed_cb(lv_event_t *e)
     lv_obj_t *slider = lv_event_get_target(e);
     lv_obj_t *label = (lv_obj_t *)lv_obj_get_user_data(slider);
     EOS_CHECK_PTR_RETURN(label);
-    // 获取 Slider 当前值
+    // Get current Slider value
     int16_t value = lv_slider_get_value(slider);
     eos_speaker_set_volume(value);
     lv_label_set_text(label, _control_center_volume_get_icon_by_value(value));
@@ -384,7 +384,7 @@ static void _control_center_settings_entry_cb(lv_event_t *e)
     eos_settings_enter();
     eos_control_panel_slide_change();
 }
-/************************** 控制中心 **************************/
+/************************** Control center **************************/
 
 eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
 {
@@ -403,12 +403,12 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     lv_obj_set_style_pad_all(container, 30, 0);
     lv_obj_align(container, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_set_scroll_dir(container, LV_DIR_VER);
-    lv_obj_set_style_pad_column(container, 20, 0); // 列间距
+    lv_obj_set_style_pad_column(container, 20, 0); // Column spacing
     lv_obj_set_style_pad_row(container, 8, 0);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_flex_align(container,
-                          LV_FLEX_ALIGN_CENTER, // 主轴（水平方向）从头开始（靠左）
-                          LV_FLEX_ALIGN_CENTER, // 交叉轴（垂直方向）居中
+                          LV_FLEX_ALIGN_CENTER, // Main axis (horizontal direction) starts from the beginning (left-aligned)
+                          LV_FLEX_ALIGN_CENTER, // Cross axis (vertical direction) centered
                           LV_FLEX_ALIGN_START);
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 #if EOS_ANIMATION_ENABLE
@@ -419,7 +419,7 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, container);
     cc->container = container;
     lv_obj_t *btn;
-    /************************** 蓝牙开关 **************************/
+    /************************** Bluetooth switch **************************/
     btn = _control_center_create_switch_btn(container, RI_BLUETOOTH_FILL, EOS_COLOR_BLUE);
     lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_VALUE_CHANGED, NULL);
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
@@ -431,18 +431,18 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
     cc->bl_btn = btn;
-    /************************** 亮度调整滚动条 **************************/
+    /************************** Brightness adjustment scrollbar **************************/
     btn = _control_center_create_btn(container, RI_SUN_FILL);
     lv_obj_add_event_cb(btn, _control_center_brightness_btn_clicked_cb, LV_EVENT_CLICKED, 0);
     cc->brightness_btn = btn;
-    /************************** 电量显示 **************************/
+    /************************** Battery display **************************/
     btn = _control_center_create_battery(container);
     cc->bat_btn = btn;
-    /************************** 查找手机 **************************/
+    /************************** Find phone **************************/
     btn = _control_center_create_btn(container, RI_PHONE_FIND_FILL);
     lv_obj_add_event_cb(btn, _control_center_phone_find_cb, LV_EVENT_CLICKED, 0);
     cc->locate_phone_btn = btn;
-    /************************** 静音 **************************/
+    /************************** Mute **************************/
     btn = _control_center_create_switch_btn(container, RI_NOTIFICATION_4_FILL, EOS_COLOR_ORANGE);
     lv_obj_add_event_cb(btn, _control_center_mute_switch_btn_cb, LV_EVENT_CLICKED, 0);
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
@@ -454,15 +454,15 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
         lv_obj_remove_state(btn, LV_STATE_CHECKED);
     }
     cc->mute_btn = btn;
-    /************************** 音量调整滚动条 **************************/
+    /************************** Volume adjustment scrollbar **************************/
     btn = _control_center_create_btn(container, RI_VOLUME_UP_FILL);
     lv_obj_add_event_cb(btn, _control_center_volume_btn_clicked_cb, LV_EVENT_CLICKED, cc);
     cc->volume_btn = btn;
-    /************************** 手电筒 **************************/
+    /************************** Flashlight **************************/
     btn = _control_center_create_btn(container, RI_FLASH_LIGHT);
     lv_obj_add_event_cb(btn, _control_center_flash_light_btn_clicked_cb, LV_EVENT_CLICKED, 0);
     cc->flash_light_btn = btn;
-    /************************** 设置入口 **************************/
+    /************************** Settings entry **************************/
     btn = _control_center_create_btn(container, RI_SETTINGS_4_FILL);
     lv_obj_add_event_cb(btn, _control_center_settings_entry_cb, LV_EVENT_CLICKED, 0);
     cc->settings_btn = btn;
@@ -508,7 +508,7 @@ static void _system_config_update_event_cb(lv_event_t *e)
 {
     EOS_CHECK_PTR_RETURN(control_center_instance);
 
-    // 更新蓝牙开关状态
+    // Update Bluetooth switch state
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
     {
         lv_obj_add_state(control_center_instance->bl_btn, LV_STATE_CHECKED);
@@ -518,7 +518,7 @@ static void _system_config_update_event_cb(lv_event_t *e)
         lv_obj_remove_state(control_center_instance->bl_btn, LV_STATE_CHECKED);
     }
 
-    // 更新静音开关状态
+    // Update mute switch state
     if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
     {
         lv_obj_add_state(control_center_instance->mute_btn, LV_STATE_CHECKED);

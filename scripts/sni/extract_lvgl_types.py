@@ -4,7 +4,7 @@ import os
 import sys
 """
 @file extract_lvgl_types.py
-@brief 从 lvgl.json 中提取类型信息，输出为 JSON 格式
+@brief Extract type information from lvgl.json and output as JSON
 """
 
 def extract_types(json_path):

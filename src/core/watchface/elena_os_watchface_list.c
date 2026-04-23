@@ -27,6 +27,12 @@
 #include "elena_os_activity.h"
 /* Macros and Definitions -------------------------------------*/
 
+#define _SNAPSHOT_CONTAINER_PAD 12
+#define _SNAPSHOT_CONTAINER_BORDER 5
+#define _SNAPSHOT_CONTAINER_W ((EOS_DISPLAY_WIDTH * 69) / 100)
+#define _SNAPSHOT_CONTAINER_H ((EOS_DISPLAY_HEIGHT * 69) / 100)
+#define _SNAPSHOT_PRESS_ZOOM 245
+
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
@@ -103,17 +109,51 @@ void eos_watchface_list_enter(void)
             }
         }
 
-        lv_obj_t *watchface_snapshot = lv_image_create(item);
-        lv_obj_set_size(watchface_snapshot, 268, 310);
+        /* 外层容器：用于显示边框、圆角与裁角，snapshot 在容器内留 12px 的内边距 */
+        lv_obj_t *snapshot_container = lv_obj_create(item);
+        lv_obj_set_size(snapshot_container, _SNAPSHOT_CONTAINER_W, _SNAPSHOT_CONTAINER_H);
+        lv_obj_set_style_border_width(snapshot_container, _SNAPSHOT_CONTAINER_BORDER, 0);
+        lv_obj_set_style_radius(snapshot_container, EOS_DISPLAY_RADIUS, 0);
+        lv_obj_set_style_clip_corner(snapshot_container, true, 0);
+        lv_obj_set_style_pad_all(snapshot_container, _SNAPSHOT_CONTAINER_PAD, 0);
+        lv_obj_set_style_shadow_width(snapshot_container, 0, 0);
+        lv_obj_set_style_bg_opa(snapshot_container, LV_OPA_TRANSP, 0);
+        lv_obj_remove_flag(snapshot_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(snapshot_container, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_flag(snapshot_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+        lv_obj_center(snapshot_container);
+
+        /* 图片裁剪容器：负责 snapshot 的布局、裁角与圆角 */
+        lv_obj_t *snapshot_clip_container = lv_obj_create(snapshot_container);
+        lv_obj_set_size(snapshot_clip_container,
+                _SNAPSHOT_CONTAINER_W - (_SNAPSHOT_CONTAINER_PAD * 2),
+                _SNAPSHOT_CONTAINER_H - (_SNAPSHOT_CONTAINER_PAD * 2));
+        lv_obj_set_style_radius(snapshot_clip_container, EOS_DISPLAY_RADIUS, 0);
+        lv_obj_set_style_clip_corner(snapshot_clip_container, true, 0);
+        lv_obj_set_style_border_width(snapshot_clip_container, 0, 0);
+        lv_obj_set_style_shadow_width(snapshot_clip_container, 0, 0);
+        lv_obj_set_style_margin_all(snapshot_clip_container, 0, 0);
+        lv_obj_set_style_pad_all(snapshot_clip_container, 0, 0);
+        lv_obj_set_style_bg_opa(snapshot_clip_container, LV_OPA_TRANSP, 0);
+        lv_obj_remove_flag(snapshot_clip_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(snapshot_clip_container, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_flag(snapshot_clip_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+        lv_obj_center(snapshot_clip_container);
+
+        /* snapshot 占满新的父容器 */
+        lv_obj_t *watchface_snapshot = lv_image_create(snapshot_clip_container);
+        lv_obj_set_size(watchface_snapshot, lv_pct(100), lv_pct(100));
         lv_obj_set_style_shadow_width(watchface_snapshot, 0, 0);
         lv_obj_set_style_margin_all(watchface_snapshot, 0, 0);
-        lv_obj_center(watchface_snapshot);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
-        // 移除 CLICKABLE 标志，让触摸事件传递给父对象，以便滚动容器能够接收到滑动事件
+        lv_obj_center(watchface_snapshot);
+        /* 移除 CLICKABLE 标志，让触摸事件传递给父对象 */
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         eos_img_set_src(watchface_snapshot, icon_path);
-        eos_img_set_size(watchface_snapshot, 268, 310);
+        eos_img_set_size(watchface_snapshot,
+                 _SNAPSHOT_CONTAINER_W - (_SNAPSHOT_CONTAINER_PAD * 2),
+                 _SNAPSHOT_CONTAINER_H - (_SNAPSHOT_CONTAINER_PAD * 2));
         lv_obj_center(watchface_snapshot);
 
         // 将点击事件处理函数添加到父对象上，这样当用户点击图片时，点击事件会传递给父对象
@@ -121,7 +161,6 @@ void eos_watchface_list_enter(void)
         // 确保父对象是可点击的
         lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(item, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-        lv_obj_set_style_clip_corner(watchface_snapshot, false, 0);
         // 显示名称
         lv_obj_t *label = lv_label_create(item);
         if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)

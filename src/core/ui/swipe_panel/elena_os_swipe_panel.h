@@ -3,21 +3,6 @@
  * @brief 滑动面板头文件
  * @author Sab1e
  * @date 2025-08-10
- * @details
- *
- * # Swipe Panel
- *
- * ## 简述
- *
- * 滑动面板为单向滑动面板，用于将`swipe_obj`从屏幕外面划入屏幕，支持触摸划入以及函数控制划入，并带有滑动动画。
- *
- * ## 使用方法
- *
- * 使用`eos_swipe_panel_create()`即可创建一个新的滑动面板。
- *
- * ## 注意
- *
- * 此代码为`slide_widget`的功能封装。
  */
 
 #ifndef ELENA_OS_SWIPE_PANEL_H

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @file gen_lvgl_desc.py
-@brief 从 lvgl.json 中提取 API 描述信息，输出为 JSON 格式
+@brief Extract API description data from lvgl.json and output as JSON
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 HEADER_TEXT = """/**
  * @file sni_api_lv.c
- * @brief LVGL API 导出
+ * @brief LVGL API export
  * @author Auto Generated
  * @date {date}
  */
@@ -232,17 +232,17 @@ def velog(msg: str) -> None:
 
 def load_json(path: Path, required: Optional[List[str]] = None) -> Dict[str, Any]:
     if not path.exists():
-        raise SystemExit(f"[错误] 文件不存在: {path}")
+        raise SystemExit(f"[Error] File not found: {path}")
 
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"[错误] JSON 解析失败: {path}: {exc}") from exc
+        raise SystemExit(f"[Error] JSON parse failed: {path}: {exc}") from exc
 
     if required:
         for key in required:
             if key not in data:
-                raise SystemExit(f"[错误] JSON 缺少关键字段 '{key}': {path}")
+                raise SystemExit(f"[Error] JSON missing required field '{key}': {path}")
     return data
 
 
@@ -329,11 +329,11 @@ def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str
     for group in ("function", "constant"):
         group_obj = scan.get(group, {})
         if not isinstance(group_obj, dict):
-            raise SystemExit(f"[错误] api-table 字段 scan.{group} 必须是对象")
+            raise SystemExit(f"[Error] api-table field scan.{group} must be an object")
         for key in ("whitelist", "blacklist"):
             value = group_obj.get(key, [])
             if not isinstance(value, list):
-                raise SystemExit(f"[错误] api-table 字段 scan.{group}.{key} 必须是数组")
+                raise SystemExit(f"[Error] api-table field scan.{group}.{key} must be an array")
             result[group][key] = [str(item).strip() for item in value if str(item).strip()]
     return result
 
@@ -381,11 +381,11 @@ def parse_method_selector(
     if isinstance(item, str):
         name_pattern = item.strip()
         if not name_pattern:
-            raise SystemExit(f"[错误] {context} 不能为空字符串")
+            raise SystemExit(f"[Error] {context} cannot be an empty string")
         return ApiMethodSelector(name_pattern=name_pattern, arg_matchers=[], raw_text=name_pattern)
 
     if not isinstance(item, dict):
-        raise SystemExit(f"[错误] {context} 必须是字符串或对象")
+        raise SystemExit(f"[Error] {context} must be a string or object")
 
     name_pattern = str(item.get("name", item.get("match", item.get("pattern", "*")))).strip()
     if not name_pattern:
@@ -406,13 +406,13 @@ def parse_method_selector(
     elif isinstance(arg_rules_raw, list):
         arg_rules = arg_rules_raw
     else:
-        raise SystemExit(f"[错误] {context}.arg_match/args/arg 必须是对象或数组")
+        raise SystemExit(f"[Error] {context}.arg_match/args/arg must be an object or array")
 
     parsed_arg_rules: List[ApiMethodArgMatcher] = []
     for ridx, rule in enumerate(arg_rules):
         rule_ctx = f"{context}.arg_match[{ridx}]"
         if not isinstance(rule, dict):
-            raise SystemExit(f"[错误] {rule_ctx} 必须是对象")
+            raise SystemExit(f"[Error] {rule_ctx} must be an object")
 
         raw_index = None
         if "index" in rule:
@@ -420,19 +420,19 @@ def parse_method_selector(
             try:
                 arg_index = int(raw_index)
             except (TypeError, ValueError):
-                raise SystemExit(f"[错误] {rule_ctx}.index 必须是整数")
+                raise SystemExit(f"[Error] {rule_ctx}.index must be an integer")
             if arg_index < 0:
-                raise SystemExit(f"[错误] {rule_ctx}.index 必须 >= 0")
+                raise SystemExit(f"[Error] {rule_ctx}.index must be >= 0")
         else:
             nth_value = rule.get("nth", rule.get("n", rule.get("position")))
             if nth_value is None:
-                raise SystemExit(f"[错误] {rule_ctx} 必须提供 index(0-based) 或 nth/n/position(1-based)")
+                raise SystemExit(f"[Error] {rule_ctx} must provide index(0-based) or nth/n/position(1-based)")
             try:
                 nth = int(nth_value)
             except (TypeError, ValueError):
-                raise SystemExit(f"[错误] {rule_ctx}.nth 必须是整数")
+                raise SystemExit(f"[Error] {rule_ctx}.nth must be an integer")
             if nth <= 0:
-                raise SystemExit(f"[错误] {rule_ctx}.nth 必须 >= 1")
+                raise SystemExit(f"[Error] {rule_ctx}.nth must be >= 1")
             arg_index = nth - 1
 
         name_pattern_rule = None
@@ -448,7 +448,7 @@ def parse_method_selector(
                 type_pattern_rule = normalize_type_key(val)
 
         if name_pattern_rule is None and type_pattern_rule is None:
-            raise SystemExit(f"[错误] {rule_ctx} 至少要提供 name 或 type")
+            raise SystemExit(f"[Error] {rule_ctx} must provide at least name or type")
 
         parsed_arg_rules.append(
             ApiMethodArgMatcher(
@@ -467,7 +467,7 @@ def parse_method_selectors(entries: Any, class_name: str, field_name: str) -> Li
         entries = [entries]
     elif not isinstance(entries, list):
         raise SystemExit(
-            f"[错误] classes.{class_name}.{field_name} 必须是数组，或单个字符串/对象"
+            f"[Error] classes.{class_name}.{field_name} must be an array, or a single string/object"
         )
 
     selectors: List[ApiMethodSelector] = []
@@ -479,12 +479,12 @@ def parse_method_selectors(entries: Any, class_name: str, field_name: str) -> Li
 def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
     classes_raw = api_table.get("classes")
     if not isinstance(classes_raw, dict) or not classes_raw:
-        raise SystemExit("[错误] api-table 缺少 classes 定义")
+        raise SystemExit("[Error] api-table missing classes definition")
 
     classes: Dict[str, ApiClass] = {}
     for class_name, cfg in classes_raw.items():
         if not isinstance(cfg, dict):
-            raise SystemExit(f"[错误] classes.{class_name} 必须是对象")
+            raise SystemExit(f"[Error] classes.{class_name} must be an object")
 
         c_type = str(cfg.get("c_type", "")).strip()
         ctor_val = cfg.get("constructor", None)
@@ -496,11 +496,11 @@ def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
         constants = cfg.get("constants", [])
 
         if not c_type:
-            raise SystemExit(f"[错误] classes.{class_name}.c_type 不能为空")
+            raise SystemExit(f"[Error] classes.{class_name}.c_type cannot be empty")
         if constructor == "":
             constructor = None
         if not isinstance(constants, list):
-            raise SystemExit(f"[错误] classes.{class_name}.constants 必须为数组")
+            raise SystemExit(f"[Error] classes.{class_name}.constants must be an array")
 
         methods_norm = parse_method_selectors(methods, class_name, "methods")
         static_methods_norm = parse_method_selectors(static_methods, class_name, "static_methods")
@@ -508,9 +508,9 @@ def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
 
         if constructor is None:
             if methods_norm:
-                raise SystemExit(f"[错误] classes.{class_name} 为静态类(constructor=null)，methods 必须为空")
+                raise SystemExit(f"[Error] classes.{class_name} is a static class(constructor=null), methods must be empty")
             if not static_methods_norm:
-                raise SystemExit(f"[错误] classes.{class_name} 为静态类(constructor=null)，static_methods 不能为空")
+                raise SystemExit(f"[Error] classes.{class_name} is a static class(constructor=null), static_methods cannot be empty")
 
         classes[class_name] = ApiClass(
             name=class_name,
@@ -524,7 +524,7 @@ def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
 
     for class_name, cls in classes.items():
         if cls.base and cls.base not in classes:
-            raise SystemExit(f"[错误] classes.{class_name}.base 指向不存在的类: {cls.base}")
+            raise SystemExit(f"[Error] classes.{class_name}.base references a non-existent class: {cls.base}")
 
     temp_mark: Set[str] = set()
     perm_mark: Set[str] = set()
@@ -533,7 +533,7 @@ def parse_api_classes(api_table: Dict[str, Any]) -> Dict[str, ApiClass]:
         if name in perm_mark:
             return
         if name in temp_mark:
-            raise SystemExit(f"[错误] classes 存在循环继承: {name}")
+            raise SystemExit(f"[Error] classes has cyclic inheritance: {name}")
 
         temp_mark.add(name)
         parent = classes[name].base
@@ -581,7 +581,7 @@ def parse_numeric_constant(value_text: str) -> Optional[Tuple[str, str]]:
     if not text:
         return None
 
-    # 去掉一层外层括号
+    # Strip one outer pair of parentheses
     while text.startswith("(") and text.endswith(")"):
         inner = text[1:-1].strip()
         if not inner:
@@ -724,7 +724,7 @@ def topo_sort_classes(classes: Dict[str, ApiClass]) -> List[ApiClass]:
         if name in perm_mark:
             return
         if name in temp_mark:
-            raise SystemExit(f"[错误] classes 存在循环继承: {name}")
+            raise SystemExit(f"[Error] classes has cyclic inheritance: {name}")
         temp_mark.add(name)
         base = classes[name].base
         if base:
@@ -751,7 +751,7 @@ def build_function_index(lvgl_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]
 
 def require_function(function_index: Dict[str, Dict[str, Any]], name: str, context: str) -> Dict[str, Any]:
     if name not in function_index:
-        raise SystemExit(f"[错误] 找不到函数 {name} ({context})")
+        raise SystemExit(f"[Error] Cannot find function {name} ({context})")
     return function_index[name]
 
 
@@ -779,7 +779,7 @@ def require_class_function(
             return function_index[candidate]
 
     raise SystemExit(
-        f"[错误] 找不到函数 {name} ({context})，已尝试: {', '.join(dedup_candidates)}"
+        f"[Error] Cannot find function {name} ({context}), tried: {', '.join(dedup_candidates)}"
     )
 
 
@@ -853,7 +853,7 @@ def resolve_class_selector_items(
     if not matches:
         patterns = build_selector_name_patterns(class_name, selector.name_pattern)
         raise SystemExit(
-            f"[错误] 找不到函数匹配 {context}: {selector.raw_text}，已尝试名称模式: {', '.join(patterns)}"
+            f"[Error] Cannot find function match {context}: {selector.raw_text}, tried name patterns: {', '.join(patterns)}"
         )
 
     return matches
@@ -918,14 +918,14 @@ def build_api_function(
 ) -> ApiFunction:
     name = str(item.get("name", "")).strip()
     if not name:
-        raise SystemExit(f"[错误] {context} 缺少函数名")
+        raise SystemExit(f"[Error] {context} missing function name")
 
     if function_blacklist and is_matched(name, function_blacklist):
-        raise SkipFunctionError(name, f"函数命中 scan.function.blacklist: {name}")
+        raise SkipFunctionError(name, f"function matched scan.function.blacklist: {name}")
 
     manual_signature = should_skip_manual_signature_bridges(name, context)
     ret_type = normalize_c_type(item.get("type"))
-    ret_bridge = build_bridge_from_type(ret_type, lv_type_entries, pending_updates, True, f"{context} 返回值", name)
+    ret_bridge = build_bridge_from_type(ret_type, lv_type_entries, pending_updates, True, f"{context} return value", name)
 
     args_raw = normalize_args(item.get("args", []))
     args: List[FuncArg] = []
@@ -933,7 +933,7 @@ def build_api_function(
         arg_name = str(arg.get("name") or f"arg{idx}")
         arg_type = normalize_c_type(arg.get("type"))
         if arg_type in {"ellipsis", "..."} or arg_name == "...":
-            raise SkipFunctionError(name, f"暂不支持变参函数: {name}")
+            raise SkipFunctionError(name, f"variadic functions are not supported yet: {name}")
 
         if manual_signature:
             arg_bridge = TypeBridge(arg_type, "", "none", None, None, "none", None)
@@ -943,7 +943,7 @@ def build_api_function(
                 lv_type_entries,
                 pending_updates,
                 True,
-                f"{context} 参数 #{idx} ({arg_name})",
+                f"{context} argument #{idx} ({arg_name})",
                 name,
             )
         args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
@@ -1122,7 +1122,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     lines: List[str] = []
 
     if not func.args:
-        raise SystemExit(f"[错误] 实例方法 {func.name} 缺少 this 参数")
+        raise SystemExit(f"[Error] instance method {func.name} missing this parameter")
 
     this_arg = func.args[0]
     js_arg_count = len(func.args) - 1
@@ -1215,7 +1215,7 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines: List[str] = []
 
     if len(func.args) != 1:
-        raise SystemExit(f"[错误] 属性 getter {func.name} 必须只有 this 参数")
+        raise SystemExit(f"[Error] property getter {func.name} must only have a this parameter")
 
     this_arg = func.args[0]
 
@@ -1234,7 +1234,7 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("")
 
     if func.return_bridge.c2js_mode == "void":
-        raise SystemExit(f"[错误] 属性 getter {func.name} 不能返回 void")
+        raise SystemExit(f"[Error] property getter {func.name} cannot return void")
 
     lines.append(f"    {func.return_type} result = {func.name}({self_render.call_expr});")
     render_return_conversion(lines, func, "result")
@@ -1247,7 +1247,7 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines: List[str] = []
 
     if len(func.args) != 2:
-        raise SystemExit(f"[错误] 属性 setter {func.name} 必须是 this + value 两个参数")
+        raise SystemExit(f"[Error] property setter {func.name} must have exactly two parameters: this and value")
 
     this_arg = func.args[0]
     value_arg = func.args[1]
@@ -1421,7 +1421,7 @@ def make_default_type_map() -> Dict[str, str]:
 def load_type_entries(lv_types_data: Dict[str, Any]) -> Dict[str, str]:
     entries = lv_types_data.get("types")
     if not isinstance(entries, list):
-        raise SystemExit("[错误] lv-types JSON 缺少 'types' 数组")
+        raise SystemExit("[Error] lv-types JSON missing 'types' array")
 
     result: Dict[str, str] = {}
     for item in entries:
@@ -1440,16 +1440,16 @@ def load_type_entries(lv_types_data: Dict[str, Any]) -> Dict[str, str]:
 
 def prompt_object_type(type_name: str, context: str, func_name: Optional[str] = None) -> str:
     while True:
-        print(f"\n[输入] 类型未定义: {type_name}")
-        print(f"[位置] {context}")
+        print(f"\n[Input] type is undefined: {type_name}")
+        print(f"[Location] {context}")
         if func_name:
-            print(f"[函数] {func_name}")
-        print("[选项] 1) handle_object")
-        print("[选项] 2) value_object")
-        print("[选项] 3) primitive(<type>) 例如 primitive(int)")
-        print("[选项] 4) blacklist 当前函数并跳过")
-        print("[选项] 5) skip 仅跳过当前函数(不加入黑名单)")
-        value = input("请输入选项编号或直接输入 object_type: ").strip()
+            print(f"[Function] {func_name}")
+        print("[Option] 1) handle_object")
+        print("[Option] 2) value_object")
+        print("[Option] 3) primitive(<type>) for example primitive(int)")
+        print("[Option] 4) blacklist current function and skip")
+        print("[Option] 5) skip skip only current function (do not add to blacklist)")
+        value = input("Enter option number or input object_type directly: ").strip()
 
         if value == "1" or value == "handle_object":
             return "handle_object"
@@ -1460,14 +1460,14 @@ def prompt_object_type(type_name: str, context: str, func_name: Optional[str] = 
         if value == "5" or value.lower() in {"skip", "s"}:
             return SKIP_ONCE_FUNCTION
         if value == "3":
-            typed = input("请输入 primitive(<type>)：").strip()
+            typed = input("Enter primitive(<type>):").strip()
             if re.fullmatch(r"primitive\([^()]+\)", typed):
                 return typed
-            print("[提示] primitive 输入格式错误，请重试。")
+            print("[Hint] primitive input format is invalid, please try again.")
             continue
         if re.fullmatch(r"primitive\([^()]+\)", value):
             return value
-        print("[提示] 非法输入，请重试。")
+        print("[Hint] Invalid input, please try again.")
 
 
 def update_lv_types_output(output_path: Path, updates: Dict[str, str]) -> None:
@@ -1478,7 +1478,7 @@ def update_lv_types_output(output_path: Path, updates: Dict[str, str]) -> None:
         try:
             data = json.loads(output_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            raise SystemExit(f"[错误] 无法解析 {output_path}: {exc}") from exc
+            raise SystemExit(f"[Error] Cannot parse {output_path}: {exc}") from exc
     else:
         data = {"types": []}
 
@@ -1549,7 +1549,7 @@ def build_bridge_from_type(
         if sni_type == "SNI_T_PTR":
             return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, sni_type, "bridge", None)
 
-    # 先尝试用基础类型名映射，例如 typedef 的 int
+    # First try mapping by primitive base type, e.g. typedef int
     if normalized.endswith("_t") and normalized in lv_type_entries:
         object_type = lv_type_entries[normalized]
     else:
@@ -1559,16 +1559,16 @@ def build_bridge_from_type(
         prompt_key = base_name if base_name in lv_type_entries else normalized
         object_type = prompt_object_type(prompt_key, context, func_name)
         if object_type == SKIP_BLACKLIST_FUNCTION:
-            raise SkipFunctionError(func_name, f"用户选择将函数加入黑名单: {context}", add_to_blacklist=True)
+            raise SkipFunctionError(func_name, f"User chose to add function to blacklist: {context}", add_to_blacklist=True)
         if object_type == SKIP_ONCE_FUNCTION:
-            raise SkipFunctionError(func_name, f"用户选择仅跳过当前函数: {context}", add_to_blacklist=False)
+            raise SkipFunctionError(func_name, f"User chose to skip only current function: {context}", add_to_blacklist=False)
         lv_type_entries[prompt_key] = object_type
         pending_updates[prompt_key] = object_type
 
     if object_type.startswith("primitive(") and object_type.endswith(")"):
         primitive_name = object_type[len("primitive("):-1].strip()
         if not primitive_name:
-            raise SystemExit(f"[错误] 类型 '{normalized}' 的 object_type 无效: {object_type}")
+            raise SystemExit(f"[Error] Type '{normalized}': invalid object_type : {object_type}")
         primitive_bridge = build_bridge_from_type(
             primitive_name,
             lv_type_entries,
@@ -1579,7 +1579,7 @@ def build_bridge_from_type(
         )
         return TypeBridge(c_type, primitive_bridge.js_check, primitive_bridge.js2c_mode, primitive_bridge.js2c_expr, primitive_bridge.sni_type, primitive_bridge.c2js_mode, primitive_bridge.c2js_expr)
 
-    # 支持 lv_types.json 中将 typedef 直接标记为基础数值类型（如 float/double）
+    # Support typedefs marked directly as primitive numeric types in lv_types.json (such as float/double)
     if object_type in default_map:
         primitive_bridge = build_bridge_from_type(
             object_type,
@@ -1607,17 +1607,17 @@ def build_bridge_from_type(
         return TypeBridge(c_type, js_check, "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
 
     if object_type:
-        raise SystemExit(f"[错误] 类型 '{normalized}' 的 object_type 无效: {object_type}")
+        raise SystemExit(f"[Error] Type '{normalized}': invalid object_type : {object_type}")
 
-    # 无 object_type 但为指针时，按 handle 兜底
+    # If object_type is missing and the type is a pointer, fallback to handle
     if normalized.endswith("*") and normalized.startswith("lv_"):
         return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_H_{c_type_to_base_name(normalized)}", "bridge", None)
 
-    # 无 object_type 的 lv_ 非指针按 value 兜底
+    # If object_type is missing and lv_ type is not a pointer, fallback to value
     if normalized.startswith("lv_"):
         return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, f"SNI_V_{c_type_to_base_name(normalized)}", "bridge", None)
 
-    raise SystemExit(f"[错误] 无法映射类型: {c_type}")
+    raise SystemExit(f"[Error] Cannot map type: {c_type}")
 
 
 def normalize_args(raw_args: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1657,7 +1657,7 @@ def collect_functions(
                 lv_type_entries,
                 pending_updates,
                 True,
-                f"函数 {name} 的返回值",
+                f"Function {name} return value",
                 name,
             )
 
@@ -1671,7 +1671,7 @@ def collect_functions(
                     lv_type_entries,
                     pending_updates,
                     True,
-                    f"函数 {name} 的参数 #{idx} ({arg_name})",
+                    f"Function {name} argument #{idx} ({arg_name})",
                     name,
                 )
                 args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
@@ -1870,13 +1870,13 @@ def print_verbose_stats(
     const_stats: FilterStats,
 ) -> None:
     vlog(
-        "[过滤] func: "
+        "[Filter] func: "
         f"total={func_stats.total}, included={func_stats.included}, "
         f"blacklisted={func_stats.blacklisted}, whitelist_miss={func_stats.whitelist_miss}, "
         f"skipped_by_user={func_stats.skipped_by_user}"
     )
     vlog(
-        "[过滤] const: "
+        "[Filter] const: "
         f"total={const_stats.total}, included={const_stats.included}, "
         f"blacklisted={const_stats.blacklisted}, whitelist_miss={const_stats.whitelist_miss}"
     )
@@ -1916,25 +1916,25 @@ def print_summary(
     root_constant_total = len(root_constants)
 
     rows: List[Tuple[str, str]] = [
-        ("类", f"{class_total}个（静态类{static_class_total}个）"),
-        ("动态方法", f"{dynamic_method_total}个"),
-        ("静态方法", f"{static_method_total}个"),
-        ("类常数", f"{class_constant_total}个"),
-        ("全局常数", f"{root_constant_total}个"),
-        ("属性", f"{property_total}个"),
-        ("构造函数", f"{constructor_total}个"),
+        ("Classes", f"{class_total} (static classes: {static_class_total})"),
+        ("Dynamic methods", f"{dynamic_method_total}"),
+        ("Static methods", f"{static_method_total}"),
+        ("Class constants", f"{class_constant_total}"),
+        ("Global constants", f"{root_constant_total}"),
+        ("Properties", f"{property_total}"),
+        ("Constructors", f"{constructor_total}"),
     ]
 
     if pending_updates:
-        rows.append(("自动补全类型", f"{len(pending_updates)}个"))
+        rows.append(("Auto-completed types", f"{len(pending_updates)}"))
     if export_file is not None:
-        rows.append(("SNI 类型清单", str(export_file)))
-    rows.append(("输出文件", str(output_path)))
+        rows.append(("SNI type list", str(export_file)))
+    rows.append(("output file", str(output_path)))
 
     label_width = max(visual_width(label) for label, _ in rows)
 
     print("-" * 40)
-    print("导出成功，统计信息：\n")
+    print("Export successful, statistics:\n")
     for label, value in rows:
         print(f"{pad_visual(label, label_width)} : {value}")
     print("-" * 40)
@@ -2010,7 +2010,7 @@ def main() -> None:
                 )
             except SkipFunctionError as exc:
                 handle_skip_exception(exc, func_blacklist)
-                raise SystemExit(f"[错误] 类 {cls.name} 的构造函数被用户跳过，无法继续生成: {exc.func_name}") from exc
+                raise SystemExit(f"[Error] Class {cls.name} constructor was skipped by user, generation cannot continue: {exc.func_name}") from exc
 
             for selector in cls.methods:
                 matched_items = resolve_class_selector_items(
@@ -2031,9 +2031,9 @@ def main() -> None:
                     except SkipFunctionError as exc:
                         handle_skip_exception(exc, func_blacklist)
                         if exc.add_to_blacklist:
-                            velog(f"[提示] 实例方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                            velog(f"[Hint] instance method {exc.func_name} was skipped by user and added to blacklist, ignored")
                         else:
-                            velog(f"[提示] 实例方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                            velog(f"[Hint] instance method {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
                         continue
 
                     if method_func.name not in method_names:
@@ -2041,7 +2041,7 @@ def main() -> None:
                         method_names.add(method_func.name)
         else:
             if cls.methods:
-                raise SystemExit(f"[错误] classes.{cls.name} 是静态类，不允许配置 methods")
+                raise SystemExit(f"[Error] classes.{cls.name} is a static class, methods configuration is not allowed")
 
         static_funcs: List[ApiFunction] = []
         for selector in cls.static_methods:
@@ -2063,9 +2063,9 @@ def main() -> None:
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)
                     if exc.add_to_blacklist:
-                        velog(f"[提示] 静态方法 {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                        velog(f"[Hint] static method {exc.func_name} was skipped by user and added to blacklist, ignored")
                     else:
-                        velog(f"[提示] 静态方法 {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                        velog(f"[Hint] static method {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
                     continue
                 static_funcs.append(static_func)
 
@@ -2091,9 +2091,9 @@ def main() -> None:
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)
                     if exc.add_to_blacklist:
-                        velog(f"[提示] 属性 getter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                        velog(f"[Hint] property getter {exc.func_name} was skipped by user and added to blacklist, ignored")
                     else:
-                        velog(f"[提示] 属性 getter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                        velog(f"[Hint] property getter {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
                     getter_func = None
 
                 if getter_func is not None and len(getter_func.args) == 1 and getter_func.return_bridge.c2js_mode != "void":
@@ -2101,7 +2101,7 @@ def main() -> None:
                     valid_getter = prop.getter
                 elif getter_func is not None:
                     velog(
-                        f"[提示] {prop.getter} 不符合属性 getter 签名(应为 this-only 且有返回值)，已忽略"
+                        f"[Hint] {prop.getter} does not match property getter signature (must be this-only with return value), ignored"
                     )
 
             if prop.setter:
@@ -2117,9 +2117,9 @@ def main() -> None:
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)
                     if exc.add_to_blacklist:
-                        velog(f"[提示] 属性 setter {exc.func_name} 已被用户跳过并加入黑名单，忽略")
+                        velog(f"[Hint] property setter {exc.func_name} was skipped by user and added to blacklist, ignored")
                     else:
-                        velog(f"[提示] 属性 setter {exc.func_name} 已按会话策略跳过(不加入黑名单)，忽略")
+                        velog(f"[Hint] property setter {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
                     setter_func = None
 
                 if setter_func is not None and len(setter_func.args) == 2:
@@ -2127,7 +2127,7 @@ def main() -> None:
                     valid_setter = prop.setter
                 elif setter_func is not None:
                     velog(
-                        f"[提示] {prop.setter} 不符合属性 setter 签名(应为 this+value)，已忽略"
+                        f"[Hint] {prop.setter} does not match property setter signature (must be this+value), ignored"
                     )
 
             if valid_getter or valid_setter:
@@ -2136,7 +2136,7 @@ def main() -> None:
         const_items: List[ApiConstant] = []
         for const_name in cls.constants:
             if const_name not in constant_index:
-                raise SystemExit(f"[错误] classes.{cls.name}.constants 引用未知常量: {const_name}")
+                raise SystemExit(f"[Error] classes.{cls.name}.constants references unknown constant: {const_name}")
             const_items.append(constant_index[const_name])
 
         class_constructors[cls.name] = ctor_func
@@ -2179,7 +2179,7 @@ def main() -> None:
     if args.export_sni_types:
         export_file = Path(args.export_sni_types)
         if export_file.exists() and export_file.is_dir():
-            raise SystemExit(f"[错误] --export-sni-types 必须是文件路径，当前是目录: {export_file}")
+            raise SystemExit(f"[Error] --export-sni-types must be a file path, but got a directory: {export_file}")
         all_types = collect_encountered_sni_types_from_model(
             class_methods,
             class_static_methods,
@@ -2188,11 +2188,11 @@ def main() -> None:
         )
         export_file.parent.mkdir(parents=True, exist_ok=True)
         export_file.write_text("\n".join(f"{item}," for item in all_types) + "\n", encoding="utf-8")
-        velog(f"[统计] 已导出遇到的 SNI_H_*/SNI_V_*: {export_file}")
+        velog(f"[Stats] exported encountered SNI_H_*/SNI_V_*: {export_file}")
 
     print_verbose_stats(func_stats, const_stats)
     if pending_updates:
-        velog(f"[统计] 已补全类型并写入: {lv_types_output_path}")
+        velog(f"[Stats] auto-completed types written to: {lv_types_output_path}")
 
     print_summary(
         classes,

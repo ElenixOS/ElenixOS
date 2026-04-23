@@ -4,44 +4,6 @@
  * @brief 脚本引擎核心功能实现
  * @author Sab1e
  * @date 2025-07-26
- * @details
- * TODO 移动到 docs 下
- * # 脚本引擎
- *
- * ## 启动流程
- *
- * 1. 系统启动时需要调用`script_engine_init`初始化脚本引擎；
- * 1. 脚本启动时，会创建一个新的`realm`提供沙盒进行隔离；
- * 1. 新的`realm`会自动注册所有函数和符号；
- * 1. 在脚本内使用`eos.*`访问函数和符号；
- *
- * ## 脚本使用方法
- *
- * 脚本内直接调用LVGL的函数绘制UI即可，绘制完成后无需进行任何操作，
- * 由系统内部调用`lv_timer_handler`执行渲染操作。
- *
- * 如果想关闭脚本，使用`script_engine_request_stop();`。
- *
- * ## 脚本状态说明
- *
- * ### SCRIPT_STATE_RUNNING
- *
- * 脚本正在运行，例如正在执行`eos.lv_label_create(eos_screen_active());`。
- *
- * ### SCRIPT_STATE_SUSPEND
- *
- * 一般来说绘制完成后，脚本进入挂起状态`SCRIPT_STATE_SUSPEND`，
- * 此时如果外部触发回调，可以正常调用。
- *
- * ### SCRIPT_STATE_STOPPED
- *
- * 脚本未启动以及脚本已关闭即为此状态，此时脚本的相关资源都已经被清理，沙盒已经被删除，
- * 不会再调用任何脚本内注册的回调。
- *
- * ## 脚本使用注意事项
- *
- * 1. 脚本中禁止使用死循环，否则会阻塞UI。
- *
  */
 
 #include "script_engine_core.h"

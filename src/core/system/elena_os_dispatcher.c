@@ -3,31 +3,6 @@
  * @brief 任务调度器
  * @author Sab1e
  * @date 2025-11-10
- * @details
- *
- * # Async
- *
- * ## 简述
- *
- * ElenaOS 任务调度器提供一个轻量级的任务队列，用于在非实时上下文中延迟执行回调函数。
- *
- * 特性：
- * - 调用（`eos_dispatcher_call`）将回调推入队列；
- * - 队列处理（`eos_dispatch_tick`）依次执行所有待处理回调；
- * - 内部使用信号量保护队列，保证线程安全；
- * - 可配置动态队列大小，支持扩容；
- *
- * ## 使用场景
- *
- * - 在中断或任务中收集事件，但事件处理需要在主循环中执行；
- * - 避免在中断中执行耗时操作；
- * - 提供一种轻量的异步执行机制，不依赖完整的 RTOS 调度。
- *
- * ## 注意
- *
- * `eos_dispatcher_call()`与`lv_call_async()`不同，`lv_call_async()`只支持 GUI 线程调用，
- * 而`eos_dispatcher_call()`支持任意线程调用，切勿在非 GUI 线程调用任何 LVGL 函数。
- *
  */
 
 #include "elena_os_dispatcher.h"

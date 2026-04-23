@@ -845,7 +845,7 @@ jerry_value_t sni_api_eos_activity_get_view(const jerry_call_info_t *call_info_p
 
     if (args_count != 1)
     {
-        return sni_api_throw_error("Usage: Activity.getView(activity)");
+        return sni_api_throw_error("Usage: activity.getView(activity)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -868,7 +868,7 @@ jerry_value_t sni_api_eos_activity_set_view(const jerry_call_info_t *call_info_p
 
     if (args_count != 2)
     {
-        return sni_api_throw_error("Usage: Activity.setView(activity, view)");
+        return sni_api_throw_error("Usage: activity.setView(activity, view)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity) ||
@@ -892,7 +892,7 @@ jerry_value_t sni_api_eos_activity_get_title(const jerry_call_info_t *call_info_
 
     if (args_count != 1)
     {
-        return sni_api_throw_error("Usage: Activity.getTitle(activity)");
+        return sni_api_throw_error("Usage: activity.getTitle(activity)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -920,7 +920,7 @@ jerry_value_t sni_api_eos_activity_set_title(const jerry_call_info_t *call_info_
 
     if (args_count != 2 || !jerry_value_is_string(args_p[1]))
     {
-        return sni_api_throw_error("Usage: Activity.setTitle(activity, title)");
+        return sni_api_throw_error("Usage: activity.setTitle(activity, title)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity) ||
@@ -945,7 +945,7 @@ jerry_value_t sni_api_eos_activity_set_type(const jerry_call_info_t *call_info_p
 
     if (args_count != 2 || !jerry_value_is_number(args_p[1]))
     {
-        return sni_api_throw_error("Usage: Activity.setType(activity, type)");
+        return sni_api_throw_error("Usage: activity.setType(activity, type)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -969,7 +969,7 @@ jerry_value_t sni_api_eos_activity_get_type(const jerry_call_info_t *call_info_p
 
     if (args_count != 1)
     {
-        return sni_api_throw_error("Usage: Activity.getType(activity)");
+        return sni_api_throw_error("Usage: activity.getType(activity)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -992,7 +992,7 @@ jerry_value_t sni_api_eos_activity_set_app_header_visible(const jerry_call_info_
 
     if (args_count != 2 || !jerry_value_is_boolean(args_p[1]))
     {
-        return sni_api_throw_error("Usage: Activity.setAppHeaderVisible(activity, visible)");
+        return sni_api_throw_error("Usage: activity.setAppHeaderVisible(activity, visible)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -1016,7 +1016,7 @@ jerry_value_t sni_api_eos_activity_is_app_header_visible(const jerry_call_info_t
 
     if (args_count != 1)
     {
-        return sni_api_throw_error("Usage: Activity.isAppHeaderVisible(activity)");
+        return sni_api_throw_error("Usage: activity.isAppHeaderVisible(activity)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -1038,7 +1038,7 @@ jerry_value_t sni_api_eos_activity_enter(const jerry_call_info_t *call_info_p,
 
     if (args_count != 1)
     {
-        return sni_api_throw_error("Usage: Activity.enter(activity)");
+        return sni_api_throw_error("Usage: activity.enter(activity)");
     }
 
     if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
@@ -1261,7 +1261,7 @@ const sni_class_desc_t eos_class_desc_clock_hand = {
 };
 
 const sni_class_desc_t eos_class_desc_activity = {
-    .name = "Activity",
+    .name = "activity",
     .constructor = NULL,
     .base_class = NULL,
     .methods = NULL,

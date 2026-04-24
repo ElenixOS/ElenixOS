@@ -13,3 +13,5 @@ tmp/
 output/
 # Python cache files
 __pycache__/
+# Build files
+build/

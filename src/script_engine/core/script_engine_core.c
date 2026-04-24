@@ -2,8 +2,6 @@
 /**
  * @file script_engine_core.c
  * @brief Script engine core functionality implementation
- * @author Sab1e
- * @date 2025-07-26
  */
 
 #include "script_engine_core.h"
@@ -13,20 +11,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define EOS_LOG_TAG "ScriptEngine"
-#include "elena_os_log.h"
+#include "eos_log.h"
 
 #include "lvgl.h"
 #include "cJSON.h"
 
-#include "elena_os_port.h"
-#include "elena_os_misc.h"
-#include "elena_os_icon.h"
-#include "elena_os_watchface.h"
-#include "elena_os_config.h"
-#include "elena_os_fs.h"
-#include "elena_os_mem.h"
-#include "elena_os_event.h"
-#include "elena_os_cqueue.h"
+#include "eos_port.h"
+#include "eos_misc.h"
+#include "eos_icon.h"
+#include "eos_watchface.h"
+#include "eos_config.h"
+#include "eos_fs.h"
+#include "eos_mem.h"
+#include "eos_event.h"
+#include "eos_cqueue.h"
 
 #include "sni.h"
 

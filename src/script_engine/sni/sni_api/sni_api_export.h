@@ -1,8 +1,6 @@
 /**
  * @file sni_api_export.h
  * @brief API export layer
- * @author Sab1e
- * @date 2026-03-06
  */
 
 #ifndef SNI_API_EXPORT_H

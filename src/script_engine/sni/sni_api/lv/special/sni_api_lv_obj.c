@@ -1,8 +1,6 @@
 /**
  * @file sni_api_lv_obj.c
  * @brief LVGL obj Class Special Wrapper Function Implementation
- * @author Sab1e
- * @date 2026-03-15
  */
 
 #include "sni_api_lv_special.h"
@@ -13,7 +11,7 @@
 #include "sni_callback_runtime.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
-#include "elena_os_font.h"
+#include "eos_font.h"
 
 /* Macros and Definitions -------------------------------------*/
 

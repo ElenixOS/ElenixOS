@@ -1,8 +1,6 @@
 /**
  * @file sni_lv_types.h
  * @brief LVGL types
- * @author Sab1e
- * @date 2026-02-10
  */
 
 #ifndef SNI_LV_TYPES_H

@@ -1,8 +1,6 @@
 /**
  * @file sni_types.h
  * @brief Script Native Interface
- * @author Sab1e
- * @date 2026-02-09
  */
 
 #ifndef SNI_TYPES_H

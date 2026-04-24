@@ -1,15 +1,13 @@
 /**
  * @file sni_api_lv_btnm.c
  * @brief LVGL Button Matrix SNI Handwritten Special Wrapper Function Implementation
- * @author Sab1e
- * @date 2026-03-15
  */
 
 #include "sni_api_lv_special.h"
 
 /* Includes ---------------------------------------------------*/
 #include <string.h>
-#include "elena_os_mem.h"
+#include "eos_mem.h"
 #include "lvgl.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"

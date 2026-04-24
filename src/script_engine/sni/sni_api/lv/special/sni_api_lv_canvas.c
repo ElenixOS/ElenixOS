@@ -1,8 +1,6 @@
 /**
  * @file sni_api_lv_canvas.c
  * @brief LVGL Canvas Class Special Wrapper Function Implementation
- * @author Sab1e
- * @date 2026-03-16
  */
 
 #include "sni_api_lv_special.h"
@@ -14,7 +12,7 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "uthash.h"
-#include "elena_os_mem.h"
+#include "eos_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
 

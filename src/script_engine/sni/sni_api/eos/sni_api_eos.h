@@ -1,8 +1,6 @@
 /**
  * @file sni_api_eos.h
- * @brief ElenaOS API
- * @author Sab1e
- * @date 2026-03-14
+ * @brief ElenixOS API
  */
 
 #ifndef SNI_API_EOS_H
@@ -23,12 +21,12 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief Initialize ElenaOS API
+ * @brief Initialize ElenixOS API
  */
 void sni_api_eos_init(void);
 
 /**
- * @brief Mount ElenaOS API to specified Realm
+ * @brief Mount ElenixOS API to specified Realm
  * @param realm Target Realm value
  */
 void sni_api_eos_mount(jerry_value_t realm);

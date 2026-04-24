@@ -1,8 +1,6 @@
 /**
  * @file sni_callback_runtime.c
  * @brief SNI callback runtime
- * @author Sab1e
- * @date 2026-03-14
  */
 
 #include "sni_callback_runtime.h"
@@ -11,8 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define EOS_LOG_TAG "SNI Callback Runtime"
-#include "elena_os_mem.h"
-#include "elena_os_log.h"
+#include "eos_mem.h"
+#include "eos_log.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"

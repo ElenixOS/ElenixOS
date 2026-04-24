@@ -1,8 +1,6 @@
 /**
  * @file sni_api_lv_special.h
  * @brief LVGL SNI handwritten special wrapper function declarations
- * @author Sab1e
- * @date 2026-03-14
  */
 
 #ifndef SNI_API_LV_SPECIAL_H

@@ -1,8 +1,6 @@
 /**
  * @file sni_api_lv_timer.c
  * @brief LVGL Timer Class Special Wrapper Function Implementation
- * @author Sab1e
- * @date 2026-03-15
  */
 
 #include "sni_api_lv_special.h"

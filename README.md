@@ -3,7 +3,7 @@
   <img src="./assets/logo-dark.png#gh-dark-mode-only" />
 </div>
 
-[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) [![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net) ![release](https://img.shields.io/github/v/tag/Sab1e-dev/ElenaOS)
+[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) [![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net) ![release](https://img.shields.io/github/v/tag/ElenixOS/ElenixOS)
 
 <div>
   <a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a>
@@ -13,15 +13,15 @@
 
 ## Overview
 
-ElenaOS is an open-source smartwatch operating system that builds its graphical interface based on LVGL, with watch faces and applications running on a unified script engine powered by JerryScript.
+ElenixOS is an open-source smartwatch operating system that builds its graphical interface based on LVGL, with watch faces and applications running on a unified script engine powered by JerryScript.
 
 The system adopts a script-based application runtime model, where UI structure and interaction logic are described in JavaScript, while underlying native code handles graphics rendering, event scheduling, and hardware resource management. This enables a flexible and efficient application development experience on resource-constrained embedded platforms.
 
-ElenaOS emphasizes portability and extensibility in its design, providing clear abstraction layers and unified interfaces for easy porting to different MCUs and hardware platforms. Meanwhile, watch faces and applications share the same runtime environment and API system, reducing system complexity and improving overall consistency.
+ElenixOS emphasizes portability and extensibility in its design, providing clear abstraction layers and unified interfaces for easy porting to different MCUs and hardware platforms. Meanwhile, watch faces and applications share the same runtime environment and API system, reducing system complexity and improving overall consistency.
 
-In terms of user experience, ElenaOS's overall UI and interaction style references Apple Watch, focusing on animation smoothness, gesture operations, and interface hierarchy. Combined with LVGL's animation system and event mechanism, it aims to provide a visual and interactive experience close to native smartwatches on embedded devices.
+In terms of user experience, ElenixOS's overall UI and interaction style references Apple Watch, focusing on animation smoothness, gesture operations, and interface hierarchy. Combined with LVGL's animation system and event mechanism, it aims to provide a visual and interactive experience close to native smartwatches on embedded devices.
 
-ElenaOS is suitable for both personal projects and learning research, as well as serving as a customizable smart wearable system foundation framework, providing developers with a complete solution from the bottom layer to the application layer.
+ElenixOS is suitable for both personal projects and learning research, as well as serving as a customizable smart wearable system foundation framework, providing developers with a complete solution from the bottom layer to the application layer.
 
 ## Demo (Under Development)
 
@@ -31,11 +31,11 @@ ElenaOS is suitable for both personal projects and learning research, as well as
 
 ## Quick Start
 
-Please refer to the [Quick Start](https://elenaos.averin.cn/en/docs/getting_started/quick_start).
+Please refer to the [Quick Start](https://elenixos.averin.cn/en/docs/getting_started/quick_start).
 
 ## Reference Documentation
 
-Please refer to the [ElenaOS Documentation](https://elenaos.averin.cn/en).
+Please refer to the [ElenixOS Documentation](https://elenixos.averin.cn/en).
 
 ## Open Source License
 
@@ -43,7 +43,7 @@ This software is released under the Apache License 2.0 open-source license. This
 
 ## Third-Party Software
 
-ElenaOS used the following open-source projects during development, and we would like to express our gratitude to the relevant authors and communities:
+ElenixOS used the following open-source projects during development, and we would like to express our gratitude to the relevant authors and communities:
 
 - LVGL: https://lvgl.io
 - JerryScript: https://jerryscript.net

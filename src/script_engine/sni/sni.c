@@ -1,8 +1,6 @@
 /**
  * @file sni.c
  * @brief SNI
- * @author Sab1e
- * @date 2026-03-10
  */
 
 #include "sni.h"

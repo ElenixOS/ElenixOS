@@ -1,8 +1,6 @@
 /**
  * @file sni_api_export.c
  * @brief API Export Layer
- * @author Sab1e
- * @date 2026-03-06
  */
 
 #include "sni_api_export.h"

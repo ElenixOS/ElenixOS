@@ -1,8 +1,6 @@
 /**
  * @file sni.h
  * @brief SNI
- * @author Sab1e
- * @date 2026-03-10
  */
 
 #ifndef SNI_H

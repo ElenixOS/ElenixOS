@@ -2,8 +2,6 @@
 /**
  * @file script_engine_core.h
  * @brief Application system external interface definition
- * @author Sab1e
- * @date 2025-07-26
  */
 #ifndef SCRIPT_ENGINE_CORE_H
 #define SCRIPT_ENGINE_CORE_H

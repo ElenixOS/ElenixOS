@@ -7,7 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <string.h>
-#include "elena_os_mem.h"
+#include "eos_mem.h"
 #include "lvgl.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"

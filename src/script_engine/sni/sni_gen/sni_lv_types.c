@@ -1,8 +1,6 @@
 /**
  * @file sni_lv_types.c
  * @brief LVGL type table
- * @author Auto-generated
- * @date 2026-04-23
  */
 
 #include "sni_lv_types.h"

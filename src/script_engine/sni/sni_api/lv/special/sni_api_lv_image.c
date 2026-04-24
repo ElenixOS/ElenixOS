@@ -9,18 +9,18 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include "elena_os_img.h"
-#include "elena_os_mem.h"
-#include "elena_os_port.h"
+#include "eos_img.h"
+#include "eos_mem.h"
+#include "eos_port.h"
 #include "lvgl.h"
 #include "script_engine_core.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
-#include "elena_os_log.h"
-#include "elena_os_watchface.h"
-#include "elena_os_app.h"
-#include "elena_os_fs.h"
+#include "eos_log.h"
+#include "eos_watchface.h"
+#include "eos_app.h"
+#include "eos_fs.h"
 
 /* Function Implementations -----------------------------------*/
 

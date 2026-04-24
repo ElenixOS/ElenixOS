@@ -1,14 +1,12 @@
 /**
  * @file sni_api_lv_anim.c
  * @brief LVGL Animation Class Special Wrapper Function Implementation
- * @author Sab1e
- * @date 2026-03-15
  */
 
 #include "sni_api_lv_special.h"
 
 /* Includes ---------------------------------------------------*/
-#include "elena_os_mem.h"
+#include "eos_mem.h"
 #include "lvgl.h"
 #include "sni_api_export.h"
 #include "sni_callback_runtime.h"

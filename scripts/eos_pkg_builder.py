@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @file eos_pkg_builder.py
-@brief Package ElenaOS script apps and watchfaces into EAPK/EWPK files
+@brief Package ElenixOS script apps and watchfaces into EAPK/EWPK files
 """
 
 import os

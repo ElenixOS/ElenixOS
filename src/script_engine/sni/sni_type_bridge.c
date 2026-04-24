@@ -1,8 +1,6 @@
 /**
  * @file sni_type_bridge.c
  * @brief Type bridge
- * @author Sab1e
- * @date 2026-02-09
  */
 
 #include "sni_type_bridge.h"
@@ -12,11 +10,11 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "sni_types.h"
-#include "elena_os_mem.h"
+#include "eos_mem.h"
 #include "script_engine_core.h"
 #include "jerryscript.h"
 #include "sni_lv_types.h"
-#include "elena_os_event.h"
+#include "eos_event.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/

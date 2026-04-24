@@ -1,8 +1,6 @@
 /**
  * @file sni_api_eos.c
- * @brief ElenaOS API
- * @author Sab1e
- * @date 2026-03-14
+ * @brief ElenixOS API
  */
 
 #include "sni_api_eos.h"
@@ -17,18 +15,18 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_api_export.h"
-#include "elena_os_log.h"
-#include "elena_os_mem.h"
+#include "eos_log.h"
+#include "eos_mem.h"
 #include "script_engine_core.h"
-#include "elena_os_font.h"
-#include "elena_os_activity.h"
-#include "elena_os_time.h"
-#include "elena_os_app.h"
-#include "elena_os_watchface.h"
-#include "elena_os_fs.h"
-#include "elena_os_dfw.h"
-#include "elena_os_app_header.h"
-#include "elena_os_ww_clock_hand.h"
+#include "eos_font.h"
+#include "eos_activity.h"
+#include "eos_time.h"
+#include "eos_app.h"
+#include "eos_watchface.h"
+#include "eos_fs.h"
+#include "eos_dfw.h"
+#include "eos_app_header.h"
+#include "eos_ww_clock_hand.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_API_NAME "eos"
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
@@ -1303,12 +1301,12 @@ void sni_api_eos_init(void)
     eos_api_obj = sni_api_build(eos_api_classes);
     if (!jerry_value_is_object(eos_api_obj))
     {
-        EOS_LOG_E("Failed to build ElenaOS API object");
+        EOS_LOG_E("Failed to build ElenixOS API object");
         return;
     }
     if (!sni_api_register_constants(eos_root_constants, eos_api_obj))
     {
-        EOS_LOG_E("Failed to register ElenaOS API constants");
+        EOS_LOG_E("Failed to register ElenixOS API constants");
     }
 }
 
@@ -1317,6 +1315,6 @@ void sni_api_eos_mount(jerry_value_t realm)
     bool result = sni_api_mount(realm, eos_api_obj, EOS_API_NAME);
     if (!result)
     {
-        EOS_LOG_E("Failed to mount ElenaOS API");
+        EOS_LOG_E("Failed to mount ElenixOS API");
     }
 }

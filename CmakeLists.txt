@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
-project(ElenaOS C)
+project(ElenixOS C)
 
-# Define a compile-time constant for the ElenaOS system root directory
+# Define a compile-time constant for the ElenixOS system root directory
 add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
 
 # Recursively gather all source files
-file(GLOB_RECURSE ELENAOS_SRC
+file(GLOB_RECURSE ELENIXOS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/font/*.c
 )
@@ -15,19 +15,19 @@ file(GLOB_RECURSE HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 )
 
-set(ELENAOS_INC_DIRS "")
+set(ELENIXOS_INC_DIRS "")
 foreach(h ${HEADER_FILES})
     get_filename_component(dir ${h} DIRECTORY)
-    list(APPEND ELENAOS_INC_DIRS ${dir})
+    list(APPEND ELENIXOS_INC_DIRS ${dir})
 endforeach()
-list(REMOVE_DUPLICATES ELENAOS_INC_DIRS)
+list(REMOVE_DUPLICATES ELENIXOS_INC_DIRS)
 
 # Define library target
-add_library(elenaos_lib STATIC ${ELENAOS_SRC})
+add_library(elenixos_lib STATIC ${ELENIXOS_SRC})
 
-target_include_directories(elenaos_lib
+target_include_directories(elenixos_lib
     PUBLIC
-    ${ELENAOS_INC_DIRS}
+    ${ELENIXOS_INC_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript/jerry-ext/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
@@ -43,7 +43,7 @@ add_library(cjson STATIC
 target_include_directories(cjson PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
 )
-target_link_libraries(elenaos_lib PRIVATE cjson)
+target_link_libraries(elenixos_lib PRIVATE cjson)
 
 # JerryScript
 add_compile_options(-Wno-gnu-folding-constant)
@@ -57,7 +57,7 @@ set(UNITTESTS OFF CACHE BOOL "Build unit tests?" FORCE)
 set(DOCTESTS OFF CACHE BOOL "Build doc tests?" FORCE)
 set(ENABLE_AMALGAM OFF CACHE BOOL "Enable amalgamated build?" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/jerryscript)
-target_link_libraries(elenaos_lib PRIVATE jerry-core jerry-ext jerry-port)
+target_link_libraries(elenixos_lib PRIVATE jerry-core jerry-ext jerry-port)
 
 # LVGL
-target_link_libraries(elenaos_lib PRIVATE lvgl)
+target_link_libraries(elenixos_lib PRIVATE lvgl)

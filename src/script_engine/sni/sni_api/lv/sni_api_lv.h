@@ -1,8 +1,6 @@
 /**
  * @file sni_api_lv.h
  * @brief LVGL API export
- * @author Sab1e
- * @date 2026-03-06
  */
 
 #ifndef SNI_API_LV_H

@@ -1,8 +1,6 @@
 /**
  * @file sni_callback_runtime.h
  * @brief SNI callback runtime
- * @author Sab1e
- * @date 2026-03-14
  */
 
 #ifndef SNI_CALLBACK_RUNTIME_H

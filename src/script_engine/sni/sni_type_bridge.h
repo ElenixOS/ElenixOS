@@ -1,8 +1,6 @@
 /**
  * @file sni_type_bridge.h
  * @brief Type bridge
- * @author Sab1e
- * @date 2026-02-09
  */
 
 #ifndef SNI_TYPE_BRIDGE_H

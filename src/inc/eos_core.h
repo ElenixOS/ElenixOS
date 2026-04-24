@@ -57,9 +57,13 @@ typedef enum
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief ElenixOS entry function
+ * @brief ElenixOS initialization function
  */
-void eos_run(void);
+void eos_init(void);
+/**
+ * @brief ElenixOS main loop function
+ */
+uint32_t eos_main_loop(void);
 /**
  * @brief Start ElenixOS Logo page
  * @param anim Whether to display Logo fade animation

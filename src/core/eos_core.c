@@ -142,7 +142,7 @@ void eos_logo_play(bool anim)
     is_logo_played = true;
 }
 
-void eos_run(void)
+void eos_init(void)
 {
     eos_logo_play(true);
     /************************** System components initialization **************************/
@@ -177,13 +177,10 @@ void eos_run(void)
     // Activity controller will automatically delete Logo Screen
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
         _sys_init_err_handler("Failed to initialize activity controller");
+}
 
-    /************************** System startup **************************/
-    // Start rendering
-    while (1)
-    {
-        eos_dispatch_tick();
-        uint32_t delay = lv_timer_handler();
-        eos_delay(delay);
-    }
+uint32_t eos_main_loop(void)
+{
+    eos_dispatch_tick();
+    return lv_timer_handler();
 }

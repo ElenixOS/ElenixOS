@@ -33,6 +33,7 @@ HEADER_TEXT = """/**
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
+#include "lvgl/src/core/lv_obj_private.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_api_export.h"

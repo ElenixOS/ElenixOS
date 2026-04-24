@@ -5,13 +5,13 @@ project(ElenixOS C)
 add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
 
 # Recursively gather all source files
-file(GLOB_RECURSE ELENIXOS_SRC
+file(GLOB_RECURSE ELENIXOS_SRC CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/font/*.c
 )
 
 # Recursively gather all header files and extract unique directories for include paths
-file(GLOB_RECURSE HEADER_FILES
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 )
 

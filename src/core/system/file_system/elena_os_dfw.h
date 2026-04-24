@@ -1,6 +1,6 @@
 /**
  * @file elena_os_dfw.h
- * @brief 延后文件写入器（Deffered File Writer）
+ * @brief Deferred File Writer
  * @author Sab1e
  * @date 2025-11-25
  */
@@ -28,36 +28,36 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 同步缓冲区到文件系统
+ * @brief Synchronize buffer to file system
  */
 void eos_dfw_sync(void);
 
 /**
- * @brief 写入数据
+ * @brief Write data
  *
- * 先从缓冲列表中查找有没有相同路径的文件：
+ * First search the buffer list for a file with the same path:
  *
- * - 如果有，直接写入到缓冲区并返回
+ * - If found, write directly to buffer and return
  *
- * - 如果没有，创建新的缓冲区并加入到缓冲区队列
- * @param path 目标文件路径
- * @param data 数据
- * @param data_size 数据大小
- * @return true 任务已加入队列，下次调用`eos_dfw_sync()`时将写入文件
- * @return false 失败
+ * - If not found, create a new buffer and add it to the buffer queue
+ * @param path Target file path
+ * @param data Data
+ * @param data_size Data size
+ * @return true Task has been added to queue, will be written to file when `eos_dfw_sync()` is called next time
+ * @return false Failed
  */
 bool eos_dfw_write(const char *path, uint8_t *data, size_t data_size);
 
 /**
- * @brief 读取文件数据
- * @param path 文件路径
- * @return uint8_t* 读取成功返回文件内容，读取失败返回 NULL
- * @note 需要手动释放读取到的数据指针
+ * @brief Read file data
+ * @param path File path
+ * @return uint8_t* Returns file content on success, returns NULL on failure
+ * @note Need to manually free the read data pointer
  */
 uint8_t *eos_dfw_read(const char *path);
 
 /**
- * @brief 初始化延后文件写入器
+ * @brief Initialize deferred file writer
  */
 void eos_dfw_init(void);
 #ifdef __cplusplus

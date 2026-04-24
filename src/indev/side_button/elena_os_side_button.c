@@ -1,6 +1,6 @@
 /**
  * @file elena_os_side_button.c
- * @brief 侧键
+ * @brief Side button
  * @author Sab1e
  * @date 2025-11-13
  */

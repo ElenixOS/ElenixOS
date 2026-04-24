@@ -1,6 +1,6 @@
 /**
  * @file elena_os_event.c
- * @brief 事件系统
+ * @brief Event system
  * @author Sab1e
  * @date 2025-08-16
  */
@@ -20,7 +20,7 @@
 #include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 /**
- * @brief 事件回调节点结构
+ * @brief Event callback node structure
  */
 typedef struct _event_node_t
 {
@@ -33,9 +33,9 @@ typedef struct _event_node_t
     bool is_global;
 } event_node_t;
 /* Variables --------------------------------------------------*/
-static event_node_t *event_list_head = NULL; // 事件链表头
-static int g_broadcast_depth = 0;            // 嵌套广播计数（>0 表示正在广播）
-static bool g_event_list_modified = false;   // 在广播期间，如果链表被修改（节点被标记删除），置为 true
+static event_node_t *event_list_head = NULL;
+static int g_broadcast_depth = 0;
+static bool g_event_list_modified = false;
 
 /* Function Implementations -----------------------------------*/
 
@@ -55,7 +55,7 @@ void _event_list_show(void)
 #endif /* EOS_COMPILE_MODE */
 
 /**
- * @brief 将匹配的节点标记为删除，延时清理
+ * @brief Mark matching nodes for deletion, deferred cleanup
  */
 static void _mark_node_deleted_by_predicate(bool (*pred)(event_node_t *, void *), void *ctx)
 {
@@ -75,7 +75,7 @@ static void _mark_node_deleted_by_predicate(bool (*pred)(event_node_t *, void *)
 }
 
 /**
- * @brief 立即清理被标记的节点；在非广播时也可被调用以立即释放
+ * @brief Immediately cleanup marked nodes; can also be called during non-broadcast to release immediately
  */
 static void _cleanup_deleted_nodes(void)
 {
@@ -103,7 +103,7 @@ static void _cleanup_deleted_nodes(void)
 static bool _pred_match_obj(event_node_t *n, void *ctx)
 {
     lv_obj_t *obj = ctx;
-    return (n->obj == obj && !n->is_global); // 只匹配非全局回调
+    return (n->obj == obj && !n->is_global);
 }
 
 static bool _pred_match_global_cb(event_node_t *n, void *ctx)
@@ -130,12 +130,10 @@ static void _obj_delete_cb(lv_event_t *e)
 
     if (g_broadcast_depth > 0)
     {
-        // 深度大于0，说明广播嵌套，标记删除
         _mark_node_deleted_by_predicate(_pred_match_obj, obj);
     }
     else
     {
-        // 深度小于0，直接删除节点即可
         _mark_node_deleted_by_predicate(_pred_match_obj, obj);
         _cleanup_deleted_nodes();
     }
@@ -175,14 +173,11 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
     new_node->marked_for_delete = false;
     new_node->is_global = false;
 
-    // 添加到链表头部
     new_node->next = event_list_head;
     event_list_head = new_node;
 
-    // 向LVGL注册事件回调
     lv_obj_add_event_cb(obj, cb, event, user_data);
 
-    // 当对象被删除时自动清理删除此回调
     if (!_has_obj_delete_guard_cb(obj))
     {
         lv_obj_add_event_cb(obj, _obj_delete_cb, LV_EVENT_DELETE, NULL);
@@ -209,7 +204,6 @@ void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user
     new_node->marked_for_delete = false;
     new_node->is_global = true;
 
-    // 添加到链表头部
     new_node->next = event_list_head;
     event_list_head = new_node;
 
@@ -243,11 +237,9 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
                 match = false;
         }
 
-        // 事件 & 回调判断
         if (match && (n->event != event || n->cb != cb))
             match = false;
 
-        // user_data 判断：只有在 user_data != NULL 时才参与匹配
         if (match && user_data != NULL && n->user_data != user_data)
             match = false;
 
@@ -322,7 +314,6 @@ inline void eos_event_remove_global_cb_with_user_data(lv_event_code_t event,
 void eos_event_broadcast(lv_event_code_t event, void *param)
 {
     EOS_LOG_I("Broadcast event: [%d] (begin) depth=%d", (int)event, g_broadcast_depth + 1);
-    // 进入新的广播层级
     g_broadcast_depth++;
     bool local_list_was_modified = false;
     event_node_t *curr = event_list_head;
@@ -337,10 +328,8 @@ void eos_event_broadcast(lv_event_code_t event, void *param)
         {
             if (curr->is_global)
             {
-                // 处理全局回调：直接调用回调函数
                 EOS_LOG_D("Calling global callback [%p] for event [%d]", (void *)curr->cb, (int)event);
 
-                // 创建模拟的事件对象供回调函数使用
                 lv_event_t e;
                 e.code = event;
                 e.param = param;
@@ -355,7 +344,6 @@ void eos_event_broadcast(lv_event_code_t event, void *param)
             }
             else if (curr->obj && lv_obj_is_valid(curr->obj) && lv_obj_has_class(curr->obj, &lv_obj_class))
             {
-                // 处理对象绑定回调：通过LVGL发送事件
                 lv_obj_t *target = curr->obj;
                 lv_result_t res = lv_obj_send_event(target, event, param);
                 if (res != LV_RESULT_OK)
@@ -370,10 +358,8 @@ void eos_event_broadcast(lv_event_code_t event, void *param)
         curr = next;
     }
 
-    // 离开广播层级
     g_broadcast_depth--;
 
-    // 只有当最外层广播完成（depth == 0）时，才真正清理标记节点
     if (g_broadcast_depth == 0)
     {
         if (g_event_list_modified || local_list_was_modified)

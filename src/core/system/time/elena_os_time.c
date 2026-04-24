@@ -1,6 +1,6 @@
 /**
  * @file elena_os_time.c
- * @brief 系统时间基准
+ * @brief System time base
  * @author Sab1e
  * @date 2025-12-18
  */
@@ -26,7 +26,6 @@ eos_datetime_t eos_time_get(void)
     eos_datetime_t now = eos_time_get_core();
     uint32_t tick = lv_tick_get();
 
-    // 第一次调用，或秒发生变化
     if (!initialized ||
         now.sec  != last_sec_time.sec ||
         now.min  != last_sec_time.min ||
@@ -35,7 +34,6 @@ eos_datetime_t eos_time_get(void)
         now.month!= last_sec_time.month ||
         now.year != last_sec_time.year)
     {
-        // 对齐：认为当前 tick 是该秒的起点
         sec_base_tick = tick;
         last_sec_time = now;
         initialized = 1;

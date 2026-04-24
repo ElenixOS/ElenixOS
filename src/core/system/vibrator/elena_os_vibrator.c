@@ -1,6 +1,6 @@
 /**
  * @file elena_os_vibrator.c
- * @brief 震动器驱动
+ * @brief Vibrator driver
  * @author Sab1e
  * @date 2025-12-10
  */
@@ -14,12 +14,12 @@
 #include "elena_os_utils.h"
 /* Macros and Definitions -------------------------------------*/
 
-// 持续时间，单位：ms
+// Duration in ms
 #define _TICK_PERIOD 20
 #define _BUZZ_PERIOD 50
 #define _VIBRATE_LONG_PERIOD 150
 
-// 震动强度 [0,255]
+// Vibration strength [0,255]
 #define _TICK_STRENGTH 127
 #define _BUZZ_STRENGTH 200
 #define _VIBRATE_LONG_STRENGTH 255

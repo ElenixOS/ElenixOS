@@ -1,6 +1,6 @@
 /**
  * @file elena_os_mem.h
- * @brief 内存分配
+ * @brief Memory allocation
  * @author Sab1e
  * @date 2025-12-03
  */
@@ -23,30 +23,30 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 内存分配函数
- * @param size 内存大小，单位：字节
- * @return void* 分配成功则返回内存地址，否则返回 NULL
+ * @brief Memory allocation function
+ * @param size Memory size, unit: bytes
+ * @return void* Returns memory address on success, otherwise returns NULL
  */
 void *eos_malloc(size_t size);
 
 /**
- * @brief 分配一块连续内存并置 0
- * @param size 内存大小，单位：字节
- * @return void* 分配成功则返回内存地址，否则返回 NULL
+ * @brief Allocate a block of continuous memory and fill it with zeros
+ * @param size Memory size, unit: bytes
+ * @return void* Returns memory address on success, otherwise returns NULL
  */
 void *eos_malloc_zeroed(size_t size);
 
 /**
- * @brief 释放目标内存
- * @param ptr 目标内存指针
+ * @brief Free target memory
+ * @param ptr Target memory pointer
  */
 void eos_free(void *ptr);
 
 /**
- * @brief 重新分配目标内存
- * @param ptr 目标内存指针
- * @param new_size 新的内存大小
- * @return void* 分配成功则返回内存地址，否则返回 NULL
+ * @brief Reallocate target memory
+ * @param ptr Target memory pointer
+ * @param new_size New memory size
+ * @return void* Returns memory address on success, otherwise returns NULL
  */
 void *eos_realloc(void *ptr, size_t new_size);
 

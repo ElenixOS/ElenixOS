@@ -1,6 +1,6 @@
 /**
  * @file elena_os_theme.h
- * @brief 主题色
+ * @brief Theme colors
  * @author Sab1e
  * @date 2025-08-27
  */
@@ -47,21 +47,21 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 设置系统主题色
- * @param primary_color 主色
- * @param secondary_color 副色
- * @param font 字体
+ * @brief Set system theme colors
+ * @param primary_color Primary color
+ * @param secondary_color Secondary color
+ * @param font Font
  */
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font_t *font);
 
 /**
- * @brief 获取当前的 View 样式对象
+ * @brief Get current View style object
  * @return lv_style_t*
  */
 lv_style_t *eos_theme_get_view_style(void);
 
 /**
- * @brief 获取当前的 Label 样式对象
+ * @brief Get current Label style object
  * @return lv_style_t*
  */
 lv_style_t *eos_theme_get_label_style(void);

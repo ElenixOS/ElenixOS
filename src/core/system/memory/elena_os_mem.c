@@ -1,6 +1,6 @@
 /**
  * @file elena_os_mem.c
- * @brief 内存分配
+ * @brief Memory allocation
  * @author Sab1e
  * @date 2025-12-03
  */
@@ -35,7 +35,7 @@ static eos_mem_track_t g_mem_track[EOS_MEM_TRACK_MAX];
 
 #if EOS_MEM_TRACK_ENABLE
 
-/************************** 内存追踪函数 **************************/
+/************************** Memory Tracking Functions **************************/
 
 static size_t eos_mem_track_find(void *ptr)
 {
@@ -56,7 +56,7 @@ static void eos_mem_track_add(void *ptr, size_t size)
         if (g_mem_track[i].ptr == NULL)
         {
             g_mem_track[i].ptr = ptr;
-            g_mem_track[i].size = size; // 更新 LVGL 内存监控
+            g_mem_track[i].size = size; // Update LVGL memory monitor
             mon.total_size += size;
             mon.used_cnt++;
             mon.max_used = mon.total_size - mon.free_size > mon.max_used ? mon.total_size - mon.free_size : mon.max_used;
@@ -85,14 +85,14 @@ static size_t eos_mem_track_remove(void *ptr)
     return 0;
 }
 #else
-// 查找指针对应大小
+// Find pointer size
 static size_t eos_mem_track_find(void *ptr)
 {
     LV_UNUSED(ptr);
     return 0;
 }
 
-// 添加追踪记录
+// Add tracking record
 static void eos_mem_track_add(void *ptr, size_t size)
 {
     LV_UNUSED(ptr);
@@ -100,7 +100,7 @@ static void eos_mem_track_add(void *ptr, size_t size)
     return;
 }
 
-// 移除追踪记录
+// Remove tracking record
 static size_t eos_mem_track_remove(void *ptr)
 {
     LV_UNUSED(ptr);

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_lang.c
- * @brief 多语言系统
+ * @brief Multi-language system
  * @author Sab1e
  * @date 2025-08-14
  */
@@ -22,8 +22,8 @@
 
 /* Macros and Definitions -------------------------------------*/
 /**
- * @brief 英文语言数组
- * @note 在此处新增字符串
+ * @brief English language array
+ * @note Add strings here as needed
  */
 const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_LANGUAGE] = "English",
@@ -106,12 +106,12 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SENSOR_STEP] = "Step Counter",
     [STR_ID_SENSOR_FORCE] = "Force Sensor",
     [STR_ID_SENSOR_BAT] = "Battery Sensor",
-    // 在此添加新的字符串ID和英文翻译
+    // Add new string IDs and English translations here as needed
 };
 
 /**
- * @brief 中文语言数组
- * @note 在此处新增字符串
+ * @brief Chinese language array
+ * @note Add new strings here
  */
 const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_LANGUAGE] = "简体中文",
@@ -193,18 +193,18 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SENSOR_NOISE] = "噪声传感器",
     [STR_ID_SENSOR_STEP] = "计步传感器",
     [STR_ID_SENSOR_FORCE] = "力传感器",
-    [STR_ID_SENSOR_BAT] = "电池电量传感器",
-    // 在此添加新的字符串ID和中文翻译
+    [STR_ID_SENSOR_BAT] = "Battery Sensor",
+    // Add new string IDs and Chinese translations here as needed
 };
 
 static const char *const language_list[LANG_MAX_NUMBER] = {
     [LANG_EN] = "English",
     [LANG_ZH] = "简体中文"};
 
-static const char **current_lang = NULL;     // 当前语言指针
-static bool lang_initialized = false; // 语言系统初始化标志
+static const char **current_lang = NULL;   // Current language pointer
+static bool lang_initialized = false; // Language system initialized flag
 
-// 函数声明
+// Function declarations
 static void lang_event_cb(lv_event_t *e);
 
 /* Function Implementations -----------------------------------*/
@@ -238,7 +238,7 @@ void eos_lang_set_current_id(language_id_t lang)
         break;
     }
 
-    // 使用事件广播系统刷新所有标签
+    // Use event broadcast system to refresh all labels
     eos_event_broadcast(LV_EVENT_REFRESH, NULL);
 
     EOS_LOG_D("Language changed");
@@ -281,6 +281,7 @@ language_id_t eos_lang_parse_name(const char *language_name)
 
 const char *eos_lang_get_name(language_id_t lang)
 {
+    // Get language name by ID
     if (lang < 0 || lang >= LANG_MAX_NUMBER)
     {
         return language_list[LANG_EN];
@@ -311,7 +312,7 @@ static void lang_event_cb(lv_event_t *e)
 {
     lv_obj_t *label = lv_event_get_target(e);
 
-    // user_data 保存 str_id + 1，避免 STR_ID_LANGUAGE(0) 与 NULL 冲突。
+    // user_data stores str_id + 1 to avoid STR_ID_LANGUAGE(0) conflict with NULL
     uintptr_t raw_id = (uintptr_t)lv_event_get_user_data(e);
     if (raw_id == 0)
     {
@@ -351,7 +352,7 @@ lv_obj_t *eos_lang_label_create(lv_obj_t *parent, lang_string_id_t str_id)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
 
-    // 创建标签
+    // Create label
     lv_obj_t *label = lv_label_create(parent);
     if (!label)
         return NULL;

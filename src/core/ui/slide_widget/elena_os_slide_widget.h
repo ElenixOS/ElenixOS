@@ -1,6 +1,6 @@
 /**
  * @file elena_os_slide_widget.h
- * @brief 滑动组件
+ * @brief Slide widget
  * @author Sab1e
  * @date 2025-10-18
  */
@@ -46,12 +46,12 @@ typedef enum
 
 typedef enum
 {
-    EOS_SLIDE_WIDGET_STATE_IDLE = 0,      /**< 空闲，未滑动 */
-    EOS_SLIDE_WIDGET_STATE_DRAGGING,  /**< 正在滑动中（手势拖动） */
-    EOS_SLIDE_WIDGET_STATE_THRESHOLD, /**< 超过阈值，滑动确认（执行展开/触发操作） */
-    EOS_SLIDE_WIDGET_STATE_REVERTING, /**< 正在回弹（未超过阈值自动返回） */
-    EOS_SLIDE_WIDGET_STATE_ANIMATING, /**< 手动触发动画 */
-    EOS_SLIDE_WIDGET_STATE_OPEN,      /**< 面板已完全打开 */
+    EOS_SLIDE_WIDGET_STATE_IDLE = 0,      /**< Idle, not sliding */
+    EOS_SLIDE_WIDGET_STATE_DRAGGING,  /**< Currently sliding (gesture drag) */
+    EOS_SLIDE_WIDGET_STATE_THRESHOLD, /**< Exceeded threshold, slide confirmed (execute expand/trigger operation) */
+    EOS_SLIDE_WIDGET_STATE_REVERTING, /**< Reverting (auto return when threshold not exceeded) */
+    EOS_SLIDE_WIDGET_STATE_ANIMATING, /**< Manually triggered animation */
+    EOS_SLIDE_WIDGET_STATE_OPEN,      /**< Panel fully open */
 } eos_slide_widget_state_t;
 
 typedef struct
@@ -59,48 +59,48 @@ typedef struct
     lv_obj_t *touch_obj;
     lv_obj_t *target_obj;
     eos_slide_widget_dir_t dir;
-    lv_coord_t base;   /**< 基点：目标对象的默认位置 */
-    lv_coord_t target; /**< 目标点：目标对象最终要移动到的位置 */
+    lv_coord_t base;   /**< Base point: default position of target object */
+    lv_coord_t target; /**< Target point: final position for target object to move to */
     lv_coord_t touch_obj_base;
     lv_coord_t touch_obj_target;
-    eos_threshold_t threshold; /**< 阈值：(当前点 - 基点)/（目标点 - 基点）> threshold时触发阈值 */
+    eos_threshold_t threshold; /**< Threshold: trigger when (current - base)/(target - base) > threshold */
     eos_slide_widget_state_t state;
-    eos_slide_widget_state_t settle_state; /**< 当前动画完成后的收敛状态 */
-    lv_coord_t _indev_start;            /**< 触摸起始点 */
-    lv_coord_t last_touch_displacement; /**< 上一次移动的位移量 */
-    bool bidirectional;                 /**< 是否支持双向滑动 */
-    bool move_foreground_on_pressed;    /**< 当被点击时是否移动到父级前方，默认打开，在父级对象为`lv_list_class`时自动关闭 */
-    bool reversed;      /**< 是否反向 */
-    bool owns_touch_obj; /**< 是否拥有并负责释放 touch_obj */
+    eos_slide_widget_state_t settle_state; /**< Settling state after current animation completes */
+    lv_coord_t _indev_start;            /**< Touch start point */
+    lv_coord_t last_touch_displacement; /**< Previous movement displacement */
+    bool bidirectional;                 /**< Whether to support bidirectional sliding */
+    bool move_foreground_on_pressed;    /**< Whether to move to foreground when pressed, default on, auto off when parent is `lv_list_class` */
+    bool reversed;      /**< Whether to reverse direction */
+    bool owns_touch_obj; /**< Whether owns and is responsible for releasing touch_obj */
 } eos_slide_widget_t;
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 从开始位置移动到结束位置
- * @param sw 目标滑动
- * @param start 开始坐标
- * @param end 结束坐标
- * @param duration 持续时间，设置为0则没有动画
+ * @brief Move from start position to end position
+ * @param sw Target slide widget
+ * @param start Start coordinate
+ * @param end End coordinate
+ * @param duration Duration, set to 0 for no animation
  */
 void eos_slide_widget_move(eos_slide_widget_t *sw, lv_coord_t start, lv_coord_t end, uint32_t duration);
 /**
- * @brief 翻转目标对象的`target`和`base`位置
- * @param sw 目标滑动组件
+ * @brief Reverse the `target` and `base` positions of the target object
+ * @param sw Target slide widget
  */
 void eos_slide_widget_reverse(eos_slide_widget_t *sw);
 /**
- * @brief 创建滑动组件
- * @param parent        触摸对象的父级对象
- * @param target_obj    目标对象（会跟随触摸区域滑动）
- * @param dir           滑动方向（只支持垂直方向`EOS_SLIDE_DIR_VER`和水平方向`EOS_SLIDE_DIR_HOR`）
- * @param target        目标坐标点（`dir`为垂直时，target指的是y轴坐标；为水平时，指的是x轴坐标）
+ * @brief Create slide widget
+ * @param parent        Parent object of the touch object
+ * @param target_obj    Target object (will slide following the touch area)
+ * @param dir           Slide direction (only supports vertical `EOS_SLIDE_DIR_VER` and horizontal `EOS_SLIDE_DIR_HOR`)
+ * @param target        Target coordinate point (`target` refers to y-axis when `dir` is vertical; x-axis when horizontal)
  *
- * 目标对象的阈值超过`abs(当前坐标 - 触摸起始坐标)/abs(target-base)`触发全部拉出动画，
- * 自动从目标对象的当前位置拉到target位置。
- * @param threshold 阈值（0～255）参见`EOS_THRESHOLD_XXX`
- * @return eos_slide_widget_t* 创建成功返回滑动面板对象，否则为 NULL
- * @warning 请勿对目标对象使用`lv_obj_center`，否则会导致坐标移动混乱。
+ * When the threshold `abs(current_coord - touch_start_coord)/abs(target-base)` is exceeded,
+ * the full pull-out animation is triggered, automatically pulling from the target object's current position to target position.
+ * @param threshold Threshold (0~255) see `EOS_THRESHOLD_XXX`
+ * @return eos_slide_widget_t* Returns slide widget object on success, NULL on failure
+ * @warning Do not use `lv_obj_center` on the target object, otherwise coordinate movement will be chaotic.
  */
 eos_slide_widget_t *eos_slide_widget_create(
     lv_obj_t *parent,
@@ -109,8 +109,8 @@ eos_slide_widget_t *eos_slide_widget_create(
     lv_coord_t target,
     eos_threshold_t threshold);
 /**
- * @brief 创建滑动组件（内部不创建触摸对象）
- * @param touch_obj 触摸对象
+ * @brief Create slide widget (without creating touch object internally)
+ * @param touch_obj Touch object
  */
 eos_slide_widget_t *eos_slide_widget_create_with_touch(
     lv_obj_t *touch_obj,
@@ -119,7 +119,7 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(
     lv_coord_t target,
     eos_threshold_t threshold);
 /**
- * @brief 设置是否支持双向滑动
+ * @brief Set whether to support bidirectional sliding
  */
 void eos_slide_widget_set_bidirectional(eos_slide_widget_t *sw, bool enable);
 void eos_slide_widget_set_move_foreground_on_pressed(eos_slide_widget_t *sw, bool enable);

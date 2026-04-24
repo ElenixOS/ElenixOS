@@ -1,6 +1,6 @@
 /**
  * @file elena_os_misc.c
- * @brief 各种工具函数
+ * @brief Various utility functions
  * @author Sab1e
  * @date 2025-08-22
  */
@@ -26,27 +26,25 @@ bool eos_is_valid_filename(const char *name)
     if (!name || name[0] == '\0')
     {
         EOS_LOG_E("Filename NULL");
-        return false; // 空名不行
+        return false;
     }
 
     const char *invalid_chars = "/\\:*?\"<>|";
 
     for (const char *p = name; *p; p++)
     {
-        // 控制字符不允许
         if ((unsigned char)*p < 32)
         {
             EOS_LOG_E("Filename control char");
             return false;
         }
-        // 特殊字符不允许
         if (strchr(invalid_chars, *p))
         {
             EOS_LOG_E("Filename invalid char");
             return false;
         }
     }
-    return true; // 合法
+    return true;
 }
 
 const char *eos_strdup(const char *s)

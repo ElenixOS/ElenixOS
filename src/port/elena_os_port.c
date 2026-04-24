@@ -1,6 +1,6 @@
 /**
  * @file elena_os_port.c
- * @brief ElenaOS 移植
+ * @brief ElenaOS porting
  * @author Sab1e
  * @date 2025-08-21
  */

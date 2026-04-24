@@ -23,13 +23,13 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化 ElenaOS API
+ * @brief Initialize ElenaOS API
  */
 void sni_api_eos_init(void);
 
 /**
- * @brief 挂载 ElenaOS API 到指定的 Realm
- * @param realm 目标 Realm 值
+ * @brief Mount ElenaOS API to specified Realm
+ * @param realm Target Realm value
  */
 void sni_api_eos_mount(jerry_value_t realm);
 

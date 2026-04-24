@@ -1,6 +1,6 @@
 /**
  * @file elena_os_mem_port.c
- * @brief 内存分配
+ * @brief Memory allocation
  * @author Sab1e
  * @date 2025-11-18
  */

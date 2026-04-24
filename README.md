@@ -13,17 +13,17 @@
 
 ## Overview
 
-ElenaOS is an open-source smartwatch operating system. Its graphical interface is built on LVGL, while watch faces and applications run on a unified script engine powered by JerryScript.
+ElenaOS is an open-source smartwatch operating system that builds its graphical interface based on LVGL, with watch faces and applications running on a unified script engine powered by JerryScript.
 
-The system adopts a script-driven app model: JavaScript describes UI structure and interaction logic, and native code handles rendering, event scheduling, and hardware resource management. This design enables a flexible and efficient development experience on resource-constrained embedded platforms.
+The system adopts a script-based application runtime model, where UI structure and interaction logic are described in JavaScript, while underlying native code handles graphics rendering, event scheduling, and hardware resource management. This enables a flexible and efficient application development experience on resource-constrained embedded platforms.
 
-ElenaOS is designed with portability and extensibility in mind. It provides clear abstraction layers and unified interfaces, making it easier to port across different MCUs and hardware platforms. Watch faces and applications share the same runtime environment and API system, reducing system complexity and improving overall consistency.
+ElenaOS emphasizes portability and extensibility in its design, providing clear abstraction layers and unified interfaces for easy porting to different MCUs and hardware platforms. Meanwhile, watch faces and applications share the same runtime environment and API system, reducing system complexity and improving overall consistency.
 
-From a user experience perspective, ElenaOS draws inspiration from Apple Watch interaction patterns, with a focus on smooth animations, gesture operations, and interface hierarchy. By leveraging LVGL's animation system and event mechanism, ElenaOS aims to deliver a near-native smartwatch visual and interaction experience on embedded devices.
+In terms of user experience, ElenaOS's overall UI and interaction style references Apple Watch, focusing on animation smoothness, gesture operations, and interface hierarchy. Combined with LVGL's animation system and event mechanism, it aims to provide a visual and interactive experience close to native smartwatches on embedded devices.
 
-ElenaOS is suitable for personal projects and learning purposes, and also serves as a customizable foundational framework for wearable systems, offering developers a complete solution from low-level components to application-layer development.
+ElenaOS is suitable for both personal projects and learning research, as well as serving as a customizable smart wearable system foundation framework, providing developers with a complete solution from the bottom layer to the application layer.
 
-## Demo (Work in Progress)
+## Demo (Under Development)
 
 <img width="400" alt="demo" src="https://github.com/user-attachments/assets/c97ce713-a5a6-4146-a66a-a47eee03a787" />
 
@@ -31,19 +31,19 @@ ElenaOS is suitable for personal projects and learning purposes, and also serves
 
 ## Quick Start
 
-See [Quick Start](https://elenaos.averin.cn/en/docs/getting_started/quick_start).
+Please refer to the [Quick Start](https://elenaos.averin.cn/en/docs/getting_started/quick_start).
 
-## Documentation
+## Reference Documentation
 
-See [ElenaOS Documentation](https://elenaos.averin.cn/en/).
+Please refer to the [ElenaOS Documentation](https://elenaos.averin.cn/en).
 
-## License
+## Open Source License
 
-This project is released under the Apache License 2.0. You may freely use, modify, and redistribute this software and derivative works, including for commercial use, provided that original copyright notices, license text, and related notices are retained. The software is provided "as is", without warranties of any kind.
+This software is released under the Apache License 2.0 open-source license. This license allows individuals and organizations to freely use, modify, and distribute this software and its derivatives for commercial purposes, but requires retaining the original copyright notice, license text, and related statements. The software is provided "as is" without any form of warranty.
 
 ## Third-Party Software
 
-ElenaOS uses the following open-source projects during development. We sincerely thank their authors and communities:
+ElenaOS used the following open-source projects during development, and we would like to express our gratitude to the relevant authors and communities:
 
 - LVGL: https://lvgl.io
 - JerryScript: https://jerryscript.net

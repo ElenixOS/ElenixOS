@@ -1,6 +1,6 @@
 /**
  * @file elena_os_img.h
- * @brief 图片显示
+ * @brief Image display
  * @author Sab1e
  * @date 2025-08-12
  */
@@ -18,7 +18,7 @@ extern "C" {
 #include "lvgl.h"
 #include "elena_os_sys.h"
 /* Public macros ----------------------------------------------*/
-/************************** 系统内置图片资源名称定义 **************************/
+/************************** System Built-in Image Resource Definitions **************************/
 #define EOS_IMG_APP EOS_SYS_RES_IMG_DIR "app.bin"
 #define EOS_IMG_SETTINGS EOS_SYS_RES_IMG_DIR "settings.bin"
 #define EOS_IMG_APP_HEADER_BG EOS_SYS_RES_IMG_DIR "app_header.bin"
@@ -30,18 +30,18 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 将图像缩放到指定分辨率
- * @param img_obj 目标图像对象
- * @param w 目标宽度（px）
- * @param h 目标高度（px）
+ * @brief Scale image to specified resolution
+ * @param img_obj Target image object
+ * @param w Target width (px)
+ * @param h Target height (px)
  */
 void eos_img_set_size(lv_obj_t *img_obj, const uint32_t w, const uint32_t h);
 /**
- * @brief 从 Flash 中打开图片，并加载到内存，然后设置 lvgl 图像源。
- * @param img_obj 要设置图像源的 Image 对象
- * @param bin_path bin 文件的路径
- * @warning 只支持 LVGL 的 bin 文件
- * @note 当 lv_img_t 的对象删除时，自动释放内存
+ * @brief Open image from Flash, load to memory, and set lvgl image source.
+ * @param img_obj Image object to set image source
+ * @param bin_path Path to bin file
+ * @warning Only supports LVGL bin files
+ * @note Memory is automatically released when lv_img_t object is deleted
  */
 void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_vibrator.h
- * @brief 震动器驱动
+ * @brief Vibrator driver
  * @author Sab1e
  * @date 2025-12-10
  */
@@ -28,23 +28,23 @@ typedef enum{
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 短而轻的滴答震动
+ * @brief Short and light tick vibration
  */
 void eos_vibrator_tick(void);
 /**
- * @brief 稍强且时间长的震动
+ * @brief Slightly stronger and longer vibration
  */
 void eos_vibrator_buzz(void);
 /**
- * @brief 震动最强且时间最长的震动
+ * @brief Strongest and longest vibration
  */
 void eos_vibrator_vibrate_long(void);
 /**
- * @brief 震动器初始化
+ * @brief Vibrator initialization
  */
 void eos_vibrator_init(void);
 /**
- * @brief 设置全局震动强度
+ * @brief Set global vibration strength
  */
 void eos_vibrator_set_strength(eos_vibrator_strength_t s);
 #ifdef __cplusplus

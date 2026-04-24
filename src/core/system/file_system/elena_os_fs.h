@@ -1,6 +1,6 @@
 /**
  * @file elena_os_fs.h
- * @brief 文件系统
+ * @brief File system
  * @author Sab1e
  * @date 2025-11-18
  */
@@ -23,66 +23,66 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 判断目标路径是否为目录
+ * @brief Check if target path is a directory
  */
 bool eos_is_dir(const char *path);
 
 /**
- * @brief 判断目标路径是否为文件
+ * @brief Check if target path is a file
  */
 bool eos_is_file(const char *path);
 
 /**
- * @brief 将字符串写入文件（自动写入结尾换行符）
- * @param s 要写入的字符串
- * @param fp 文件指针（eos_fs_open_write 或 eos_fs_open_readwrite 打开）
- * @return int 写入的字节数，或错误码（负值）
+ * @brief Write string to file (automatically appends newline at the end)
+ * @param s String to write
+ * @param fp File pointer (opened by eos_fs_open_write or eos_fs_open_readwrite)
+ * @return int Number of bytes written, or error code (negative value)
  */
 int eos_fs_puts(const char *s, eos_file_t fp);
 
 /**
- * @brief 判断目录是否存在，不存在则创建
- * @param path 目录路径
- * @return int 0 表示成功；否则返回错误码
+ * @brief Check if directory exists, create if it doesn't
+ * @param path Directory path
+ * @return int 0 indicates success; otherwise returns error code
  */
 int eos_fs_mkdir_if_not_exist(const char *path);
 
 /**
- * @brief 如果文件不存在，则创建并写入默认内容
- * @param path 文件路径
- * @param default_content 文件不存在时写入的默认内容，可为 NULL（创建空文件）
- * @return int 0 表示成功；否则返回错误码
+ * @brief Create file and write default content if file doesn't exist
+ * @param path File path
+ * @param default_content Default content to write when file doesn't exist, can be NULL (create empty file)
+ * @return int 0 indicates success; otherwise returns error code
  */
 int eos_create_file_if_not_exist(const char *path, const char *default_content);
 
 /**
- * @brief 读取整个文件内容到动态分配的缓冲区（只能读取文本文件）
- * @param path 文件路径
- * @return char* 返回动态分配的缓冲区；失败返回 NULL
- * @warning 使用完数据后必须使用`eos_free`释放内存
+ * @brief Read entire file content into dynamically allocated buffer (can only read text files)
+ * @param path File path
+ * @return char* Returns dynamically allocated buffer; returns NULL on failure
+ * @warning Must use `eos_free` to release memory after using the data
  */
 char *eos_fs_read_file(const char *path);
 
 /**
- * @brief 写入文件
- * @param path 文件路径
- * @param data 数据指针
- * @param data_size 数据长度
- * @return int 实际写入的字节数，出错返回 -1
+ * @brief Write to file
+ * @param path File path
+ * @param data Data pointer
+ * @param data_size Data length
+ * @return int Actual number of bytes written, returns -1 on error
  */
 int eos_fs_write_file(const char *path, const void *data, size_t data_size);
 
 /**
- * @brief 递归创建目录树
- * @param path 目标路径，例如 a/b/c
- * @return int 0 表示全部创建成功；否则返回错误码
+ * @brief Recursively create directory tree
+ * @param path Target path, e.g. a/b/c
+ * @return int 0 indicates all created successfully; otherwise returns error code
  */
 int eos_fs_mkdir_recursive(const char *path);
 
 /**
- * @brief 递归删除目录及其内部所有文件和子目录
- * @param path 目录路径
- * @return int 0 表示成功；否则返回错误码
+ * @brief Recursively delete directory and all files and subdirectories inside
+ * @param path Directory path
+ * @return int 0 indicates success; otherwise returns error code
  */
 int eos_fs_rm_recursive(const char *path);
 

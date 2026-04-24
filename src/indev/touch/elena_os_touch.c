@@ -1,6 +1,6 @@
 /**
  * @file elena_os_touch.c
- * @brief 获取触摸设备
+ * @brief Get touch device
  * @author Sab1e
  * @date 2025-11-24
  */
@@ -24,7 +24,7 @@ lv_indev_t *eos_touch_get_indev(void)
     {
         if (lv_indev_get_type(indev) == LV_INDEV_TYPE_POINTER)
         {
-            // 找到触摸设备
+            // Find touch device
             return indev;
         }
         indev = lv_indev_get_next(indev);

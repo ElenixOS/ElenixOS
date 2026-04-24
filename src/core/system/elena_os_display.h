@@ -1,6 +1,6 @@
 /**
  * @file elena_os_display.h
- * @brief 显示器设置
+ * @brief Display settings
  * @author Sab1e
  * @date 2025-10-23
  */
@@ -24,19 +24,19 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 设置亮度（平滑过渡）
- * @param start_brightness 起始亮度
- * @param end_brightness 最终亮度
- * @param duration_ms 动画时长（毫秒）
+ * @brief Set brightness (smooth transition)
+ * @param start_brightness Start brightness
+ * @param end_brightness End brightness
+ * @param duration_ms Animation duration (milliseconds)
  */
 void eos_display_set_brightness_smooth(uint8_t start_brightness, uint8_t end_brightness, uint32_t duration_ms);
 /**
- * @brief 临时调整亮度
- * @param target_brightness 目标亮度
+ * @brief Temporarily adjust brightness
+ * @param target_brightness Target brightness
  */
 void eos_display_tmp_set_brightness_smooth(uint8_t target_brightness);
 /**
- * @brief 恢复临时调整的亮度
+ * @brief Restore temporarily adjusted brightness
  */
 void eos_display_tmp_restore_brightness_smooth(void);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_port_sensor.h
- * @brief 传感器移植接口
+ * @brief Sensor porting interface
  * @author Sab1e
  * @date 2025-12-10
  */
@@ -23,19 +23,19 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 异步读取一次传感器的值
+ * @brief Asynchronously read sensor value once
  *
- * 示例用法：
- * 提前创建读取线程，在此函数中启动线程，开始读取传感器，读取完毕后上报数据。
- * @param type 传感器类型
- * @note 读取完毕后，必须使用`eos_sensor_report()`上报读取结果，否则上层无法得知传感器数据
- * @warning 禁止在函数中执行高耗时任务
+ * Example usage:
+ * Create a reading thread in advance, start the thread in this function, start reading the sensor, and report the data after reading is completed.
+ * @param type Sensor type
+ * @note After reading is completed, you must use `eos_sensor_report()` to report the reading result, otherwise the upper layer cannot get sensor data
+ * @warning Do not perform time-consuming tasks in the function
  */
 void eos_sensor_read_async(eos_sensor_type_t type);
 /**
- * @brief 同步读取一次传感器的值
- * @param type 传感器类型
- * @param out 传感器读取结果
+ * @brief Synchronously read sensor value once
+ * @param type Sensor type
+ * @param out Sensor reading result
  */
 void eos_sensor_read_sync(eos_sensor_type_t type, eos_sensor_t *out);
 #ifdef __cplusplus

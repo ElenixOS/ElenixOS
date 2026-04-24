@@ -23,14 +23,14 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 初始化 SNI
+ * @brief Initialize SNI
  */
 void sni_init(void);
 
 /**
- * @brief 挂载 SNI 到指定的 JerryScript Realm
+ * @brief Mount SNI to specified JerryScript Realm
  *
- * @param js_realm 要挂载到的 JerryScript Realm 对象
+ * @param js_realm JerryScript Realm object to mount to
  */
 void sni_mount(jerry_value_t js_realm);
 

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_pm.c
- * @brief 电源管理器（Power Manager）
+ * @brief Power Manager
  * @author Sab1e
  * @date 2025-11-24
  */
@@ -21,10 +21,10 @@
 #include "elena_os_dispatcher.h"
 #include "elena_os_dfw.h"
 /* Macros and Definitions -------------------------------------*/
-#define DEBUG_DISABLE_TIMER 1       /**< [调试]是否关闭定时器 */
+#define DEBUG_DISABLE_TIMER 1       /**< [Debug] Whether to disable the timer */
 #define _DEFAULT_TIMEOUT_SEC 15
 /* Variables --------------------------------------------------*/
-static lv_timer_t *t; /**< 睡眠定时器，达到时间后启动睡眠模式 */
+static lv_timer_t *t; /**< Sleep timer, triggers sleep mode after timeout */
 static eos_pm_state_t pm_state = EOS_PM_DISPLAY_ON;
 static bool aod_mode = true;
 /* Function Implementations -----------------------------------*/
@@ -57,31 +57,31 @@ static void _pm_set_state(eos_pm_state_t state)
     switch (state)
     {
     case EOS_PM_DISPLAY_ON:
-        // 广播进入唤醒模式
+        // Broadcast wake mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_ON, NULL);
-        // 唤醒系统
+        // Wake system
         eos_sys_wake();
-        // 恢复定时器
+        // Resume timer
         if (t)
             lv_timer_resume(t);
         break;
     case EOS_PM_SLEEP:
-        // 暂停定时器
+        // Pause timer
         lv_timer_pause(t);
-        // 广播进入睡眠模式
+        // Broadcast sleep mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_SLEEP, NULL);
 #if EOS_DFW_ENABLE
-        // DFW 写入文件
+        // DFW write file
         eos_dfw_sync();
 #endif /* EOS_DFW_ENABLE */
-        // 进入睡眠模式
+        // Enter sleep mode
         if (t)
             eos_sys_sleep();
         break;
     case EOS_PM_DISPLAY_AOD:
-        // 暂停定时器
+        // Pause timer
         lv_timer_pause(t);
-        // 广播进入屏幕常亮模式
+        // Broadcast AOD mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_AOD, NULL);
         eos_sys_wake();
         break;
@@ -174,7 +174,7 @@ void eos_pm_init(void)
     t = NULL;
 #else
     t = lv_timer_create(_sleep_timer_cb, timer_period_sec * 1000, NULL);
-    lv_timer_set_repeat_count(t, -1); // 必须无限，否则定时器会被删除
+    lv_timer_set_repeat_count(t, -1); // Must be infinite, otherwise timer will be deleted
 #endif /* DEBUG_DISABLE_TIMER */
     lv_indev_add_event_cb(eos_touch_get_indev(), _indev_pressed_cb, LV_EVENT_PRESSED, NULL);
     lv_indev_add_event_cb(eos_touch_get_indev(), _indev_released_cb, LV_EVENT_RELEASED, NULL);

@@ -21,7 +21,7 @@
 
 void sni_init(void)
 {
-    // 初始化类型桥
+    // Initialize type bridge
     sni_tb_init();
     sni_api_lv_init();
     sni_api_eos_init();

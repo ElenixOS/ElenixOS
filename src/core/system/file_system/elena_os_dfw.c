@@ -1,6 +1,6 @@
 /**
  * @file elena_os_dfw.c
- * @brief 延后文件写入器（Deffered File Writer）
+ * @brief Deferred File Writer
  * @author Sab1e
  * @date 2025-11-25
  */

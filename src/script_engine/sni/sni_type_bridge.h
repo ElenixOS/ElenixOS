@@ -1,6 +1,6 @@
 /**
  * @file sni_type_bridge.h
- * @brief 类型桥
+ * @brief Type bridge
  * @author Sab1e
  * @date 2026-02-09
  */
@@ -35,58 +35,58 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 将 JerryScript 字符串转换为 C 字符串
- * @param js_val JerryScript 字符串值
- * @return const char* C 字符串指针
- * @note 调用者必须使用`eos_free`释放返回的字符串内存
+ * @brief Convert JerryScript string to C string
+ * @param js_val JerryScript string value
+ * @return const char* C string pointer
+ * @note Caller must use `eos_free` to free the returned string memory
  */
 const char *sni_tb_js2c_string(jerry_value_t js_val);
 
 /**
- * @brief 将 JerryScript 值转换为 C 值或值对象
- * @param js_val JerryScript 值
- * @param type 目标类型
- * @param out_obj 输出值指针（如果输出值是指针，则应该传入它的地址，即二级指针）
- * @return bool 转换是否成功
+ * @brief Convert JerryScript value to C value or value object
+ * @param js_val JerryScript value
+ * @param type Target type
+ * @param out_obj Output value pointer (if output value is a pointer, should pass its address, i.e., double pointer)
+ * @return bool Whether conversion was successful
  */
 bool sni_tb_js2c(jerry_value_t js_val, sni_type_t type, void *out_obj);
 
 /**
- * @brief 从任意 Handle 对象中提取原始指针和实际类型
- * @param js_val JerryScript handle 对象
- * @param out_obj 输出原始指针
- * @param out_type 输出句柄实际类型，可为 NULL
- * @return bool 提取是否成功
+ * @brief Extract raw pointer and actual type from any Handle object
+ * @param js_val JerryScript handle object
+ * @param out_obj Output raw pointer
+ * @param out_type Output handle actual type, can be NULL
+ * @return bool Whether extraction was successful
  */
 bool sni_tb_js2c_any_handle(jerry_value_t js_val, void *out_obj, sni_type_t *out_type);
 
 /**
- * @brief 将 C 值或值对象转换为 JerryScript 值
- * @param c_val C 值指针（如果输入值是指针，则应该传入它的地址，即二级指针）
- * @param type 源类型
- * @return jerry_value_t JerryScript 值
+ * @brief Convert C value or value object to JerryScript value
+ * @param c_val C value pointer (if input value is a pointer, should pass its address, i.e., double pointer)
+ * @param type Source type
+ * @return jerry_value_t JerryScript value
  */
 jerry_value_t sni_tb_c2js(void *c_val, sni_type_t type);
 
 /**
- * @brief 将 C 值对象或句柄写入现有 JerryScript 对象
- * @param c_val C 值指针（如果输入值是指针，则应该传入它的地址，即二级指针）
- * @param type 源类型
- * @param js_obj 目标 JerryScript 对象
- * @return bool 写入是否成功
+ * @brief Write C value object or handle to existing JerryScript object
+ * @param c_val C value pointer (if input value is a pointer, should pass its address, i.e., double pointer)
+ * @param type Source type
+ * @param js_obj Target JerryScript object
+ * @return bool Whether writing was successful
  */
 bool sni_tb_c2js_set_object(void *c_val, sni_type_t type, jerry_value_t js_obj);
 
 /**
- * @brief 注册值对象
- * @param val_obj 值对象指针
+ * @brief Register value object
+ * @param val_obj Value object pointer
  */
 void sni_tb_register_val_obj(const sni_val_obj_t *val_obj);
 
 /**
- * @brief 注册句柄销毁回调（支持 External/Realm 生命周期句柄）
- * @param type 句柄类型（必须为 Handle 类型）
- * @param destroy_cb 销毁回调
+ * @brief Register handle destroy callback (supports External/Realm lifecycle handles)
+ * @param type Handle type (must be Handle type)
+ * @param destroy_cb Destroy callback
  */
 void sni_tb_register_handle_destroy_cb(sni_type_t type, sni_handle_destroy_cb_t destroy_cb);
 

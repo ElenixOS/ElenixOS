@@ -1,6 +1,6 @@
 /**
  * @file elena_os_side_button.h
- * @brief 侧键
+ * @brief Side button
  * @author Sab1e
  * @date 2025-11-13
  */
@@ -22,8 +22,8 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 上报侧面按钮的状态
- * @param state 状态值
+ * @brief Report side button state
+ * @param state State value
  */
 void eos_side_button_report(eos_button_state_t state);
 #ifdef __cplusplus

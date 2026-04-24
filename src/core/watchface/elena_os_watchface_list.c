@@ -1,6 +1,6 @@
 /**
  * @file elena_os_watchface_list.c
- * @brief 表盘列表
+ * @brief Watchface list
  * @author Sab1e
  * @date 2025-08-25
  */
@@ -38,7 +38,7 @@
 /* Function Implementations -----------------------------------*/
 
 /**
- * @brief 表盘列表中 表盘按下的回调
+ * @brief Watchface press callback in watchface list
  */
 static void _watchface_list_btn_cb(lv_event_t *e)
 {
@@ -55,7 +55,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
 
 void eos_watchface_list_enter(void)
 {
-    // 创建新的页面用于绘制应用列表
+    // Create new page for drawing watchface list
     eos_activity_t *a = eos_activity_create(NULL);
     eos_activity_set_type(a, EOS_ACTIVITY_TYPE_WATCHFACE_LIST);
     lv_obj_t *wf_list_view = eos_activity_get_view(a);
@@ -69,9 +69,9 @@ void eos_watchface_list_enter(void)
     lv_obj_center(cont);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(cont,
-                          LV_FLEX_ALIGN_START,   // 主轴(水平方向)居中
-                          LV_FLEX_ALIGN_CENTER,  // 交叉轴(垂直方向)居中
-                          LV_FLEX_ALIGN_CENTER); // 内容居中
+                          LV_FLEX_ALIGN_START,   // Main axis (horizontal) start
+                          LV_FLEX_ALIGN_CENTER,  // Cross axis (vertical) center
+                          LV_FLEX_ALIGN_CENTER); // Content center
     lv_obj_set_scroll_snap_x(cont, LV_SCROLL_SNAP_CENTER);
     for (size_t i = 0; i < watchface_list_size; i++)
     {
@@ -88,9 +88,9 @@ void eos_watchface_list_enter(void)
         lv_obj_remove_flag(item, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_flag(item, LV_OBJ_FLAG_SNAPPABLE);
         lv_obj_set_flex_align(item,
-                              LV_FLEX_ALIGN_START,   // 主轴(水平方向)居中
-                              LV_FLEX_ALIGN_CENTER,  // 交叉轴(垂直方向)居中
-                              LV_FLEX_ALIGN_CENTER); // 内容居中
+                              LV_FLEX_ALIGN_START,   // Main axis (horizontal) start
+                              LV_FLEX_ALIGN_CENTER,  // Cross axis (vertical) center
+                              LV_FLEX_ALIGN_CENTER); // Content center
 
         char icon_path[PATH_MAX];
         if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
@@ -109,7 +109,7 @@ void eos_watchface_list_enter(void)
             }
         }
 
-        /* 外层容器：用于显示边框、圆角与裁角，snapshot 在容器内留 12px 的内边距 */
+        /* Outer container: used to display border, rounded corners and corner clipping, snapshot has 12px padding inside the container */
         lv_obj_t *snapshot_container = lv_obj_create(item);
         lv_obj_set_size(snapshot_container, _SNAPSHOT_CONTAINER_W, _SNAPSHOT_CONTAINER_H);
         lv_obj_set_style_border_width(snapshot_container, _SNAPSHOT_CONTAINER_BORDER, 0);
@@ -123,7 +123,7 @@ void eos_watchface_list_enter(void)
         lv_obj_remove_flag(snapshot_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_center(snapshot_container);
 
-        /* 图片裁剪容器：负责 snapshot 的布局、裁角与圆角 */
+        /* Image clip container: responsible for snapshot layout, corner clipping and rounded corners */
         lv_obj_t *snapshot_clip_container = lv_obj_create(snapshot_container);
         lv_obj_set_size(snapshot_clip_container,
                 _SNAPSHOT_CONTAINER_W - (_SNAPSHOT_CONTAINER_PAD * 2),
@@ -140,14 +140,14 @@ void eos_watchface_list_enter(void)
         lv_obj_remove_flag(snapshot_clip_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_center(snapshot_clip_container);
 
-        /* snapshot 占满新的父容器 */
+        /* Snapshot fills the new parent container */
         lv_obj_t *watchface_snapshot = lv_image_create(snapshot_clip_container);
         lv_obj_set_size(watchface_snapshot, lv_pct(100), lv_pct(100));
         lv_obj_set_style_shadow_width(watchface_snapshot, 0, 0);
         lv_obj_set_style_margin_all(watchface_snapshot, 0, 0);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
         lv_obj_center(watchface_snapshot);
-        /* 移除 CLICKABLE 标志，让触摸事件传递给父对象 */
+        /* Remove CLICKABLE flag to let touch events pass to parent object */
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         eos_img_set_src(watchface_snapshot, icon_path);
@@ -156,12 +156,12 @@ void eos_watchface_list_enter(void)
                  _SNAPSHOT_CONTAINER_H - (_SNAPSHOT_CONTAINER_PAD * 2));
         lv_obj_center(watchface_snapshot);
 
-        // 将点击事件处理函数添加到父对象上，这样当用户点击图片时，点击事件会传递给父对象
+        // Add click event handler to parent object so that when user clicks on image, click event passes to parent
         lv_obj_add_event_cb(item, _watchface_list_btn_cb, LV_EVENT_CLICKED, (void *)eos_watchface_list_get_id(i));
-        // 确保父对象是可点击的
+        // Ensure parent object is clickable
         lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(item, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-        // 显示名称
+        // Display name
         lv_obj_t *label = lv_label_create(item);
         if (watchface_id && strcmp(watchface_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
         {

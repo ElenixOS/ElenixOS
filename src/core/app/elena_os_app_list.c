@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app_list.c
- * @brief 应用列表页面 - 使用bubble_grid布局
+ * @brief App list page - using bubble_grid layout
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -120,7 +120,7 @@ static int32_t _app_list_last_click_index = -1;
 static char _app_list_last_launch_app_id[64] = {0};
 static uint32_t _app_list_icon_count = 0;
 
-/************************** 生命周期 **************************/
+/************************** Lifecycle **************************/
 
 static void _app_on_destroy(eos_activity_t *a)
 {
@@ -133,7 +133,7 @@ static void _app_on_destroy(eos_activity_t *a)
         eos_activity_set_user_data(a, NULL);
     }
 
-    // 退出脚本引擎
+    // Exit script engine
     script_engine_request_stop();
 }
 
@@ -494,16 +494,16 @@ static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_
 
 static void _app_list_on_resueme(eos_activity_t *a)
 {
-    // 初始化应用列表
+    // Initialize app list
     lv_obj_t *bubble_grid = _app_list_get_bubble_grid(a);
     EOS_CHECK_PTR_RETURN(bubble_grid);
     _app_list_refresh(bubble_grid);
 }
 
-/************************** 应用入口 **************************/
+/************************** App Entry **************************/
 /**
- * @brief 应用点击事件回调（处理系统应用和脚本应用）
- * 从bubble_grid的LV_EVENT_CLICKED事件中获取应用ID
+ * @brief App click event callback (handles system apps and script apps)
+ * Gets app ID from bubble_grid's LV_EVENT_CLICKED event
  */
 static void _app_list_icon_clicked_cb(lv_event_t *e)
 {
@@ -631,10 +631,10 @@ static void _register_anim_routes_once(void)
     _anim_routes_registered = true;
 }
 
-/************************** 刷新应用列表 **************************/
+/************************** Refresh App List **************************/
 /**
- * @brief 刷新应用列表 - 使用bubble_grid
- * @param bubble_grid 应用列表的bubble_grid对象
+ * @brief Refresh app list - using bubble_grid
+ * @param bubble_grid App list's bubble_grid object
  */
 static void _app_list_refresh(lv_obj_t *bubble_grid)
 {
@@ -643,7 +643,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
         return;
     }
 
-    // 清空上一次图标槽位，避免删除组件内部对象导致悬挂指针。
+    // Clear previous icon slots to avoid dangling pointers from deleting internal objects.
     for (uint32_t i = 0; i < _app_list_icon_count; ++i)
     {
         eos_bubble_set_icon_src(bubble_grid, i, NULL);
@@ -747,7 +747,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
     _app_list_icon_count = icon_index;
 }
 
-/************************** 动画 **************************/
+/************************** Animation **************************/
 
 static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to)
 {
@@ -759,10 +759,10 @@ static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *
     _app_list_play_transition_anim(at, from, to, false);
 }
 
-/************************** 辅助函数 **************************/
+/************************** Helper Functions **************************/
 
 /**
- * @brief 当应用安装时自动调用此回调以便显示新的应用
+ * @brief This callback is automatically called when an app is installed to display the new app
  */
 static void _app_installed_cb(lv_event_t *e)
 {
@@ -794,7 +794,7 @@ void eos_app_list_enter(void)
     lv_obj_t *view = eos_activity_get_view(a);
     lv_obj_set_size(view, lv_pct(100), lv_pct(100));
 
-    // 创建bubble_grid作为应用列表容器
+    // Create bubble_grid as app list container
     lv_obj_t *bubble_grid = eos_bubble_create(view);
     if (!bubble_grid)
     {

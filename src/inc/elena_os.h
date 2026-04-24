@@ -1,6 +1,6 @@
 /**
  * @file elena_os.h
- * @brief 外部包含此文件即可
+ * @brief Just include this file externally
  * @author Sab1e
  * @date 2025-11-09
  */

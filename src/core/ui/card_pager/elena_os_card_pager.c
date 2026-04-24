@@ -1,6 +1,6 @@
 /**
  * @file elena_os_card_pager.c
- * @brief 卡片式页面
+ * @brief Card pager
  * @author Sab1e
  * @date 2025-10-17
  */
@@ -89,7 +89,7 @@ static void _sw1_reachd_threshold_cb(lv_event_t *e)
 
         if (displacement > 0)
         {
-            // 向右/向下：切上一页
+            // Right/down: switch to previous page
             if (cp->current_page_index == 0)
                 cp->current_page_index = cp->loop ? cp->page_count - 1 : 0;
             else
@@ -97,7 +97,7 @@ static void _sw1_reachd_threshold_cb(lv_event_t *e)
         }
         else if (displacement < 0)
         {
-            // 向左/向上：切下一页
+            // Left/up: switch to next page
             if (cp->current_page_index == cp->page_count - 1)
                 cp->current_page_index = cp->loop ? 0 : cp->page_count - 1;
             else
@@ -108,7 +108,7 @@ static void _sw1_reachd_threshold_cb(lv_event_t *e)
             cp->current_page_index = prev_index;
         }
 
-        // 边界自动回拉：索引未变化则直接复位。
+        // Auto-rebound at boundaries: reset directly if index unchanged.
         if (cp->current_page_index == prev_index)
         {
             lv_obj_t *cur_page = eos_card_pager_get_page(cp, cp->current_page_index);

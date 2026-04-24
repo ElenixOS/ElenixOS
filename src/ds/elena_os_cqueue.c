@@ -1,6 +1,6 @@
 /**
  * @file elena_os_cqueue.c
- * @brief 可扩容的循环队列 FIFO
+ * @brief Resizable circular queue FIFO
  * @author Sab1e
  * @date 2025-11-22
  */
@@ -15,9 +15,9 @@
 #include "elena_os_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define _SHRINK_ENABLE 1
-#define _SHRINK_THRESHOLD (4)  /**< 低于capacity的`_SHRINK_THRESHOLD`时自动收缩 */
-#define _SHRINK_PROPORTION (2) /**< 收缩比例，`收缩后的大小 = capacity / _SHRINK_PROPORTION` */
-#define _CAPACITY_GROWTH 2 /**< 容量增长因子 */
+#define _SHRINK_THRESHOLD (4)  /**< Automatically shrink when below `_SHRINK_THRESHOLD` of capacity */
+#define _SHRINK_PROPORTION (2) /**< Shrink proportion, `shrinked size = capacity / _SHRINK_PROPORTION` */
+#define _CAPACITY_GROWTH 2 /**< Capacity growth factor */
 
 struct eos_cqueue_t
 {

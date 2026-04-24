@@ -1,6 +1,6 @@
 /**
  * @file elena_os_fs_port.c
- * @brief 文件系统移植
+ * @brief File system porting
  * @author Sab1e
  * @date 2025-11-18
  */
@@ -27,9 +27,9 @@
 
 /* Function Implementations -----------------------------------*/
 
-/* ---------------- POSIX FS 实现 ------------------ */
+/* ---------------- POSIX FS implementation ------------------ */
 
-/* 打开文件只读 */
+/* Open file read-only */
 eos_file_t eos_fs_open_read(const char *path)
 {
     if (!path)
@@ -37,7 +37,7 @@ eos_file_t eos_fs_open_read(const char *path)
     return fopen(path, "rb");
 }
 
-/* 打开文件只写（如果不存在则创建，存在则覆盖） */
+/* Open file write-only (create if not exist, overwrite if exist) */
 eos_file_t eos_fs_open_write(const char *path)
 {
     if (!path)
@@ -45,7 +45,7 @@ eos_file_t eos_fs_open_write(const char *path)
     return fopen(path, "wb");
 }
 
-/* 读取文件数据 */
+/* Read file data */
 int eos_fs_read(eos_file_t fp, void *buf, size_t len)
 {
     if (!fp || !buf)
@@ -56,7 +56,7 @@ int eos_fs_read(eos_file_t fp, void *buf, size_t len)
     return (int)n;
 }
 
-/* 写入文件数据 */
+/* Write file data */
 int eos_fs_write(eos_file_t fp, const void *buf, size_t len)
 {
     if (!fp || !buf)
@@ -67,7 +67,7 @@ int eos_fs_write(eos_file_t fp, const void *buf, size_t len)
     return (int)n;
 }
 
-/* 文件定位 */
+/* File positioning */
 int eos_fs_seek(eos_file_t fp, uint32_t pos)
 {
     if (!fp)
@@ -75,7 +75,7 @@ int eos_fs_seek(eos_file_t fp, uint32_t pos)
     return fseek((FILE *)fp, (long)pos, SEEK_SET);
 }
 
-/* 获取文件大小 */
+/* Get file size */
 int eos_fs_size(eos_file_t fp, uint32_t *size)
 {
     if (!fp || !size)
@@ -93,14 +93,14 @@ int eos_fs_size(eos_file_t fp, uint32_t *size)
     return 0;
 }
 
-/* 关闭文件 */
+/* Close file */
 void eos_fs_close(eos_file_t fp)
 {
     if (fp)
         fclose((FILE *)fp);
 }
 
-/* 创建目录（单级目录） */
+/* Create directory (single level directory) */
 int eos_fs_mkdir(const char *path)
 {
     if (!path)
@@ -112,7 +112,7 @@ int eos_fs_mkdir(const char *path)
 #endif
 }
 
-/* 删除空目录 */
+/* Remove empty directory */
 int eos_fs_rmdir(const char *path)
 {
     if (!path)
@@ -120,7 +120,7 @@ int eos_fs_rmdir(const char *path)
     return rmdir(path) == 0 ? 0 : -1;
 }
 
-/* 删除文件 */
+/* Remove file */
 int eos_fs_remove(const char *path)
 {
     if (!path)
@@ -128,7 +128,7 @@ int eos_fs_remove(const char *path)
     return remove(path) == 0 ? 0 : -1;
 }
 
-/* 检查文件或目录是否存在 */
+/* Check if file or directory exists */
 int eos_fs_exists(const char *path)
 {
     if (!path)

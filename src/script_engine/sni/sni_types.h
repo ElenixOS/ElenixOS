@@ -1,6 +1,6 @@
 /**
  * @file sni_types.h
- * @brief 脚本原生接口
+ * @brief Script Native Interface
  * @author Sab1e
  * @date 2026-02-09
  */
@@ -40,7 +40,7 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief SNI 类型枚举
+ * @brief SNI type enumeration
  */
 typedef enum
 {
@@ -64,7 +64,7 @@ typedef enum
 
 	__SNI_HANDLE_START,
 
-	/************************** 外部生命周期的 Handle 对象 **************************/
+	/************************** External lifecycle Handle objects **************************/
 	__SNI_HANDLE_LC_EXTERNAL_START,
 
 	SNI_H_LV_TIMER,
@@ -72,7 +72,7 @@ typedef enum
 
 	__SNI_HANDLE_LC_EXTERNAL_END,
 
-	/************************** Realm 生命周期的 Handle 对象 **************************/
+	/************************** Realm lifecycle Handle objects **************************/
 
 	__SNI_HANDLE_LC_REALM_START,
 
@@ -133,11 +133,11 @@ typedef enum
 } sni_type_t;
 
 /**
- * @brief 属性结构体
+ * @brief Property structure
  *
- * 值对象使用属性结构体数组来定义
+ * Value objects are defined using property structure arrays
  *
- * 示例：
+ * Example:
  * ```c
  * const sni_val_prop_t lv_point_props[] = {
  *     {"x", SNI_T_INT32, offsetof(lv_point_t, x)},
@@ -147,32 +147,32 @@ typedef enum
  */
 typedef struct
 {
-	const char *name;   /**< 属性名 */
-	sni_type_t type;    /**< 属性类型 */
-    size_t offset;      /**< 属性在值对象结构体中的偏移量 */
-    uint8_t bit_width;  /**< 位域成员的位宽（非位域成员为0） */
+	const char *name;   /**< Property name */
+	sni_type_t type;    /**< Property type */
+    size_t offset;      /**< Property offset in value object structure */
+    uint8_t bit_width;  /**< Bit width for bit field members (0 for non-bit field members) */
 } sni_val_prop_t;
 
 
 typedef struct
 {
     sni_type_t type;
-    uint16_t prop_count;    /**< 属性数量 */
-    const sni_val_prop_t *props;  /**< 属性数组指针 */
+    uint16_t prop_count;    /**< Property count */
+    const sni_val_prop_t *props;  /**< Property array pointer */
 } sni_val_obj_t;
 
 typedef void (*sni_handle_destroy_cb_t)(void *native_ptr);
 
 /**
- * @brief 句柄对象结构体
+ * @brief Handle object structure
  */
 typedef struct
 {
-    void *ptr;                  /**< 句柄指向的对象指针 */
-    jerry_value_t js_obj;       /**< 句柄对应的 JavaScript 对象 */
-    sni_type_t type;            /**< 句柄类型 */
-    bool is_alive;              /**< 句柄是否存活 */
-    UT_hash_handle hh;          /**< 哈希句柄，用于哈希表操作 */
+    void *ptr;                  /**< Pointer to object handled by the handle */
+    jerry_value_t js_obj;       /**< JavaScript object corresponding to the handle */
+    sni_type_t type;            /**< Handle type */
+    bool is_alive;              /**< Whether the handle is alive */
+    UT_hash_handle hh;          /**< Hash handle for hash table operations */
 } sni_handle_t;
 
 #ifdef __cplusplus

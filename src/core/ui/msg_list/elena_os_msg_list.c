@@ -1,6 +1,6 @@
 /**
  * @file elena_os_msg_list.c
- * @brief 下拉消息列表
+ * @brief Drop-down message list
  * @author Sab1e
  * @date 2025-08-13
  */
@@ -39,12 +39,12 @@
 #define _TIME_LABEL_FONT lv_font_montserrat_24
 
 #define _ITEM_CLICK_THRESHOLD 3
-// 滑动删除相关的宏定义
-#define _SWIPE_THRESHOLD (EOS_DISPLAY_WIDTH / 2) // 触发删除的滑动距离阈值
-#define _SWIPE_ANIM_DURATION 200                 // 滑动动画持续时间
+// Swipe-to-delete related macros
+#define _SWIPE_THRESHOLD (EOS_DISPLAY_WIDTH / 2) // Swipe distance threshold for deletion
+#define _SWIPE_ANIM_DURATION 200                 // Swipe animation duration
 #define _COMMON_ANIM_DURATION 150
 /**
- * @brief 临时存储用户数据
+ * @brief Temporary storage for user data
  */
 typedef struct
 {
@@ -59,7 +59,7 @@ static eos_msg_list_t *message_list_instance = NULL;
 
 static void _msg_list_item_clicked_cb(lv_event_t *e);
 
-/************************** 删除 Item 回调 **************************/
+/************************** Delete Item Callback **************************/
 
 static void _del_item_cb(eos_msg_list_t *list)
 {
@@ -67,12 +67,12 @@ static void _del_item_cb(eos_msg_list_t *list)
     uint8_t child_count = lv_obj_get_child_count(list->list);
     if (child_count <= 1)
     {
-        // 显示无消息标签
+        // Show no message label
         if (list->no_msg_label)
         {
             lv_obj_remove_flag(list->no_msg_label, LV_OBJ_FLAG_HIDDEN);
         }
-        // 隐藏清除按钮
+        // Hide clear button
         if (list->clear_all_btn)
         {
             lv_obj_add_flag(list->clear_all_btn, LV_OBJ_FLAG_HIDDEN);
@@ -80,7 +80,7 @@ static void _del_item_cb(eos_msg_list_t *list)
     }
 }
 
-/************************** 滑动删除相关回调 **************************/
+/************************** Swipe-to-Delete Related Callbacks **************************/
 
 static void _slide_widget_reached_threashold_cb(lv_event_t *e)
 {
@@ -91,10 +91,10 @@ static void _slide_widget_reached_threashold_cb(lv_event_t *e)
     _del_item_cb(list);
 }
 
-/************************** 详情页相关回调 **************************/
+/************************** Detail Page Related Callbacks **************************/
 
 /**
- * @brief 详情页缩小动画播放完成时的回调
+ * @brief Callback when detail page shrink animation completes
  */
 static void _mark_as_read_anim_end_cb(eos_anim_t *a)
 {
@@ -112,17 +112,17 @@ static void _mark_as_read_anim_end_cb(eos_anim_t *a)
 }
 
 /**
- * @brief Mark as read 按钮回调
+ * @brief Mark as read button callback
  */
 static void _mark_as_read_btn_click_cb(lv_event_t *e)
 {
-    // 获取事件的目标对象（mark_as_read_btn）
+    // Get event target object (mark_as_read_btn)
     lv_obj_t *btn = lv_event_get_target(e);
 
-    // 获取按钮的用户数据（包含item和list）
+    // Get button user data (contains item and list)
     btn_data_t *data = (btn_data_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(data && !data->item->is_deleted && btn);
-    // 获取按钮的父容器（即详情页面container）
+    // Get button parent container (detail page container)
     lv_obj_t *container = lv_obj_get_parent(btn);
 
     eos_anim_t *anim = eos_anim_scale_create(container, EOS_DISPLAY_WIDTH, 0, EOS_DISPLAY_HEIGHT, 0, _COMMON_ANIM_DURATION, false);

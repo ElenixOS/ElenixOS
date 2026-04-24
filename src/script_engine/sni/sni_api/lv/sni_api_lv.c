@@ -1,6 +1,6 @@
 /**
  * @file sni_api_lv.c
- * @brief LVGL API 导出
+ * @brief LVGL API Export
  * @author Auto Generated
  * @date 2026-03-16
  */

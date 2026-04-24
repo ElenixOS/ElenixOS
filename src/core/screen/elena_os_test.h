@@ -1,6 +1,6 @@
 /**
  * @file elena_os_test.h
- * @brief 系统功能测试
+ * @brief System function test
  * @author Sab1e
  * @date 2025-08-20
  */
@@ -25,7 +25,7 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 /**
- * @brief 开始系统功能测试
+ * @brief Start system function test
  */
 void eos_test_start(void);
 #ifdef __cplusplus

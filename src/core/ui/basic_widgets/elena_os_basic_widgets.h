@@ -1,6 +1,6 @@
 /**
  * @file elena_os_basic_widgets.h
- * @brief 基本控件
+ * @brief Basic widgets
  * @author Sab1e
  * @date 2025-08-17
  */
@@ -32,7 +32,7 @@ extern "C" {
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief 列表内的滑块定义
+ * @brief Slider definition within list
  */
 typedef struct
 {
@@ -46,46 +46,46 @@ typedef struct
 } eos_list_slider_t;
 
 /**
- * @brief 设置指定圆角位置，搭配`eos_obj_set_corner_radius_bg()`使用
+ * @brief Set specified corner radius positions, used with `eos_obj_set_corner_radius_bg()`
  */
 typedef enum
 {
-    EOS_ROUND_TOP_LEFT = 0x1 << 0,     /**< 左上角圆角 */
-    EOS_ROUND_TOP_RIGHT = 0x1 << 1,    /**< 右上角圆角 */
-    EOS_ROUND_BOTTOM_RIGHT = 0x1 << 2, /**< 右下角圆角 */
-    EOS_ROUND_BOTTOM_LEFT = 0x1 << 3,  /**< 左下角圆角 */
+    EOS_ROUND_TOP_LEFT = 0x1 << 0,     /**< Top left corner rounded */
+    EOS_ROUND_TOP_RIGHT = 0x1 << 1,    /**< Top right corner rounded */
+    EOS_ROUND_BOTTOM_RIGHT = 0x1 << 2, /**< Bottom right corner rounded */
+    EOS_ROUND_BOTTOM_LEFT = 0x1 << 3,  /**< Bottom left corner rounded */
 } eos_corner_round_t;
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 获取对象的中心坐标
- * @param obj 目标对象
- * @param x [out] 中心点 x 坐标
- * @param y [out] 中心点 y 坐标
+ * @brief Get the center coordinates of an object
+ * @param obj Target object
+ * @param x [out] Center point x coordinate
+ * @param y [out] Center point y coordinate
  */
 void eos_obj_get_coord_center(lv_obj_t *obj, lv_coord_t *x, lv_coord_t *y);
 /**
- * @brief 创建一个标准按钮
- * @param parent 按钮的父对象
- * @param txt 按钮文本内容
- * @param clicked_cb 按钮按下时的回调
- * @param event_user_data 回调事件的用户数据
- * @return lv_obj_t* 创建成功则返回`lv_button`对象，否则返回 NULL
+ * @brief Create a standard button
+ * @param parent Button's parent object
+ * @param txt Button text content
+ * @param clicked_cb Callback when button is pressed
+ * @param event_user_data User data for callback event
+ * @return lv_obj_t* Returns `lv_button` object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_button_create(lv_obj_t *parent,
                                    const char *txt,
                                    lv_event_cb_t clicked_cb,
                                    void *event_user_data);
 /**
- * @brief 创建一个高级按钮
- * @param parent 按钮的父对象
- * @param btn_color 按钮背景色
- * @param txt 文本
- * @param txt_color 文本颜色
- * @param clicked_cb 按钮按下时的回调
- * @param event_user_data 回调事件的用户数据
- * @return lv_obj_t* 创建成功则返回`lv_button`对象，否则返回 NULL
+ * @brief Create an advanced button
+ * @param parent Button's parent object
+ * @param btn_color Button background color
+ * @param txt Text
+ * @param txt_color Text color
+ * @param clicked_cb Callback when button is pressed
+ * @param event_user_data User data for callback event
+ * @return lv_obj_t* Returns `lv_button` object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_button_create_ex(lv_obj_t *parent,
                                lv_color_t btn_color,
@@ -94,193 +94,193 @@ lv_obj_t *eos_button_create_ex(lv_obj_t *parent,
                                lv_event_cb_t clicked_cb,
                                void *event_user_data);
 /**
- * @brief 创建绘制缓冲区
- * @param w 宽度
- * @param h 高度
- * @param cf 色彩格式
- * @param stride 每行字节数，置`0`则自动计算
- * @return lv_draw_buf_t* 创建成功则返回绘制缓冲区，否则返回 NULL
+ * @brief Create a draw buffer
+ * @param w Width
+ * @param h Height
+ * @param cf Color format
+ * @param stride Bytes per line, set to `0` for automatic calculation
+ * @return lv_draw_buf_t* Returns draw buffer if created successfully, otherwise NULL
  */
 lv_draw_buf_t *eos_draw_buf_create(uint32_t w, uint32_t h, lv_color_format_t cf, uint32_t stride);
 /**
- * @brief 销毁绘制缓冲区
+ * @brief Destroy a draw buffer
  */
 void eos_draw_buf_destory(lv_draw_buf_t *draw_buf);
 /**
- * @brief 设置开关状态（带有动画）
- * @param sw 目标开关对象
- * @param checked true = 开启，false = 关闭
+ * @brief Set switch state (with animation)
+ * @param sw Target switch object
+ * @param checked true = enabled, false = disabled
  */
 void eos_switch_set_state(lv_obj_t *sw, bool checked);
 /**
- * @brief 创建列表，设置标准样式并添加占位符
- * @param parent 父对象
- * @return lv_obj_t* 列表对象
+ * @brief Create a list with standard style and add placeholder
+ * @param parent Parent object
+ * @return lv_obj_t* List object
  */
 lv_obj_t *eos_list_create(lv_obj_t *parent);
 /**
- * @brief 判断 eos_list_create 创建的列表是否存在待播放的切换动画
- * @param from 来源 Activity
- * @param to 目标 Activity
- * @param back 是否为返回切换
- * @return bool true 表示可播放专用列表动画
+ * @brief Check if list created by eos_list_create has pending transition animation
+ * @param from Source Activity
+ * @param to Target Activity
+ * @param back Whether it's a return transition
+ * @return bool true indicates dedicated list animation can be played
  */
 bool eos_list_transition_should_animate(eos_activity_t *from, eos_activity_t *to, bool back);
 /**
- * @brief 播放 eos_list_create 列表专用切换动画
- * @param at 动画时间线
- * @param from 来源 Activity
- * @param to 目标 Activity
- * @param back 是否为返回切换
+ * @brief Play dedicated transition animation for eos_list_create list
+ * @param at Animation timeline
+ * @param from Source Activity
+ * @param to Target Activity
+ * @param back Whether it's a return transition
  */
 void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool back);
 /**
- * @brief 创建一个返回按钮
- * @param parent 父对象
- * @param show_text 是否显示返回文字
- * @return lv_obj_t* 创建成功则返回 btn 对象，否则返回 NULL
+ * @brief Create a back button
+ * @param parent Parent object
+ * @param show_text Whether to show back text
+ * @return lv_obj_t* Returns btn object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text);
 /**
- * @brief 向列表中添加一个带有图标的按钮
- * @param list 目标列表
- * @param icon 左侧图标 支持图片路径
- * @param txt 按钮中的文字
- * @return lv_obj_t* 创建成功则返回按钮对象指针
+ * @brief Add a button with icon to list
+ * @param list Target list
+ * @param icon Left side icon, supports image path
+ * @param txt Button text
+ * @return lv_obj_t* Returns button object pointer if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_button(lv_obj_t *list, const void *icon, const char *txt);
 /**
- * @brief 向列表中添加一个入口按钮
+ * @brief Add an entry button to list
  *
- * 例如：
+ * Example:
  * (Bluetooth   >)
  *
- * @param list 目标列表
- * @param txt  左侧字符串
- * @return lv_obj_t* 创建成功则返回按钮对象指针
+ * @param list Target list
+ * @param txt  Left side string
+ * @return lv_obj_t* Returns button object pointer if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt);
 /**
- * @brief 向列表中添加一个入口按钮
+ * @brief Add an entry button to list
  *
- * 例如：
+ * Example:
  * (Bluetooth   >)
  *
- * @param list 目标列表
- * @param id  左侧字符串 ID
- * @return lv_obj_t* 创建成功则返回按钮对象指针
+ * @param list Target list
+ * @param id  Left side string ID
+ * @return lv_obj_t* Returns button object pointer if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id);
 /**
- * @brief 向列表中添加指定像素高度的占位符
- * @param list 目标列表
- * @param height 占位符的高度(px)
- * @return lv_obj_t* 创建成功则返回创建的占位符对象指针
+ * @brief Add a placeholder with specified pixel height to list
+ * @param list Target list
+ * @param height Placeholder height (px)
+ * @return lv_obj_t* Returns created placeholder object pointer if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_placeholder(lv_obj_t *list, uint32_t height);
 /**
- * @brief 向列表中添加一个开关
- * @param list 目标列表
- * @param txt 开关功能的描述
- * @return lv_obj_t* 创建成功则返回开关对象（标准 lv_switch 对象）
+ * @brief Add a switch to list
+ * @param list Target list
+ * @param txt Switch function description
+ * @return lv_obj_t* Returns switch object (standard lv_switch object) if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_switch(lv_obj_t *list, const char *txt);
 /**
- * @brief 向列表内添加标题文字
- * @param txt 文字内容
- * @return lv_obj_t* 创建成功则返回label对象，否则返回 NULL
+ * @brief Add title text to list
+ * @param txt Text content
+ * @return lv_obj_t* Returns label object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_list_add_title(lv_obj_t *list, const char *txt);
 /**
- * @brief 向列表内添加提示文字
- * @param txt 文字内容
- * @return lv_obj_t* 创建成功则返回label对象，否则返回 NULL
+ * @brief Add comment text to list
+ * @param txt Text content
+ * @return lv_obj_t* Returns label object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_list_add_comment(lv_obj_t *list, const char *txt);
 /**
- * @brief 创建一个圆形图标
- * @param parent 图标父对象
- * @param bg_color 圆形图标的背景色
- * @param icon_src 图标
- * @return lv_obj_t* 创建成功则返回圆形图标对象，否则返回 NULL
+ * @brief Create a round icon
+ * @param parent Icon parent object
+ * @param bg_color Round icon background color
+ * @param icon_src Icon
+ * @return lv_obj_t* Returns round icon object if created successfully, otherwise NULL
  */
 lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const void *icon_src);
 /**
- * @brief 向列表中添加圆形图标的按钮
+ * @brief Add a button with round icon to list
  *
  * btn{  [icon]  [txt]  }
  *
- * @param list 目标列表
- * @param bg_color 圆形图标的背景色
- * @param icon 图标
- * @param txt 按钮描述文字
- * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
+ * @param list Target list
+ * @param bg_color Round icon background color
+ * @param icon Icon
+ * @param txt Button description text
+ * @return lv_obj_t* Returns button object (standard lv_button object) if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_round_icon_button(lv_obj_t *list, lv_color_t bg_color, const void *icon, const char *txt);
 /**
- * @brief 向列表中添加圆形图标的按钮
+ * @brief Add a button with round icon to list
  *
  * btn{  [icon]  [txt]  }
  *
- * @param list 目标列表
- * @param bg_color 圆形图标的背景色
- * @param icon 图标
- * @param id 字符串 ID，用于适配多语言
- * @return lv_obj_t* 创建成功则返回按钮对象（标准 lv_button 对象）
+ * @param list Target list
+ * @param bg_color Round icon background color
+ * @param icon Icon
+ * @param id String ID for multi-language support
+ * @return lv_obj_t* Returns button object (standard lv_button object) if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_round_icon_button_str_id(lv_obj_t *list, lv_color_t bg_color, const void *icon_src, lang_string_id_t id);
 /**
- * @brief 向列表内创建滑块
- * @param list 目标列表
- * @param txt 滑块功能描述文字（左上角）
- * @return eos_list_slider_t* 创建成功则返回滑块对象
+ * @brief Create a slider in list
+ * @param list Target list
+ * @param txt Slider function description text (top left corner)
+ * @return eos_list_slider_t* Returns slider object if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 eos_list_slider_t *eos_list_add_slider(lv_obj_t *list, const char *txt);
 /**
- * @brief 设置滚动条“减少文本“的缩放
- * @param ls 目标列表滚动条
- * @param scale 缩放值（0～512）
+ * @brief Set scale of slider "decrease text"
+ * @param ls Target list slider
+ * @param scale Scale value (0～512)
  */
 void eos_list_slider_set_minus_label_scale(eos_list_slider_t *ls, uint16_t scale);
 /**
- * @brief 设置滚动条“增加文本“的缩放
- * @param ls 目标列表滚动条
- * @param scale 缩放值（0～512）
+ * @brief Set scale of slider "increase text"
+ * @param ls Target list slider
+ * @param scale Scale value (0～512)
  */
 void eos_list_slider_set_plus_label_scale(eos_list_slider_t *ls, uint16_t scale);
 /**
- * @brief 向列表内创建一个容器
- * @param list 目标列表
- * @return lv_obj_t* 创建成功则返回容器对象
+ * @brief Create a container in list
+ * @param list Target list
+ * @return lv_obj_t* Returns container object if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_container(lv_obj_t *list);
 /**
- * @brief 创建一行左右对齐的控件
- * @param parent 父对象
- * @param left_text 左边文本，可以为 NULL
- * @param right_text 右边文本，可以为 NULL
- * @param left_img_path 左边图像路径，如果不需要可传 NULL
- * @param icon_w 图像宽度
- * @param icon_h 图像高度
- * @return lv_obj_t* 返回行对象，方便进一步操作
+ * @brief Create a row with left-right aligned controls
+ * @param parent Parent object
+ * @param left_text Left side text, can be NULL
+ * @param right_text Right side text, can be NULL
+ * @param left_img_path Left side image path, can be NULL if not needed
+ * @param icon_w Image width
+ * @param icon_h Image height
+ * @return lv_obj_t* Returns row object for further operations
  */
 lv_obj_t *eos_row_create(lv_obj_t *parent,
                             const char *left_text,
@@ -288,24 +288,24 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
                             const char *left_img_path,
                             int icon_w, int icon_h);
 /**
- * @brief 创建一个带有标题的容器（标题位于容器外部）
- * @param list 目标列表
- * @param title 标题字符串
- * @return lv_obj_t* 创建成功则返回内部容器
+ * @brief Create a container with title (title is outside container)
+ * @param list Target list
+ * @param title Title string
+ * @return lv_obj_t* Returns inner container if created successfully
  *
- * 创建失败则返回 NULL
+ * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title);
 /**
- * @brief 给对象设置指定圆角的背景
- * @param obj 对象
- * @param corners 指定圆角，示例：`EOS_ROUND_TOP_LEFT | EOS_ROUND_BOTTOM_LEFT`
- * @param radius 圆角半径
- * @param color 背景色
+ * @brief Set background with specified corner radius for object
+ * @param obj Object
+ * @param corners Specified corners, example: `EOS_ROUND_TOP_LEFT | EOS_ROUND_BOTTOM_LEFT`
+ * @param radius Corner radius
+ * @param color Background color
  */
 void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners, lv_coord_t radius, lv_color_t color);
 /**
- * @brief 删除一个对象的圆角背景
+ * @brief Remove corner radius background from an object
  */
 void eos_obj_remove_corner_radius_bg(lv_obj_t *obj);
 #ifdef __cplusplus

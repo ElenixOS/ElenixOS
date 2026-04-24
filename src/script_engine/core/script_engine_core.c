@@ -1,7 +1,7 @@
 
 /**
  * @file script_engine_core.c
- * @brief 脚本引擎核心功能实现
+ * @brief Script engine core functionality implementation
  * @author Sab1e
  * @date 2025-07-26
  */
@@ -36,7 +36,7 @@
 #define SCRIPT_ERROR_STACK_BUF_SIZE 256
 
 /**
- * @brief 模块任务结构体
+ * @brief Module task structure
  */
 typedef struct
 {
@@ -46,16 +46,16 @@ typedef struct
 } module_task_t;
 
 /**
- * @brief 脚本引擎上下文结构体
+ * @brief Script engine context structure
  */
 typedef struct
 {
-    script_state_t state;         /**< 当前状态 */
-    script_pkg_t *current_script; /**< 当前运行的脚本 */
-    jerry_value_t old_realm;      /**< 旧realm */
-    bool initialized;             /**< 引擎是否初始化 */
-    char *error_info;             /**< 上一次运行的错误信息 */
-    const char *base_path;        /**< 脚本基础路径 */
+    script_state_t state;         /**< Current state */
+    script_pkg_t *current_script; /**< Currently running script */
+    jerry_value_t old_realm;      /**< Old realm */
+    bool initialized;             /**< Whether engine is initialized */
+    char *error_info;             /**< Last run error information */
+    const char *base_path;        /**< Script base path */
 } script_engine_context_t;
 
 /* Variables --------------------------------------------------*/
@@ -482,11 +482,11 @@ static char *_state_get_enum_str(script_state_t state)
 #endif /* EOS_COMPILE_MODE */
 
 /**
- * @brief 状态转换函数
+ * @brief State transition function
  */
 static script_engine_result_t _change_state(script_state_t new_state)
 {
-    // 状态转换验证
+    // State transition validation
     switch (engine_ctx.state)
     {
     case SCRIPT_STATE_STOPPED:
@@ -618,7 +618,7 @@ inline void script_engine_set_prop_string(jerry_value_t obj,
 }
 
 /**
- * @brief 解析js错误变量并打印错误原因
+ * @brief Parse JS error variable and print error reason
  */
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
@@ -628,12 +628,12 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
     char *buf = stack_buf;
     bool need_free = false;
 
-    // 如果不是字符串，则转换成字符串
+    // If not string, convert to string
     if (!(jerry_value_is_string(value)))
     {
         final_str_val = jerry_value_to_string(value);
     }
-    // 取字符串长度
+    // Get string length
     jerry_size_t req_sz = jerry_string_size(final_str_val, JERRY_ENCODING_CESU8);
     if (req_sz > 0)
     {
@@ -672,7 +672,7 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
     jerry_value_free(value);
 }
 /**
- * @brief 把 script_pkg_t 转换成 JS 对象（供 JS 访问 script_info）
+ * @brief Convert script_pkg_t to JS object (for JS to access script_info)
  */
 jerry_value_t _script_engine_create_info(const script_pkg_t *script_package)
 {
@@ -801,7 +801,7 @@ void script_engine_register_functions(jerry_value_t parent,
 }
 
 /**
- * @brief VM 终止运行回调
+ * @brief VM execution stop callback
  */
 static jerry_value_t _vm_exec_stop_callback(void *user_p)
 {
@@ -837,7 +837,7 @@ script_pkg_type_t script_engine_get_current_script_type(void)
 }
 
 /**
- * @brief 清理引擎资源
+ * @brief Clean up engine resources
  */
 static void _engine_cleanup(void)
 {
@@ -851,14 +851,14 @@ static void _engine_cleanup(void)
 }
 
 /**
- * @brief 停止并清理脚本
+ * @brief Stop and clean up script
  */
 static script_engine_result_t _script_engine_stop_and_cleanup(void)
 {
-    // 清理资源
+    // Clean up resources
     _engine_cleanup();
 
-    // 释放脚本包
+    // Free script package
     if (engine_ctx.current_script)
     {
         _script_pkg_destroy(engine_ctx.current_script);

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_port_vibrator.c
- * @brief 震动器
+ * @brief Vibrator
  * @author Sab1e
  * @date 2025-12-10
  */

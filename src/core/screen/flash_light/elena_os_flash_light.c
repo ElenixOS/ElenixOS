@@ -1,6 +1,6 @@
 /**
  * @file elena_os_flash_light.c
- * @brief 手电筒
+ * @brief Flashlight
  * @author Sab1e
  * @date 2025-10-14
  */
@@ -33,8 +33,8 @@
 
 /* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
-#define _OPA_MAX_DIST_DIV 1 /**< 达到最大不透明度的距离 */
-#define _OPA_SCALE 1000     /**< 比例计算的放大倍数 */
+#define _OPA_MAX_DIST_DIV 1 /**< Distance to reach maximum opacity */
+#define _OPA_SCALE 1000     /**< Scaling factor for proportion calculation */
 #define _BRIGHTNESS_SMOOTH_DURATION 300
 #define _IMMERSIVE_TAP_MAX_DISPLACEMENT 8
 #define _IMMERSIVE_FADE_DURATION 220
@@ -156,7 +156,7 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
 }
 
 /**
- * @brief 用于设置背景透明度，随y轴增加而降低透明度
+ * @brief Used to set background opacity, decreases opacity as y-axis increases
  */
 static void _swipe_panel_moving_cb(lv_event_t *e)
 {

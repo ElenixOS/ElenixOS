@@ -1,6 +1,6 @@
 /**
  * @file elena_os_port_vibrator.h
- * @brief 震动器
+ * @brief Vibrator
  * @author Sab1e
  * @date 2025-12-10
  */
@@ -23,12 +23,12 @@ extern "C" {
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 震动器开启
- * @param strength 震动强度 [0,255]
+ * @brief Turn on vibrator
+ * @param strength Vibration strength [0,255]
  */
 void eos_vibrator_on(uint8_t strength);
 /**
- * @brief 震动器关闭
+ * @brief Turn off vibrator
  */
 void eos_vibrator_off(void);
 #ifdef __cplusplus

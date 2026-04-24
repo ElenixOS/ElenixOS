@@ -1,6 +1,6 @@
 /**
  * @file elena_os_slide_widget.c
- * @brief 滑动组件
+ * @brief Slide widget
  * @author Sab1e
  * @date 2025-10-18
  */
@@ -23,7 +23,7 @@
 #include "elena_os_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define DEBUG_TOUCH_AREA 0 /**< 突出显示触摸区域 */
+#define DEBUG_TOUCH_AREA 0 /**< Highlight touch area */
 #define SLIDE_ANIM_DURATION 120
 
 /* Variables --------------------------------------------------*/
@@ -117,7 +117,7 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
     lv_coord_t new_pos = sw->base;
     new_pos += touch_diff;
 
-    // 设置新的位置
+    // Set new position
     if (sw->dir == EOS_SLIDE_DIR_VER)
     {
         if (lv_obj_has_class(lv_obj_get_parent(sw->target_obj), &lv_list_class))
@@ -218,7 +218,7 @@ static void _touch_obj_released_cb(lv_event_t *e)
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(sw);
 
-    // 获取当前位置
+    // Get current position
     lv_coord_t cur;
     if (sw->dir == EOS_SLIDE_DIR_VER)
     {
@@ -229,7 +229,7 @@ static void _touch_obj_released_cb(lv_event_t *e)
         cur = lv_obj_get_x(sw->target_obj);
     }
 
-    // 当前触摸位置
+    // Current touch position
     lv_point_t p;
     lv_indev_get_point(lv_indev_active(), &p);
     lv_coord_t indev_cur = (sw->dir == EOS_SLIDE_DIR_VER) ? p.y : p.x;
@@ -237,9 +237,9 @@ static void _touch_obj_released_cb(lv_event_t *e)
     sw->last_touch_displacement = indev_cur - sw->_indev_start;
     EOS_LOG_D("Last touch displacement = %d", sw->last_touch_displacement);
 
-    // 计算滑动方向和目标方向
-    lv_coord_t swipe_delta = indev_cur - sw->_indev_start; // 触摸滑动距离
-    lv_coord_t move_delta = sw->target - sw->base;         // target 相对 base 的偏移
+    // Calculate swipe direction and target direction
+    lv_coord_t swipe_delta = indev_cur - sw->_indev_start; // Touch swipe distance
+    lv_coord_t move_delta = sw->target - sw->base;         // Target offset relative to base
 
     lv_coord_t target;
     eos_slide_widget_state_t transit_state;
@@ -445,7 +445,7 @@ void eos_slide_widget_delete(eos_slide_widget_t *sw)
 }
 
 /**
- * @brief 内部通用初始化函数
+ * @brief Internal common initialization function
  */
 static void _slide_widget_init_common(eos_slide_widget_t *sw,
                                       lv_obj_t *touch_obj,
@@ -468,7 +468,7 @@ static void _slide_widget_init_common(eos_slide_widget_t *sw,
     sw->bidirectional = false;
     sw->touch_obj = touch_obj;
 
-    // list类不能使用`lv_obj_move_foreground()`，因为会移动子对象顺序
+    // list class cannot use `lv_obj_move_foreground()` because it will change child object order
     if (lv_obj_has_class(lv_obj_get_parent(target_obj), &lv_list_class))
     {
         sw->move_foreground_on_pressed = false;

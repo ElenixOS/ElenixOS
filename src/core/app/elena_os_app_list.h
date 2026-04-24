@@ -1,6 +1,6 @@
 /**
  * @file elena_os_app_list.h
- * @brief 应用列表页面
+ * @brief App list page
  * @author Sab1e
  * @date 2025-08-21
  */
@@ -29,7 +29,7 @@ enum
 {
    EOS_SYS_APP_SETTINGS = 0,
    EOS_SYS_APP_FLASH_LIGHT,
-   /* 此处可添加新的系统应用 */
+   /* New system apps can be added here */
    EOS_SYS_APP_LAST
 };
 
@@ -38,8 +38,8 @@ extern const char *eos_sys_app_id_list[EOS_SYS_APP_LAST];
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 进入应用列表
- * @return eos_activity_t* 应用列表活动对象
+ * @brief Enter app list
+ * @return eos_activity_t* App list activity object
  */
 void eos_app_list_enter(void);
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
  * @file elena_os_darray.h
- * @brief 动态数组
+ * @brief Dynamic array
  * @author Sab1e
  * @date 2025-12-03
  */
@@ -24,40 +24,40 @@ typedef struct eos_darray_t eos_darray_t;
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief 创建一个动态数组，并初始化容量
- * @param init_capacity 初始容量，如果为0则默认4
- * @return eos_darray_t* 返回创建的动态数组指针，失败返回NULL
+ * @brief Create a dynamic array and initialize capacity
+ * @param init_capacity Initial capacity, defaults to 4 if 0
+ * @return eos_darray_t* Returns created dynamic array pointer, returns NULL on failure
  */
 eos_darray_t *eos_darray_create(size_t init_capacity);
 
 /**
- * @brief 设置指定索引的数据，如果索引超出当前容量会自动扩容
- * @param arr 动态数组指针
- * @param index 要设置的数据索引
- * @param data 要设置的数据指针
- * @return true 设置成功
- * @return false 设置失败（如内存分配失败或arr为NULL）
+ * @brief Set data at specified index, automatically expands capacity if index exceeds current capacity
+ * @param arr Dynamic array pointer
+ * @param index Data index to set
+ * @param data Data pointer to set
+ * @return true Set successful
+ * @return false Set failed (e.g., memory allocation failure or arr is NULL)
  */
 bool eos_darray_set(eos_darray_t *arr, size_t index, void *data);
 
 /**
- * @brief 获取指定索引的数据，如果启用收缩机制，可能在获取时自动收缩容量
- * @param arr 动态数组指针
- * @param index 要获取的数据索引
- * @return void* 返回对应索引的数据指针，越界或arr为NULL返回NULL
+ * @brief Get data at specified index, may automatically shrink capacity if shrink mechanism is enabled
+ * @param arr Dynamic array pointer
+ * @param index Data index to get
+ * @return void* Returns data pointer at corresponding index, returns NULL if out of bounds or arr is NULL
  */
 void *eos_darray_get(eos_darray_t *arr, size_t index);
 
 /**
- * @brief 获取动态数组当前有效元素数量
- * @param arr 动态数组指针
- * @return size_t 返回当前有效元素数量，如果arr为NULL返回0
+ * @brief Get current number of valid elements in dynamic array
+ * @param arr Dynamic array pointer
+ * @return size_t Returns current number of valid elements, returns 0 if arr is NULL
  */
 size_t eos_darray_get_size(eos_darray_t *arr);
 
 /**
- * @brief 销毁动态数组，释放内存
- * @param arr 动态数组指针
+ * @brief Destroy dynamic array and free memory
+ * @param arr Dynamic array pointer
  */
 void eos_darray_destroy(eos_darray_t *arr);
 

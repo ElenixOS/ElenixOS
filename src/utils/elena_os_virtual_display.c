@@ -1,6 +1,6 @@
 /**
  * @file elena_os_virtual_display.c
- * @brief 虚拟显示器
+ * @brief Virtual display
  * @author Sab1e
  * @date 2025-11-12
  */
@@ -29,7 +29,7 @@ typedef struct
     lv_coord_t ver_res;
     lv_color_format_t cf;
     lv_display_t *disp;
-    /* 触摸设备 */
+    /* Touch device */
     lv_indev_t *indev;
     int32_t touch_x;
     int32_t touch_y;
@@ -136,7 +136,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
     vd->pressed = false;
     vd->indev = NULL;
 
-    // 分配 canvas 缓冲区
+    // Allocate canvas buffer
     vd->canvas_buf = eos_malloc_zeroed(lv_draw_buf_width_to_stride(hor_res, vd->cf) * ver_res);
     if (!vd->canvas_buf)
     {
@@ -144,7 +144,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
         return NULL;
     }
 
-    // 创建 canvas
+    // Create canvas
     vd->canvas = lv_canvas_create(parent);
     lv_canvas_set_buffer(vd->canvas, vd->canvas_buf, hor_res, ver_res, vd->cf);
     lv_obj_center(vd->canvas);
@@ -161,7 +161,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
                         LV_EVENT_RELEASED,
                         vd);
 
-    // 创建 LVGL display
+    // Create LVGL display
     vd->disp = lv_display_create(hor_res, ver_res);
     if (!vd->disp)
     {
@@ -170,7 +170,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
         return NULL;
     }
 
-    // 分配 display 缓冲区
+    // Allocate display buffer
     size_t buf_size = hor_res * ver_res * sizeof(lv_color_t);
     vd->disp_buf = eos_malloc_zeroed(buf_size);
     if (!vd->disp_buf)
@@ -185,7 +185,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
     lv_display_set_driver_data(vd->disp, vd);
     lv_display_set_flush_cb(vd->disp, _virtual_display_flush_cb);
 
-    // 创建输入设备
+    // Create input device
     vd->indev = lv_indev_create();
     if (!vd->indev)
     {

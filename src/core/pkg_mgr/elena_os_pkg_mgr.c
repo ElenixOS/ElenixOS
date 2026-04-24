@@ -1,6 +1,6 @@
 /**
  * @file elena_os_pkg_mgr.c
- * @brief 包管理器
+ * @brief Package manager
  * @author Sab1e
  * @date 2025-08-22
  */

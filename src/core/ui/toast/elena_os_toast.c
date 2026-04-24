@@ -1,6 +1,6 @@
 /**
  * @file elena_os_toast.c
- * @brief 临时消息提示框
+ * @brief Temporary message toast
  * @author Sab1e
  * @date 2025-10-24
  */
@@ -35,9 +35,9 @@
 
 #define _TOAST_ANIM_DURATION 500
 #define _TOAST_MARGIN_TOP 35
-#define _TOAST_SHOW_SCROLL_SPEED 10         /**< 每像素滚动时间，单位毫秒 */
-#define _TOAST_SHOW_DURATION 3000           /**< 基础显示时间，单位毫秒 */
-#define _TOAST_SHOW_ANIM_BASE_DURATION 1000 /**< 此持续时间是用于滚动结束后持续的时间 */
+#define _TOAST_SHOW_SCROLL_SPEED 10         /**< Scroll time per pixel, in milliseconds */
+#define _TOAST_SHOW_DURATION 3000           /**< Base display time, in milliseconds */
+#define _TOAST_SHOW_ANIM_BASE_DURATION 1000 /**< This duration is for the time after scrolling ends */
 
 #define _TOAST_LABEL_MAX_LENGTH 128
 /* Variables --------------------------------------------------*/
@@ -59,7 +59,7 @@ static void _anim_move_end_cb(lv_anim_t *a)
 
 static void _toast_move_back_completed_cb(lv_anim_t *a)
 {
-    // 启动下一个动画
+    // Start next animation
     if (eos_cqueue_get_size(anim_cq) > 0)
     {
         lv_obj_t *next_toast = eos_cqueue_dequeue(anim_cq);
@@ -90,7 +90,7 @@ static void _play_move_anim(lv_obj_t *toast)
 {
     if (!(toast && lv_obj_is_valid(toast)))
         return;
-    // 动画移入屏幕
+    // Animate into screen
     eos_lite_anim_move_ver_start(toast,
                                  -lv_obj_get_height(toast),
                                  _TOAST_MARGIN_TOP,
@@ -114,7 +114,7 @@ static lv_obj_t *_toast_create_container(void)
 
 static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message)
 {
-    // 创建 mask
+    // Create mask
     lv_obj_t *mask = lv_obj_create(toast);
     lv_obj_remove_style_all(mask);
     lv_obj_set_style_clip_corner(mask, true, 0);
@@ -123,12 +123,12 @@ static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message)
     lv_obj_set_style_translate_y(mask, 2, 0);
     lv_obj_set_style_margin_right(mask, 5, 0);
 
-    // 创建 label
+    // Create label
     lv_obj_t *label = lv_label_create(mask);
     lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
     lv_obj_set_style_text_color(label, EOS_COLOR_WHITE, 0);
 
-    // 测量文字
+    // Measure text
     lv_point_t size;
     lv_txt_get_size(&size, message, lv_obj_get_style_text_font(label, 0), 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     lv_coord_t text_width = LV_MIN(size.x, _LABEL_MAX_WIDTH);
@@ -139,7 +139,7 @@ static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message)
     lv_obj_set_width(label, text_width);
     lv_label_set_text(label, message);
 
-    // 设置滚动动画持续时间
+    // Set scroll animation duration
     bool need_scroll = size.x > _LABEL_MAX_WIDTH;
     if (need_scroll)
     {
@@ -148,18 +148,18 @@ static lv_obj_t *_toast_finalize(lv_obj_t *toast, const char *message)
         lv_obj_set_style_radius(mask, LV_RADIUS_CIRCLE, 0);
     }
 
-    // 顶部居中
+    // Top center
     lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_update_layout(toast);
     lv_obj_set_style_translate_y(toast, -lv_obj_get_height(toast), 0);
 
-    // 定时器时长计算
+    // Calculate timer duration
     uint32_t duration = 0;
     if (need_scroll)
     {
-        // 获取 label 滚动动画的持续时间
+        // Get label scroll animation duration
         uint32_t anim_dur = lv_obj_get_style_anim_duration(label, 0);
-        duration = _TOAST_SHOW_ANIM_BASE_DURATION + anim_dur; // 滚动完后再加上停留时间
+        duration = _TOAST_SHOW_ANIM_BASE_DURATION + anim_dur; // Add stay time after scrolling
     }
     else
     {

@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.12)
 project(ElenixOS C)
 
 # Define a compile-time constant for the ElenixOS system root directory
-add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
+if(EOS_IS_WASM)
+    add_compile_definitions(EOS_SYS_ROOT_DIR="/")
+elseif(EOS_PLATFORM STREQUAL "Native")
+    add_compile_definitions(EOS_SYS_ROOT_DIR="${CMAKE_SOURCE_DIR}/fs/")
+endif()
 
 # Recursively gather all source files
 file(GLOB_RECURSE ELENIXOS_SRC CONFIGURE_DEPENDS

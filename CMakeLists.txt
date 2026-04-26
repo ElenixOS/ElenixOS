@@ -9,17 +9,17 @@ elseif(EOS_PLATFORM STREQUAL "Native")
 endif()
 
 # Recursively gather all source files
-file(GLOB_RECURSE ELENIXOS_SRC CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
+file(GLOB_RECURSE ELENIXOS_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/**/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/font/*.c
 )
 
-# Recursively gather all header files and extract unique directories for include paths
-file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+# Automatically collect all directories that contain header files
+file(GLOB_RECURSE HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/**/*.h
 )
 
-set(ELENIXOS_INC_DIRS "")
+set(ELENIXOS_INC_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 foreach(h ${HEADER_FILES})
     get_filename_component(dir ${h} DIRECTORY)
     list(APPEND ELENIXOS_INC_DIRS ${dir})

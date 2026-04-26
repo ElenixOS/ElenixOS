@@ -309,6 +309,12 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     g_activity_ctx.previous_activity = cur_activity;
     g_activity_ctx.current_activity = next_activity;
 
+    /* Keep target view hidden during lifecycle work to avoid transient one-frame flashes. */
+    if (next_activity->view && lv_obj_is_valid(next_activity->view))
+    {
+        lv_obj_add_flag(next_activity->view, LV_OBJ_FLAG_HIDDEN);
+    }
+
     if (cur_activity == g_activity_ctx.watchface_activity && next_activity != g_activity_ctx.watchface_activity)
     {
         eos_control_center_t *cc = eos_control_center_get_instance();

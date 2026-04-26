@@ -109,6 +109,9 @@ static void _app_list_init_translate_x_anim(lv_anim_t *anim, lv_obj_t *obj, int3
 static void _app_list_init_translate_y_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
 static void _app_list_init_opa_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
 static void _app_list_play_transition_anim(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to, bool opening);
+static int32_t _app_list_find_sys_app(const char *app_id);
+static script_engine_result_t _app_list_build_script_pkg(const char *app_id, script_pkg_t *pkg);
+static eos_result_t _app_list_launch_script_app(const char *app_id);
 
 static bool _anim_routes_registered = false;
 static bool _app_list_last_icon_center_valid = false;
@@ -164,6 +167,215 @@ static void _app_on_enter(eos_activity_t *a)
         lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_BACK), eos_activity_back_cb, NULL);
         EOS_LOG_E("Application encounter a fatal error");
     }
+}
+
+static int32_t _app_list_find_sys_app(const char *app_id)
+{
+    if (!app_id)
+    {
+        return -1;
+    }
+
+    for (int32_t i = 0; i < EOS_SYS_APP_LAST; i++)
+    {
+        if (strcmp(app_id, eos_sys_app_id_list[i]) == 0)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static script_engine_result_t _app_list_build_script_pkg(const char *app_id, script_pkg_t *pkg)
+{
+    if (!(app_id && pkg))
+    {
+        return -SE_ERR_NULL_PACKAGE;
+    }
+
+    char manifest_path[PATH_MAX];
+    snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
+             app_id);
+
+    pkg->type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, pkg) != SE_OK)
+    {
+        EOS_LOG_E("Read manifest failed: %s", manifest_path);
+        return -SE_FAILED;
+    }
+
+    char script_path[PATH_MAX];
+    snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
+             app_id);
+
+    char base_path[PATH_MAX];
+    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
+    pkg->base_path = eos_strdup(base_path);
+    if (!pkg->base_path)
+    {
+        eos_pkg_free(pkg);
+        return -SE_ERR_MALLOC;
+    }
+
+    if (!eos_is_file(script_path))
+    {
+        EOS_LOG_E("Can't find script: %s", script_path);
+        eos_pkg_free(pkg);
+        return -SE_FAILED;
+    }
+
+    pkg->script_str = eos_fs_read_file(script_path);
+    if (!pkg->script_str)
+    {
+        EOS_LOG_E("Failed to read script: %s", script_path);
+        eos_pkg_free(pkg);
+        return -SE_FAILED;
+    }
+
+    return SE_OK;
+}
+
+static eos_result_t _app_list_launch_script_app(const char *app_id)
+{
+    script_pkg_t pkg = {0};
+    if (_app_list_build_script_pkg(app_id, &pkg) != SE_OK)
+    {
+        return EOS_FAILED;
+    }
+
+    app_launch_ctx_t *ctx = eos_malloc_zeroed(sizeof(app_launch_ctx_t));
+    if (!ctx)
+    {
+        EOS_LOG_E("Failed to allocate app launch context");
+        eos_pkg_free(&pkg);
+        return EOS_FAILED;
+    }
+
+    ctx->pkg = pkg;
+    ctx->app_id = eos_strdup(app_id);
+    if (!ctx->app_id)
+    {
+        EOS_LOG_E("Failed to copy app id");
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx);
+        return EOS_FAILED;
+    }
+
+    eos_activity_t *a = eos_activity_create(&app_lifecycle);
+    if (!a)
+    {
+        EOS_LOG_E("Failed to create activity");
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx->app_id);
+        eos_free(ctx);
+        return EOS_FAILED;
+    }
+
+    lv_obj_t *app_view = eos_activity_get_view(a);
+    lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
+    eos_activity_set_user_data(a, ctx);
+    eos_activity_set_title(a, pkg.name);
+    eos_activity_set_app_header_visible(a, true);
+
+    EOS_LOG_D("view_size: %d, %d", lv_obj_get_width(app_view), lv_obj_get_height(app_view));
+
+    eos_activity_enter(a);
+    return EOS_OK;
+}
+
+/**
+ * @brief Return to app list from within an app and any sub-activities
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed or not in app
+ * @note If not in app context, returns EOS_FAILED; otherwise clears the activity stack
+ */
+static eos_result_t _app_list_pop_to_app_list(void)
+{
+    eos_activity_t *current = eos_activity_get_current();
+    if (!current)
+    {
+        return EOS_FAILED;
+    }
+
+    eos_activity_type_t current_type = eos_activity_get_type(current);
+
+    // If already at app list, no need to pop
+    if (current_type == EOS_ACTIVITY_TYPE_APP_LIST)
+    {
+        return EOS_OK;
+    }
+
+    // If not in app context (not in app or app list), return failure
+    // This prevents unexpected navigation from watchface or other contexts
+    if (current_type != EOS_ACTIVITY_TYPE_APP)
+    {
+        return EOS_FAILED;
+    }
+
+    // Currently in app (possibly with sub-activities), return to watchface
+    // This will clean up all app-related activities on the stack
+    eos_activity_back_to_watchface();
+    return EOS_OK;
+}
+
+eos_result_t eos_app_launch_immediately(const char *app_id)
+{
+    if (!(app_id && app_id[0]))
+    {
+        EOS_LOG_E("Invalid app id");
+        return EOS_FAILED;
+    }
+
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot launch app while activity transition is in progress");
+        return EOS_FAILED;
+    }
+
+    _register_anim_routes_once();
+    _app_list_set_last_launch_app_id(app_id);
+
+    int32_t sys_app_index = _app_list_find_sys_app(app_id);
+    if (sys_app_index >= 0)
+    {
+        if (eos_sys_app_entry_list[sys_app_index])
+        {
+            eos_sys_app_entry_list[sys_app_index]();
+            return EOS_OK;
+        }
+        return EOS_FAILED;
+    }
+
+    if (!eos_app_list_contains(app_id))
+    {
+        EOS_LOG_E("App not found: %s", app_id);
+        return EOS_FAILED;
+    }
+
+    // If currently inside an app (or app sub-activity), pop back to watchface first
+    // This ensures all app-internal activities are cleaned up before launching new app
+    eos_activity_type_t current_type = eos_activity_get_type(eos_activity_get_current());
+    if (current_type == EOS_ACTIVITY_TYPE_APP)
+    {
+        EOS_LOG_I("Returning to app list before launching new app");
+        _app_list_pop_to_app_list();
+    }
+
+    script_state_t state = script_engine_get_state();
+    if (state == SCRIPT_STATE_RUNNING ||
+        state == SCRIPT_STATE_SUSPEND ||
+        state == SCRIPT_STATE_ERROR)
+    {
+        script_engine_result_t stop_ret = script_engine_request_stop();
+        if (stop_ret != SE_OK && script_engine_get_state() != SCRIPT_STATE_STOPPED)
+        {
+            EOS_LOG_E("Failed to stop current script before launching app: %d", stop_ret);
+            return EOS_FAILED;
+        }
+    }
+
+    return _app_list_launch_script_app(app_id);
 }
 
 static const char *_app_list_get_launch_app_id(eos_activity_t *activity)
@@ -525,96 +737,10 @@ static void _app_list_icon_clicked_cb(lv_event_t *e)
         _app_list_record_icon_center_point(p.x, p.y);
     }
 
-    // 检查是否为系统内置应用
-    for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+    if (eos_app_launch_immediately(app_id) != EOS_OK)
     {
-        if (strcmp(app_id, eos_sys_app_id_list[i]) == 0)
-        {
-            if (eos_sys_app_entry_list[i])
-                eos_sys_app_entry_list[i]();
-            return;
-        }
+        EOS_LOG_E("Launch app failed: %s", app_id);
     }
-
-    // 脚本应用入口逻辑
-    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
-    {
-        EOS_LOG_E("Another script running");
-        return;
-    }
-
-    // 获取清单文件
-    char manifest_path[PATH_MAX];
-    snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
-             app_id);
-    script_pkg_t pkg = {0};
-
-    pkg.type = SCRIPT_TYPE_APPLICATION;
-    if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
-    {
-        EOS_LOG_E("Read manifest failed: %s", manifest_path);
-        eos_pkg_free(&pkg);
-        return;
-    }
-
-    char script_path[PATH_MAX];
-    snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
-             app_id);
-
-    // 设置脚本基础路径，用于解析相对路径的模块导入
-    char base_path[PATH_MAX];
-    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
-    pkg.base_path = eos_strdup(base_path);
-
-    if (!eos_is_file(script_path))
-    {
-        EOS_LOG_E("Can't find script: %s", script_path);
-        eos_pkg_free(&pkg);
-        return;
-    }
-
-    pkg.script_str = eos_fs_read_file(script_path);
-
-    app_launch_ctx_t *ctx = eos_malloc_zeroed(sizeof(app_launch_ctx_t));
-    if (!ctx)
-    {
-        EOS_LOG_E("Failed to allocate app launch context");
-        eos_pkg_free(&pkg);
-        return;
-    }
-
-    ctx->pkg = pkg;
-    ctx->app_id = eos_strdup(app_id);
-    if (!ctx->app_id)
-    {
-        EOS_LOG_E("Failed to copy app id");
-        eos_pkg_free(&ctx->pkg);
-        eos_free(ctx);
-        return;
-    }
-
-    // 创建脚本应用的 Activity
-    eos_activity_t *a = eos_activity_create(&app_lifecycle);
-    if (!a)
-    {
-        EOS_LOG_E("Failed to create activity");
-        eos_pkg_free(&ctx->pkg);
-        eos_free(ctx->app_id);
-        eos_free(ctx);
-        return;
-    }
-
-    lv_obj_t *app_view = eos_activity_get_view(a);
-    lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
-    eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
-    eos_activity_set_user_data(a, ctx);
-    eos_activity_set_title(a, pkg.name);
-    eos_activity_set_app_header_visible(a, true);
-
-    EOS_LOG_D("view_size: %d, %d", lv_obj_get_width(app_view), lv_obj_get_height(app_view));
-
-    // 进入应用页面
-    eos_activity_enter(a);
 }
 
 static void _register_anim_routes_once(void)

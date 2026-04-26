@@ -252,6 +252,12 @@ void eos_activity_enter(eos_activity_t *activity);
 eos_result_t eos_activity_back(void);
 
 /**
+ * @brief Return directly to watchface Activity and clear all stacked Activities
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed
+ */
+eos_result_t eos_activity_back_to_watchface(void);
+
+/**
  * @brief Wrapper for returning to previous Activity and destroying current Activity
  * @param e Event object
  */

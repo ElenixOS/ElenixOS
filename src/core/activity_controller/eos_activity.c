@@ -1093,6 +1093,52 @@ eos_result_t eos_activity_back(void)
     return EOS_OK;
 }
 
+eos_result_t eos_activity_back_to_watchface(void)
+{
+    if (!_controller_initialized())
+    {
+        return EOS_FAILED;
+    }
+
+    if (g_activity_ctx.transition_in_progress)
+    {
+        EOS_LOG_W("Activity transition in progress");
+        return EOS_FAILED;
+    }
+
+    eos_activity_t *watchface = g_activity_ctx.watchface_activity;
+    eos_activity_t *current = g_activity_ctx.current_activity;
+    if (!watchface || !current)
+    {
+        return EOS_FAILED;
+    }
+
+    if (current == watchface)
+    {
+        return EOS_OK;
+    }
+
+    while (eos_stack_get_size(g_activity_ctx.activity_stack) > 0)
+    {
+        eos_activity_t *activity = eos_stack_pop(g_activity_ctx.activity_stack);
+        if (!activity)
+        {
+            continue;
+        }
+
+        if (activity == current)
+        {
+            activity->destroy_on_exit = true;
+            continue;
+        }
+
+        _activity_run_destroy(activity);
+    }
+
+    _activity_switch_to(watchface);
+    return EOS_OK;
+}
+
 void eos_activity_back_cb(lv_event_t *e)
 {
     eos_activity_back();

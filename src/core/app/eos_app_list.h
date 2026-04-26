@@ -36,6 +36,12 @@ extern const char *eos_sys_app_id_list[EOS_SYS_APP_LAST];
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief Immediately launch the target app by id from any page
+ * @param app_id Target app id
+ * @return eos_result_t Launch result
+ */
+eos_result_t eos_app_launch_immediately(const char *app_id);
+/**
  * @brief Enter app list
  * @return eos_activity_t* App list activity object
  */

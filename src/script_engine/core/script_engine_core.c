@@ -20,6 +20,7 @@
 #include "eos_misc.h"
 #include "eos_icon.h"
 #include "eos_watchface.h"
+#include "eos_app.h"
 #include "eos_config.h"
 #include "eos_fs.h"
 #include "eos_mem.h"
@@ -877,6 +878,9 @@ script_engine_result_t script_engine_request_stop(void)
     EOS_LOG_I("Request stop script");
     switch (engine_ctx.state)
     {
+    case SCRIPT_STATE_STOPPED:
+        return SE_OK;
+
     case SCRIPT_STATE_RUNNING:
         // 请求停止，等待状态转换
         _change_state(SCRIPT_STATE_STOPPING);
@@ -899,6 +903,29 @@ script_engine_result_t script_engine_request_stop(void)
         }
 
         // 正常停止流程
+        if (engine_ctx.state == SCRIPT_STATE_STOPPED)
+        {
+            return SE_OK;
+        }
+        break;
+
+    case SCRIPT_STATE_STOPPING:
+        EOS_LOG_W("Script is already stopping, waiting for completion");
+        for (int timeout = 0; timeout < 100; timeout++)
+        {
+            if (engine_ctx.state != SCRIPT_STATE_STOPPING)
+            {
+                break;
+            }
+            eos_delay(10);
+        }
+
+        if (engine_ctx.state == SCRIPT_STATE_STOPPING)
+        {
+            EOS_LOG_W("Force stopping script from STOPPING state due to timeout");
+            return _script_engine_stop_and_cleanup();
+        }
+
         if (engine_ctx.state == SCRIPT_STATE_STOPPED)
         {
             return SE_OK;
@@ -1121,6 +1148,106 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
     }
 
     return result;
+}
+
+script_engine_result_t script_engine_reload_current_script(void)
+{
+    if (!engine_ctx.initialized)
+    {
+        EOS_LOG_E("Script engine not initialized");
+        return -SE_ERR_NOT_INITIALIZED;
+    }
+
+    if (!engine_ctx.current_script)
+    {
+        EOS_LOG_E("No running script to reload");
+        return -SE_ERR_SCRIPT_NOT_RUNNING;
+    }
+
+    if (!(engine_ctx.current_script->id && engine_ctx.current_script->base_path))
+    {
+        EOS_LOG_E("Current script metadata is incomplete");
+        return -SE_FAILED;
+    }
+
+    const char *base_path = eos_strdup(engine_ctx.current_script->base_path);
+    if (!base_path)
+    {
+        return -SE_ERR_MALLOC;
+    }
+
+    script_state_t state = script_engine_get_state();
+    if (state == SCRIPT_STATE_RUNNING ||
+        state == SCRIPT_STATE_SUSPEND ||
+        state == SCRIPT_STATE_ERROR)
+    {
+        script_engine_result_t stop_ret = script_engine_request_stop();
+        if (stop_ret != SE_OK && script_engine_get_state() != SCRIPT_STATE_STOPPED)
+        {
+            EOS_LOG_E("Failed to stop current script before reload: %d", stop_ret);
+            eos_free((void *)base_path);
+            return stop_ret;
+        }
+    }
+
+    script_pkg_t pkg = {0};
+    pkg.type = engine_ctx.current_script->type;
+
+    const char *manifest_file_name = NULL;
+    const char *entry_file_name = NULL;
+    switch (pkg.type)
+    {
+    case SCRIPT_TYPE_APPLICATION:
+        manifest_file_name = EOS_APP_MANIFEST_FILE_NAME;
+        entry_file_name = EOS_APP_SCRIPT_ENTRY_FILE_NAME;
+        break;
+    case SCRIPT_TYPE_WATCHFACE:
+        manifest_file_name = EOS_WATCHFACE_MANIFEST_FILE_NAME;
+        entry_file_name = EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME;
+        break;
+    default:
+        EOS_LOG_E("Current script type does not support reload: %d", pkg.type);
+        eos_free((void *)base_path);
+        return -SE_ERR_INVALID_STATE;
+    }
+
+    char manifest_path[PATH_MAX];
+    snprintf(manifest_path, sizeof(manifest_path), "%s%s", base_path, manifest_file_name);
+    if (script_engine_get_manifest(manifest_path, &pkg) != SE_OK)
+    {
+        EOS_LOG_E("Read manifest failed: %s", manifest_path);
+        eos_free((void *)base_path);
+        return -SE_FAILED;
+    }
+
+    char script_path[PATH_MAX];
+    snprintf(script_path, sizeof(script_path), "%s%s", base_path, entry_file_name);
+    pkg.base_path = base_path;
+
+    if (!eos_is_file(script_path))
+    {
+        EOS_LOG_E("Can't find script: %s", script_path);
+        eos_pkg_free(&pkg);
+        return -SE_FAILED;
+    }
+
+    pkg.script_str = eos_fs_read_file(script_path);
+    if (!pkg.script_str)
+    {
+        EOS_LOG_E("Failed to read script: %s", script_path);
+        eos_pkg_free(&pkg);
+        return -SE_FAILED;
+    }
+
+    script_engine_result_t run_ret = script_engine_run(&pkg);
+    eos_pkg_free(&pkg);
+
+    return run_ret;
+}
+
+script_engine_result_t script_engine_reload_current_app(void)
+{
+    return script_engine_reload_current_script();
 }
 
 script_engine_result_t script_engine_clean_up(void)

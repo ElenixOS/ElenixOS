@@ -55,7 +55,7 @@
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
-static bool is_logo_played = false;
+static bool g_is_inited = false;
 /* Function Implementations -----------------------------------*/
 
 static lv_indev_t *_get_key_indev()
@@ -79,11 +79,14 @@ void _sys_init_err_handler(const char *err_msg)
                                          EOS_COLOR_RED, RI_BUG_LINE,
                                          eos_lang_get_text(STR_ID_SYS_INIT_FAILED),
                                          eos_lang_get_text(STR_ID_SYS_INIT_FAILED_CONTENT));
+    lv_obj_set_style_pad_top(list, 80, 0);
     char info_str[1024];
     snprintf(info_str, sizeof(info_str),
              "Error: %s", err_msg);
     lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-    while (1)
+    (void)err_label;
+
+    for (uint8_t i = 0; i < 3; ++i)
     {
         uint32_t delay = lv_timer_handler();
         eos_delay(delay);
@@ -92,9 +95,6 @@ void _sys_init_err_handler(const char *err_msg)
 
 void eos_logo_play(bool anim)
 {
-    if (is_logo_played)
-        return;
-
     eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
 
     lv_obj_t *scr = lv_screen_active();
@@ -119,12 +119,11 @@ void eos_logo_play(bool anim)
     lv_obj_center(logo_img);
 
     lv_timer_handler();
-
-    is_logo_played = true;
 }
 
 void eos_init(void)
 {
+
     eos_logo_play(true);
     /************************** System components initialization **************************/
 #if EOS_DFW_ENABLE
@@ -158,10 +157,22 @@ void eos_init(void)
     // Activity controller will automatically delete Logo Screen
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
         _sys_init_err_handler("Failed to initialize activity controller");
+        _sys_init_err_handler("Failed to initialize activity controller");
+    g_is_inited = true;
+}
+
+bool eos_is_initialized(void)
+{
+    return g_is_inited;
 }
 
 uint32_t eos_main_loop(void)
 {
+    if (!g_is_inited)
+    {
+        EOS_LOG_E("System not initialized. Please call eos_init() before eos_main_loop().");
+        return 0;
+    }
     eos_dispatch_tick();
     return lv_timer_handler();
 }

@@ -61,6 +61,10 @@ typedef enum
  */
 void eos_init(void);
 /**
+ * @brief Check whether ElenixOS core has completed initialization
+ */
+bool eos_is_initialized(void);
+/**
  * @brief ElenixOS main loop function
  */
 uint32_t eos_main_loop(void);

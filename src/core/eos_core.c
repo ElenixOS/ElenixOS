@@ -157,7 +157,6 @@ void eos_init(void)
     // Activity controller will automatically delete Logo Screen
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
         _sys_init_err_handler("Failed to initialize activity controller");
-        _sys_init_err_handler("Failed to initialize activity controller");
     g_is_inited = true;
 }
 

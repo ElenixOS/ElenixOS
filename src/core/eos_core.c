@@ -118,26 +118,7 @@ void eos_logo_play(bool anim)
     eos_img_set_src(logo_img, EOS_IMG_LOGO);
     lv_obj_center(logo_img);
 
-    if (anim)
-    {
-        const uint16_t duration_ms = 800;
-        const uint8_t timer_handler_delay = 20;
-        eos_anim_fade_start(logo_img, LV_OPA_TRANSP, LV_OPA_COVER, duration_ms, false);
-
-        uint16_t count = 0;
-        while (1)
-        {
-            lv_timer_handler();
-            eos_delay(timer_handler_delay);
-            count += timer_handler_delay;
-            if (count >= duration_ms + 100)
-                break;
-        }
-    }
-    else
-    {
-        lv_timer_handler();
-    }
+    lv_timer_handler();
 
     is_logo_played = true;
 }

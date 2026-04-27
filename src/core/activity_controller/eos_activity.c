@@ -309,6 +309,12 @@ static void _activity_switch_to(eos_activity_t *next_activity)
     g_activity_ctx.previous_activity = cur_activity;
     g_activity_ctx.current_activity = next_activity;
 
+    /* Keep target view hidden during lifecycle work to avoid transient one-frame flashes. */
+    if (next_activity->view && lv_obj_is_valid(next_activity->view))
+    {
+        lv_obj_add_flag(next_activity->view, LV_OBJ_FLAG_HIDDEN);
+    }
+
     if (cur_activity == g_activity_ctx.watchface_activity && next_activity != g_activity_ctx.watchface_activity)
     {
         eos_control_center_t *cc = eos_control_center_get_instance();
@@ -1090,6 +1096,52 @@ eos_result_t eos_activity_back(void)
 
     _activity_switch_to(prev);
 
+    return EOS_OK;
+}
+
+eos_result_t eos_activity_back_to_watchface(void)
+{
+    if (!_controller_initialized())
+    {
+        return EOS_FAILED;
+    }
+
+    if (g_activity_ctx.transition_in_progress)
+    {
+        EOS_LOG_W("Activity transition in progress");
+        return EOS_FAILED;
+    }
+
+    eos_activity_t *watchface = g_activity_ctx.watchface_activity;
+    eos_activity_t *current = g_activity_ctx.current_activity;
+    if (!watchface || !current)
+    {
+        return EOS_FAILED;
+    }
+
+    if (current == watchface)
+    {
+        return EOS_OK;
+    }
+
+    while (eos_stack_get_size(g_activity_ctx.activity_stack) > 0)
+    {
+        eos_activity_t *activity = eos_stack_pop(g_activity_ctx.activity_stack);
+        if (!activity)
+        {
+            continue;
+        }
+
+        if (activity == current)
+        {
+            activity->destroy_on_exit = true;
+            continue;
+        }
+
+        _activity_run_destroy(activity);
+    }
+
+    _activity_switch_to(watchface);
     return EOS_OK;
 }
 

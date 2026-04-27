@@ -148,6 +148,19 @@ script_engine_result_t script_engine_init(void);
 script_engine_result_t script_engine_run(const script_pkg_t* script_package);
 
 /**
+ * @brief Reload current running script code (application/watchface) from disk and run it again
+ * @return script_engine_result_t Return operation result
+ */
+script_engine_result_t script_engine_reload_current_script(void);
+
+/**
+ * @brief Reload current running application script code from disk and run it again
+ * @note Backward-compatible alias of script_engine_reload_current_script()
+ * @return script_engine_result_t Return operation result
+ */
+script_engine_result_t script_engine_reload_current_app(void);
+
+/**
  * @brief Get script engine current state
  * @return script_state_t State
  */

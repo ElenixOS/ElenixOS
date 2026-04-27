@@ -3,7 +3,13 @@
   <img src="./assets/logo-dark.png#gh-dark-mode-only" />
 </div>
 
-[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#) [![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE) [![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io) [![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net) ![release](https://img.shields.io/github/v/tag/ElenixOS/ElenixOS)
+[![STATUS](https://img.shields.io/badge/Status-DEVELOPING-red)](#)
+[![License](https://img.shields.io/badge/Licence-Apache%202.0-brightgreen.svg)](LICENSE)
+[![GUI](https://img.shields.io/badge/GUI-LVGL-blue)](https://lvgl.io)
+[![Script Engine](https://img.shields.io/badge/Script_Engine-JerryScript-orange)](https://jerryscript.net)
+![release](https://img.shields.io/github/v/tag/ElenixOS/ElenixOS)
+[![Simulator](https://img.shields.io/badge/Simulator-Try_it_Online-success)](https://simulator.elenixos.com/wasm/latest/main.html)
+
 
 <div>
   <a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a>
@@ -23,19 +29,18 @@ In terms of user experience, ElenixOS's overall UI and interaction style referen
 
 ElenixOS is suitable for both personal projects and learning research, as well as serving as a customizable smart wearable system foundation framework, providing developers with a complete solution from the bottom layer to the application layer.
 
-## Demo (Under Development)
+## Online Simulator
 
-<img width="400" alt="demo" src="https://github.com/user-attachments/assets/c97ce713-a5a6-4146-a66a-a47eee03a787" />
-
-<img width="400" alt="demo1" src="https://github.com/user-attachments/assets/b88671d4-87e4-4b55-bd67-223c431f4271" />
+ElenixOS provides an online simulator that allows you to experience the system directly in your web browser without any setup. You can access the latest version of the simulator here:
+[Online Simulator](https://simulator.elenixos.com/wasm/latest/main.html)
 
 ## Quick Start
 
-Please refer to the [Quick Start](https://elenixos.averin.cn/en/docs/getting_started/quick_start).
+Please refer to the [Quick Start](https://docs.elenixos.com/en/docs/getting_started/quick_start).
 
 ## Reference Documentation
 
-Please refer to the [ElenixOS Documentation](https://elenixos.averin.cn/en).
+Please refer to the [ElenixOS Documentation](https://docs.elenixos.com/en).
 
 ## Open Source License
 

@@ -38,14 +38,6 @@ extern "C"
 #endif
 
 /**
- * Select system startup mode
- * Available modes:
- *  - NORMAL_MODE:      Normal mode, directly enter watch face
- *  - TEST_MODE:        Test mode, enter test page
- */
-#define EOS_SYSTEM_MODE NORMAL_MODE
-
-/**
  * Select whether to enable animation
  */
 #define EOS_ANIMATION_ENABLE 0
@@ -248,6 +240,11 @@ extern "C"
 /************************** MISC **************************/
 
 #define EOS_ASYNC_SEM_TIMEOUT 1000
+
+/**
+ * Enable Test app
+ */
+#define EOS_ENABLE_TEST_APP 1
 
 /************************** Log **************************/
 

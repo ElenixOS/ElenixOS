@@ -3,6 +3,7 @@
  * @brief App list page - using bubble_grid layout
  */
 
+#include "eos_config.h"
 #include "eos_app_list.h"
 
 /* Includes ---------------------------------------------------*/
@@ -35,6 +36,9 @@
 #include "eos_std_widgets.h"
 #include "eos_activity.h"
 #include "../ui/bubble_grid/eos_bubble_grid.h"
+#ifdef EOS_ENABLE_TEST_APP
+#include "../screen/eos_test.h"
+#endif
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 200
 #define _APP_ICON_ANIM_DELAY 75
@@ -51,15 +55,27 @@
 
 const char *eos_sys_app_id_list[EOS_SYS_APP_LAST] = {
     "sys.settings",
-    "sys.flash_light"};
+    "sys.flash_light",
+#ifdef EOS_ENABLE_TEST_APP
+    "sys.test"
+#endif
+};
 
 const char *eos_sys_app_icon_list[EOS_SYS_APP_LAST] = {
     EOS_IMG_SETTINGS,
-    EOS_IMG_FLASH_LIGHT};
+    EOS_IMG_FLASH_LIGHT,
+#ifdef EOS_ENABLE_TEST_APP
+    EOS_IMG_APP
+#endif
+};
 
 const eos_sys_app_entry_t eos_sys_app_entry_list[EOS_SYS_APP_LAST] = {
     eos_settings_enter,
-    eos_flash_light_enter};
+    eos_flash_light_enter,
+#ifdef EOS_ENABLE_TEST_APP
+    eos_test_start
+#endif
+};
 
 static void _app_list_on_resueme(eos_activity_t *a);
 

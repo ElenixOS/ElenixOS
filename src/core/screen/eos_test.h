@@ -3,9 +3,6 @@
  * @brief System function test
  */
 
-#include "eos_config.h"
-#if EOS_SYSTEM_MODE == TEST_MODE
-
 #ifndef ELENIX_OS_TEST_H
 #define ELENIX_OS_TEST_H
 
@@ -31,5 +28,3 @@ void eos_test_start(void);
 #endif
 
 #endif /* ELENIX_OS_TEST_H */
-
-#endif /* EOS_SYSTEM_MODE == TEST_MODE */

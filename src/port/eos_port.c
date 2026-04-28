@@ -141,6 +141,32 @@ EOS_WEAK void eos_speaker_set_volume(uint8_t volume)
     return;
 }
 
+EOS_WEAK bool eos_speaker_detect(void)
+{
+    return false;
+}
+
+EOS_WEAK bool eos_microphone_detect(void)
+{
+    return false;
+}
+
+EOS_WEAK eos_audio_state_t eos_audio_get_state(void)
+{
+    return EOS_AUDIO_STATE_UNAVAILABLE;
+}
+
+EOS_WEAK int eos_audio_play_file(const char *file_path)
+{
+    LV_UNUSED(file_path);
+    return -1;
+}
+
+EOS_WEAK int eos_audio_stop(void)
+{
+    return -1;
+}
+
 EOS_WEAK void eos_sys_sleep(void)
 {
     eos_display_set_brightness(0);

@@ -43,6 +43,14 @@ extern "C" {
 
 /* Public typedefs --------------------------------------------*/
 typedef struct eos_sem_t eos_sem_t;   /**< Semaphore */
+
+typedef enum
+{
+    EOS_AUDIO_STATE_UNAVAILABLE = 0,
+    EOS_AUDIO_STATE_READY = 1,
+    EOS_AUDIO_STATE_BUSY = 2,
+    EOS_AUDIO_STATE_ERROR = 3,
+} eos_audio_state_t;
 /* Public function prototypes --------------------------------*/
 
 /**
@@ -109,6 +117,36 @@ void eos_locate_phone(void);
  * @param volume Volume
  */
 void eos_speaker_set_volume(uint8_t volume);
+
+/**
+ * @brief Detect whether speaker hardware is available.
+ * @return true if available
+ */
+bool eos_speaker_detect(void);
+
+/**
+ * @brief Detect whether microphone hardware is available.
+ * @return true if available
+ */
+bool eos_microphone_detect(void);
+
+/**
+ * @brief Get platform audio playback state.
+ */
+eos_audio_state_t eos_audio_get_state(void);
+
+/**
+ * @brief Play audio file from path.
+ * @param file_path path to audio file
+ * @return 0 on success, negative value on failure
+ */
+int eos_audio_play_file(const char *file_path);
+
+/**
+ * @brief Stop current audio playback.
+ * @return 0 on success, negative value on failure
+ */
+int eos_audio_stop(void);
 /**
  * @brief System enters sleep mode (low power state)
  *

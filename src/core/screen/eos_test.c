@@ -4,7 +4,8 @@
  */
 
 #include "eos_config.h"
-#if EOS_SYSTEM_MODE == TEST_MODE
+#ifdef EOS_ENABLE_TEST_APP
+
 #include "eos_test.h"
 
 /* Includes ---------------------------------------------------*/
@@ -39,6 +40,7 @@
 #include "eos_fs.h"
 #include "eos_mem.h"
 #include "eos_theme.h"
+#include "eos_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
@@ -68,6 +70,15 @@ typedef struct
     bool debug_active;
     bool global_cb_registered;
 } test_app_debug_ctx_t;
+
+typedef struct
+{
+    lv_obj_t *screen;
+    lv_obj_t *status_label;
+    lv_obj_t *play_btn;
+    lv_obj_t *play_btn_label;
+    lv_timer_t *state_timer;
+} test_audio_page_ctx_t;
 
 // All LVGL built-in symbols
 static const symbol_t lv_symbols[] = {
@@ -135,12 +146,44 @@ static const symbol_t lv_symbols[] = {
 };
 
 static test_app_debug_ctx_t s_test_app_debug = {0};
+static test_audio_page_ctx_t s_test_audio_page = {0};
 static lv_coord_t s_debug_bar_global_x = 0;
 static lv_coord_t s_debug_bar_global_y = 0;
 static bool s_debug_bar_global_pos_valid = false;
+static const char *s_test_audio_primary_path = "fs/music.mp3";
+static const char *s_test_audio_fallback_path = "/music.mp3";
 
 #define TEST_APP_DEBUG_BAR_W 220
 #define TEST_APP_DEBUG_BAR_H 64
+
+/* Activity Lifecycle ---------------------------------------------------*/
+
+static void _test_activity_on_enter(eos_activity_t *activity)
+{
+    LV_UNUSED(activity);
+}
+
+static void _test_activity_on_destroy(eos_activity_t *activity)
+{
+    LV_UNUSED(activity);
+}
+
+static void _test_activity_on_pause(eos_activity_t *activity)
+{
+    LV_UNUSED(activity);
+}
+
+static void _test_activity_on_resume(eos_activity_t *activity)
+{
+    LV_UNUSED(activity);
+}
+
+static const eos_activity_lifecycle_t s_test_activity_lifecycle = {
+    .on_enter = _test_activity_on_enter,
+    .on_destroy = _test_activity_on_destroy,
+    .on_pause = _test_activity_on_pause,
+    .on_resume = _test_activity_on_resume
+};
 
 static void _test_app_debug_clamp_bar_pos(int32_t *x, int32_t *y, int32_t w, int32_t h)
 {
@@ -360,59 +403,70 @@ static void _test_app_debug_restore_after_error(const char *app_id)
 
 static script_engine_result_t _test_app_debug_start_internal(const char *app_id)
 {
-    // if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
-    //     return -SE_ERR_NULL_PACKAGE;
+    if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
+        return -SE_ERR_NULL_PACKAGE;
 
-    // if (script_engine_get_state() != SCRIPT_STATE_STOPPED &&
-    //     script_engine_get_state() != SCRIPT_STATE_ERROR)
-    // {
-    //     script_engine_request_stop();
-    // }
+    if (script_engine_get_state() != SCRIPT_STATE_STOPPED &&
+        script_engine_get_state() != SCRIPT_STATE_ERROR)
+    {
+        script_engine_request_stop();
+    }
 
-    // _test_app_debug_register_global_cb();
-    // _test_app_debug_clear_current_app_id();
-    // s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
-    // s_test_app_debug.debug_active = true;
+    _test_app_debug_register_global_cb();
+    _test_app_debug_clear_current_app_id();
+    s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
+    if (!s_test_app_debug.current_app_id)
+    {
+        s_test_app_debug.debug_active = false;
+        return -SE_ERR_MALLOC;
+    }
+    s_test_app_debug.debug_active = true;
 
-    // lv_obj_t *scr = eos_nav_init(s_test_app_debug.list_screen);
-    // if (!scr)
-    // {
-    //     s_test_app_debug.debug_active = false;
-    //     return -SE_FAILED;
-    // }
+    // Create new activity for the app
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity)
+    {
+        s_test_app_debug.debug_active = false;
+        _test_app_debug_clear_current_app_id();
+        return -SE_FAILED;
+    }
 
-    // script_pkg_t *pkg = NULL;
-    // script_engine_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
-    // if (ret != SE_OK)
-    // {
-    //     s_test_app_debug.debug_active = false;
-    //     return ret;
-    // }
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view)
+    {
+        s_test_app_debug.debug_active = false;
+        _test_app_debug_clear_current_app_id();
+        return -SE_FAILED;
+    }
 
-    // eos_screen_load_without_anim(scr);
-    // ret = script_engine_run(pkg);
-    // if (ret != SE_OK)
-    // {
-    //     _test_app_debug_show_error(scr, app_id, ret);
-    //     _test_app_debug_restore_after_error(app_id);
-    // }
+    eos_activity_set_view(activity, view);
+    eos_activity_set_title(activity, app_id);
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
 
-    // return ret;
+    script_pkg_t *pkg = NULL;
+    script_engine_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
+    if (ret != SE_OK)
+    {
+        s_test_app_debug.debug_active = false;
+        _test_app_debug_clear_current_app_id();
+        return ret;
+    }
+
+    eos_activity_enter(activity);
+    ret = script_engine_run(pkg);
+    if (ret != SE_OK)
+    {
+        _test_app_debug_show_error(view, app_id, ret);
+        _test_app_debug_restore_after_error(app_id);
+    }
+
+    return ret;
 }
 
 static void _test_app_debug_safe_nav_cleanup(void)
 {
-    if (!eos_nav_get_initialized())
-        return;
-
-    lv_obj_t *launcher = s_test_app_debug.list_screen;
-    if (launcher && lv_obj_is_valid(launcher) && lv_obj_has_class(launcher, &lv_obj_class))
-    {
-        // First return to debug list without animation to avoid brief blank screen during stack cleanup.
-        eos_screen_load_without_anim(launcher);
-    }
-
-    eos_nav_clean_up();
+    // Activity-based cleanup - just return to previous activity
+    eos_activity_back();
 }
 
 static void _test_app_debug_exit_current_app(void)
@@ -633,17 +687,13 @@ static void _test_app_debug_list_delete_cb(lv_event_t *e)
 static void _test_app_debug_back_to_test_cb(lv_event_t *e)
 {
     lv_obj_t *list_screen = s_test_app_debug.list_screen;
-    lv_obj_t *launcher_screen = s_test_app_debug.launcher_screen;
 
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
     _test_app_debug_unregister_global_cb();
     s_test_app_debug.debug_active = false;
 
-    if (launcher_screen && lv_obj_is_valid(launcher_screen))
-    {
-        eos_screen_load_without_anim(launcher_screen);
-    }
+    eos_activity_back();
 
     if (list_screen && lv_obj_is_valid(list_screen))
     {
@@ -659,10 +709,25 @@ static void _test_app_debugger(void)
         s_test_app_debug.list_screen = NULL;
     }
 
-    s_test_app_debug.launcher_screen = eos_screen_active();
-    s_test_app_debug.list_screen = eos_screen_create();
+    s_test_app_debug.launcher_screen = eos_view_active();
 
-    lv_obj_t *scr = s_test_app_debug.list_screen;
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity) {
+        return;
+    }
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return;
+    }
+
+    s_test_app_debug.list_screen = view;
+
+    eos_activity_set_view(activity, view);
+    eos_activity_set_title(activity, "App Debugger");
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+
+    lv_obj_t *scr = view;
     lv_obj_add_event_cb(scr, _test_app_debug_list_delete_cb, LV_EVENT_DELETE, NULL);
     lv_obj_set_layout(scr, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
@@ -704,15 +769,27 @@ static void _test_app_debugger(void)
     }
 
     eos_crown_encoder_set_target_obj(app_list);
-    eos_screen_load(scr);
+    eos_activity_enter(activity);
 }
 
 lv_obj_t *_create_new_scr()
 {
-    lv_obj_t *scr = eos_nav_init(eos_screen_active());
-    eos_app_header_bind_screen(scr, "ElenixOS Test");
-    eos_screen_load(scr);
-    return scr;
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity) {
+        return NULL;
+    }
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return NULL;
+    }
+
+    eos_activity_set_view(activity, view);
+    eos_activity_set_title(activity, "ElenixOS Test");
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+
+    eos_activity_enter(activity);
+    return view;
 }
 
 static void _test_msg_list_cb(lv_event_t *e)
@@ -744,7 +821,7 @@ static void _test_msg_list()
     _create_new_scr();
     eos_msg_list_t *msg_list = eos_msg_list_get_instance();
     EOS_CHECK_PTR_RETURN(msg_list);
-    lv_obj_t *btn = lv_button_create(eos_screen_active());
+    lv_obj_t *btn = lv_button_create(eos_view_active());
     lv_obj_center(btn);
     lv_obj_t *btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, RI_CHAT_FOLLOW_UP_FILL " Add new message");
@@ -764,30 +841,26 @@ static void _back_prev_global_cb(lv_event_t *e)
 static void _test_nav_cb_1(lv_event_t *e)
 {
     static int32_t nav_counter = 0;
-    static bool cb_reg = false;
-    if (!cb_reg)
-    {
-        eos_event_add_global_cb(_nav_init_global_cb, EOS_EVENT_NAVIGATION_INIT, &nav_counter);
-        eos_event_add_global_cb(_back_prev_global_cb, EOS_EVENT_NAVIGATION_BACK_PREV, &nav_counter);
-        cb_reg = true;
+
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity) {
+        return;
     }
 
-    lv_obj_t *scr;
-    if (!eos_nav_get_initialized())
-    {
-        scr = eos_nav_init(eos_screen_active());
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return;
     }
-    else
-    {
-        scr = eos_nav_scr_create();
-    }
+
     char title_str[64];
     snprintf(title_str, sizeof(title_str), "Screen %d", nav_counter);
     EOS_LOG_D("%s", title_str);
-    eos_app_header_bind_screen(scr, title_str);
-    eos_screen_load(scr);
 
-    lv_obj_t *new_scr_btn = lv_button_create(scr);
+    eos_activity_set_view(activity, view);
+    eos_activity_set_title(activity, title_str);
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+
+    lv_obj_t *new_scr_btn = lv_button_create(view);
     lv_obj_t *label = lv_label_create(new_scr_btn);
     lv_label_set_text(label, "Create new scr");
     lv_obj_center(label);
@@ -805,7 +878,17 @@ static void _test_nav_cb_1(lv_event_t *e)
     lv_obj_center(new_scr_btn);
 #endif
 
+    // Add back button
+    lv_obj_t *back_btn = lv_button_create(view);
+    lv_obj_set_size(back_btn, 68, 68);
+    lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, 10);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+    lv_obj_center(back_label);
+    lv_obj_add_event_cb(back_btn, eos_activity_back_cb, LV_EVENT_CLICKED, NULL);
+
     nav_counter++;
+    eos_activity_enter(activity);
 }
 
 static void _test_font()
@@ -819,7 +902,7 @@ static void _test_font()
                                               /* 常用汉字测试 */ "在夏末的午后，风把阳台上的风铃吹得叮当作响，像是某种不经意的暗号。"
                                               /* 罕见汉字测试 */ "霡霂淅沥，薜荔葳蕤。彳亍踟蹰，睥睨娉婷。觊觎饕餮，倥偬倜傥。菡萏猗傩，蘼芜菁菁。";
 
-    lv_obj_t *container = eos_list_create(eos_screen_active());
+    lv_obj_t *container = eos_list_create(eos_view_active());
     lv_obj_set_size(container, lv_pct(100), lv_pct(100));
     lv_obj_t *font_label = lv_label_create(container);
     lv_label_set_text(font_label, test_str);
@@ -846,14 +929,14 @@ static void _test_lang(lv_event_t *e)
 {
     _create_new_scr();
 
-    lv_obj_t *label = lv_label_create(eos_screen_active());
+    lv_obj_t *label = lv_label_create(eos_view_active());
     lv_obj_set_width(label, lv_pct(100));
     lv_obj_center(label);
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(label, &eos_font_resource_han_rounded_30, LV_PART_MAIN);
 #endif
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-    lv_obj_t *btn = lv_button_create(eos_screen_active());
+    lv_obj_t *btn = lv_button_create(eos_view_active());
     lv_obj_t *btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, RI_REPEAT_2_FILL " Switch Language");
     lv_obj_add_event_cb(btn, _test_lang_cb, LV_EVENT_CLICKED, NULL);
@@ -885,14 +968,14 @@ static void _test_vkb_event_cb(lv_event_t *e)
 static void _test_vkb()
 {
     _create_new_scr();
-    lv_obj_t *pinyin_ime = lv_ime_pinyin_create(eos_screen_active());
+    lv_obj_t *pinyin_ime = lv_ime_pinyin_create(eos_view_active());
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(pinyin_ime, &eos_font_resource_han_rounded_30, 0);
 #endif
     // lv_ime_pinyin_set_dict(pinyin_ime, your_dict); // Use a custom dictionary. If it is not set, the built-in dictionary will be used.
 
     /* ta1 */
-    lv_obj_t *ta1 = lv_textarea_create(eos_screen_active());
+    lv_obj_t *ta1 = lv_textarea_create(eos_view_active());
     lv_textarea_set_one_line(ta1, true);
 #ifdef TEST_USE_ZH_FONT
     lv_obj_set_style_text_font(ta1, &eos_font_resource_han_rounded_30, 0);
@@ -901,7 +984,7 @@ static void _test_vkb()
     lv_obj_set_width(ta1, lv_pct(100));
 
     /*Create a keyboard and add it to ime_pinyin*/
-    lv_obj_t *kb = lv_keyboard_create(eos_screen_active());
+    lv_obj_t *kb = lv_keyboard_create(eos_view_active());
 
     lv_ime_pinyin_set_keyboard(pinyin_ime, kb);
     lv_keyboard_set_textarea(kb, ta1);
@@ -969,7 +1052,7 @@ static void _test_image()
 
 static void _test_app_list()
 {
-    eos_scene_switch(EOS_SCENE_APP_LIST);
+    eos_app_list_enter();
 }
 
 static void _test_app_debug_page()
@@ -979,18 +1062,183 @@ static void _test_app_debug_page()
 
 static void _test_watchface_list()
 {
-    eos_scene_switch(EOS_SCENE_WATCHFACE_LIST);
+    eos_watchface_list_enter();
 }
 
 static void _toast_clicked_cb(lv_event_t *e)
 {
-    eos_scene_switch(EOS_SCENE_APP_LIST);
+    eos_app_list_enter();
 }
 
 static void _test_toast()
 {
     lv_obj_t *toast = eos_toast_show(NULL, "Click me to open App List!");
     lv_obj_add_event_cb(toast, _toast_clicked_cb, LV_EVENT_CLICKED, NULL);
+}
+
+static const char *_test_audio_resolve_path(void)
+{
+    if (eos_is_file(s_test_audio_primary_path))
+    {
+        return s_test_audio_primary_path;
+    }
+
+    if (eos_is_file(s_test_audio_fallback_path))
+    {
+        return s_test_audio_fallback_path;
+    }
+
+    return s_test_audio_primary_path;
+}
+
+static void _test_audio_update_button_style(bool is_playing)
+{
+    if (!(s_test_audio_page.play_btn && lv_obj_is_valid(s_test_audio_page.play_btn)))
+    {
+        return;
+    }
+
+    lv_color_t bg = is_playing ? lv_color_hex(0xD84F4F) : lv_color_hex(0x2F80ED);
+    lv_obj_set_style_bg_color(s_test_audio_page.play_btn, bg, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(s_test_audio_page.play_btn, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_text_color(s_test_audio_page.play_btn, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+}
+
+static void _test_audio_sync_ui(void)
+{
+    if (!(s_test_audio_page.status_label && lv_obj_is_valid(s_test_audio_page.status_label)))
+    {
+        return;
+    }
+
+    eos_audio_state_t state = eos_audio_get_state();
+    const char *path = _test_audio_resolve_path();
+    const char *status_text = "Audio status: unknown";
+    bool is_playing = false;
+
+    switch (state)
+    {
+    case EOS_AUDIO_STATE_READY:
+        status_text = "Audio status: ready";
+        break;
+    case EOS_AUDIO_STATE_BUSY:
+        status_text = "Audio status: playing";
+        is_playing = true;
+        break;
+    case EOS_AUDIO_STATE_ERROR:
+        status_text = "Audio status: error";
+        break;
+    case EOS_AUDIO_STATE_UNAVAILABLE:
+    default:
+        status_text = "Audio status: unavailable";
+        break;
+    }
+
+    lv_label_set_text_fmt(s_test_audio_page.status_label,
+                          "%s\nSpeaker: %s  Mic: %s\nFile: %s",
+                          status_text,
+                          eos_speaker_detect() ? "yes" : "no",
+                          eos_microphone_detect() ? "yes" : "no",
+                          path);
+
+    if (s_test_audio_page.play_btn_label && lv_obj_is_valid(s_test_audio_page.play_btn_label))
+    {
+        lv_label_set_text(s_test_audio_page.play_btn_label,
+                          is_playing ? (LV_SYMBOL_STOP " Stop") : (LV_SYMBOL_PLAY " Play music"));
+    }
+    _test_audio_update_button_style(is_playing);
+}
+
+static void _test_audio_state_timer_cb(lv_timer_t *t)
+{
+    LV_UNUSED(t);
+    _test_audio_sync_ui();
+}
+
+static void _test_audio_button_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+
+    eos_audio_state_t state = eos_audio_get_state();
+    if (state == EOS_AUDIO_STATE_BUSY)
+    {
+        int ret = eos_audio_stop();
+        if (ret != 0)
+        {
+            eos_toast_show(NULL, "Stop audio failed");
+        }
+        _test_audio_sync_ui();
+        return;
+    }
+
+    if (!eos_speaker_detect())
+    {
+        eos_toast_show(NULL, "Speaker unavailable");
+        _test_audio_sync_ui();
+        return;
+    }
+
+    const char *path = _test_audio_resolve_path();
+    if (!eos_is_file(path))
+    {
+        eos_toast_show(NULL, "Audio file not found: fs/music.mp3");
+        _test_audio_sync_ui();
+        return;
+    }
+
+    int ret = eos_audio_play_file(path);
+    if (ret != 0)
+    {
+        eos_toast_show(NULL, "Play audio failed");
+    }
+    _test_audio_sync_ui();
+}
+
+static void _test_audio_page_delete_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+
+    if (s_test_audio_page.state_timer)
+    {
+        lv_timer_delete(s_test_audio_page.state_timer);
+    }
+    memset(&s_test_audio_page, 0, sizeof(s_test_audio_page));
+}
+
+static void _test_audio_page()
+{
+    lv_obj_t *scr = _create_new_scr();
+    memset(&s_test_audio_page, 0, sizeof(s_test_audio_page));
+    s_test_audio_page.screen = scr;
+
+    lv_obj_t *list = eos_list_create(scr);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_pad_all(list, 16, 0);
+    lv_obj_set_style_pad_row(list, 14, 0);
+
+    lv_obj_t *title = lv_label_create(list);
+    lv_label_set_text(title, LV_SYMBOL_AUDIO " Audio Playback");
+    eos_label_set_font_size(title, EOS_FONT_SIZE_LARGE);
+
+    lv_obj_t *hint = lv_label_create(list);
+    lv_label_set_text(hint, "Tap button to play/stop fs/music.mp3");
+    lv_obj_set_style_text_color(hint, lv_color_hex(0xA0A0A0), LV_PART_MAIN);
+
+    s_test_audio_page.play_btn = lv_button_create(list);
+    lv_obj_set_size(s_test_audio_page.play_btn, lv_pct(100), 56);
+    lv_obj_add_event_cb(s_test_audio_page.play_btn, _test_audio_button_cb, LV_EVENT_CLICKED, NULL);
+
+    s_test_audio_page.play_btn_label = lv_label_create(s_test_audio_page.play_btn);
+    lv_label_set_text(s_test_audio_page.play_btn_label, LV_SYMBOL_PLAY " Play music");
+    lv_obj_center(s_test_audio_page.play_btn_label);
+
+    s_test_audio_page.status_label = lv_label_create(list);
+    lv_obj_set_width(s_test_audio_page.status_label, lv_pct(100));
+    lv_label_set_long_mode(s_test_audio_page.status_label, LV_LABEL_LONG_WRAP);
+
+    lv_obj_add_event_cb(scr, _test_audio_page_delete_cb, LV_EVENT_DELETE, NULL);
+    s_test_audio_page.state_timer = lv_timer_create(_test_audio_state_timer_cb, 300, NULL);
+    _test_audio_sync_ui();
 }
 
 static void _test_show_all_lv_symbols_list()
@@ -1249,9 +1497,20 @@ static void _test_sensor()
 
 void eos_test_start(void)
 {
-    lv_obj_t *scr = eos_screen_active();
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity) {
+        return;
+    }
 
-    lv_obj_t *test_list = lv_list_create(scr);
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return;
+    }
+
+    eos_activity_set_title(activity, "ElenixOS Test");
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+
+    lv_obj_t *test_list = lv_list_create(view);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
     eos_crown_encoder_set_target_obj(test_list);
 
@@ -1264,6 +1523,9 @@ void eos_test_start(void)
     // 传感器测试
     btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "SensorTester");
     lv_obj_add_event_cb(btn, _test_sensor, LV_EVENT_CLICKED, NULL);
+    // 音频播放测试
+    btn = lv_list_add_button(test_list, LV_SYMBOL_AUDIO, "Audio Playback");
+    lv_obj_add_event_cb(btn, _test_audio_page, LV_EVENT_CLICKED, NULL);
     // 测试滑动组件
     btn = lv_list_add_button(test_list, RI_CAROUSEL_VIEW, "Slide Widget");
     lv_obj_add_event_cb(btn, _test_slide_widget, LV_EVENT_CLICKED, NULL);
@@ -1300,6 +1562,8 @@ void eos_test_start(void)
     // 测试 LVGL 默认符号
     btn = lv_list_add_button(test_list, RI_OMEGA, "LVGL Symbols");
     lv_obj_add_event_cb(btn, _test_show_all_lv_symbols_list, LV_EVENT_CLICKED, NULL);
+
+    eos_activity_enter(activity);
 }
 
-#endif /* EOS_SYSTEM_MODE == TEST_MODE */
+#endif /* EOS_ENABLE_TEST_APP */

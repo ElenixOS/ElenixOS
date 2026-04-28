@@ -28,6 +28,9 @@ enum
    EOS_SYS_APP_SETTINGS = 0,
    EOS_SYS_APP_FLASH_LIGHT,
    /* New system apps can be added here */
+#ifdef EOS_ENABLE_TEST_APP
+   EOS_SYS_APP_TEST,
+#endif
    EOS_SYS_APP_LAST
 };
 

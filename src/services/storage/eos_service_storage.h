@@ -1,10 +1,10 @@
 /**
- * @file eos_fs.h
- * @brief File system
+ * @file eos_service_storage.h
+ * @brief Storage service file operation APIs
  */
 
-#ifndef ELENIX_OS_FS_H
-#define ELENIX_OS_FS_H
+#ifndef ELENIX_OS_SERVICE_STORAGE_H
+#define ELENIX_OS_SERVICE_STORAGE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,12 +23,12 @@ extern "C" {
 /**
  * @brief Check if target path is a directory
  */
-bool eos_is_dir(const char *path);
+bool eos_storage_is_dir(const char *path);
 
 /**
  * @brief Check if target path is a file
  */
-bool eos_is_file(const char *path);
+bool eos_storage_is_file(const char *path);
 
 /**
  * @brief Write string to file (automatically appends newline at the end)
@@ -36,14 +36,14 @@ bool eos_is_file(const char *path);
  * @param fp File pointer (opened by eos_fs_open_write or eos_fs_open_readwrite)
  * @return int Number of bytes written, or error code (negative value)
  */
-int eos_fs_puts(const char *s, eos_file_t fp);
+int eos_storage_puts(const char *s, eos_file_t fp);
 
 /**
  * @brief Check if directory exists, create if it doesn't
  * @param path Directory path
  * @return int 0 indicates success; otherwise returns error code
  */
-int eos_fs_mkdir_if_not_exist(const char *path);
+int eos_storage_mkdir_if_not_exist(const char *path);
 
 /**
  * @brief Create file and write default content if file doesn't exist
@@ -51,7 +51,7 @@ int eos_fs_mkdir_if_not_exist(const char *path);
  * @param default_content Default content to write when file doesn't exist, can be NULL (create empty file)
  * @return int 0 indicates success; otherwise returns error code
  */
-int eos_create_file_if_not_exist(const char *path, const char *default_content);
+int eos_storage_create_file_if_not_exist(const char *path, const char *default_content);
 
 /**
  * @brief Read entire file content into dynamically allocated buffer (can only read text files)
@@ -59,7 +59,7 @@ int eos_create_file_if_not_exist(const char *path, const char *default_content);
  * @return char* Returns dynamically allocated buffer; returns NULL on failure
  * @warning Must use `eos_free` to release memory after using the data
  */
-char *eos_fs_read_file(const char *path);
+char *eos_storage_read_file(const char *path);
 
 /**
  * @brief Write to file
@@ -68,24 +68,41 @@ char *eos_fs_read_file(const char *path);
  * @param data_size Data length
  * @return int Actual number of bytes written, returns -1 on error
  */
-int eos_fs_write_file(const char *path, const void *data, size_t data_size);
+int eos_storage_write_file(const char *path, const void *data, size_t data_size);
+
+/**
+ * @brief Write to file immediately (bypass deferred writer)
+ * @param path File path
+ * @param data Data pointer
+ * @param data_size Data length
+ * @return int Actual number of bytes written, returns -1 on error
+ */
+int eos_storage_write_file_immediate(const char *path, const void *data, size_t data_size);
+
+/**
+ * @brief Read entire file content immediately (bypass deferred writer)
+ * @param path File path
+ * @return char* Returns dynamically allocated buffer; returns NULL on failure
+ * @warning Must use `eos_free` to release memory after using the data
+ */
+char *eos_storage_read_file_immediate(const char *path);
 
 /**
  * @brief Recursively create directory tree
  * @param path Target path, e.g. a/b/c
  * @return int 0 indicates all created successfully; otherwise returns error code
  */
-int eos_fs_mkdir_recursive(const char *path);
+int eos_storage_mkdir_recursive(const char *path);
 
 /**
  * @brief Recursively delete directory and all files and subdirectories inside
  * @param path Directory path
  * @return int 0 indicates success; otherwise returns error code
  */
-int eos_fs_rm_recursive(const char *path);
+int eos_storage_rm_recursive(const char *path);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ELENIX_OS_FS_H */
+#endif /* ELENIX_OS_SERVICE_STORAGE_H */

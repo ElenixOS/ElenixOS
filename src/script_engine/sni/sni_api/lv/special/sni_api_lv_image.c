@@ -20,7 +20,7 @@
 #include "eos_log.h"
 #include "eos_watchface.h"
 #include "eos_app.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 
 /* Function Implementations -----------------------------------*/
 
@@ -205,7 +205,7 @@ static char *sni_image_resolve_under_root(const char *root_dir, const char *cand
         return NULL;
     }
 
-    if (!eos_is_file(candidate_real))
+    if (!eos_storage_is_file(candidate_real))
     {
         return NULL;
     }

@@ -16,7 +16,7 @@
 #define EOS_LOG_TAG "DFW"
 #include "eos_log.h"
 #include "eos_cqueue.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_misc.h"
 #include "eos_port.h"
 #include "eos_mem.h"
@@ -44,7 +44,7 @@ static eos_dfw_cache_t *_find_cache(const char *path)
     return NULL;
 }
 
-bool eos_dfw_write(const char *path, uint8_t *data, size_t data_size)
+bool eos_dfw_write(const char *path, const uint8_t *data, size_t data_size)
 {
     EOS_CHECK_PTR_RETURN_VAL(path && data, false);
     if (data_size == 0)
@@ -100,8 +100,7 @@ uint8_t *eos_dfw_read(const char *path)
     }
     else
     {
-
-        return eos_fs_read_file(path);
+        return (uint8_t *)eos_storage_read_file_immediate(path);
     }
 }
 
@@ -111,7 +110,7 @@ void eos_dfw_sync(void)
     {
         eos_dfw_cache_t *cache = eos_cqueue_dequeue(cq);
         EOS_CHECK_PTR_RETURN(cache);
-        if (eos_fs_write_file(cache->path, cache->data, cache->data_size) < 0)
+        if (eos_storage_write_file_immediate(cache->path, cache->data, cache->data_size) < 0)
         {
             EOS_LOG_E("Write failed");
         }

@@ -23,8 +23,7 @@
 #include "eos_time.h"
 #include "eos_app.h"
 #include "eos_watchface.h"
-#include "eos_fs.h"
-#include "eos_dfw.h"
+#include "eos_service_storage.h"
 #include "eos_app_header.h"
 #include "eos_ww_clock_hand.h"
 /* Macros and Definitions -------------------------------------*/
@@ -97,7 +96,7 @@ static char *sni_api_eos_get_assets_file_str(jerry_value_t js_val)
 
     eos_free(src);
 
-    if (!eos_is_file(path))
+    if (!eos_storage_is_file(path))
     {
         return NULL;
     }
@@ -132,7 +131,7 @@ static bool sni_api_eos_config_write_to_file(cJSON *root)
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
         snprintf(config_file_path, sizeof(config_file_path), EOS_APP_DATA_DIR "%s", script_engine_get_current_script_id());
-        eos_fs_mkdir_if_not_exist(config_file_path);
+        eos_storage_mkdir_if_not_exist(config_file_path);
         snprintf(config_file_path,
                  sizeof(config_file_path),
                  EOS_APP_DATA_DIR "%s/config.json",
@@ -144,7 +143,7 @@ static bool sni_api_eos_config_write_to_file(cJSON *root)
                  sizeof(config_file_path),
                  EOS_WATCHFACE_DATA_DIR "%s",
                  script_engine_get_current_script_id());
-        eos_fs_mkdir_if_not_exist(config_file_path);
+        eos_storage_mkdir_if_not_exist(config_file_path);
         snprintf(config_file_path,
                  sizeof(config_file_path),
                  EOS_WATCHFACE_DATA_DIR "%s/config.json",
@@ -156,11 +155,7 @@ static bool sni_api_eos_config_write_to_file(cJSON *root)
         return false;
     }
 
-#if EOS_DFW_ENABLE
-    ret = eos_dfw_write(config_file_path, (uint8_t *)json_str, strlen(json_str));
-#else
-    ret = eos_fs_write_file(config_file_path, json_str, strlen(json_str)) > 0;
-#endif
+    ret = eos_storage_write_file(config_file_path, json_str, strlen(json_str)) > 0;
 
     eos_free(json_str);
     return ret;
@@ -174,7 +169,7 @@ static cJSON *sni_api_eos_config_load_from_file(void)
 
     if (script_engine_get_current_script_type() == SCRIPT_TYPE_APPLICATION)
     {
-        eos_fs_mkdir_if_not_exist(EOS_APP_DATA_DIR);
+        eos_storage_mkdir_if_not_exist(EOS_APP_DATA_DIR);
         snprintf(config_file_path,
                  sizeof(config_file_path),
                  EOS_APP_DATA_DIR "%s/config.json",
@@ -182,7 +177,7 @@ static cJSON *sni_api_eos_config_load_from_file(void)
     }
     else if (script_engine_get_current_script_type() == SCRIPT_TYPE_WATCHFACE)
     {
-        eos_fs_mkdir_if_not_exist(EOS_WATCHFACE_DATA_DIR);
+        eos_storage_mkdir_if_not_exist(EOS_WATCHFACE_DATA_DIR);
         snprintf(config_file_path,
                  sizeof(config_file_path),
                  EOS_WATCHFACE_DATA_DIR "%s/config.json",
@@ -193,16 +188,12 @@ static cJSON *sni_api_eos_config_load_from_file(void)
         return NULL;
     }
 
-    if (!eos_is_file(config_file_path))
+    if (!eos_storage_is_file(config_file_path))
     {
         return cJSON_CreateObject();
     }
 
-#if EOS_DFW_ENABLE
-    data = (char *)eos_dfw_read(config_file_path);
-#else
-    data = eos_fs_read_file(config_file_path);
-#endif
+    data = eos_storage_read_file(config_file_path);
 
     if (!data)
     {

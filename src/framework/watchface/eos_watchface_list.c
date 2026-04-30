@@ -21,7 +21,7 @@
 #include "eos_anim.h"
 #include "script_engine_core.h"
 #include "eos_sys.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_activity.h"
 /* Macros and Definitions -------------------------------------*/
 
@@ -100,7 +100,7 @@ void eos_watchface_list_enter(void)
             snprintf(icon_path, sizeof(icon_path), EOS_WATCHFACE_INSTALLED_DIR "%s/" EOS_WATCHFACE_SNAPSHOT_FILE_NAME,
                      watchface_id);
             EOS_LOG_D("WFPATH:%s", icon_path);
-            if (!eos_is_file(icon_path))
+            if (!eos_storage_is_file(icon_path))
             {
                 EOS_LOG_W("Watchface snapshot not found!");
                 memcpy(icon_path, EOS_IMG_WATCHFACE, sizeof(EOS_IMG_WATCHFACE));

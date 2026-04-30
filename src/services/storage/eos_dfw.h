@@ -44,7 +44,7 @@ void eos_dfw_sync(void);
  * @return true Task has been added to queue, will be written to file when `eos_dfw_sync()` is called next time
  * @return false Failed
  */
-bool eos_dfw_write(const char *path, uint8_t *data, size_t data_size);
+bool eos_dfw_write(const char *path, const uint8_t *data, size_t data_size);
 
 /**
  * @brief Read file data

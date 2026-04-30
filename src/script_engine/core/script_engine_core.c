@@ -22,7 +22,7 @@
 #include "eos_watchface.h"
 #include "eos_app.h"
 #include "eos_config.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_mem.h"
 #include "eos_event.h"
 #include "eos_cqueue.h"
@@ -694,7 +694,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
         return -SE_ERR_NULL_PACKAGE;
     }
 
-    char *manifest_json = eos_fs_read_file(manifest_path);
+    char *manifest_json = eos_storage_read_file(manifest_path);
     if (!manifest_json)
     {
         EOS_LOG_E("Read manifest.json failed");
@@ -1224,14 +1224,14 @@ script_engine_result_t script_engine_reload_current_script(void)
     snprintf(script_path, sizeof(script_path), "%s%s", base_path, entry_file_name);
     pkg.base_path = base_path;
 
-    if (!eos_is_file(script_path))
+    if (!eos_storage_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_pkg_free(&pkg);
         return -SE_FAILED;
     }
 
-    pkg.script_str = eos_fs_read_file(script_path);
+    pkg.script_str = eos_storage_read_file(script_path);
     if (!pkg.script_str)
     {
         EOS_LOG_E("Failed to read script: %s", script_path);

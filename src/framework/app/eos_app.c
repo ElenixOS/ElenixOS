@@ -19,7 +19,7 @@
 #include "script_engine_core.h"
 #include "cJSON.h"
 #include "eos_app_list.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -73,7 +73,7 @@ static eos_result_t _eos_app_order_save(void)
         return EOS_FAILED;
     }
 
-    eos_fs_puts(json_str, fp);
+    eos_storage_puts(json_str, fp);
     eos_fs_close(fp);
     eos_free(json_str);
 
@@ -92,7 +92,7 @@ static eos_result_t _eos_app_order_load(void)
     }
 
     // Check if file exists
-    if (!eos_is_file(EOS_APP_LIST_APP_ORDER_PATH))
+    if (!eos_storage_is_file(EOS_APP_LIST_APP_ORDER_PATH))
     {
         // Create default JSON structure, ensure all system built-in apps are added to default order
         app_order_json = cJSON_CreateArray();
@@ -104,7 +104,7 @@ static eos_result_t _eos_app_order_load(void)
         return _eos_app_order_save();
     }
 
-    char *json_str = eos_fs_read_file(EOS_APP_LIST_APP_ORDER_PATH);
+    char *json_str = eos_storage_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     if (!json_str)
     {
         return EOS_FAILED;
@@ -434,10 +434,10 @@ eos_result_t eos_app_install(const char *eapk_path)
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header.pkg_id);
     EOS_LOG_D("APP_PATH: %s", path);
     // 检查应用是否存在
-    if (eos_is_dir(path))
+    if (eos_storage_is_dir(path))
     {
         // 如果存在则删除
-        eos_fs_rm_recursive(path);
+        eos_storage_rm_recursive(path);
     }
     // 创建应用名称的文件夹
     if (eos_fs_mkdir(path) == 0)
@@ -454,10 +454,10 @@ eos_result_t eos_app_install(const char *eapk_path)
     if (ret != EOS_OK)
     {
         EOS_LOG_E("App unpack failed. Code: %d", ret);
-        eos_fs_rm_recursive(path);
+        eos_storage_rm_recursive(path);
         return EOS_FAILED;
     }
-    eos_fs_mkdir_if_not_exist(data_path);
+    eos_storage_mkdir_if_not_exist(data_path);
     // 添加到顺序列表
     _eos_app_order_add(header.pkg_id);
     _eos_app_list_refresh();
@@ -481,13 +481,13 @@ eos_result_t eos_app_uninstall(const char *app_id)
     snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    if (!eos_is_dir(path))
+    if (!eos_storage_is_dir(path))
     {
         EOS_LOG_E("App does not esist: %s", app_id);
         return EOS_FAILED;
     }
 
-    eos_result_t ret = eos_fs_rm_recursive(path);
+    eos_result_t ret = eos_storage_rm_recursive(path);
 
     if (ret != EOS_OK)
     {
@@ -496,9 +496,9 @@ eos_result_t eos_app_uninstall(const char *app_id)
     }
 
     // 清理应用数据
-    if (eos_is_dir(data_path))
+    if (eos_storage_is_dir(data_path))
     {
-        ret = eos_fs_rm_recursive(data_path);
+        ret = eos_storage_rm_recursive(data_path);
     }
 
     if (ret != EOS_OK)

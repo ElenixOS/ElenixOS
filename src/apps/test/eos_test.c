@@ -37,7 +37,7 @@
 #include "eos_sensor.h"
 #include "eos_crown.h"
 #include "eos_app_header.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_mem.h"
 #include "eos_theme.h"
 #include "eos_activity.h"
@@ -348,7 +348,7 @@ static script_engine_result_t _test_app_debug_create_pkg(const char *app_id, scr
     snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
     pkg->base_path = eos_strdup(base_path);
 
-    if (!eos_is_file(script_path))
+    if (!eos_storage_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_pkg_free(pkg);
@@ -356,7 +356,7 @@ static script_engine_result_t _test_app_debug_create_pkg(const char *app_id, scr
         return -SE_FAILED;
     }
 
-    pkg->script_str = eos_fs_read_file(script_path);
+    pkg->script_str = eos_storage_read_file(script_path);
     if (!pkg->script_str)
     {
         eos_pkg_free(pkg);
@@ -639,7 +639,7 @@ static void _test_app_debug_app_btn_create(lv_obj_t *parent, const char *app_id)
     char icon_path[PATH_MAX];
     snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
              app_id);
-    if (!eos_is_file(icon_path))
+    if (!eos_storage_is_file(icon_path))
     {
         memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
     }
@@ -1078,12 +1078,12 @@ static void _test_toast()
 
 static const char *_test_audio_resolve_path(void)
 {
-    if (eos_is_file(s_test_audio_primary_path))
+    if (eos_storage_is_file(s_test_audio_primary_path))
     {
         return s_test_audio_primary_path;
     }
 
-    if (eos_is_file(s_test_audio_fallback_path))
+    if (eos_storage_is_file(s_test_audio_fallback_path))
     {
         return s_test_audio_fallback_path;
     }
@@ -1179,7 +1179,7 @@ static void _test_audio_button_cb(lv_event_t *e)
     }
 
     const char *path = _test_audio_resolve_path();
-    if (!eos_is_file(path))
+    if (!eos_storage_is_file(path))
     {
         eos_toast_show(NULL, "Audio file not found: fs/music.mp3");
         _test_audio_sync_ui();

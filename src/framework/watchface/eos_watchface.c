@@ -20,7 +20,7 @@
 #include "eos_theme.h"
 #include "eos_control_center.h"
 #include "eos_basic_widgets.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_mem.h"
 #include "eos_icon.h"
 #include "eos_std_widgets.h"
@@ -145,7 +145,7 @@ eos_result_t _eos_watchface_list_get_installed()
         snprintf(full_path, sizeof(full_path), EOS_WATCHFACE_INSTALLED_DIR "%s", name_buf);
 
         // Check if it is a directory
-        if (eos_is_dir(full_path))
+        if (eos_storage_is_dir(full_path))
         {
             EOS_LOG_D("Found installed watchface: %s", name_buf);
             // Add to application list
@@ -197,10 +197,10 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", header.pkg_id);
     EOS_LOG_D("WATCHFACE_PATH: %s", path);
     // Check if application exists
-    if (eos_is_dir(path))
+    if (eos_storage_is_dir(path))
     {
         // If exists, delete it
-        eos_fs_rm_recursive(path);
+        eos_storage_rm_recursive(path);
     }
     // Create folder with application name
     if (eos_fs_mkdir(path) == 0)
@@ -217,10 +217,10 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     if (ret != EOS_OK)
     {
         EOS_LOG_E("Watchface unpack failed. Code: %d", ret);
-        eos_fs_rm_recursive(path);
+        eos_storage_rm_recursive(path);
         return EOS_FAILED;
     }
-    eos_fs_mkdir_if_not_exist(data_path);
+    eos_storage_mkdir_if_not_exist(data_path);
     _eos_watchface_list_refresh();
     EOS_LOG_D("Watchface installed successfully: %s", header.pkg_name);
     return EOS_OK;
@@ -239,13 +239,13 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", watchface_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", watchface_id);
-    if (!eos_is_dir(path))
+    if (!eos_storage_is_dir(path))
     {
         EOS_LOG_E("Watchface does not esist: %s", watchface_id);
         return EOS_FAILED;
     }
 
-    eos_result_t ret = eos_fs_rm_recursive(path);
+    eos_result_t ret = eos_storage_rm_recursive(path);
 
     if (ret != EOS_OK)
     {
@@ -254,9 +254,9 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     }
 
     // Clean up application data
-    if (eos_is_dir(data_path))
+    if (eos_storage_is_dir(data_path))
     {
-        ret = eos_fs_rm_recursive(path);
+        ret = eos_storage_rm_recursive(path);
     }
 
     if (ret != EOS_OK)
@@ -382,13 +382,13 @@ void eos_watchface_on_enter(eos_activity_t *a)
     char base_path[PATH_MAX];
     snprintf(base_path, sizeof(base_path), EOS_WATCHFACE_INSTALLED_DIR "%s/", wf_id);
     pkg.base_path = eos_strdup(base_path);
-    if (!eos_is_file(script_path))
+    if (!eos_storage_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_pkg_free(&pkg);
         return;
     }
-    pkg.script_str = eos_fs_read_file(script_path);
+    pkg.script_str = eos_storage_read_file(script_path);
     // Set long press callback to enter watchface list
     lv_obj_add_event_cb(eos_activity_get_view(a), _watchface_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     // Run watchface script (script must not block thread)

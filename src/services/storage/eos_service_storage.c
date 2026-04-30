@@ -1,40 +1,42 @@
 /**
- * @file eos_fs.c
- * @brief File system utility functions
+ * @file eos_service_storage.c
+ * @brief Storage service file operation utilities
  */
 
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "eos_config.h"
 #include "eos_log.h"
 #include "eos_mem.h"
+#include "eos_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 #define _FILE_NAME_MAX_LENGTH 256
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
 
-bool eos_is_dir(const char *path)
+bool eos_storage_is_dir(const char *path)
 {
     return (eos_fs_type(path) == EOS_FS_TYPE_DIR) ? true : false;
 }
 
-bool eos_is_file(const char *path)
+bool eos_storage_is_file(const char *path)
 {
     return (eos_fs_type(path) == EOS_FS_TYPE_FILE) ? true : false;
 }
 
-int eos_fs_puts(const char *s, eos_file_t fp)
+int eos_storage_puts(const char *s, eos_file_t fp)
 {
     if (fp == EOS_FILE_INVALID || !s)
         return -1;
     return eos_fs_write(fp, s, strlen(s));
 }
 
-int eos_fs_mkdir_if_not_exist(const char *path)
+int eos_storage_mkdir_if_not_exist(const char *path)
 {
     if (!eos_fs_exists(path))
     {
@@ -43,7 +45,7 @@ int eos_fs_mkdir_if_not_exist(const char *path)
     return -1;
 }
 
-int eos_create_file_if_not_exist(const char *path, const char *default_content)
+int eos_storage_create_file_if_not_exist(const char *path, const char *default_content)
 {
     EOS_CHECK_PTR_RETURN_VAL(path && default_content, -1);
     if (eos_fs_type(path) == EOS_FS_TYPE_NOT_EXIST)
@@ -68,7 +70,7 @@ int eos_create_file_if_not_exist(const char *path, const char *default_content)
     return -1;
 }
 
-int eos_fs_mkdir_recursive(const char *path)
+int eos_storage_mkdir_recursive(const char *path)
 {
     if (!path || path[0] == '\0')
     {
@@ -181,7 +183,7 @@ int eos_fs_mkdir_recursive(const char *path)
     return 0;
 }
 
-int eos_fs_write_file(const char *path, const void *data, size_t data_size)
+int eos_storage_write_file_immediate(const char *path, const void *data, size_t data_size)
 {
     eos_file_t fp = eos_fs_open_write(path);
     if (fp == EOS_FILE_INVALID)
@@ -194,7 +196,7 @@ int eos_fs_write_file(const char *path, const void *data, size_t data_size)
     return written;
 }
 
-char *eos_fs_read_file(const char *path)
+char *eos_storage_read_file_immediate(const char *path)
 {
     eos_file_t fp = eos_fs_open_read(path);
     if (fp == EOS_FILE_INVALID)
@@ -236,7 +238,29 @@ char *eos_fs_read_file(const char *path)
     return buf;
 }
 
-int eos_fs_rm_recursive(const char *path)
+int eos_storage_write_file(const char *path, const void *data, size_t data_size)
+{
+#if EOS_DFW_ENABLE
+    if (!path || !data || data_size == 0)
+    {
+        return -1;
+    }
+    return eos_dfw_write(path, (const uint8_t *)data, data_size) ? (int)data_size : -1;
+#else
+    return eos_storage_write_file_immediate(path, data, data_size);
+#endif
+}
+
+char *eos_storage_read_file(const char *path)
+{
+#if EOS_DFW_ENABLE
+    return (char *)eos_dfw_read(path);
+#else
+    return eos_storage_read_file_immediate(path);
+#endif
+}
+
+int eos_storage_rm_recursive(const char *path)
 {
     if (!path || path[0] == '\0')
     {
@@ -294,7 +318,7 @@ int eos_fs_rm_recursive(const char *path)
 #endif
 
             // Recursively delete sub-items
-            if (eos_fs_rm_recursive(fullpath) != 0)
+            if (eos_storage_rm_recursive(fullpath) != 0)
             {
                 result = -1;
                 break;

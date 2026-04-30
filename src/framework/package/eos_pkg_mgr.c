@@ -14,7 +14,7 @@
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "PackageManager"
 #include "eos_log.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_fs_port.h"
 #include "eos_mem.h"
 /* Macros and Definitions -------------------------------------*/
@@ -166,7 +166,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     }
 
     // 创建输出目录
-    if (eos_fs_mkdir_recursive(output_path) != EOS_OK)
+    if (eos_storage_mkdir_recursive(output_path) != EOS_OK)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to create output directory");
@@ -240,7 +240,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         if (is_dir)
         {
             // 创建目录
-            if (eos_fs_mkdir_recursive(full_path) != EOS_OK)
+            if (eos_storage_mkdir_recursive(full_path) != EOS_OK)
             {
                 eos_free(name);
                 eos_fs_close(fp);
@@ -274,7 +274,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             if (last_slash)
             {
                 *last_slash = '\0';
-                if (eos_fs_mkdir_recursive(full_path) != EOS_OK)
+                if (eos_storage_mkdir_recursive(full_path) != EOS_OK)
                 {
                     eos_free(name);
                     eos_fs_close(fp);

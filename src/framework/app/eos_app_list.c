@@ -26,7 +26,7 @@
 #include "script_engine_core.h"
 #include "eos_settings.h"
 #include "eos_flash_light.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_app_header.h"
 #include "eos_mem.h"
 #include "eos_crown.h"
@@ -234,14 +234,14 @@ static script_engine_result_t _app_list_build_script_pkg(const char *app_id, scr
         return -SE_ERR_MALLOC;
     }
 
-    if (!eos_is_file(script_path))
+    if (!eos_storage_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_pkg_free(pkg);
         return -SE_FAILED;
     }
 
-    pkg->script_str = eos_fs_read_file(script_path);
+    pkg->script_str = eos_storage_read_file(script_path);
     if (!pkg->script_str)
     {
         EOS_LOG_E("Failed to read script: %s", script_path);
@@ -793,7 +793,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
     uint32_t icon_index = 0;
 
     // 加载应用顺序
-    char *json_str = eos_fs_read_file(EOS_APP_LIST_APP_ORDER_PATH);
+    char *json_str = eos_storage_read_file(EOS_APP_LIST_APP_ORDER_PATH);
     cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
     eos_free(json_str);
 
@@ -833,7 +833,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
                 char icon_path[PATH_MAX];
                 snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                          app_id);
-                if (!eos_is_file(icon_path))
+                if (!eos_storage_is_file(icon_path))
                 {
                     snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
                 }
@@ -874,7 +874,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             char icon_path[PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                      app_id);
-            if (!eos_is_file(icon_path))
+            if (!eos_storage_is_file(icon_path))
             {
                 snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
             }

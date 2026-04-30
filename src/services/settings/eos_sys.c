@@ -28,8 +28,7 @@
 #include "eos_theme.h"
 #include "eos_pkg_mgr.h"
 #include "eos_sensor.h"
-#include "eos_fs.h"
-#include "eos_dfw.h"
+#include "eos_service_storage.h"
 #include "eos_mem.h"
 #include "eos_vibrator.h"
 /* Macros and Definitions -------------------------------------*/
@@ -43,16 +42,12 @@ static cJSON *eos_sys_load_config(int *err_code)
     if (err_code)
         *err_code = -EOS_ERR_FILE_ERROR;
 
-    if (!eos_is_file(EOS_SYS_CONFIG_FILE_PATH))
+    if (!eos_storage_is_file(EOS_SYS_CONFIG_FILE_PATH))
     {
         EOS_LOG_E("Config file does not exist");
         return NULL;
     }
-#if EOS_DFW_ENABLE
-    char *file_content = eos_dfw_read(EOS_SYS_CONFIG_FILE_PATH);
-#else
-    char *file_content = eos_fs_read_file(EOS_SYS_CONFIG_FILE_PATH);
-#endif /* EOS_DFW_ENABLE */
+    char *file_content = eos_storage_read_file(EOS_SYS_CONFIG_FILE_PATH);
 
     if (!file_content)
     {
@@ -87,11 +82,8 @@ static int eos_sys_save_config(cJSON *root)
     }
 
     size_t json_len = strlen(new_json);
-#if EOS_DFW_ENABLE
-    int ret = eos_dfw_write(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
-#else
     int ret;
-    int written = eos_fs_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
+    int written = eos_storage_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
     if (written <= 0 || written != json_len)
     {
         ret = -1;
@@ -100,7 +92,6 @@ static int eos_sys_save_config(cJSON *root)
     {
         ret = 0;
     }
-#endif /* EOS_DFW_ENABLE */
 
     cJSON_free(new_json);
 
@@ -312,7 +303,7 @@ eos_result_t _create_default_cfg_json(const char *path)
         return -EOS_ERR_JSON_ERROR;
     }
 
-    int ret = eos_create_file_if_not_exist(path, json_str);
+    int ret = eos_storage_create_file_if_not_exist(path, json_str);
 
     cJSON_free(json_str);
     cJSON_Delete(root);
@@ -323,27 +314,27 @@ eos_result_t _create_default_cfg_json(const char *path)
 void eos_sys_init()
 {
     EOS_LOG_D("Init eos_sys");
-    eos_fs_mkdir_if_not_exist(EOS_SYS_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_SYS_CONFIG_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_SYS_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_SYS_CONFIG_DIR);
 
-    eos_fs_mkdir_if_not_exist(EOS_APP_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_APP_INSTALLED_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_APP_DATA_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_APP_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_APP_INSTALLED_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_APP_DATA_DIR);
 
-    eos_fs_mkdir_if_not_exist(EOS_WATCHFACE_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_WATCHFACE_INSTALLED_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_WATCHFACE_DATA_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_WATCHFACE_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_WATCHFACE_INSTALLED_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_WATCHFACE_DATA_DIR);
 
-    eos_fs_mkdir_if_not_exist(EOS_SYS_RES_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_SYS_RES_IMG_DIR);
-    eos_fs_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_SYS_RES_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_SYS_RES_IMG_DIR);
+    eos_storage_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
 
     eos_file_t fp = eos_fs_open_read(EOS_SYS_CONFIG_FILE_PATH);
     uint32_t size = 0;
     eos_fs_size(fp, &size);
     eos_fs_close(fp);
 
-    if ((!eos_is_file(EOS_SYS_CONFIG_FILE_PATH)) || size == 0)
+    if ((!eos_storage_is_file(EOS_SYS_CONFIG_FILE_PATH)) || size == 0)
     {
         eos_fs_remove(EOS_SYS_CONFIG_FILE_PATH);
         if (_create_default_cfg_json(EOS_SYS_CONFIG_FILE_PATH) != EOS_OK)

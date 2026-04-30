@@ -42,7 +42,7 @@
 #include "eos_dispatcher.h"
 #include "eos_anim.h"
 #include "eos_control_center.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_pm.h"
 #include "eos_dfw.h"
 #include "eos_app_header.h"

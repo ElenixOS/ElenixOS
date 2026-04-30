@@ -33,7 +33,7 @@
 #include "eos_icon.h"
 #include "eos_display.h"
 #include "eos_toast.h"
-#include "eos_fs.h"
+#include "eos_service_storage.h"
 #include "eos_pm.h"
 #include "eos_app_header.h"
 #include "eos_radio_list.h"
@@ -437,7 +437,7 @@ static void _clear_data_btn_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    if (eos_fs_rm_recursive(data_path) != 0)
+    if (eos_storage_rm_recursive(data_path) != 0)
     {
         EOS_LOG_E("Remove data failed");
         return;
@@ -476,7 +476,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     char script_path[PATH_MAX];
     snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME,
              app_id);
-    if (!eos_is_file(script_path))
+    if (!eos_storage_is_file(script_path))
     {
         EOS_LOG_E("Can't find script: %s", script_path);
         eos_pkg_free(&pkg);
@@ -504,7 +504,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     char icon_path[PATH_MAX];
     snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
              app_id);
-    if (!eos_is_file(icon_path))
+    if (!eos_storage_is_file(icon_path))
     {
         memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
     }
@@ -539,7 +539,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
 
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
-    if (!eos_is_dir(data_path))
+    if (!eos_storage_is_dir(data_path))
     {
         lv_obj_add_state(clear_data_btn, LV_STATE_DISABLED);
     }
@@ -562,7 +562,7 @@ static void _app_btn_create(lv_obj_t *parent, const char *app_id)
     char icon_path[PATH_MAX];
     snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
              app_id);
-    if (!eos_is_file(icon_path))
+    if (!eos_storage_is_file(icon_path))
     {
         memcpy(icon_path, EOS_IMG_APP, sizeof(EOS_IMG_APP));
     }

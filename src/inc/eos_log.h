@@ -15,9 +15,6 @@ extern "C" {
 #include <stdbool.h>
 #include "lvgl.h"
 #include "eos_config.h"
-#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_INTERNAL
-#include "eos_sysmon.h"
-#endif
 #include "eos_port.h"
 /* Public macros ----------------------------------------------*/
 
@@ -70,25 +67,6 @@ extern "C" {
 #define EOS_LOG_E(fmt, ...) EOS_LOG_ALL("ERROR", EOS_LOG_COLOR_RED, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
 
 #endif /* EOS_LOG_DISABLE */
-/************************** Memory Check **************************/
-
-#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_INTERNAL
-    #define EOS_MEM(tag)                            \
-    do                                              \
-    {                                              \
-        EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
-        eos_sysmon_print();                         \
-    } while (0)
-#elif EOS_SYSMON_TYPE == EOS_SYSMON_USE_CUSTOM
-    #define EOS_MEM(tag)                            \
-    do                                              \
-    {                                              \
-        EOS_LOG_I("[MEM] Memory check: [%s]", tag); \
-        EOS_SYSMON_HANDLER                          \
-    } while (0)
-#else
-    #define EOS_MEM(tag)
-#endif /* EOS_SYSMON_TYPE */
 
 /************************** Pointer Check **************************/
 #define EOS_CHECK_PTR_RETURN(ptr) \

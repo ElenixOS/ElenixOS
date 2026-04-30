@@ -47,19 +47,6 @@ extern "C"
  */
 #define EOS_ICON_STR_BUILD_IN 0
 
-/**
- * Select system monitoring type
- * Available modes:
- *  - EOS_SYSMON_DISABLE
- *  - EOS_SYSMON_USE_INTERNAL
- *  - EOS_SYSMON_USE_CUSTOM
- */
-#define EOS_SYSMON_TYPE EOS_SYSMON_DISABLE
-
-#if EOS_SYSMON_TYPE == EOS_SYSMON_USE_CUSTOM
-    #define EOS_SYSMON_HANDLER my_sysmon_handler();
-#endif /* EOS_SYSMON_TYPE */
-
 /************************** Modules **************************/
 
 /**

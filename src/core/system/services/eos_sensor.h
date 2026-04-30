@@ -226,15 +226,15 @@ uint8_t eos_sensor_get_count(eos_sensor_type_t type);
 /**
  * @brief Get sensor event code
  * @param type Sensor type
- * @return eos_event_code_t Event code
+ * @return lv_event_code_t Event code
  */
-eos_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type);
+lv_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type);
 /**
  * @brief Get sensor type by event code
  * @param code Event code
  * @return eos_sensor_type_t Sensor type
  */
-eos_sensor_type_t eos_sensor_get_type_by_event_code(eos_event_code_t code);
+eos_sensor_type_t eos_sensor_get_type_by_event_code(lv_event_code_t code);
 #ifdef __cplusplus
 }
 #endif

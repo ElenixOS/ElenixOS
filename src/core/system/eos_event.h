@@ -14,15 +14,16 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
+#include "eos_event_def.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /**
- * @brief Global broadcast event type definitions
+ * @brief Event type definitions
  * @note New events can be added here
  */
-typedef enum
+enum
 {
     EOS_EVENT_BASE = LV_EVENT_LAST,
     EOS_EVENT_UNKNOWN = EOS_EVENT_BASE,
@@ -59,7 +60,12 @@ typedef enum
     EOS_EVENT_SENSOR_REPORT_FORCE,     /**< Force sensor               */
     EOS_EVENT_SENSOR_REPORT_BAT,       /**< Battery level sensor          */
     EOS_EVENT_SENSOR_REPORT_END,       /**< Used for sensor event sequence alignment   */
-} eos_event_code_t;
+    EOS_EVENT_LAST
+};
+
+#if EOS_EVENT_LAST >= EOS_EVENT_USER_BASE
+#error "EOS_EVENT_LAST exceeds EOS_EVENT_USER_BASE, please adjust the event code definitions!"
+#endif
 
 /* Public function prototypes --------------------------------*/
 
@@ -69,7 +75,7 @@ typedef enum
  * @param event Event type
  * @param cb Callback function
  * @param user_data User data
- * @note eos_event_code_t is compatible with lv_event_code_t, so event code can be passed directly.
+ * @note lv_event_code_t is compatible with lv_event_code_t, so event code can be passed directly.
  * Example:
  *
  * `eos_event_add_cb(obj,cb,LV_EVENT_ALL,NULL);`
@@ -128,6 +134,11 @@ void eos_event_remove_global_cb_with_user_data(lv_event_code_t event, lv_event_c
  * @param cb Callback function
  */
 void eos_event_remove_all_global_cbs(lv_event_cb_t cb);
+/**
+ * @brief
+ * @return lv_event_code_t
+ */
+lv_event_code_t eos_event_register_id(void);
 #ifdef __cplusplus
 }
 #endif

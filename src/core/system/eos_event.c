@@ -398,3 +398,14 @@ void eos_event_remove_all_global_cbs(lv_event_cb_t cb)
         _cleanup_deleted_nodes();
     }
 }
+
+lv_event_code_t eos_event_register_id(void)
+{
+    lv_event_code_t new_id = lv_event_register_id();
+    if(new_id > EOS_EVENT_USER_MAX)
+    {
+        EOS_LOG_E("Failed to register event ID");
+        return EOS_EVENT_UNKNOWN;
+    }
+    return new_id;
+}

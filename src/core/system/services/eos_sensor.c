@@ -27,14 +27,14 @@ static eos_sensor_t *_sensor_list[EOS_SENSOR_NUMBER][EOS_SENSOR_CFG_INST_MAX] = 
 static eos_sensor_id_t _sensor_count[EOS_SENSOR_NUMBER] = {0};
 /* Function Implementations -----------------------------------*/
 
-eos_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type)
+lv_event_code_t eos_sensor_get_event_code(eos_sensor_type_t type)
 {
     if (type >= _EOS_SENSOR_MAX || type <= EOS_SENSOR_TYPE_UNKNOWN)
         return EOS_EVENT_UNKNOWN;
     return EOS_EVENT_SENSOR_REPORT_START + type;
 }
 
-eos_sensor_type_t eos_sensor_get_type_by_event_code(eos_event_code_t code)
+eos_sensor_type_t eos_sensor_get_type_by_event_code(lv_event_code_t code)
 {
     if (code >= EOS_EVENT_SENSOR_REPORT_END || code <= EOS_EVENT_SENSOR_REPORT_START)
         return EOS_SENSOR_TYPE_UNKNOWN;

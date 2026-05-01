@@ -1,10 +1,10 @@
 /**
- * @file eos_side_button.h
- * @brief Side button
+ * @file eos_utils.h
+ * @brief Utility functions and macros
  */
 
-#ifndef ELENIX_OS_SIDE_BUTTON_H
-#define ELENIX_OS_SIDE_BUTTON_H
+#ifndef EOS_UTILS_H
+#define EOS_UTILS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,20 +13,17 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
-#include "eos_core.h"
-#include "input/eos_input.h"
+
 /* Public macros ----------------------------------------------*/
+
+#define EOS_CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
-/**
- * @brief Report side button state
- * @param state State value
- */
-void eos_side_button_report(eos_button_state_t state);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ELENIX_OS_SIDE_BUTTON_H */
+#endif /* EOS_UTILS_H */

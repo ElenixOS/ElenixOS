@@ -30,7 +30,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Failed to open package file: %s", pkg_path);
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 初始化包头结构体
@@ -42,7 +42,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read magic number");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 读取pkg_name
@@ -51,7 +51,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read package name");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     header->pkg_name[EOS_PKG_NAME_LEN_MAX - 1] = '\0';
 
@@ -61,7 +61,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read package id");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     header->pkg_id[EOS_PKG_ID_LEN_MAX - 1] = '\0';
 
@@ -71,7 +71,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read package version");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     header->pkg_version[EOS_PKG_VERSION_LEN_MAX - 1] = '\0';
 
@@ -81,7 +81,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read file count");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 读取reserved字段
@@ -90,7 +90,7 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to read reserved field");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     eos_fs_close(fp);
     EOS_LOG_D("\n"
@@ -111,7 +111,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Failed to open package file");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 读取包头
@@ -120,7 +120,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         EOS_LOG_E("Failed to read header");
         eos_fs_close(fp);
-        return -EOS_FAILED;
+        return EOS_FAILED;
     }
 
     // 校验魔数
@@ -137,7 +137,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         eos_fs_close(fp);
         EOS_LOG_E("Invalid magic number");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 检查包类型是否匹配
@@ -145,7 +145,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         eos_fs_close(fp);
         EOS_LOG_E("Package type mismatch: expected %d, got %d", pkg_type, unpack_type);
-        return -EOS_ERR_VALUE_MISMATCH;
+        return EOS_ERR_VALUE_MISMATCH;
     }
 
     // 获取文件大小
@@ -154,7 +154,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to get file size");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 定位到文件表位置 (紧接在文件头之后)
@@ -162,7 +162,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to seek to file table at offset %u", EOS_PKG_TABLE_OFFSET);
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 创建输出目录
@@ -170,7 +170,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     {
         eos_fs_close(fp);
         EOS_LOG_E("Failed to create output directory");
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
 
     // 维护当前文件表偏移，避免使用底层文件结构获取 current pos
@@ -185,7 +185,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         {
             eos_fs_close(fp);
             EOS_LOG_E("Failed to read name length for entry %u", i);
-            return -EOS_ERR_FILE_ERROR;
+            return EOS_ERR_FILE_ERROR;
         }
         table_pos += sizeof(uint32_t);
 
@@ -194,7 +194,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         {
             eos_fs_close(fp);
             EOS_LOG_E("Name length %u too long for entry %u", name_len, i);
-            return -EOS_ERR_FILE_ERROR;
+            return EOS_ERR_FILE_ERROR;
         }
 
         // 动态分配内存
@@ -203,7 +203,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         {
             eos_fs_close(fp);
             EOS_LOG_E("Memory allocation failed for entry %u", i);
-            return -EOS_ERR_MEM;
+            return EOS_ERR_MEM;
         }
 
         // 读取文件名
@@ -212,7 +212,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             eos_free(name);
             eos_fs_close(fp);
             EOS_LOG_E("Failed to read name for entry %u", i);
-            return -EOS_ERR_FILE_ERROR;
+            return EOS_ERR_FILE_ERROR;
         }
         name[name_len] = '\0';
         table_pos += name_len;
@@ -226,7 +226,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             eos_free(name);
             eos_fs_close(fp);
             EOS_LOG_E("Failed to read entry fields for %s", name);
-            return -EOS_ERR_FILE_ERROR;
+            return EOS_ERR_FILE_ERROR;
         }
         table_pos += sizeof(uint32_t) * 3;
 
@@ -245,7 +245,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_free(name);
                 eos_fs_close(fp);
                 EOS_LOG_E("Failed to create directory: %s", full_path);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
             EOS_LOG_D("Created directory: %s", full_path);
         }
@@ -257,7 +257,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_free(name);
                 eos_fs_close(fp);
                 EOS_LOG_E("Invalid file offset: %u for %s", offset, name);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
 
             if (offset + size > file_size)
@@ -266,7 +266,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_fs_close(fp);
                 EOS_LOG_E("File size overflow: %u+%u=%u for %s",
                           offset, size, offset + size, name);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
 
             // 确保父目录存在
@@ -279,7 +279,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                     eos_free(name);
                     eos_fs_close(fp);
                     EOS_LOG_E("Failed to create parent directory: %s", full_path);
-                    return -EOS_ERR_FILE_ERROR;
+                    return EOS_ERR_FILE_ERROR;
                 }
                 *last_slash = '/';
             }
@@ -291,7 +291,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_free(name);
                 eos_fs_close(fp);
                 EOS_LOG_E("Failed to create file: %s", full_path);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
 
             // 定位到文件数据
@@ -301,7 +301,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_free(name);
                 eos_fs_close(fp);
                 EOS_LOG_E("Failed to seek to file data for %s", name);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
 
             // 逐块读取并写入文件
@@ -317,7 +317,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                     eos_free(name);
                     eos_fs_close(fp);
                     EOS_LOG_E("Failed to read file data for %s", name);
-                    return -EOS_ERR_FILE_ERROR;
+                    return EOS_ERR_FILE_ERROR;
                 }
                 if (eos_fs_write(out_fp, buffer, r) != r)
                 {
@@ -325,7 +325,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                     eos_free(name);
                     eos_fs_close(fp);
                     EOS_LOG_E("Failed to write file data for %s", name);
-                    return -EOS_ERR_FILE_ERROR;
+                    return EOS_ERR_FILE_ERROR;
                 }
                 remaining -= r;
             }
@@ -339,7 +339,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 eos_free(name);
                 eos_fs_close(fp);
                 EOS_LOG_E("Failed to restore table position after extracting %s", name);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
         }
 
@@ -351,7 +351,7 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             {
                 eos_fs_close(fp);
                 EOS_LOG_E("Failed to seek to next table entry after creating dir %s", full_path);
-                return -EOS_ERR_FILE_ERROR;
+                return EOS_ERR_FILE_ERROR;
             }
         }
 

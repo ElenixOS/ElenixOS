@@ -35,9 +35,9 @@
 #include "eos_font.h"
 #include "eos_std_widgets.h"
 #include "eos_activity.h"
-#include "../ui/bubble_grid/eos_bubble_grid.h"
+#include "eos_bubble_grid.h"
 #ifdef EOS_ENABLE_TEST_APP
-#include "../screen/eos_test.h"
+#include "eos_test.h"
 #endif
 /* Macros and Definitions -------------------------------------*/
 #define _APP_ICON_ANIM_DURATION 200

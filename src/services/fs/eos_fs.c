@@ -1,9 +1,9 @@
 /**
- * @file eos_service_storage.c
- * @brief Storage service file operation utilities
+ * @file eos_fs.c
+ * @brief File system utility functions
  */
 
-#include "eos_service_storage.h"
+#include "eos_fs.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -19,94 +19,62 @@
 
 /* Function Implementations -----------------------------------*/
 
-bool eos_storage_is_dir(const char *path)
+bool eos_is_dir(const char *path)
 {
     return (eos_fs_type(path) == EOS_FS_TYPE_DIR) ? true : false;
 }
 
-bool eos_storage_is_file(const char *path)
+bool eos_is_file(const char *path)
 {
     return (eos_fs_type(path) == EOS_FS_TYPE_FILE) ? true : false;
 }
 
-eos_result_t eos_storage_puts(const char *s, eos_file_t fp)
+int eos_fs_puts(const char *s, eos_file_t fp)
 {
     if (fp == EOS_FILE_INVALID || !s)
-        return EOS_ERR_INVALID_ARG;
-
-    ssize_t written = eos_fs_write(fp, s, strlen(s));
-    return (written < 0) ? EOS_ERR_IO : EOS_OK;
+        return -1;
+    return eos_fs_write(fp, s, strlen(s));
 }
 
-eos_result_t eos_storage_mkdir_if_not_exist(const char *path)
+int eos_fs_mkdir_if_not_exist(const char *path)
 {
-    EOS_CHECK_PTR_RETURN_VAL(path, EOS_ERR_INVALID_ARG);
-
-    int type = eos_fs_type(path);
-    if (type == EOS_FS_TYPE_DIR)
+    if (!eos_fs_exists(path))
     {
-        return EOS_OK;
+        return eos_fs_mkdir(path);
     }
-
-    if (type == EOS_FS_TYPE_FILE)
-    {
-        return EOS_ERR_ALREADY_EXISTS;
-    }
-
-    if (type == EOS_FS_TYPE_NOT_EXIST)
-    {
-        return (eos_fs_mkdir(path) == 0) ? EOS_OK : EOS_ERR_FILE_ERROR;
-    }
-
-    return EOS_ERR_FILE_ERROR;
+    return -1;
 }
 
-eos_result_t eos_storage_create_file_if_not_exist(const char *path, const char *default_content)
+int eos_create_file_if_not_exist(const char *path, const char *default_content)
 {
-    EOS_CHECK_PTR_RETURN_VAL(path, EOS_ERR_INVALID_ARG);
-
-    int type = eos_fs_type(path);
-    if (type == EOS_FS_TYPE_FILE)
-    {
-        return EOS_OK;
-    }
-
-    if (type == EOS_FS_TYPE_DIR)
-    {
-        return EOS_ERR_ALREADY_EXISTS;
-    }
-
-    if (type == EOS_FS_TYPE_NOT_EXIST)
+    EOS_CHECK_PTR_RETURN_VAL(path && default_content, -1);
+    if (eos_fs_type(path) == EOS_FS_TYPE_NOT_EXIST)
     {
         eos_file_t fp = eos_fs_open_write(path);
         if (fp == EOS_FILE_INVALID)
-            return EOS_ERR_FILE_ERROR;
+            return -1;
 
-        if (default_content)
+        ssize_t len = strlen(default_content);
+        ssize_t written = eos_fs_write(fp, default_content, len);
+        if (written != len)
         {
-            ssize_t len = strlen(default_content);
-            ssize_t written = eos_fs_write(fp, default_content, len);
-            if (written != len)
-            {
-                EOS_LOG_E("write %s failed, written=%zd", path, written);
-                eos_fs_close(fp);
-                return EOS_ERR_IO;
-            }
+            EOS_LOG_E("write %s failed, written=%zd", path, written);
+            eos_fs_close(fp);
+            return -1;
         }
 
         eos_fs_close(fp);
         EOS_LOG_I("Created file: %s", path);
-        return EOS_OK;
+        return 0;
     }
-
-    return EOS_ERR_FILE_ERROR;
+    return -1;
 }
 
-eos_result_t eos_storage_mkdir_recursive(const char *path)
+int eos_fs_mkdir_recursive(const char *path)
 {
     if (!path || path[0] == '\0')
     {
-        return EOS_ERR_INVALID_ARG;
+        return -1;
     }
 
     char tmp[_FILE_NAME_MAX_LENGTH];
@@ -139,7 +107,7 @@ eos_result_t eos_storage_mkdir_recursive(const char *path)
     // Check path length
     if (len >= sizeof(tmp) - 1)
     {
-        return EOS_ERR_PATH_TOO_LONG;
+        return -1; // Path too long
     }
 
     // Skip root directory (for absolute paths)
@@ -181,12 +149,12 @@ eos_result_t eos_storage_mkdir_recursive(const char *path)
                 // Directory does not exist, try to create
                 if (eos_fs_mkdir(tmp) != 0)
                 {
-                    return EOS_ERR_FILE_ERROR;
+                    return -1; // Creation failed
                 }
             }
             else if (type != EOS_FS_TYPE_DIR)
             {
-                return EOS_ERR_INVALID_STATE;
+                return -1; // Path exists but is not a directory
             }
 
             // Restore path separator
@@ -204,37 +172,31 @@ eos_result_t eos_storage_mkdir_recursive(const char *path)
     {
         if (eos_fs_mkdir(tmp) != 0)
         {
-            return EOS_ERR_FILE_ERROR;
+            return -1;
         }
     }
     else if (type != EOS_FS_TYPE_DIR)
     {
-        return EOS_ERR_INVALID_STATE;
+        return -1; // Final path exists but is not a directory
     }
 
-    return EOS_OK;
+    return 0;
 }
 
-eos_result_t eos_storage_write_file_immediate(const char *path, const void *data, size_t data_size)
+int eos_fs_write_file_immediate(const char *path, const void *data, size_t data_size)
 {
-    EOS_CHECK_PTR_RETURN_VAL(path && data, EOS_ERR_INVALID_ARG);
-    if (data_size == 0)
-    {
-        return EOS_ERR_INVALID_ARG;
-    }
-
     eos_file_t fp = eos_fs_open_write(path);
     if (fp == EOS_FILE_INVALID)
-        return EOS_ERR_FILE_ERROR;
+        return -1;
 
     ssize_t written = eos_fs_write(fp, data, data_size);
 
     eos_fs_close(fp);
 
-    return (written == data_size) ? EOS_OK : EOS_ERR_IO;
+    return written;
 }
 
-char *eos_storage_read_file_immediate(const char *path)
+char *eos_fs_read_file_immediate(const char *path)
 {
     eos_file_t fp = eos_fs_open_read(path);
     if (fp == EOS_FILE_INVALID)
@@ -276,39 +238,39 @@ char *eos_storage_read_file_immediate(const char *path)
     return buf;
 }
 
-eos_result_t eos_storage_write_file(const char *path, const void *data, size_t data_size)
+int eos_fs_write_file(const char *path, const void *data, size_t data_size)
 {
 #if EOS_DFW_ENABLE
     if (!path || !data || data_size == 0)
     {
-        return EOS_ERR_INVALID_ARG;
+        return -1;
     }
-    return eos_dfw_write(path, (const uint8_t *)data, data_size) ? EOS_OK : EOS_ERR_FILE_ERROR;
+    return eos_dfw_write(path, (const uint8_t *)data, data_size) ? (int)data_size : -1;
 #else
-    return eos_storage_write_file_immediate(path, data, data_size);
+    return eos_fs_write_file_immediate(path, data, data_size);
 #endif
 }
 
-char *eos_storage_read_file(const char *path)
+char *eos_fs_read_file(const char *path)
 {
 #if EOS_DFW_ENABLE
     return (char *)eos_dfw_read(path);
 #else
-    return eos_storage_read_file_immediate(path);
+    return eos_fs_read_file_immediate(path);
 #endif
 }
 
-eos_result_t eos_storage_rm_recursive(const char *path)
+int eos_fs_rm_recursive(const char *path)
 {
     if (!path || path[0] == '\0')
     {
-        return EOS_ERR_INVALID_ARG;
+        return -1;
     }
 
     // Safety check: prevent deleting root directory
     if (strcmp(path, "/") == 0 || strcmp(path, "\\") == 0)
     {
-        return EOS_ERR_INVALID_ARG;
+        return -1;
     }
 
     // Check path type
@@ -318,11 +280,11 @@ eos_result_t eos_storage_rm_recursive(const char *path)
     {
     case EOS_FS_TYPE_NOT_EXIST:
         // Path does not exist, return success directly
-        return EOS_OK;
+        return 0;
 
     case EOS_FS_TYPE_FILE:
         // If it's a file, delete it directly
-        return (eos_fs_remove(path) == 0) ? EOS_OK : EOS_ERR_FILE_ERROR;
+        return eos_fs_remove(path);
 
     case EOS_FS_TYPE_DIR:
     {
@@ -330,12 +292,12 @@ eos_result_t eos_storage_rm_recursive(const char *path)
         eos_dir_t dir = eos_fs_opendir(path);
         if (!dir)
         {
-            return EOS_ERR_FILE_ERROR;
+            return -1; // Failed to open directory
         }
 
         char filename[_FILE_NAME_MAX_LENGTH];
         char fullpath[PATH_MAX];
-        eos_result_t result = EOS_OK;
+        int result = 0;
 
         // Traverse all entries in the directory
         while (eos_fs_readdir(dir, filename, sizeof(filename)) == 0)
@@ -356,26 +318,26 @@ eos_result_t eos_storage_rm_recursive(const char *path)
 #endif
 
             // Recursively delete sub-items
-            if (eos_storage_rm_recursive(fullpath) != EOS_OK)
+            if (eos_fs_rm_recursive(fullpath) != 0)
             {
-                result = EOS_ERR_FILE_ERROR;
+                result = -1;
                 break;
             }
         }
 
         eos_fs_closedir(dir);
 
-        if (result != EOS_OK)
+        if (result != 0)
         {
-            return result;
+            return -1; // Sub-item deletion failed
         }
 
         // Delete empty directory
-        return (eos_fs_rmdir(path) == 0) ? EOS_OK : EOS_ERR_FILE_ERROR;
+        return eos_fs_rmdir(path);
     }
 
     default:
         // Type acquisition failed or other errors
-        return EOS_ERR_FILE_ERROR;
+        return -1;
     }
 }

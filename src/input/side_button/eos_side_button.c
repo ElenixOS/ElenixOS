@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eos_dispatcher.h"
+#include "input/eos_input.h"
 #include "eos_control_center.h"
 #include "eos_pm.h"
 /* Macros and Definitions -------------------------------------*/

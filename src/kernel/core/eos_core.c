@@ -33,7 +33,6 @@
 #include "eos_theme.h"
 #include "eos_config.h"
 #include "eos_config_internal.h"
-#include "eos_services.h"
 #include "jerryscript.h"
 #include "eos_font.h"
 #define EOS_LOG_TAG "Core"
@@ -145,7 +144,6 @@ void eos_init(void)
     eos_app_init();
     eos_watchface_init();
     eos_app_header_init();
-    eos_services_start();
     eos_msg_list_init();
     eos_control_center_init();
     eos_pm_init();

@@ -16,6 +16,7 @@
 #include "eos_vibrator.h"
 #include "eos_theme.h"
 #include "eos_touch.h"
+#include "input/eos_input.h"
 #include "eos_anim.h"
 #include "eos_activity.h"
 #include "eos_app_list.h"

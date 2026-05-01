@@ -209,7 +209,7 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     }
     else
     {
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     // Install application
     script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;

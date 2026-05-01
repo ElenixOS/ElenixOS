@@ -18,7 +18,6 @@
 #include "eos_watchface.h"
 #include "eos_port.h"
 #include "eos_config.h"
-#include "eos_services.h"
 #include "eos_event.h"
 #include "eos_icon.h"
 #include "eos_flash_light.h"

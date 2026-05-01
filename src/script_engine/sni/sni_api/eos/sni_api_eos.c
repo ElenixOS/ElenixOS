@@ -155,7 +155,7 @@ static bool sni_api_eos_config_write_to_file(cJSON *root)
         return false;
     }
 
-    ret = eos_storage_write_file(config_file_path, json_str, strlen(json_str)) > 0;
+    ret = (eos_storage_write_file(config_file_path, json_str, strlen(json_str)) == EOS_OK);
 
     eos_free(json_str);
     return ret;

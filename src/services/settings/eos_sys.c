@@ -40,7 +40,7 @@
 static cJSON *eos_sys_load_config(int *err_code)
 {
     if (err_code)
-        *err_code = -EOS_ERR_FILE_ERROR;
+        *err_code = EOS_ERR_FILE_ERROR;
 
     if (!eos_storage_is_file(EOS_SYS_CONFIG_FILE_PATH))
     {
@@ -72,33 +72,23 @@ static cJSON *eos_sys_load_config(int *err_code)
 static int eos_sys_save_config(cJSON *root)
 {
     if (!root)
-        return -EOS_ERR_JSON_ERROR;
+        return EOS_ERR_JSON_ERROR;
 
     char *new_json = cJSON_PrintUnformatted(root);
     if (!new_json)
     {
         EOS_LOG_E("Failed to generate JSON");
-        return -EOS_ERR_JSON_ERROR;
+        return EOS_ERR_JSON_ERROR;
     }
 
-    size_t json_len = strlen(new_json);
-    int ret;
-    int written = eos_storage_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, json_len);
-    if (written <= 0 || written != json_len)
-    {
-        ret = -1;
-    }
-    else
-    {
-        ret = 0;
-    }
+    eos_result_t ret = eos_storage_write_file(EOS_SYS_CONFIG_FILE_PATH, new_json, strlen(new_json));
 
     cJSON_free(new_json);
 
-    if (ret < 0)
+    if (ret != EOS_OK)
     {
         EOS_LOG_E("Write json failed, error: %d", ret);
-        return -EOS_ERR_FILE_ERROR;
+        return EOS_ERR_FILE_ERROR;
     }
     eos_event_broadcast(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
 
@@ -290,7 +280,7 @@ eos_result_t _create_default_cfg_json(const char *path)
     cJSON *root = cJSON_CreateObject();
     if (!root)
     {
-        return -EOS_ERR_JSON_ERROR;
+        return EOS_ERR_JSON_ERROR;
     }
 
     cJSON_AddStringToObject(root, EOS_SYS_CFG_KEY_DEVICE_NAME_STR, EOS_SYS_DEFAULT_DEVICE_NAME);
@@ -300,10 +290,10 @@ eos_result_t _create_default_cfg_json(const char *path)
     if (!json_str)
     {
         cJSON_Delete(root);
-        return -EOS_ERR_JSON_ERROR;
+        return EOS_ERR_JSON_ERROR;
     }
 
-    int ret = eos_storage_create_file_if_not_exist(path, json_str);
+    eos_result_t ret = eos_storage_create_file_if_not_exist(path, json_str);
 
     cJSON_free(json_str);
     cJSON_Delete(root);
@@ -401,7 +391,7 @@ eos_result_t eos_sys_add_config_item(const char *key, const char *value)
     if (!key || !value)
     {
         EOS_LOG_E("Invalid parameters: key or value is NULL");
-        return -EOS_ERR_VAR_NULL;
+        return EOS_ERR_VAR_NULL;
     }
 
     int err;
@@ -413,7 +403,7 @@ eos_result_t eos_sys_add_config_item(const char *key, const char *value)
     {
         EOS_LOG_W("Key '%s' already exists in config", key);
         cJSON_Delete(root);
-        return -EOS_ERR_JSON_ERROR;
+        return EOS_ERR_JSON_ERROR;
     }
 
     cJSON_AddStringToObject(root, key, value);

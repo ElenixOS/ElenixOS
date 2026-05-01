@@ -3,8 +3,8 @@
  * @brief Image display
  */
 
-#ifndef ELENIX_OS_IMG_H
-#define ELENIX_OS_IMG_H
+#ifndef EOS_IMG_H
+#define EOS_IMG_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,4 +46,4 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path);
 }
 #endif
 
-#endif /* ELENIX_OS_IMG_H */
+#endif /* EOS_IMG_H */

@@ -3,8 +3,8 @@
  * @brief Various utility functions
  */
 
-#ifndef ELENIX_OS_MISC_H
-#define ELENIX_OS_MISC_H
+#ifndef EOS_MISC_H
+#define EOS_MISC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,4 +45,4 @@ void eos_pkg_free(script_pkg_t *pkg);
 }
 #endif
 
-#endif /* ELENIX_OS_MISC_H */
+#endif /* EOS_MISC_H */

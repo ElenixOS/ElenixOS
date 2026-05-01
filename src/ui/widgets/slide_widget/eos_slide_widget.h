@@ -3,8 +3,8 @@
  * @brief Slide widget
  */
 
-#ifndef ELENIX_OS_SLIDE_WIDGET_H
-#define ELENIX_OS_SLIDE_WIDGET_H
+#ifndef EOS_SLIDE_WIDGET_H
+#define EOS_SLIDE_WIDGET_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,4 +129,4 @@ void eos_slide_widget_delete(eos_slide_widget_t *sw);
 }
 #endif
 
-#endif /* ELENIX_OS_SLIDE_WIDGET_H */
+#endif /* EOS_SLIDE_WIDGET_H */

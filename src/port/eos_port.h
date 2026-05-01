@@ -3,8 +3,8 @@
  * @brief ElenixOS porting
  */
 
-#ifndef ELENIX_OS_PORT_H
-#define ELENIX_OS_PORT_H
+#ifndef EOS_PORT_H
+#define EOS_PORT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -188,4 +188,4 @@ void eos_sys_wake(void);
 }
 #endif
 
-#endif /* ELENIX_OS_PORT_H */
+#endif /* EOS_PORT_H */

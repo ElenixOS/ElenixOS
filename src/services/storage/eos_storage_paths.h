@@ -7,8 +7,8 @@
  * a clear and unified view of the system's directory structure.
  */
 
-#ifndef ELENIX_OS_STORAGE_PATHS_H
-#define ELENIX_OS_STORAGE_PATHS_H
+#ifndef EOS_STORAGE_PATHS_H
+#define EOS_STORAGE_PATHS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,4 +68,4 @@ extern "C" {
 }
 #endif
 
-#endif /* ELENIX_OS_STORAGE_PATHS_H */
+#endif /* EOS_STORAGE_PATHS_H */

@@ -3,8 +3,8 @@
  * @brief Sensor porting interface
  */
 
-#ifndef ELENIX_OS_PORT_SENSOR_H
-#define ELENIX_OS_PORT_SENSOR_H
+#ifndef EOS_PORT_SENSOR_H
+#define EOS_PORT_SENSOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,4 +40,4 @@ void eos_sensor_read_sync(eos_sensor_type_t type, eos_sensor_t *out);
 }
 #endif
 
-#endif /* ELENIX_OS_PORT_SENSOR_H */
+#endif /* EOS_PORT_SENSOR_H */

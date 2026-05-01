@@ -3,8 +3,8 @@
  * @brief Crown
  */
 
-#ifndef ELENIX_OS_CROWN_H
-#define ELENIX_OS_CROWN_H
+#ifndef EOS_CROWN_H
+#define EOS_CROWN_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,4 +57,4 @@ void eos_crown_init(void);
 }
 #endif
 
-#endif /* ELENIX_OS_CROWN_H */
+#endif /* EOS_CROWN_H */

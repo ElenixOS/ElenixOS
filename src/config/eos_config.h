@@ -5,8 +5,8 @@
 
 #if 1 /* Enable configuration */
 
-#ifndef ELENIX_OS_CONFIG_H
-#define ELENIX_OS_CONFIG_H
+#ifndef EOS_CONFIG_H
+#define EOS_CONFIG_H
 
 #ifdef __cplusplus
 extern "C"
@@ -238,6 +238,6 @@ extern "C"
 }
 #endif
 
-#endif /* ELENIX_OS_CONFIG_H */
+#endif /* EOS_CONFIG_H */
 
 #endif /* Enable configuration */

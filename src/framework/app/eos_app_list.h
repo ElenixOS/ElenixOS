@@ -3,8 +3,8 @@
  * @brief App list page
  */
 
-#ifndef ELENIX_OS_APP_LIST_H
-#define ELENIX_OS_APP_LIST_H
+#ifndef EOS_APP_LIST_H
+#define EOS_APP_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,4 +53,4 @@ void eos_app_list_enter(void);
 }
 #endif
 
-#endif /* ELENIX_OS_APP_LIST_H */
+#endif /* EOS_APP_LIST_H */

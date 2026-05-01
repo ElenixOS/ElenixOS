@@ -3,8 +3,8 @@
  * @brief Task dispatcher
  */
 
-#ifndef ELENIX_OS_DISPATCHER_H
-#define ELENIX_OS_DISPATCHER_H
+#ifndef EOS_DISPATCHER_H
+#define EOS_DISPATCHER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,4 +38,4 @@ void eos_dispatch_tick(void);
 }
 #endif
 
-#endif /* ELENIX_OS_DISPATCHER_H */
+#endif /* EOS_DISPATCHER_H */

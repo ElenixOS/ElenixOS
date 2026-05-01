@@ -3,8 +3,8 @@
  * @brief Radio list page
  */
 
-#ifndef ELENIX_OS_RADIO_LIST_H
-#define ELENIX_OS_RADIO_LIST_H
+#ifndef EOS_RADIO_LIST_H
+#define EOS_RADIO_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,4 +77,4 @@ void eos_radio_list_check(eos_radio_list_t *rl, uint32_t index);
 }
 #endif
 
-#endif /* ELENIX_OS_RADIO_LIST_H */
+#endif /* EOS_RADIO_LIST_H */

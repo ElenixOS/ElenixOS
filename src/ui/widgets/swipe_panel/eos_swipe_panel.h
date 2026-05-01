@@ -3,8 +3,8 @@
  * @brief Swipe panel header file
  */
 
-#ifndef ELENIX_OS_SWIPE_PANEL_H
-#define ELENIX_OS_SWIPE_PANEL_H
+#ifndef EOS_SWIPE_PANEL_H
+#define EOS_SWIPE_PANEL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,4 +111,4 @@ void eos_swipe_panel_hide(eos_swipe_panel_t *sp);
 }
 #endif
 
-#endif /* ELENIX_OS_SWIPE_PANEL_H */
+#endif /* EOS_SWIPE_PANEL_H */

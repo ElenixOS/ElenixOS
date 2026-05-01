@@ -5,8 +5,8 @@
  * Follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
  */
 
-#ifndef ELENIX_OS_VERSION_H
-#define ELENIX_OS_VERSION_H
+#ifndef EOS_VERSION_H
+#define EOS_VERSION_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,4 +36,4 @@ extern "C" {
 }
 #endif
 
-#endif /* ELENIX_OS_VERSION_H */
+#endif /* EOS_VERSION_H */

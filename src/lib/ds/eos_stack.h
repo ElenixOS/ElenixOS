@@ -3,8 +3,8 @@
  * @brief Stack
  */
 
-#ifndef ELENIX_OS_STACK_H
-#define ELENIX_OS_STACK_H
+#ifndef EOS_STACK_H
+#define EOS_STACK_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,4 +89,4 @@ void eos_stack_destroy(eos_stack_t *stack);
 }
 #endif
 
-#endif /* ELENIX_OS_STACK_H */
+#endif /* EOS_STACK_H */

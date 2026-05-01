@@ -3,8 +3,8 @@
  * @brief Watchface list
  */
 
-#ifndef ELENIX_OS_WATCHFACE_LIST_H
-#define ELENIX_OS_WATCHFACE_LIST_H
+#ifndef EOS_WATCHFACE_LIST_H
+#define EOS_WATCHFACE_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,4 +30,4 @@ void eos_watchface_list_enter(void);
 }
 #endif
 
-#endif /* ELENIX_OS_WATCHFACE_LIST_H */
+#endif /* EOS_WATCHFACE_LIST_H */

@@ -3,8 +3,8 @@
  * @brief Card page view
  */
 
-#ifndef ELENIX_OS_CARD_PAGER_H
-#define ELENIX_OS_CARD_PAGER_H
+#ifndef EOS_CARD_PAGER_H
+#define EOS_CARD_PAGER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,4 +143,4 @@ void eos_card_pager_set_page_changed_cb(eos_card_pager_t *cp,
 }
 #endif
 
-#endif /* ELENIX_OS_CARD_PAGER_H */
+#endif /* EOS_CARD_PAGER_H */

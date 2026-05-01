@@ -3,8 +3,8 @@
  * @brief System time base
  */
 
-#ifndef ELENIX_OS_TIME_H
-#define ELENIX_OS_TIME_H
+#ifndef EOS_TIME_H
+#define EOS_TIME_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,4 +47,4 @@ eos_datetime_t eos_time_get(void);
 }
 #endif
 
-#endif /* ELENIX_OS_TIME_H */
+#endif /* EOS_TIME_H */

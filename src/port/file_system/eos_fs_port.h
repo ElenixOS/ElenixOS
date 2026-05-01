@@ -3,8 +3,8 @@
  * @brief File system porting
  */
 
-#ifndef ELENIX_OS_FS_PORT_H
-#define ELENIX_OS_FS_PORT_H
+#ifndef EOS_FS_PORT_H
+#define EOS_FS_PORT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,4 +190,4 @@ int eos_fs_sync(eos_file_t file);
 }
 #endif
 
-#endif /* ELENIX_OS_FS_PORT_H */
+#endif /* EOS_FS_PORT_H */

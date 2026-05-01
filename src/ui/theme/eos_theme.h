@@ -3,8 +3,8 @@
  * @brief Theme colors
  */
 
-#ifndef ELENIX_OS_THEME_H
-#define ELENIX_OS_THEME_H
+#ifndef EOS_THEME_H
+#define EOS_THEME_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,4 +67,4 @@ lv_style_t *eos_theme_get_label_style(void);
 }
 #endif
 
-#endif /* ELENIX_OS_THEME_H */
+#endif /* EOS_THEME_H */

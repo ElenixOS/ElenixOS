@@ -3,8 +3,8 @@
  * @brief Elenix OS core header file
  */
 
-#ifndef ELENIX_OS_CORE_H
-#define ELENIX_OS_CORE_H
+#ifndef EOS_CORE_H
+#define EOS_CORE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,4 +44,4 @@ void eos_logo_play(bool anim);
 }
 #endif
 
-#endif /* ELENIX_OS_CORE_H */
+#endif /* EOS_CORE_H */

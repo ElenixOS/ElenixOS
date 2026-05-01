@@ -3,8 +3,8 @@
  * @brief Side button
  */
 
-#ifndef ELENIX_OS_SIDE_BUTTON_H
-#define ELENIX_OS_SIDE_BUTTON_H
+#ifndef EOS_SIDE_BUTTON_H
+#define EOS_SIDE_BUTTON_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,4 +29,4 @@ void eos_side_button_report(eos_button_state_t state);
 }
 #endif
 
-#endif /* ELENIX_OS_SIDE_BUTTON_H */
+#endif /* EOS_SIDE_BUTTON_H */

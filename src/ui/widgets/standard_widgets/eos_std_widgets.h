@@ -3,8 +3,8 @@
  * @brief System standard widgets
  */
 
-#ifndef ELENIX_OS_STD_WIDGETS_H
-#define ELENIX_OS_STD_WIDGETS_H
+#ifndef EOS_STD_WIDGETS_H
+#define EOS_STD_WIDGETS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,4 +48,4 @@ void eos_std_title_comment_create(lv_obj_t *parent,
 }
 #endif
 
-#endif /* ELENIX_OS_STD_WIDGETS_H */
+#endif /* EOS_STD_WIDGETS_H */

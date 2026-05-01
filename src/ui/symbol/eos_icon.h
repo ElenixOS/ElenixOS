@@ -7,8 +7,8 @@
  * @date 2025-10-28
  */
 
-#ifndef ELENIX_OS_ICON_H
-#define ELENIX_OS_ICON_H
+#ifndef EOS_ICON_H
+#define EOS_ICON_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -3019,4 +3019,4 @@ void eos_icon_register(void);
 }
 #endif
 
-#endif /* ELENIX_OS_ICON_H */
+#endif /* EOS_ICON_H */

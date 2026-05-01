@@ -3,8 +3,8 @@
  * @brief Application top navigation header
  */
 
-#ifndef ELENIX_OS_APP_HEADER_H
-#define ELENIX_OS_APP_HEADER_H
+#ifndef EOS_APP_HEADER_H
+#define EOS_APP_HEADER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,4 +75,4 @@ void _play_title_changed_anim(eos_activity_t *from, eos_activity_t *to, bool nee
 }
 #endif
 
-#endif /* ELENIX_OS_APP_HEADER_H */
+#endif /* EOS_APP_HEADER_H */

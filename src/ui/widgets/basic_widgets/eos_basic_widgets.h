@@ -3,8 +3,8 @@
  * @brief Basic widgets
  */
 
-#ifndef ELENIX_OS_BASIC_WIDGETS_H
-#define ELENIX_OS_BASIC_WIDGETS_H
+#ifndef EOS_BASIC_WIDGETS_H
+#define EOS_BASIC_WIDGETS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -310,4 +310,4 @@ void eos_obj_remove_corner_radius_bg(lv_obj_t *obj);
 }
 #endif
 
-#endif /* ELENIX_OS_BASIC_WIDGETS_H */
+#endif /* EOS_BASIC_WIDGETS_H */

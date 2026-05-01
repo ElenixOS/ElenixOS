@@ -3,8 +3,8 @@
  * @brief Clock hand
  */
 
-#ifndef ELENIX_OS_WW_CLOCK_HAND_H
-#define ELENIX_OS_WW_CLOCK_HAND_H
+#ifndef EOS_WW_CLOCK_HAND_H
+#define EOS_WW_CLOCK_HAND_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,4 +58,4 @@ lv_obj_t *eos_clock_hand_create(lv_obj_t *parent,
 }
 #endif
 
-#endif /* ELENIX_OS_WW_CLOCK_HAND_H */
+#endif /* EOS_WW_CLOCK_HAND_H */

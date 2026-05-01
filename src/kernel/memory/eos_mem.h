@@ -3,8 +3,8 @@
  * @brief Memory allocation
  */
 
-#ifndef ELENIX_OS_MEM_H
-#define ELENIX_OS_MEM_H
+#ifndef EOS_MEM_H
+#define EOS_MEM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,4 +52,4 @@ void *eos_realloc(void *ptr, size_t new_size);
 }
 #endif
 
-#endif /* ELENIX_OS_MEM_H */
+#endif /* EOS_MEM_H */

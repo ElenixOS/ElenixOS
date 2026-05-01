@@ -3,8 +3,8 @@
  * @brief Memory allocation
  */
 
-#ifndef ELENIX_OS_MEM_PORT_H
-#define ELENIX_OS_MEM_PORT_H
+#ifndef EOS_MEM_PORT_H
+#define EOS_MEM_PORT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,4 +49,4 @@ void *eos_realloc_core(void *ptr, size_t new_size);
 }
 #endif
 
-#endif /* ELENIX_OS_MEM_PORT_H */
+#endif /* EOS_MEM_PORT_H */

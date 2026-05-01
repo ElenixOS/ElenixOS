@@ -3,8 +3,8 @@
  * @brief System function test
  */
 
-#ifndef ELENIX_OS_TEST_H
-#define ELENIX_OS_TEST_H
+#ifndef EOS_TEST_H
+#define EOS_TEST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,4 +27,4 @@ void eos_test_start(void);
 }
 #endif
 
-#endif /* ELENIX_OS_TEST_H */
+#endif /* EOS_TEST_H */

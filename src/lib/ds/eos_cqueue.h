@@ -3,8 +3,8 @@
  * @brief Resizable circular queue FIFO
  */
 
-#ifndef ELENIX_OS_CQUEUE_H
-#define ELENIX_OS_CQUEUE_H
+#ifndef EOS_CQUEUE_H
+#define EOS_CQUEUE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,4 +63,4 @@ void *eos_cqueue_peek(eos_cqueue_t *cq, size_t index);
 }
 #endif
 
-#endif /* ELENIX_OS_CQUEUE_H */
+#endif /* EOS_CQUEUE_H */

@@ -3,8 +3,8 @@
  * @brief Package manager
  */
 
-#ifndef ELENIX_OS_PKG_MGR_H
-#define ELENIX_OS_PKG_MGR_H
+#ifndef EOS_PKG_MGR_H
+#define EOS_PKG_MGR_H
 
 #ifdef __cplusplus
 extern "C"
@@ -84,4 +84,4 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
 }
 #endif
 
-#endif /* ELENIX_OS_PKG_MGR_H */
+#endif /* EOS_PKG_MGR_H */

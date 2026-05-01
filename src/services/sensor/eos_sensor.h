@@ -3,8 +3,8 @@
  * @brief Sensor definitions
  */
 
-#ifndef ELENIX_OS_SENSOR_H
-#define ELENIX_OS_SENSOR_H
+#ifndef EOS_SENSOR_H
+#define EOS_SENSOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -239,4 +239,4 @@ eos_sensor_type_t eos_sensor_get_type_by_event_code(lv_event_code_t code);
 }
 #endif
 
-#endif /* ELENIX_OS_SENSOR_H */
+#endif /* EOS_SENSOR_H */

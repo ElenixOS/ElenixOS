@@ -3,8 +3,8 @@
  * @brief Multi-language system
  */
 
-#ifndef ELENIX_OS_LANG_H
-#define ELENIX_OS_LANG_H
+#ifndef EOS_LANG_H
+#define EOS_LANG_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -175,4 +175,4 @@ void eos_label_set_text_fmt(lv_obj_t *label, const char *fmt, ...);
 }
 #endif
 
-#endif /* ELENIX_OS_LANG_H */
+#endif /* EOS_LANG_H */

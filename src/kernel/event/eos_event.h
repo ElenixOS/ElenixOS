@@ -3,8 +3,8 @@
  * @brief Event system
  */
 
-#ifndef ELENIX_OS_EVENT_H
-#define ELENIX_OS_EVENT_H
+#ifndef EOS_EVENT_H
+#define EOS_EVENT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,4 +143,4 @@ lv_event_code_t eos_event_register_id(void);
 }
 #endif
 
-#endif /* ELENIX_OS_EVENT_H */
+#endif /* EOS_EVENT_H */

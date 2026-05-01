@@ -3,8 +3,8 @@
  * @brief Activity controller
  */
 
-#ifndef ELENIX_OS_ACTIVITY_H
-#define ELENIX_OS_ACTIVITY_H
+#ifndef EOS_ACTIVITY_H
+#define EOS_ACTIVITY_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -297,4 +297,4 @@ eos_activity_t *eos_activity_get_bottom(void);
 }
 #endif
 
-#endif /* ELENIX_OS_ACTIVITY_H */
+#endif /* EOS_ACTIVITY_H */

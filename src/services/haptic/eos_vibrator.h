@@ -3,8 +3,8 @@
  * @brief Vibrator driver
  */
 
-#ifndef ELENIX_OS_VIBRATOR_H
-#define ELENIX_OS_VIBRATOR_H
+#ifndef EOS_VIBRATOR_H
+#define EOS_VIBRATOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,4 +49,4 @@ void eos_vibrator_set_strength(eos_vibrator_strength_t s);
 }
 #endif
 
-#endif /* ELENIX_OS_VIBRATOR_H */
+#endif /* EOS_VIBRATOR_H */

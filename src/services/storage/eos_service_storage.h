@@ -3,8 +3,8 @@
  * @brief Storage service file operation APIs
  */
 
-#ifndef ELENIX_OS_SERVICE_STORAGE_H
-#define ELENIX_OS_SERVICE_STORAGE_H
+#ifndef EOS_SERVICE_STORAGE_H
+#define EOS_SERVICE_STORAGE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,4 +106,4 @@ eos_result_t eos_storage_rm_recursive(const char *path);
 }
 #endif
 
-#endif /* ELENIX_OS_SERVICE_STORAGE_H */
+#endif /* EOS_SERVICE_STORAGE_H */

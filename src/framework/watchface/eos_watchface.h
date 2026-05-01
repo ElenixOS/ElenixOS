@@ -3,8 +3,8 @@
  * @brief Watchface
  */
 
-#ifndef ELENIX_OS_WATCHFACE_H
-#define ELENIX_OS_WATCHFACE_H
+#ifndef EOS_WATCHFACE_H
+#define EOS_WATCHFACE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,4 +71,4 @@ eos_activity_t *eos_watchface_get_activity(void);
 }
 #endif
 
-#endif /* ELENIX_OS_WATCHFACE_H */
+#endif /* EOS_WATCHFACE_H */

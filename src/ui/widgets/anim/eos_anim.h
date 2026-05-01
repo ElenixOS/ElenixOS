@@ -65,8 +65,8 @@
  *  - Multiple animations can start simultaneously, but same type animations may have race conditions.
  */
 
-#ifndef ELENIX_OS_ANIM_H
-#define ELENIX_OS_ANIM_H
+#ifndef EOS_ANIM_H
+#define EOS_ANIM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -387,4 +387,4 @@ void eos_lite_anim_fade_layered_start(lv_obj_t *target_obj,
 }
 #endif
 
-#endif /* ELENIX_OS_ANIM_H */
+#endif /* EOS_ANIM_H */

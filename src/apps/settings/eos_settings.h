@@ -3,8 +3,8 @@
  * @brief System settings
  */
 
-#ifndef ELENIX_OS_SETTINGS_H
-#define ELENIX_OS_SETTINGS_H
+#ifndef EOS_SETTINGS_H
+#define EOS_SETTINGS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,4 +38,4 @@ void eos_settings_slient_mode_off(void);
 }
 #endif
 
-#endif /* ELENIX_OS_SETTINGS_H */
+#endif /* EOS_SETTINGS_H */

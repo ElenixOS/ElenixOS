@@ -2,8 +2,8 @@
  * @file eos_virtual_display.h
  * @brief Virtual display
  */
-#ifndef ELENIX_OS_VIRTUAL_DISPLAY_H
-#define ELENIX_OS_VIRTUAL_DISPLAY_H
+#ifndef EOS_VIRTUAL_DISPLAY_H
+#define EOS_VIRTUAL_DISPLAY_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,4 +36,4 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
 }
 #endif
 
-#endif /* ELENIX_OS_VIRTUAL_DISPLAY_H */
+#endif /* EOS_VIRTUAL_DISPLAY_H */

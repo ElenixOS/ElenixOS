@@ -3,8 +3,8 @@
  * @brief Temporary message toast
  */
 
-#ifndef ELENIX_OS_TOAST_H
-#define ELENIX_OS_TOAST_H
+#ifndef EOS_TOAST_H
+#define EOS_TOAST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,4 +49,4 @@ void eos_toast_init(void);
 }
 #endif
 
-#endif /* ELENIX_OS_TOAST_H */
+#endif /* EOS_TOAST_H */

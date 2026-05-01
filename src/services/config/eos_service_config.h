@@ -3,8 +3,8 @@
  * @brief System configuration service
  */
 
-#ifndef ELENIX_OS_SERVICE_CONFIG_H
-#define ELENIX_OS_SERVICE_CONFIG_H
+#ifndef EOS_SERVICE_CONFIG_H
+#define EOS_SERVICE_CONFIG_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,4 +113,4 @@ eos_result_t eos_config_set_json(const char *key, cJSON *json_value);
 }
 #endif
 
-#endif /* ELENIX_OS_SERVICE_CONFIG_H */
+#endif /* EOS_SERVICE_CONFIG_H */

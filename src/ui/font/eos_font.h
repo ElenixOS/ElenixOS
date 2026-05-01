@@ -3,8 +3,8 @@
  * @brief Font system
  */
 
-#ifndef ELENIX_OS_FONT_H
-#define ELENIX_OS_FONT_H
+#ifndef EOS_FONT_H
+#define EOS_FONT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,4 +48,4 @@ void eos_label_set_font_size(lv_obj_t *label, eos_font_size_t size);
 }
 #endif
 
-#endif /* ELENIX_OS_FONT_H */
+#endif /* EOS_FONT_H */

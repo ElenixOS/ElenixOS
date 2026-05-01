@@ -3,8 +3,8 @@
  * @brief Get touch device
  */
 
-#ifndef ELENIX_OS_TOUCH_H
-#define ELENIX_OS_TOUCH_H
+#ifndef EOS_TOUCH_H
+#define EOS_TOUCH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,4 +28,4 @@ lv_indev_t *eos_touch_get_indev(void);
 }
 #endif
 
-#endif /* ELENIX_OS_TOUCH_H */
+#endif /* EOS_TOUCH_H */

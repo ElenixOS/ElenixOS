@@ -3,8 +3,8 @@
  * @brief Flashlight
  */
 
-#ifndef ELENIX_OS_FLASH_LIGHT_H
-#define ELENIX_OS_FLASH_LIGHT_H
+#ifndef EOS_FLASH_LIGHT_H
+#define EOS_FLASH_LIGHT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,4 +34,4 @@ void eos_flash_light_enter(void);
 }
 #endif
 
-#endif /* ELENIX_OS_FLASH_LIGHT_H */
+#endif /* EOS_FLASH_LIGHT_H */

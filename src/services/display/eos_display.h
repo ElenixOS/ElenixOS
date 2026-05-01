@@ -3,8 +3,8 @@
  * @brief Display settings
  */
 
-#ifndef ELENIX_OS_DISPLAY_H
-#define ELENIX_OS_DISPLAY_H
+#ifndef EOS_DISPLAY_H
+#define EOS_DISPLAY_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,4 +41,4 @@ void eos_display_tmp_restore_brightness_smooth(void);
 }
 #endif
 
-#endif /* ELENIX_OS_DISPLAY_H */
+#endif /* EOS_DISPLAY_H */

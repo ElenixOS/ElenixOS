@@ -3,8 +3,8 @@
  * @brief Bubble grid
  */
 
-#ifndef ELENIX_OS_BUBBLE_GRID_H
-#define ELENIX_OS_BUBBLE_GRID_H
+#ifndef EOS_BUBBLE_GRID_H
+#define EOS_BUBBLE_GRID_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,4 +113,4 @@ lv_obj_t * eos_bubble_get_icon_obj(lv_obj_t * obj, uint32_t index);
 }
 #endif
 
-#endif /* ELENIX_OS_BUBBLE_GRID_H */
+#endif /* EOS_BUBBLE_GRID_H */

@@ -3,8 +3,8 @@
  * @brief Deferred File Writer
  */
 
-#ifndef ELENIX_OS_DFW_H
-#define ELENIX_OS_DFW_H
+#ifndef EOS_DFW_H
+#define EOS_DFW_H
 
 #include "eos_config.h"
 
@@ -64,4 +64,4 @@ void eos_dfw_init(void);
 
 #endif /* EOS_DFW_ENABLE */
 
-#endif /* ELENIX_OS_DFW_H */
+#endif /* EOS_DFW_H */

@@ -3,8 +3,8 @@
  * @brief Vibrator
  */
 
-#ifndef ELENIX_OS_PORT_VIBRATOR_H
-#define ELENIX_OS_PORT_VIBRATOR_H
+#ifndef EOS_PORT_VIBRATOR_H
+#define EOS_PORT_VIBRATOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,4 +33,4 @@ void eos_vibrator_off(void);
 }
 #endif
 
-#endif /* ELENIX_OS_PORT_VIBRATOR_H */
+#endif /* EOS_PORT_VIBRATOR_H */

@@ -3,8 +3,8 @@
  * @brief Power Manager
  */
 
-#ifndef ELENIX_OS_SERVICE_PM_H
-#define ELENIX_OS_SERVICE_PM_H
+#ifndef EOS_SERVICE_PM_H
+#define EOS_SERVICE_PM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,4 +68,4 @@ void eos_pm_set_aod_mode(bool enable);
 }
 #endif
 
-#endif /* ELENIX_OS_SERVICE_PM_H */
+#endif /* EOS_SERVICE_PM_H */

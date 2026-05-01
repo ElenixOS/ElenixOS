@@ -3,8 +3,8 @@
  * @brief Application system
  */
 
-#ifndef ELENIX_OS_APP_H
-#define ELENIX_OS_APP_H
+#ifndef EOS_APP_H
+#define EOS_APP_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,4 +87,4 @@ eos_result_t eos_app_init(void);
 }
 #endif
 
-#endif /* ELENIX_OS_APP_H */
+#endif /* EOS_APP_H */

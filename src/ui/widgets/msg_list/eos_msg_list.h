@@ -3,8 +3,8 @@
  * @brief Drop-down message list
  */
 
-#ifndef ELENIX_OS_MSG_LIST_H
-#define ELENIX_OS_MSG_LIST_H
+#ifndef EOS_MSG_LIST_H
+#define EOS_MSG_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -126,4 +126,4 @@ void eos_msg_list_hide(void);
 }
 #endif
 
-#endif /* ELENIX_OS_MSG_LIST_H */
+#endif /* EOS_MSG_LIST_H */

@@ -3,8 +3,8 @@
  * @brief Dynamic array
  */
 
-#ifndef ELENIX_OS_DARRAY_H
-#define ELENIX_OS_DARRAY_H
+#ifndef EOS_DARRAY_H
+#define EOS_DARRAY_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,4 +63,4 @@ void eos_darray_destroy(eos_darray_t *arr);
 }
 #endif
 
-#endif /* ELENIX_OS_DARRAY_H */
+#endif /* EOS_DARRAY_H */

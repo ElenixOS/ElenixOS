@@ -3,8 +3,8 @@
  * @brief Log system
  */
 
-#ifndef ELENIX_OS_LOG_H
-#define ELENIX_OS_LOG_H
+#ifndef EOS_LOG_H
+#define EOS_LOG_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,4 +129,4 @@ extern "C" {
 }
 #endif
 
-#endif /* ELENIX_OS_LOG_H */
+#endif /* EOS_LOG_H */

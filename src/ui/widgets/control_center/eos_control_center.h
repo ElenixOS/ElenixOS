@@ -3,8 +3,8 @@
  * @brief Pull-up control center
  */
 
-#ifndef ELENIX_OS_CONTROL_CENTER_H
-#define ELENIX_OS_CONTROL_CENTER_H
+#ifndef EOS_CONTROL_CENTER_H
+#define EOS_CONTROL_CENTER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,4 +58,4 @@ void eos_control_center_init(void);
 }
 #endif
 
-#endif /* ELENIX_OS_CONTROL_CENTER_H */
+#endif /* EOS_CONTROL_CENTER_H */

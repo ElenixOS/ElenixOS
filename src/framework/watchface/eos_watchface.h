@@ -15,13 +15,11 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include "eos_core.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
+#include "eos_storage_paths.h"
 #include "lvgl.h"
 #include "eos_activity.h"
-/* Public macros ----------------------------------------------*/
-#define EOS_WATCHFACE_DIR EOS_SYS_DIR "wf/"
-#define EOS_WATCHFACE_INSTALLED_DIR EOS_WATCHFACE_DIR "faces/"
-#define EOS_WATCHFACE_DATA_DIR EOS_WATCHFACE_DIR "wf_data/"
+/* Public macros -----DATA_DIR EOS_WATCHFACE_DIR "wf_data/"
 #define EOS_WATCHFACE_BUILTIN_FALLBACK_ID "builtin.fallback"
 #define EOS_WATCHFACE_MANIFEST_FILE_NAME "manifest.json"
 #define EOS_WATCHFACE_SNAPSHOT_FILE_NAME "snapshot.bin"

@@ -21,7 +21,7 @@
 #include "eos_card_pager.h"
 #include "eos_watchface.h"
 #include "eos_port.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_display.h"
 #include "eos_app_list.h"
 #include "eos_lang.h"

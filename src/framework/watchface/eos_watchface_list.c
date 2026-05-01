@@ -20,7 +20,7 @@
 #include "eos_port.h"
 #include "eos_anim.h"
 #include "script_engine_core.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_service_storage.h"
 #include "eos_activity.h"
 /* Macros and Definitions -------------------------------------*/
@@ -47,7 +47,7 @@ static void _watchface_list_btn_cb(lv_event_t *e)
     }
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
-    eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, watchface_id);
+    eos_config_set_string(EOS_CONFIG_KEY_WATCHFACE_ID_STR, watchface_id);
     eos_activity_back();
 }
 

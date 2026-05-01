@@ -55,14 +55,14 @@
 void eos_settings_slient_mode_on(void)
 {
     eos_speaker_set_volume(0);
-    eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, true);
+    eos_config_set_bool(EOS_CONFIG_KEY_MUTE_BOOL, true);
 }
 
 void eos_settings_slient_mode_off(void)
 {
-    uint8_t volume = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 20);
+    uint8_t volume = eos_config_get_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, 20);
     eos_speaker_set_volume(volume);
-    eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false);
+    eos_config_set_bool(EOS_CONFIG_KEY_MUTE_BOOL, false);
 }
 
 /************************** Helper Functions **************************/
@@ -70,7 +70,7 @@ void eos_settings_slient_mode_off(void)
 lv_obj_t *_auto_get_config_switch_create(lv_obj_t *list, const char *txt, const char *config_key, bool default_val)
 {
     lv_obj_t *sw = eos_list_add_switch(list, txt);
-    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_sys_cfg_get_bool(config_key, default_val));
+    lv_obj_set_state(sw, LV_STATE_CHECKED, eos_config_get_bool(config_key, default_val));
     return sw;
 }
 
@@ -97,12 +97,12 @@ static void _bluetooth_enable_switch_cb(lv_event_t *e)
     if (lv_obj_has_state(bt_sw, LV_STATE_CHECKED))
     {
         eos_bluetooth_enable();
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, true);
+        eos_config_set_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, true);
     }
     else
     {
         eos_bluetooth_disable();
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false);
+        eos_config_set_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, false);
     }
 }
 
@@ -113,7 +113,7 @@ static void _settings_view_bluetooth(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(a && view);
     lv_obj_t *list = eos_list_create(view);
     lv_obj_t *bt_sw = _auto_get_config_switch_create(
-        list, eos_lang_get_text(STR_ID_SETTINGS_BLUETOOTH_ENABLE), EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false);
+        list, eos_lang_get_text(STR_ID_SETTINGS_BLUETOOTH_ENABLE), EOS_CONFIG_KEY_BLUETOOTH_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _bluetooth_enable_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
     eos_activity_enter(a);
 }
@@ -130,7 +130,7 @@ static void _brightness_slider_released_cb(lv_event_t *e)
     lv_obj_t *sl = lv_event_get_target(e);
     int32_t val = lv_slider_get_value(sl);
     eos_display_set_brightness(val);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
 }
 
 static void _brightness_slider_minus_cb(lv_event_t *e)
@@ -144,7 +144,7 @@ static void _brightness_slider_minus_cb(lv_event_t *e)
         return;
     val -= 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
     eos_display_set_brightness_smooth(prev, val, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
@@ -159,7 +159,7 @@ static void _brightness_slider_plus_cb(lv_event_t *e)
         return;
     val += 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
     eos_display_set_brightness_smooth(prev, val, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
@@ -183,11 +183,11 @@ static void _wake_on_raise_switch_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(obj);
     if (lv_obj_has_state(obj, LV_STATE_CHECKED))
     {
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
+        eos_config_set_bool(EOS_CONFIG_KEY_WAKE_ON_RAISE_BOOL, true);
     }
     else
     {
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, false);
+        eos_config_set_bool(EOS_CONFIG_KEY_WAKE_ON_RAISE_BOOL, false);
     }
 }
 
@@ -204,7 +204,7 @@ static void _wake_duration_radio_list_selection_changed_cb(lv_event_t *e)
         wake_duration = 70;
     }
     eos_pm_set_sleep_timeout(wake_duration);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, wake_duration);
+    eos_config_set_number(EOS_CONFIG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, wake_duration);
 }
 
 static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
@@ -218,7 +218,7 @@ static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
     eos_radio_list_add_event_cb(rl, _wake_duration_radio_list_selection_changed_cb, NULL);
     eos_radio_list_set_subtitle(rl, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP));
     eos_radio_list_set_comment(rl, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT));
-    uint32_t timeout = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, 15);
+    uint32_t timeout = eos_config_get_number(EOS_CONFIG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, 15);
     if (timeout == 15)
     {
         eos_radio_list_check(rl, timeout_15_item_index);
@@ -241,7 +241,7 @@ static void _settings_view_display(lv_event_t *e)
     lv_label_set_text(ls->minus_label, RI_SUN_LINE);
     lv_label_set_text(ls->plus_label, RI_SUN_FILL);
     eos_list_slider_set_minus_label_scale(ls, 200);
-    lv_slider_set_value(ls->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50), LV_ANIM_ON);
+    lv_slider_set_value(ls->slider, eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50), LV_ANIM_ON);
     lv_slider_set_range(ls->slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_obj_add_event_cb(ls->slider, _brightness_slider_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(ls->slider, _brightness_slider_released_cb, LV_EVENT_RELEASED, NULL);
@@ -251,14 +251,14 @@ static void _settings_view_display(lv_event_t *e)
     eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
 
     lv_obj_t *sw = _auto_get_config_switch_create(
-        list, eos_lang_get_text(STR_ID_SETTINGS_DISPLAY_AOD), EOS_SYS_CFG_KEY_AOD_MODE_BOOL, false);
+        list, eos_lang_get_text(STR_ID_SETTINGS_DISPLAY_AOD), EOS_CONFIG_KEY_AOD_MODE_BOOL, false);
     lv_obj_add_event_cb(sw, _aod_mode_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
     eos_list_add_comment(list, eos_lang_get_text(STR_ID_SETTINGS_DISPLAY_AOD_COMMENT));
     eos_list_add_placeholder(list, EOS_LIST_SECTION_PLACEHOLDER_HEIGHT);
 
     eos_list_add_title(list, eos_lang_get_text(STR_ID_SETTINGS_WAKE));
     sw = _auto_get_config_switch_create(
-        list, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_RAISE), EOS_SYS_CFG_KEY_WAKE_ON_RAISE_BOOL, true);
+        list, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_RAISE), EOS_CONFIG_KEY_WAKE_ON_RAISE_BOOL, true);
     lv_obj_add_event_cb(sw, _wake_on_raise_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *wd_btn = eos_list_add_entry_button(list, eos_lang_get_text(STR_ID_SETTINGS_WAKE_DURATION));
@@ -289,7 +289,7 @@ static void _volume_slider_released_cb(lv_event_t *e)
     lv_obj_t *sl = lv_event_get_target(e);
     int32_t val = lv_slider_get_value(sl);
     eos_speaker_set_volume(val);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, val);
 }
 
 static void _volume_slider_minus_cb(lv_event_t *e)
@@ -303,7 +303,7 @@ static void _volume_slider_minus_cb(lv_event_t *e)
         return;
     val -= 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, val);
     eos_speaker_set_volume(val);
 }
 
@@ -318,7 +318,7 @@ static void _volume_slider_plus_cb(lv_event_t *e)
         return;
     val += 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, val);
+    eos_config_set_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, val);
     eos_speaker_set_volume(val);
 }
 
@@ -365,8 +365,8 @@ static void _haptics_entry_button_clicked_cb(lv_event_t *e)
     eos_radio_list_add_item(rl, eos_lang_get_text(STR_ID_INTENSE));
     eos_radio_list_set_subtitle(rl, eos_lang_get_text(STR_ID_SETTINGS_HAPTICS_STRENGTH));
     eos_radio_list_add_event_cb(rl, _haptics_radio_list_selection_changed_cb, NULL);
-    eos_vibrator_strength_t s = eos_sys_cfg_get_number(
-        EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER,
+    eos_vibrator_strength_t s = eos_config_get_number(
+        EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER,
         EOS_VIBRATOR_STRENGTH_NORMAL);
     switch (s)
     {
@@ -395,14 +395,14 @@ static void _settings_view_sound_and_haptics(lv_event_t *e)
     eos_list_add_title(list, eos_lang_get_text(STR_ID_SETTINGS_SOUNDS_AND_ALERTS));
 
     lv_obj_t *bt_sw = _auto_get_config_switch_create(
-        list, eos_lang_get_text(STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_SILENT_MODE), EOS_SYS_CFG_KEY_MUTE_BOOL, false);
+        list, eos_lang_get_text(STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_SILENT_MODE), EOS_CONFIG_KEY_MUTE_BOOL, false);
     lv_obj_add_event_cb(bt_sw, _mute_switch_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     eos_list_slider_t *ls = eos_list_add_slider(list, eos_lang_get_text(STR_ID_SETTINGS_SOUNDS_AND_HAPTICS_VOLUME));
     lv_label_set_text(ls->minus_label, RI_VOLUME_DOWN_FILL);
     lv_label_set_text(ls->plus_label, RI_VOLUME_UP_FILL);
 
-    lv_slider_set_value(ls->slider, eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 50), LV_ANIM_ON);
+    lv_slider_set_value(ls->slider, eos_config_get_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, 50), LV_ANIM_ON);
     lv_slider_set_range(ls->slider, EOS_SPEAKER_VOLUME_MIN, EOS_SPEAKER_VOLUME_MAX);
 
     lv_obj_add_event_cb(ls->slider, _volume_slider_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -633,12 +633,12 @@ static void _language_roller_event_handler(lv_event_t *e)
         case LANG_EN:
             EOS_LOG_D("Select English");
             eos_lang_set_current_id(LANG_EN);
-            eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, eos_lang_get_name(LANG_EN));
+            eos_config_set_string(EOS_CONFIG_KEY_LANGUAGE_STR, eos_lang_get_name(LANG_EN));
             break;
         case LANG_ZH:
             EOS_LOG_D("Select Simplify Chinese");
             eos_lang_set_current_id(LANG_ZH);
-            eos_sys_cfg_set_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, eos_lang_get_name(LANG_ZH));
+            eos_config_set_string(EOS_CONFIG_KEY_LANGUAGE_STR, eos_lang_get_name(LANG_ZH));
             break;
         default:
             break;
@@ -664,7 +664,7 @@ static void _settings_view_language(lv_event_t *e)
     lv_obj_align(roller, LV_ALIGN_CENTER, 0, 30);
     lv_roller_set_visible_row_count(roller, 5);
 
-    char *sel_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
+    char *sel_str = eos_config_get_string(EOS_CONFIG_KEY_LANGUAGE_STR, "English");
     uint32_t sel_opt = (uint32_t)eos_lang_parse_name(sel_str);
     lv_roller_set_selected(roller, sel_opt, LV_ANIM_OFF);
     lv_obj_add_event_cb(roller, _language_roller_event_handler, LV_EVENT_ALL, NULL);
@@ -687,9 +687,9 @@ static void _settings_view_device_info(lv_event_t *e)
     eos_img_set_src(logo, EOS_IMG_LOGO);
     eos_list_add_placeholder(list, 30);
 
-    char *device_name = eos_sys_cfg_get_string(
-        EOS_SYS_CFG_KEY_DEVICE_NAME_STR,
-        EOS_SYS_DEFAULT_DEVICE_NAME);
+    char *device_name = eos_config_get_string(
+        EOS_CONFIG_KEY_DEVICE_NAME_STR,
+        EOS_CONFIG_DEFAULT_DEVICE_NAME);
     eos_std_title_comment_create(list,
                                  eos_lang_get_text(STR_ID_SETTINGS_GENERAL_DEVICE_NAME),
                                  device_name);

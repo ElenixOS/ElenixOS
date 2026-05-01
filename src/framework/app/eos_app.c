@@ -60,24 +60,16 @@ static eos_result_t _eos_app_order_save(void)
         return EOS_FAILED;
     }
 
-    char *json_str = cJSON_Print(app_order_json);
-    if (!json_str)
+    // Create a copy of the array for saving to config
+    cJSON *app_order_copy = cJSON_Duplicate(app_order_json, true);
+    if (!app_order_copy)
     {
         return EOS_FAILED;
     }
 
-    eos_file_t fp = eos_fs_open_write(EOS_APP_LIST_APP_ORDER_PATH);
-    if (fp == EOS_FILE_INVALID)
-    {
-        eos_free(json_str);
-        return EOS_FAILED;
-    }
+    eos_result_t ret = eos_config_set_json(EOS_CONFIG_KEY_APP_ORDER_ARRAY, app_order_copy);
 
-    eos_storage_puts(json_str, fp);
-    eos_fs_close(fp);
-    eos_free(json_str);
-
-    return EOS_OK;
+    return ret;
 }
 
 /**
@@ -91,31 +83,17 @@ static eos_result_t _eos_app_order_load(void)
         app_order_json = NULL;
     }
 
-    // Check if file exists
-    if (!eos_storage_is_file(EOS_APP_LIST_APP_ORDER_PATH))
+    // Try to load app_order from config
+    app_order_json = eos_config_get_json(EOS_CONFIG_KEY_APP_ORDER_ARRAY);
+
+    if (!app_order_json || !cJSON_IsArray(app_order_json))
     {
-        // Create default JSON structure, ensure all system built-in apps are added to default order
-        app_order_json = cJSON_CreateArray();
-        for (int i = 0; i < EOS_SYS_APP_LAST; i++)
+        // If not found or not an array, create default
+        if (app_order_json)
         {
-            if (eos_sys_app_id_list[i])
-                cJSON_AddItemToArray(app_order_json, cJSON_CreateString(eos_sys_app_id_list[i]));
+            cJSON_Delete(app_order_json);
         }
-        return _eos_app_order_save();
-    }
 
-    char *json_str = eos_storage_read_file(EOS_APP_LIST_APP_ORDER_PATH);
-    if (!json_str)
-    {
-        return EOS_FAILED;
-    }
-
-    app_order_json = cJSON_Parse(json_str);
-    eos_free(json_str);
-
-    if (!app_order_json)
-    {
-        // Parsing failed, create new JSON, add all system built-in apps
         app_order_json = cJSON_CreateArray();
         for (int i = 0; i < EOS_SYS_APP_LAST; i++)
         {

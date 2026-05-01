@@ -8,7 +8,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_utils.h"
 /* Macros and Definitions -------------------------------------*/
 
@@ -72,7 +72,7 @@ void eos_vibrator_set_strength(eos_vibrator_strength_t s)
 {
     strength_option = s;
     EOS_CLAMP(strength_option, 0, 255);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_VIBRATOR_STRENGTH_NUMBER, strength_option);
+    eos_config_set_number(EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER, strength_option);
 }
 
 void eos_vibrator_init(void)

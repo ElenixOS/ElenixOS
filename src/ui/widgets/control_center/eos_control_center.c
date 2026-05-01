@@ -13,7 +13,7 @@
 #define EOS_LOG_TAG "ControlCenter"
 #include "eos_log.h"
 #include "eos_theme.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_port.h"
 #include "eos_watchface.h"
 #include "eos_port.h"
@@ -213,13 +213,13 @@ static void _control_center_bluetooth_switch_btn_cb(lv_event_t *e)
     {
         EOS_LOG_D("CHECKED");
         eos_bluetooth_enable();
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, true);
+        eos_config_set_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, true);
     }
     else
     {
         EOS_LOG_D("UNCHECKED");
         eos_bluetooth_disable();
-        eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false);
+        eos_config_set_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, false);
     }
 }
 
@@ -243,7 +243,7 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
 static void _control_center_brightness_slider_delete_cb(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target(e);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, lv_slider_get_value(slider));
+    eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, lv_slider_get_value(slider));
 }
 
 static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
@@ -251,7 +251,7 @@ static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
     lv_obj_t *slider = _control_center_slider_create(RI_SUN_LINE);
     lv_slider_set_range(slider, EOS_DISPLAY_BRIGHTNESS_MIN, EOS_DISPLAY_BRIGHTNESS_MAX);
     lv_slider_set_value(slider,
-                        eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50),
+                        eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50),
                         LV_ANIM_ON);
     lv_obj_add_event_cb(slider,
                         _control_center_brightness_value_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -338,13 +338,13 @@ static void _control_center_volume_value_changed_cb(lv_event_t *e)
 static void _control_center_volume_slider_delete_cb(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target(e);
-    eos_sys_cfg_set_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, lv_slider_get_value(slider));
+    eos_config_set_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, lv_slider_get_value(slider));
 }
 
 static void _control_center_volume_btn_clicked_cb(lv_event_t *e)
 {
     eos_control_center_t *cc = (eos_control_center_t *)lv_event_get_user_data(e);
-    uint8_t volume = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SPEAKER_VOLUME_NUMBER, 50);
+    uint8_t volume = eos_config_get_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, 50);
 
     lv_obj_t *slider = _control_center_slider_create(_control_center_volume_get_icon_by_value(volume));
     lv_slider_set_range(slider, EOS_SPEAKER_VOLUME_MIN, EOS_SPEAKER_VOLUME_MAX);
@@ -419,7 +419,7 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     /************************** Bluetooth switch **************************/
     btn = _control_center_create_switch_btn(container, RI_BLUETOOTH_FILL, EOS_COLOR_BLUE);
     lv_obj_add_event_cb(btn, _control_center_bluetooth_switch_btn_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
+    if (eos_config_get_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, false))
     {
         lv_obj_add_state(btn, LV_STATE_CHECKED);
     }
@@ -442,7 +442,7 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     /************************** Mute **************************/
     btn = _control_center_create_switch_btn(container, RI_NOTIFICATION_4_FILL, EOS_COLOR_ORANGE);
     lv_obj_add_event_cb(btn, _control_center_mute_switch_btn_cb, LV_EVENT_CLICKED, 0);
-    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
+    if (eos_config_get_bool(EOS_CONFIG_KEY_MUTE_BOOL, false))
     {
         lv_obj_add_state(btn, LV_STATE_CHECKED);
     }
@@ -506,7 +506,7 @@ static void _system_config_update_event_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(control_center_instance);
 
     // Update Bluetooth switch state
-    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_BLUETOOTH_BOOL, false))
+    if (eos_config_get_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, false))
     {
         lv_obj_add_state(control_center_instance->bl_btn, LV_STATE_CHECKED);
     }
@@ -516,7 +516,7 @@ static void _system_config_update_event_cb(lv_event_t *e)
     }
 
     // Update mute switch state
-    if (eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_MUTE_BOOL, false))
+    if (eos_config_get_bool(EOS_CONFIG_KEY_MUTE_BOOL, false))
     {
         lv_obj_add_state(control_center_instance->mute_btn, LV_STATE_CHECKED);
     }

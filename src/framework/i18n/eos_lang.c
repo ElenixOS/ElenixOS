@@ -14,7 +14,7 @@
 #define EOS_LOG_TAG "Language"
 #include "eos_log.h"
 #include "lvgl.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_icon.h"
 #include "eos_mem.h"
 
@@ -214,7 +214,7 @@ void eos_lang_init(void)
     EOS_LOG_D("Init eos_lang");
     if (!lang_initialized)
     {
-        const char *lang_str = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_LANGUAGE_STR, "English");
+        const char *lang_str = eos_config_get_string(EOS_CONFIG_KEY_LANGUAGE_STR, "English");
         eos_lang_set_current_id(eos_lang_parse_name(lang_str));
         eos_free(lang_str);
         lang_initialized = true;

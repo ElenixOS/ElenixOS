@@ -12,7 +12,7 @@
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "PowerManager"
 #include "eos_log.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_port.h"
 #include "eos_config.h"
 #include "eos_touch.h"
@@ -93,7 +93,7 @@ static void _pm_set_state(eos_pm_state_t state)
 void eos_pm_set_aod_mode(bool enable)
 {
     aod_mode = enable;
-    eos_sys_cfg_set_bool(EOS_SYS_CFG_KEY_AOD_MODE_BOOL, enable);
+    eos_config_set_bool(EOS_CONFIG_KEY_AOD_MODE_BOOL, enable);
 }
 
 eos_pm_state_t eos_pm_get_state(void)
@@ -166,8 +166,8 @@ static void _indev_released_cb(lv_event_t *e)
 void eos_pm_init(void)
 {
     EOS_LOG_I("Power manager init");
-    aod_mode = eos_sys_cfg_get_bool(EOS_SYS_CFG_KEY_AOD_MODE_BOOL, false);
-    uint32_t timer_period_sec = eos_sys_cfg_get_number(EOS_SYS_CFG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, _DEFAULT_TIMEOUT_SEC);
+    aod_mode = eos_config_get_bool(EOS_CONFIG_KEY_AOD_MODE_BOOL, false);
+    uint32_t timer_period_sec = eos_config_get_number(EOS_CONFIG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, _DEFAULT_TIMEOUT_SEC);
 #if DEBUG_DISABLE_TIMER
     t = NULL;
 #else

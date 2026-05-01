@@ -23,7 +23,7 @@
 #include "eos_version.h"
 #include "eos_port.h"
 #include "eos_swipe_panel.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_app.h"
 #include "script_engine_core.h"
 #include "eos_watchface.h"
@@ -134,7 +134,7 @@ void eos_init(void)
     eos_vibrator_init();
     eos_crown_init();
     script_engine_init();
-    eos_sys_init();
+    eos_service_config_init();
     lv_font_t *default_font = eos_font_init();
     if (!default_font)
         _sys_init_err_handler("Failed to initialize default font");

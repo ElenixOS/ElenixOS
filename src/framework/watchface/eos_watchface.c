@@ -343,7 +343,7 @@ void eos_watchface_on_enter(eos_activity_t *a)
     eos_control_center_show();
     // Get watchface ID from JSON
     char wf_id[EOS_PKG_ID_LEN_MAX];
-    char *selected_wf_id = eos_sys_cfg_get_string(EOS_SYS_CFG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
+    char *selected_wf_id = eos_config_get_string(EOS_CONFIG_KEY_WATCHFACE_ID_STR, "cn.sab1e.clock");
     snprintf(wf_id, sizeof(wf_id),
              "%s",
              selected_wf_id);

@@ -15,20 +15,17 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include "eos_core.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
+#include "eos_storage_paths.h"
 #include "lvgl.h"
 
-/* Public macros ----------------------------------------------*/
-/************************** Path Definitions **************************/
-#define EOS_APP_DIR EOS_SYS_DIR "app/"
-#define EOS_APP_INSTALLED_DIR EOS_APP_DIR "apps/"
-#define EOS_APP_DATA_DIR EOS_APP_DIR "app_data/"
+/* Public macros -----------_APP_DIR "app_data/"
 /************************** File Name Definitions **************************/
 #define EOS_APP_ICON_FILE_NAME  "icon.bin"
 #define EOS_APP_MANIFEST_FILE_NAME "manifest.json"
 #define EOS_APP_SCRIPT_ENTRY_FILE_NAME "main.js"
 /************************** Configuration Files **************************/
-#define EOS_APP_LIST_APP_ORDER_PATH EOS_SYS_CONFIG_DIR "app_order.json"
+/* App order is now stored in cfg.json under "app_order" key */
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/

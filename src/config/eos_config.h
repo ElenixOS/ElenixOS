@@ -14,13 +14,7 @@ extern "C"
 #endif
 
 /* Includes ---------------------------------------------------*/
-#include "eos_sys.h"
-#include "eos_sensor.h"
 #include "eos_config_internal.h"
-
-/* Public typedefs --------------------------------------------*/
-
-/* Public macros ----------------------------------------------*/
 
 /* Configuration start ----------------------------------------------------*/
 
@@ -101,10 +95,6 @@ extern "C"
     (LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM)
 
 #define EOS_MEM_TRACK_ENABLE 1 /**< Whether to enable memory tracking */
-
-/************************** Sensor configuration **************************/
-
-#define EOS_SENSOR_CFG_INST_MAX 1 /**< Maximum sensor instances, the maximum number of sensors of the same type allowed, generally set to `1` */
 
 /************************** Font configuration **************************/
 

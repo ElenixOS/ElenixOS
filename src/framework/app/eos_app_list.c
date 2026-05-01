@@ -20,7 +20,7 @@
 #include "eos_port.h"
 #include "eos_anim.h"
 #include "script_engine_core.h"
-#include "eos_sys.h"
+#include "eos_service_config.h"
 #include "eos_event.h"
 #include "eos_lang.h"
 #include "script_engine_core.h"
@@ -792,13 +792,11 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
 
     uint32_t icon_index = 0;
 
-    // 加载应用顺序
-    char *json_str = eos_storage_read_file(EOS_APP_LIST_APP_ORDER_PATH);
-    cJSON *app_order = json_str ? cJSON_Parse(json_str) : NULL;
-    eos_free(json_str);
+    // Load application order from config
+    cJSON *app_order = eos_config_get_json(EOS_CONFIG_KEY_APP_ORDER_ARRAY);
 
-    // 按JSON顺序添加应用图标
-    if (app_order)
+    // Add icons according to JSON order
+    if (app_order && cJSON_IsArray(app_order))
     {
         cJSON *item = NULL;
         cJSON_ArrayForEach(item, app_order)
@@ -807,7 +805,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             {
                 const char *order_id = item->valuestring;
 
-                // 检查是否为系统内置应用
+                // If it's a system app, use built-in icon and skip installed app check
                 bool is_sys = false;
                 for (int si = 0; si < EOS_SYS_APP_LAST; si++)
                 {
@@ -823,7 +821,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
                 if (is_sys)
                     continue;
 
-                // 非系统应用：从已安装列表中查找现有 id
+                // Non-system app: look up existing ID in installed list
                 const char *app_id = eos_app_list_get_existing_id(order_id);
                 if (!app_id)
                 {
@@ -846,7 +844,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
     }
     else
     {
-        // 如果没有JSON顺序文件，按默认顺序添加
+        // If no JSON order file is found, add apps in default order
         size_t app_list_size = eos_app_get_installed();
         for (size_t i = 0; i < app_list_size; i++)
         {
@@ -854,7 +852,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             if (!app_id)
                 continue;
 
-            // 系统内置应用使用内置图标
+            // System built-in apps use built-in icons
             bool is_sys = false;
             for (int si = 0; si < EOS_SYS_APP_LAST; si++)
             {
@@ -870,7 +868,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             if (is_sys)
                 continue;
 
-            // 非系统应用
+            // Non-system app
             char icon_path[PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME,
                      app_id);
@@ -943,19 +941,19 @@ void eos_app_list_enter(void)
         return;
     }
 
-    // 设置bubble_grid大小和位置
+    // Set bubble_grid size and position
     lv_obj_set_size(bubble_grid, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
     lv_obj_center(bubble_grid);
     eos_activity_set_user_data(a, bubble_grid);
 
-    // 注册点击事件回调
+    // Register click event callback
     lv_obj_add_event_cb(bubble_grid, _app_list_icon_clicked_cb, LV_EVENT_CLICKED, NULL);
 
-    // 设置回调
+    // Set callback
     lv_obj_add_event_cb(bubble_grid, _container_delete_cb, LV_EVENT_DELETE, NULL);
     eos_event_add_cb(bubble_grid, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)bubble_grid);
 
-    // 刷新应用列表
+    // Refresh app list
     _app_list_refresh(bubble_grid);
 
     eos_activity_enter(a);

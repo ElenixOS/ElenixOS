@@ -11,7 +11,7 @@
 #include "eos_dispatcher.h"
 #include "input/eos_input.h"
 #include "eos_control_center.h"
-#include "eos_pm.h"
+#include "eos_service_pm.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/

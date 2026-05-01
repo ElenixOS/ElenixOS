@@ -1,9 +1,9 @@
 /**
- * @file eos_pm.c
+ * @file eos_service_pm.c
  * @brief Power Manager
  */
 
-#include "eos_pm.h"
+#include "eos_service_pm.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
@@ -163,7 +163,7 @@ static void _indev_released_cb(lv_event_t *e)
     }
 }
 
-void eos_pm_init(void)
+void eos_service_pm_init(void)
 {
     EOS_LOG_I("Power manager init");
     aod_mode = eos_config_get_bool(EOS_CONFIG_KEY_AOD_MODE_BOOL, false);

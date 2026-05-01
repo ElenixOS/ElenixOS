@@ -1,10 +1,10 @@
 /**
- * @file eos_pm.h
+ * @file eos_service_pm.h
  * @brief Power Manager
  */
 
-#ifndef ELENIX_OS_PM_H
-#define ELENIX_OS_PM_H
+#ifndef ELENIX_OS_SERVICE_PM_H
+#define ELENIX_OS_SERVICE_PM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,18 +17,20 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
+
 typedef enum
 {
     EOS_PM_DISPLAY_ON,      /**< Wake mode */
     EOS_PM_DISPLAY_AOD,     /**< Screen always-on (Always-On Display) mode */
     EOS_PM_SLEEP,           /**< Sleep mode */
 } eos_pm_state_t;
+
 /* Public function prototypes --------------------------------*/
 
 /**
  * @brief Initialize power manager
  */
-void eos_pm_init(void);
+void eos_service_pm_init(void);
 
 /**
  * @brief Wake up device
@@ -66,4 +68,4 @@ void eos_pm_set_aod_mode(bool enable);
 }
 #endif
 
-#endif /* ELENIX_OS_PM_H */
+#endif /* ELENIX_OS_SERVICE_PM_H */

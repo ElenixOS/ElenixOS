@@ -12,7 +12,7 @@
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "eos_log.h"
-#include "eos_pm.h"
+#include "eos_service_pm.h"
 #include "eos_vibrator.h"
 #include "eos_theme.h"
 #include "eos_touch.h"

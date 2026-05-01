@@ -34,7 +34,7 @@
 #include "eos_display.h"
 #include "eos_toast.h"
 #include "eos_service_storage.h"
-#include "eos_pm.h"
+#include "eos_service_pm.h"
 #include "eos_app_header.h"
 #include "eos_radio_list.h"
 #include "eos_lang.h"

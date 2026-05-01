@@ -30,7 +30,7 @@
 #include "eos_sensor.h"
 #include "eos_service_storage.h"
 #include "eos_mem.h"
-#include "eos_vibrator.h"
+#include "eos_service_haptic.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -371,8 +371,8 @@ void eos_service_config_init()
         EOS_LOG_I("Volume: %d", volume);
     }
 
-    uint8_t strength = eos_config_get_number(EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_VIBRATOR_STRENGTH_NORMAL);
-    eos_vibrator_set_strength(strength);
+    uint8_t strength = eos_config_get_number(EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_HAPTIC_STRENGTH_NORMAL);
+    eos_haptic_set_strength(strength);
     EOS_LOG_I("Vibrator strength: %d", strength);
 }
 

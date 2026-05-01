@@ -46,7 +46,7 @@
 #include "eos_dfw.h"
 #include "eos_app_header.h"
 #include "eos_toast.h"
-#include "eos_vibrator.h"
+#include "eos_service_haptic.h"
 #include "eos_crown.h"
 #include "eos_icon.h"
 #include "eos_activity.h"
@@ -131,7 +131,7 @@ void eos_init(void)
     eos_lang_init();
     eos_dispatcher_init();
     eos_toast_init();
-    eos_vibrator_init();
+    eos_service_haptic_init();
     eos_crown_init();
     script_engine_init();
     eos_service_config_init();

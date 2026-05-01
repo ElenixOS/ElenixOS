@@ -41,7 +41,7 @@
 #include "eos_mem.h"
 #include "eos_font.h"
 #include "eos_std_widgets.h"
-#include "eos_vibrator.h"
+#include "eos_service_haptic.h"
 #include "eos_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -339,22 +339,22 @@ static void _mute_switch_cb(lv_event_t *e)
 static void _haptics_radio_list_selection_changed_cb(lv_event_t *e)
 {
     uint32_t index = (uint32_t)lv_event_get_param(e);
-    eos_vibrator_strength_t strength = EOS_VIBRATOR_STRENGTH_NORMAL;
+    eos_haptic_strength_t strength = EOS_HAPTIC_STRENGTH_NORMAL;
     switch (index)
     {
     case 0:
-        strength = EOS_VIBRATOR_STRENGTH_OFF;
+        strength = EOS_HAPTIC_STRENGTH_OFF;
         break;
     case 1:
-        strength = EOS_VIBRATOR_STRENGTH_NORMAL;
+        strength = EOS_HAPTIC_STRENGTH_NORMAL;
         break;
     case 2:
-        strength = EOS_VIBRATOR_STRENGTH_INTENSE;
+        strength = EOS_HAPTIC_STRENGTH_INTENSE;
         break;
     default:
         break;
     }
-    eos_vibrator_set_strength(strength);
+    eos_haptic_set_strength(strength);
 }
 
 static void _haptics_entry_button_clicked_cb(lv_event_t *e)
@@ -365,18 +365,18 @@ static void _haptics_entry_button_clicked_cb(lv_event_t *e)
     eos_radio_list_add_item(rl, eos_lang_get_text(STR_ID_INTENSE));
     eos_radio_list_set_subtitle(rl, eos_lang_get_text(STR_ID_SETTINGS_HAPTICS_STRENGTH));
     eos_radio_list_add_event_cb(rl, _haptics_radio_list_selection_changed_cb, NULL);
-    eos_vibrator_strength_t s = eos_config_get_number(
+    eos_haptic_strength_t s = eos_config_get_number(
         EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER,
-        EOS_VIBRATOR_STRENGTH_NORMAL);
+        EOS_HAPTIC_STRENGTH_NORMAL);
     switch (s)
     {
-    case EOS_VIBRATOR_STRENGTH_OFF:
+    case EOS_HAPTIC_STRENGTH_OFF:
         eos_radio_list_check(rl, 0);
         break;
-    case EOS_VIBRATOR_STRENGTH_NORMAL:
+    case EOS_HAPTIC_STRENGTH_NORMAL:
         eos_radio_list_check(rl, 1);
         break;
-    case EOS_VIBRATOR_STRENGTH_INTENSE:
+    case EOS_HAPTIC_STRENGTH_INTENSE:
         eos_radio_list_check(rl, 2);
         break;
     default:

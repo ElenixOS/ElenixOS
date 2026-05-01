@@ -13,13 +13,14 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include "eos_config.h"
 #include "eos_core.h"
-#include "eos_sensor.h"
 #if EOS_USE_VIRTUAL_DISPLAY
 #include "eos_virtual_display.h"
 #endif /* EOS_USE_VIRTUAL_DISPLAY */
 #include "eos_side_button.h"
 #include "eos_crown.h"
 #include "eos_log.h"
+#include "eos_error.h"
+#include "eos_device.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/

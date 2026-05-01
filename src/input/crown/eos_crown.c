@@ -13,7 +13,7 @@
 #define EOS_LOG_TAG "Crown"
 #include "eos_log.h"
 #include "eos_service_pm.h"
-#include "eos_vibrator.h"
+#include "eos_service_haptic.h"
 #include "eos_theme.h"
 #include "eos_touch.h"
 #include "input/eos_input.h"
@@ -286,7 +286,7 @@ static void _crown_encoder_async_cb(void *user_data)
         int32_t dy = diff * encoder_reverse * _CROWN_ENCODER_SCROLL_COEFFICIENT;
         if (abs(dy) > _VIBRATOR_TICK_DY_THRESHOLD)
         {
-            eos_vibrator_tick();
+            eos_haptic_tick();
             _scrollbar_set_focused();
         }
         if (scrollable_obj && lv_obj_is_valid(scrollable_obj))

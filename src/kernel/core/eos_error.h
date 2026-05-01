@@ -53,6 +53,12 @@ typedef enum
     EOS_ERR_STACK_EMPTY = -500,  /**< Stack empty */
     EOS_ERR_STACK_FULL = -501,   /**< Stack full */
 
+    /* Device/driver errors (-600 ~ -699) */
+    EOS_ERR_DEV_NOT_FOUND = -600, /**< Device not found */
+    EOS_ERR_DEV_BUSY = -601,      /**< Device busy */
+    EOS_ERR_DEV_ERROR = -602,     /**< Device error */
+    EOS_ERR_DEV_OPS_NOT_SUPPORTED = -603, /**< Device operation not supported */
+
     EOS_ERR_UNKNOWN = -999,
 } eos_result_t;
 

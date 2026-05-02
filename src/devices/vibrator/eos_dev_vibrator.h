@@ -29,7 +29,6 @@ typedef struct
 typedef struct
 {
     const eos_dev_vibrator_ops_t *ops;
-    void *user_data;
     eos_dev_state_t _state;
 } eos_dev_vibrator_t;
 

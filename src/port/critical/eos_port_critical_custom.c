@@ -21,12 +21,12 @@
 /* Includes ---------------------------------------------------*/
 #include "eos_port.h"
 
-eos_critical_ctx_t eos_critical_enter(void)
+EOS_WEAK eos_critical_ctx_t eos_critical_enter(void)
 {
     return 0;
 }
 
-void eos_critical_leave(eos_critical_ctx_t ctx)
+EOS_WEAK void eos_critical_leave(eos_critical_ctx_t ctx)
 {
     (void)ctx;
 }

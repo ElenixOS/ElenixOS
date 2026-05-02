@@ -892,7 +892,6 @@ script_engine_result_t script_engine_request_stop(void)
             {
                 break;
             }
-            eos_delay(10);
         }
 
         // 如果还在STOPPING状态，强制清理
@@ -917,7 +916,6 @@ script_engine_result_t script_engine_request_stop(void)
             {
                 break;
             }
-            eos_delay(10);
         }
 
         if (engine_ctx.state == SCRIPT_STATE_STOPPING)

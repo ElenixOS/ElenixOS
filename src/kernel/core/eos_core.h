@@ -35,6 +35,11 @@ bool eos_is_initialized(void);
  */
 uint32_t eos_main_loop(void);
 /**
+ * @brief Get the elapsed milliseconds since start up
+ * @return Elapsed milliseconds
+ */
+uint32_t eos_tick_get(void);
+/**
  * @brief Start ElenixOS Logo page
  * @param anim Whether to display Logo fade animation
  * @note Will only be displayed once and will remain until the system is fully started.

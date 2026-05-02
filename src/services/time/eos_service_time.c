@@ -12,6 +12,7 @@
 #define EOS_LOG_TAG "ServiceTime"
 #include "eos_log.h"
 #include "eos_dev_time.h"
+#include "eos_core.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -40,7 +41,7 @@ eos_datetime_t eos_time_get(void)
     }
 
     eos_datetime_t now = dev->ops->get_datetime();
-    uint32_t tick = lv_tick_get();
+    uint32_t tick = eos_tick_get();
 
     if (!initialized ||
         now.sec  != last_sec_time.sec ||

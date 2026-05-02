@@ -174,3 +174,8 @@ uint32_t eos_main_loop(void)
     eos_dispatch_tick();
     return lv_timer_handler();
 }
+
+uint32_t eos_tick_get(void)
+{
+    return lv_tick_get();
+}

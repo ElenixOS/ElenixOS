@@ -1,19 +1,29 @@
 /**
- * @file eos_time.c
- * @brief System time base
+ * @file eos_service_time.c
+ * @brief Time service
  */
 
-#include "eos_time.h"
+#include "eos_service_time.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "eos_port.h"
+#include "lvgl.h"
+#define EOS_LOG_TAG "ServiceTime"
+#include "eos_log.h"
+#include "eos_dev_time.h"
+
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
+
+eos_result_t eos_service_time_init(void)
+{
+    EOS_LOG_I("Initialized");
+    return EOS_OK;
+}
 
 eos_datetime_t eos_time_get(void)
 {
@@ -21,7 +31,15 @@ eos_datetime_t eos_time_get(void)
     static uint32_t sec_base_tick = 0;
     static uint8_t initialized = 0;
 
-    eos_datetime_t now = eos_time_get_core();
+    eos_dev_time_t *dev = eos_dev_time_get_instance();
+    if (dev->ops == NULL || dev->ops->get_datetime == NULL)
+    {
+        EOS_LOG_E("Time device OPS not available");
+        eos_datetime_t dt = {0};
+        return dt;
+    }
+
+    eos_datetime_t now = dev->ops->get_datetime();
     uint32_t tick = lv_tick_get();
 
     if (!initialized ||

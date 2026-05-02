@@ -41,7 +41,7 @@ eos_result_t eos_dev_power_register(const eos_dev_power_ops_t *ops)
     _dev_power.ops = ops;
     _dev_power._state = DEV_STATE_READY;
     EOS_LOG_I("Registered");
-    return EOS_RESULT_SUCCESS;
+    return EOS_OK;
 }
 
 eos_dev_state_t eos_dev_power_get_state(void)

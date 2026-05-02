@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "eos_misc.h"
-#include "eos_port.h"
+#include "eos_service_time.h"
 #define EOS_LOG_TAG "Watchface"
 #include "eos_log.h"
 #include "eos_pkg_mgr.h"

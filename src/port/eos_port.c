@@ -110,20 +110,6 @@ EOS_WEAK void eos_bluetooth_disable(void)
     return;
 }
 
-EOS_WEAK eos_datetime_t eos_time_get_core(void)
-{
-    /* EXAMPLE */
-    eos_datetime_t dt = {0};
-    dt.year = 2025;
-    dt.month = 9;
-    dt.day = 7;
-    dt.hour = 18;
-    dt.min = 26;
-    dt.sec = 13;
-    dt.day_of_week = 7;
-    return dt;
-}
-
 EOS_WEAK void eos_locate_phone(void)
 {
     return;

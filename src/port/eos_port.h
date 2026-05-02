@@ -18,7 +18,7 @@ extern "C" {
 #include "eos_sensor.h"
 #include "eos_fs_port.h"
 #include "eos_port_sensor.h"
-#include "eos_time.h"
+
 /* Public macros ----------------------------------------------*/
 /**
  * @brief Function weak definition macro
@@ -94,13 +94,6 @@ void eos_bluetooth_enable(void);
  * @brief Disable Bluetooth
  */
 void eos_bluetooth_disable(void);
-/**
- * @brief Get current time structure
- * @return eos_datetime_t Time structure
- * @note Recommended to use RTC to get time
- * @warning Please sync time by yourself to ensure accurate time
- */
-eos_datetime_t eos_time_get_core(void);
 /**
  * @brief Locate phone
  *

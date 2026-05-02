@@ -19,7 +19,6 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
-typedef struct eos_dev_display eos_dev_display_t;
 
 typedef struct
 {
@@ -28,11 +27,11 @@ typedef struct
     void (*power_off)(void);
 } eos_dev_display_ops_t;
 
-struct eos_dev_display
+typedef struct
 {
     const eos_dev_display_ops_t *ops;
     eos_dev_state_t _state;
-};
+} eos_dev_display_t;
 
 /* Public function prototypes --------------------------------*/
 

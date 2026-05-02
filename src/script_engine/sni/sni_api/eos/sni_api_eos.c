@@ -20,7 +20,7 @@
 #include "script_engine_core.h"
 #include "eos_font.h"
 #include "eos_activity.h"
-#include "eos_time.h"
+#include "eos_service_time.h"
 #include "eos_app.h"
 #include "eos_watchface.h"
 #include "eos_service_storage.h"

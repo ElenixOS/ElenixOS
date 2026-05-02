@@ -27,18 +27,16 @@ typedef enum
     DEV_POWER_STATE_AOD,
 } dev_power_state_t;
 
-typedef struct eos_dev_power eos_dev_power_t;
-
 typedef struct
 {
     int (*set_power)(dev_power_state_t state);
 } eos_dev_power_ops_t;
 
-struct eos_dev_power
+typedef struct
 {
     const eos_dev_power_ops_t *ops;
     eos_dev_state_t _state;
-};
+} eos_dev_power_t;
 
 /* Public function prototypes --------------------------------*/
 
@@ -51,7 +49,7 @@ eos_dev_power_t *eos_dev_power_get_instance(void);
 /**
  * @brief Register power device with OPS
  * @param ops Pointer to power OPS structure
- * @return EOS_RESULT_SUCCESS if successful, error code otherwise
+ * @return EOS_OK if successful, error code otherwise
  */
 eos_result_t eos_dev_power_register(const eos_dev_power_ops_t *ops);
 

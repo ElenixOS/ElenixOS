@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eos_img.h"
-#include "eos_port.h"
+#include "eos_service_time.h"
 #include "eos_log.h"
 /* Macros and Definitions -------------------------------------*/
 

@@ -231,8 +231,6 @@ extern "C"
 
 /************************** MISC **************************/
 
-#define EOS_ASYNC_SEM_TIMEOUT 1000
-
 /**
  * Enable Test app
  */

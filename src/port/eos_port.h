@@ -18,8 +18,7 @@ extern "C" {
 #include "eos_sensor.h"
 #include "eos_fs_port.h"
 #include "eos_port_sensor.h"
-#include "port/rtos/sem/eos_port_sem.h"
-#include "port/rtos/mutex/eos_port_mutex.h"
+#include "port/critical/eos_port_critical.h"
 
 /* Public macros ----------------------------------------------*/
 /**

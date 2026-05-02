@@ -44,7 +44,7 @@ eos_dev_vibrator_t *eos_dev_vibrator_get_instance(void);
 /**
  * @brief Register vibrator device with OPS
  * @param ops Pointer to vibrator OPS structure
- * @return EOS_RESULT_SUCCESS if successful, error code otherwise
+ * @return EOS_OK if successful, error code otherwise
  */
 eos_result_t eos_dev_vibrator_register(const eos_dev_vibrator_ops_t *ops);
 
@@ -58,7 +58,7 @@ eos_dev_state_t eos_dev_vibrator_get_state(void);
  * @brief Report vibrator device state (called by driver)
  * @param state New device state
  */
-void eos_dev_vibrator_report(eos_dev_state_t state);
+void eos_dev_vibrator_report_state(eos_dev_state_t state);
 
 #ifdef __cplusplus
 }

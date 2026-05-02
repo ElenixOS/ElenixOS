@@ -124,12 +124,6 @@ EOS_WEAK eos_datetime_t eos_time_get_core(void)
     return dt;
 }
 
-EOS_WEAK void eos_display_set_brightness(uint8_t brightness)
-{
-    LV_UNUSED(brightness);
-    return;
-}
-
 EOS_WEAK void eos_locate_phone(void)
 {
     return;
@@ -165,22 +159,4 @@ EOS_WEAK int eos_audio_play_file(const char *file_path)
 EOS_WEAK int eos_audio_stop(void)
 {
     return -1;
-}
-
-EOS_WEAK void eos_sys_sleep(void)
-{
-    eos_display_set_brightness(0);
-    return;
-}
-
-EOS_WEAK void eos_sys_aod(void)
-{
-    eos_display_set_brightness(20);
-    return;
-}
-
-EOS_WEAK void eos_sys_wake(void)
-{
-    eos_display_set_brightness(100);
-    return;
 }

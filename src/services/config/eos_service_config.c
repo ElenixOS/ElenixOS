@@ -18,6 +18,7 @@
 #include "eos_log.h"
 #include "eos_basic_widgets.h"
 #include "eos_event.h"
+#include "eos_service_display.h"
 #include "eos_test.h"
 #include "eos_version.h"
 #include "eos_port.h"
@@ -355,7 +356,7 @@ void eos_service_config_init()
     uint8_t brightness = eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
-    eos_display_set_brightness(brightness);
+    eos_display_set_brightness(brightness, EOS_DISPLAY_DURATION_OFF);
     EOS_LOG_I("Display brightness set: %d", brightness);
 
     bool mute = eos_config_get_bool(EOS_CONFIG_KEY_MUTE_BOOL, false);

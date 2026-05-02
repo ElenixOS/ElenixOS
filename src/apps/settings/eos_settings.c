@@ -31,7 +31,7 @@
 #include "eos_sensor.h"
 #include "eos_config.h"
 #include "eos_icon.h"
-#include "eos_display.h"
+#include "eos_service_display.h"
 #include "eos_toast.h"
 #include "eos_service_storage.h"
 #include "eos_service_pm.h"
@@ -42,6 +42,7 @@
 #include "eos_font.h"
 #include "eos_std_widgets.h"
 #include "eos_service_haptic.h"
+#include "eos_service_display.h"
 #include "eos_activity.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -122,14 +123,14 @@ static void _settings_view_bluetooth(lv_event_t *e)
 static void _brightness_slider_value_changed_cb(lv_event_t *e)
 {
     lv_obj_t *sl = lv_event_get_target(e);
-    eos_display_set_brightness(lv_slider_get_value(sl));
+    eos_display_set_brightness((uint8_t)lv_slider_get_value(sl), EOS_DISPLAY_DURATION_OFF);
 }
 
 static void _brightness_slider_released_cb(lv_event_t *e)
 {
     lv_obj_t *sl = lv_event_get_target(e);
     int32_t val = lv_slider_get_value(sl);
-    eos_display_set_brightness(val);
+    eos_display_set_brightness((uint8_t)val, EOS_DISPLAY_DURATION_OFF);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
 }
 
@@ -145,7 +146,7 @@ static void _brightness_slider_minus_cb(lv_event_t *e)
     val -= 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
-    eos_display_set_brightness_smooth(prev, val, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
 static void _brightness_slider_plus_cb(lv_event_t *e)
@@ -160,7 +161,7 @@ static void _brightness_slider_plus_cb(lv_event_t *e)
     val += 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
-    eos_display_set_brightness_smooth(prev, val, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION);
 }
 
 static void _aod_mode_switch_cb(lv_event_t *e)

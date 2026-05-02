@@ -23,6 +23,7 @@
 #include "eos_version.h"
 #include "eos_port.h"
 #include "eos_swipe_panel.h"
+#include "eos_service_display.h"
 #include "eos_service_config.h"
 #include "eos_app.h"
 #include "script_engine_core.h"
@@ -94,7 +95,7 @@ void _sys_init_err_handler(const char *err_msg)
 
 void eos_logo_play(bool anim)
 {
-    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_OFF);
 
     lv_obj_t *scr = lv_screen_active();
 

@@ -13,7 +13,7 @@
 #define EOS_LOG_TAG "PowerManager"
 #include "eos_log.h"
 #include "eos_service_config.h"
-#include "eos_port.h"
+#include "eos_dev_power.h"
 #include "eos_config.h"
 #include "eos_touch.h"
 #include "eos_dispatcher.h"
@@ -52,36 +52,34 @@ static void _pm_set_state(eos_pm_state_t state)
     EOS_LOG_I("State: %d -> %d", pm_state, state);
 #endif /* EOS_COMPILE_MODE */
     pm_state = state;
+
+    eos_dev_power_t *dev = eos_dev_power_get_instance();
+    if (dev->ops == NULL || dev->ops->set_power == NULL)
+    {
+        EOS_LOG_E("Power device OPS not available");
+        return;
+    }
+
     switch (state)
     {
     case EOS_PM_DISPLAY_ON:
-        // Broadcast wake mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_ON, NULL);
-        // Wake system
-        eos_sys_wake();
-        // Resume timer
+        dev->ops->set_power(DEV_POWER_STATE_ON);
         if (t)
             lv_timer_resume(t);
         break;
     case EOS_PM_SLEEP:
-        // Pause timer
         lv_timer_pause(t);
-        // Broadcast sleep mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_SLEEP, NULL);
 #if EOS_DFW_ENABLE
-        // DFW write file
         eos_dfw_sync();
 #endif /* EOS_DFW_ENABLE */
-        // Enter sleep mode
-        if (t)
-            eos_sys_sleep();
+        dev->ops->set_power(DEV_POWER_STATE_SLEEP);
         break;
     case EOS_PM_DISPLAY_AOD:
-        // Pause timer
         lv_timer_pause(t);
-        // Broadcast AOD mode entry
         eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_AOD, NULL);
-        eos_sys_wake();
+        dev->ops->set_power(DEV_POWER_STATE_AOD);
         break;
     default:
         EOS_LOG_E("Unknown state");

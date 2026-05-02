@@ -18,7 +18,6 @@
 
 static eos_dev_vibrator_t _dev_vibrator = {
     .ops = NULL,
-    .user_data = NULL,
     ._state = DEV_STATE_NONE,
 };
 
@@ -60,7 +59,7 @@ eos_dev_state_t eos_dev_vibrator_get_state(void)
     return _dev_vibrator._state;
 }
 
-void eos_dev_vibrator_report(eos_dev_state_t state)
+void eos_dev_vibrator_report_state(eos_dev_state_t state)
 {
     if (_dev_vibrator._state == state)
     {

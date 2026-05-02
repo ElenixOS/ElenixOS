@@ -23,6 +23,7 @@
 #include "eos_flash_light.h"
 #include "eos_anim.h"
 #include "eos_lang.h"
+#include "eos_service_display.h"
 #include "eos_settings.h"
 #include "eos_mem.h"
 #include "eos_basic_widgets.h"
@@ -230,8 +231,8 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(label);
 
     // Get current Slider value
-    int16_t value = lv_slider_get_value(slider);
-    eos_display_set_brightness(value);
+    int32_t value = lv_slider_get_value(slider);
+    eos_display_set_brightness((uint8_t)value, EOS_DISPLAY_DURATION_OFF);
 
     // Map Slider value to angle
     int32_t angle = (int32_t)value * 18;

@@ -22,7 +22,7 @@
 #include "eos_watchface.h"
 #include "eos_port.h"
 #include "eos_service_config.h"
-#include "eos_display.h"
+#include "eos_service_display.h"
 #include "eos_app_list.h"
 #include "eos_lang.h"
 #include "eos_basic_widgets.h"
@@ -118,7 +118,7 @@ static void _flash_light_on_destroy(eos_activity_t *a)
     }
 
     _flash_light_delete(NULL);
-    eos_display_tmp_restore_brightness_smooth();
+    eos_display_restore(EOS_DISPLAY_DURATION_OFF);
 }
 
 static inline void _flash_light_delete(_pressing_user_data_t *ud)
@@ -149,7 +149,7 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
     if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
         _flash_light_delete(ud);
-        eos_display_tmp_restore_brightness_smooth();
+        eos_display_restore(EOS_DISPLAY_DURATION_MEDIUM);
     }
 }
 
@@ -442,12 +442,12 @@ void eos_flash_light_show(void)
                         LV_EVENT_CLICKED,
                         ud);
 
-    eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_MEDIUM);
 }
 
 void eos_flash_light_enter(void)
 {
-    eos_display_tmp_set_brightness_smooth(EOS_DISPLAY_BRIGHTNESS_MAX);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_MEDIUM);
     eos_activity_t *a = eos_activity_create(&_flash_light_lifecycle);
     if(!a) return;
 

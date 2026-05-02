@@ -102,11 +102,6 @@ void eos_bluetooth_disable(void);
  */
 eos_datetime_t eos_time_get_core(void);
 /**
- * @brief Set screen brightness
- * @param brightness Brightness value (0~100)
- */
-void eos_display_set_brightness(uint8_t brightness);
-/**
  * @brief Locate phone
  *
  * Make phone ring via Bluetooth or other methods to locate phone.
@@ -147,43 +142,7 @@ int eos_audio_play_file(const char *file_path);
  * @return 0 on success, negative value on failure
  */
 int eos_audio_stop(void);
-/**
- * @brief System enters sleep mode (low power state)
- *
- * This function needs to complete:
- *
- * - Stop touch
- *
- * - Turn off screen
- *
- * - Turn off other peripherals
- *
- * - CPU frequency reduction, enter low power
- *
- */
-void eos_sys_sleep(void);
-/**
- * @brief System enters always-on display mode
- *
- * This function needs to complete:
- *
- * - Stop touch
- *
- * - Turn off other peripherals
- *
- * - CPU frequency reduction, enter low power
- *
- */
-void eos_sys_aod(void);
-/**
- * @brief System exits sleep mode
- *
- * This function needs to complete:
- *
- * - Wake up peripherals turned off by `eos_sys_sleep()`, turn off low power mode
- *
- */
-void eos_sys_wake(void);
+
 #ifdef __cplusplus
 }
 #endif

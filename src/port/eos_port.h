@@ -18,6 +18,8 @@ extern "C" {
 #include "eos_sensor.h"
 #include "eos_fs_port.h"
 #include "eos_port_sensor.h"
+#include "port/rtos/sem/eos_port_sem.h"
+#include "port/rtos/mutex/eos_port_mutex.h"
 
 /* Public macros ----------------------------------------------*/
 /**
@@ -39,10 +41,11 @@ extern "C" {
     #error not supported tool chain
 #endif
 
+#ifndef EOS_TIMEOUT_INFINITE
 #define EOS_TIMEOUT_INFINITE UINT32_MAX
+#endif
 
 /* Public typedefs --------------------------------------------*/
-typedef struct eos_sem_t eos_sem_t;   /**< Semaphore */
 
 typedef enum
 {
@@ -53,28 +56,6 @@ typedef enum
 } eos_audio_state_t;
 /* Public function prototypes --------------------------------*/
 
-/**
- * @brief Create a semaphore
- * @param initial_count Initial count
- * @param max_count Maximum count
- * @return Pointer to semaphore object, returns NULL if failed
- */
-eos_sem_t* eos_sem_create(uint32_t initial_count, uint32_t max_count);
-/**
- * @brief Destroy semaphore
- */
-void eos_sem_destroy(eos_sem_t* sem);
-/**
- * @brief Wait for semaphore
- * @param timeout_ms Timeout time (milliseconds), 0 for non-blocking, EOS_TIMEOUT_INFINITE for infinite wait
- * @return true Successfully obtained
- * @return false Timeout or failed
- */
-bool eos_sem_take(eos_sem_t* sem, uint32_t timeout_ms);
-/**
- * @brief Release semaphore
- */
-void eos_sem_give(eos_sem_t* sem);
 /**
  * @brief Delay for specified time (non-blocking)
  * @param ms Milliseconds

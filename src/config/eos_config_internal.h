@@ -38,6 +38,12 @@ extern "C" {
 #define EOS_MEM_PROVIDER_AUTO        1
 #define EOS_MEM_PROVIDER_CUSTOM      2
 
+#define EOS_RTOS_BARE_METAL         0
+#define EOS_RTOS_FREERTOS           1
+#define EOS_RTOS_RTTHREAD           2
+#define EOS_RTOS_CUSTOM             3
+#define EOS_RTOS_POSIX              4
+
 #define EOS_SYSMON_DISABLE          0
 #define EOS_SYSMON_USE_INTERNAL     1
 #define EOS_SYSMON_USE_CUSTOM       2

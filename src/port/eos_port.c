@@ -11,84 +11,10 @@
 #include <string.h>
 #include "eos_log.h"
 #include "eos_mem.h"
-#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-#include <stdatomic.h>
-#define HAS_ATOMIC 1
-#else
-#define HAS_ATOMIC 0
-#endif
-/* Macros and Definitions -------------------------------------*/
-#if HAS_ATOMIC
-struct eos_sem_t
-{
-    atomic_uint count;
-    unsigned int max;
-};
-#else
-struct eos_sem_t
-{
-    uint32_t count;
-    uint32_t max;
-};
-#endif
+
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
-EOS_WEAK eos_sem_t *eos_sem_create(uint32_t initial_count, uint32_t max_count)
-{
-#if HAS_ATOMIC
-    eos_sem_t *sem = eos_malloc(sizeof(eos_sem_t));
-    if (!sem)
-        return NULL;
-    atomic_init(&sem->count, initial_count);
-    sem->max = max_count;
-    return sem;
-#else
-    eos_sem_t *sem = eos_malloc(sizeof(eos_sem_t));
-    if (!sem)
-        return NULL;
-    sem->count = initial_count;
-    sem->max = max_count;
-    return sem;
-#endif
-}
-
-EOS_WEAK void eos_sem_destroy(eos_sem_t *sem)
-{
-    if (sem)
-        eos_free(sem);
-}
-
-EOS_WEAK bool eos_sem_take(eos_sem_t *sem, uint32_t timeout_ms)
-{
-    (void)timeout_ms;
-#if HAS_ATOMIC
-    unsigned int c = atomic_load_explicit(&sem->count, memory_order_acquire);
-    if (c == 0)
-        return false;
-    return atomic_compare_exchange_strong(&sem->count, &c, c - 1);
-#else
-    if (sem->count == 0)
-        return false;
-    sem->count--;
-    return true;
-#endif
-}
-
-EOS_WEAK void eos_sem_give(eos_sem_t *sem)
-{
-#if HAS_ATOMIC
-    unsigned int c = atomic_load_explicit(&sem->count, memory_order_relaxed);
-    if (c < sem->max)
-    {
-        atomic_fetch_add_explicit(&sem->count, 1, memory_order_release);
-    }
-#else
-    if (sem->count < sem->max)
-        sem->count++;
-#endif
-}
-
 EOS_WEAK void eos_delay(uint32_t ms)
 {
     LV_UNUSED(ms);

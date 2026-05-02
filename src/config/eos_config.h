@@ -96,6 +96,21 @@ extern "C"
 
 #define EOS_MEM_TRACK_ENABLE 1 /**< Whether to enable memory tracking */
 
+/************************** RTOS configuration **************************/
+
+/**
+ * Select RTOS type
+ * Available options:
+ *  - EOS_RTOS_BARE_METAL:  Bare metal, use interrupt disable/enable for critical sections
+ *  - EOS_RTOS_FREERTOS:    FreeRTOS
+ *  - EOS_RTOS_RTTHREAD:    RT-Thread
+ *  - EOS_RTOS_POSIX:       POSIX threads (pthread/semaphore)
+ *  - EOS_RTOS_CUSTOM:      Custom RTOS (provide your own implementation)
+ */
+#ifndef EOS_RTOS_TYPE
+    #define EOS_RTOS_TYPE EOS_RTOS_BARE_METAL
+#endif /* EOS_RTOS_TYPE */
+
 /************************** Font configuration **************************/
 
 /**

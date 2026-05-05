@@ -13,11 +13,230 @@
 #include "eos_log.h"
 #include "eos_mem.h"
 #include "eos_dfw.h"
+#include "cJSON.h"
+#include "eos_misc.h"
 /* Macros and Definitions -------------------------------------*/
 #define _FILE_NAME_MAX_LENGTH 256
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
+
+/************************** JSON Storage API **************************/
+
+cJSON *eos_storage_json_load(const char *path)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path, NULL);
+
+    if (!eos_storage_is_file(path)) {
+        return NULL;
+    }
+
+    char *content = eos_storage_read_file(path);
+    if (!content) {
+        return NULL;
+    }
+
+    cJSON *root = cJSON_Parse(content);
+    eos_free(content);
+
+    return root;
+}
+
+eos_result_t eos_storage_json_save(const char *path, cJSON *root)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && root, EOS_ERR_INVALID_ARG);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    if (!json_str) {
+        return EOS_ERR_JSON_ERROR;
+    }
+
+    eos_result_t ret = eos_storage_write_file(path, json_str, strlen(json_str));
+    cJSON_free(json_str);
+
+    return ret;
+}
+
+bool eos_storage_json_get_bool(const char *path, const char *key, bool default_value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, default_value);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        return default_value;
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    bool result = (item && cJSON_IsBool(item)) ? cJSON_IsTrue(item) : default_value;
+
+    cJSON_Delete(root);
+    return result;
+}
+
+eos_result_t eos_storage_json_set_bool(const char *path, const char *key, bool value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, EOS_ERR_INVALID_ARG);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root) {
+            return EOS_ERR_MEM;
+        }
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    if (item) {
+        cJSON_SetBoolValue(item, value);
+    } else {
+        cJSON_AddBoolToObject(root, key, value);
+    }
+
+    eos_result_t ret = eos_storage_json_save(path, root);
+    cJSON_Delete(root);
+
+    return ret;
+}
+
+char *eos_storage_json_get_string(const char *path, const char *key, const char *default_value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, eos_strdup(default_value));
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        return eos_strdup(default_value);
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    char *result = (item && cJSON_IsString(item)) ? eos_strdup(item->valuestring) : eos_strdup(default_value);
+
+    cJSON_Delete(root);
+    return result;
+}
+
+eos_result_t eos_storage_json_set_string(const char *path, const char *key, const char *value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key && value, EOS_ERR_INVALID_ARG);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root) {
+            return EOS_ERR_MEM;
+        }
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    if (item) {
+        cJSON_SetValuestring(item, value);
+    } else {
+        cJSON_AddStringToObject(root, key, value);
+    }
+
+    eos_result_t ret = eos_storage_json_save(path, root);
+    cJSON_Delete(root);
+
+    return ret;
+}
+
+double eos_storage_json_get_number(const char *path, const char *key, double default_value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, default_value);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        return default_value;
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    double result = (item && cJSON_IsNumber(item)) ? item->valuedouble : default_value;
+
+    cJSON_Delete(root);
+    return result;
+}
+
+eos_result_t eos_storage_json_set_number(const char *path, const char *key, double value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, EOS_ERR_INVALID_ARG);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root) {
+            return EOS_ERR_MEM;
+        }
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    if (item) {
+        cJSON_SetNumberValue(item, value);
+    } else {
+        cJSON_AddNumberToObject(root, key, value);
+    }
+
+    eos_result_t ret = eos_storage_json_save(path, root);
+    cJSON_Delete(root);
+
+    return ret;
+}
+
+cJSON *eos_storage_json_get_json(const char *path, const char *key)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key, NULL);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        return NULL;
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    if (!item || (!cJSON_IsObject(item) && !cJSON_IsArray(item))) {
+        cJSON_Delete(root);
+        return NULL;
+    }
+
+    cJSON_DetachItemViaPointer(root, item);
+    cJSON_Delete(root);
+
+    return item;
+}
+
+eos_result_t eos_storage_json_set_json(const char *path, const char *key, cJSON *json_value)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path && key && json_value, EOS_ERR_INVALID_ARG);
+
+    cJSON *root = eos_storage_json_load(path);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root) {
+            return EOS_ERR_MEM;
+        }
+    }
+
+    cJSON *item = cJSON_GetObjectItem(root, key);
+    if (item) {
+        cJSON_ReplaceItemInObject(root, key, json_value);
+    } else {
+        cJSON_AddItemToObject(root, key, json_value);
+    }
+
+    eos_result_t ret = eos_storage_json_save(path, root);
+    cJSON_Delete(root);
+
+    return ret;
+}
+
+eos_result_t eos_storage_json_create_if_not_exist(const char *path, const char *default_json)
+{
+    EOS_CHECK_PTR_RETURN_VAL(path, EOS_ERR_INVALID_ARG);
+
+    if (eos_storage_is_file(path)) {
+        return EOS_OK;
+    }
+
+    const char *content = default_json ? default_json : "{}";
+    return eos_storage_create_file_if_not_exist(path, content);
+}
 
 bool eos_storage_is_dir(const char *path)
 {

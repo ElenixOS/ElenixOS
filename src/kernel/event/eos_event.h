@@ -135,7 +135,7 @@ void eos_event_remove_global_cb_with_user_data(lv_event_code_t event, lv_event_c
  */
 void eos_event_remove_all_global_cbs(lv_event_cb_t cb);
 /**
- * @brief
+ * @brief Register a new event ID for user-defined events
  * @return lv_event_code_t
  */
 lv_event_code_t eos_event_register_id(void);

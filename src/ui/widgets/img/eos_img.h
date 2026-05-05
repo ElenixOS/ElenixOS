@@ -14,7 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
-#include "eos_sys.h"
+#include "eos_storage_paths.h"
 /* Public macros ----------------------------------------------*/
 /************************** System Built-in Image Resource Definitions **************************/
 #define EOS_IMG_APP EOS_SYS_RES_IMG_DIR "app.bin"

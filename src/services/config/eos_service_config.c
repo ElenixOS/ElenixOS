@@ -28,72 +28,30 @@
 #include "eos_misc.h"
 #include "eos_theme.h"
 #include "eos_pkg_mgr.h"
-#include "eos_sensor.h"
+#include "eos_service_sensor.h"
 #include "eos_service_storage.h"
 #include "eos_mem.h"
 #include "eos_service_haptic.h"
+
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
 
-static cJSON *_eos_config_load(int *err_code)
-{
-    if (err_code)
-        *err_code = EOS_ERR_FILE_ERROR;
-
-    if (!eos_storage_is_file(EOS_CONFIG_FILE_PATH))
-    {
-        EOS_LOG_E("Config file does not exist");
-        return NULL;
-    }
-    char *file_content = eos_storage_read_file(EOS_CONFIG_FILE_PATH);
-
-    if (!file_content)
-    {
-        EOS_LOG_E("Failed to read config file");
-        return NULL;
-    }
-
-    cJSON *root = cJSON_Parse(file_content);
-    eos_free(file_content);
-
-    if (!root)
-    {
-        EOS_LOG_E("Failed to parse JSON");
-        return NULL;
-    }
-
-    if (err_code)
-        *err_code = EOS_OK;
-    return root;
-}
-
-static int _eos_config_save(cJSON *root)
+static eos_result_t _eos_config_save_and_broadcast(cJSON *root)
 {
     if (!root)
         return EOS_ERR_JSON_ERROR;
 
-    char *new_json = cJSON_PrintUnformatted(root);
-    if (!new_json)
-    {
-        EOS_LOG_E("Failed to generate JSON");
-        return EOS_ERR_JSON_ERROR;
+    eos_result_t ret = eos_storage_json_save(EOS_CONFIG_FILE_PATH, root);
+    cJSON_Delete(root);
+
+    if (ret == EOS_OK) {
+        eos_event_broadcast(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
     }
 
-    eos_result_t ret = eos_storage_write_file(EOS_CONFIG_FILE_PATH, new_json, strlen(new_json));
-
-    cJSON_free(new_json);
-
-    if (ret != EOS_OK)
-    {
-        EOS_LOG_E("Write json failed, error: %d", ret);
-        return EOS_ERR_FILE_ERROR;
-    }
-    eos_event_broadcast(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
-
-    return EOS_OK;
+    return ret;
 }
 
 eos_result_t eos_config_set_bool(const char *key, bool value)
@@ -102,10 +60,12 @@ eos_result_t eos_config_set_bool(const char *key, bool value)
 
     EOS_LOG_I("Try set \"%s\" = \"%s\"", key, value ? "true" : "false");
 
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-        return err;
+    cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root)
+            return EOS_ERR_MEM;
+    }
 
     cJSON *item = cJSON_GetObjectItem(root, key);
     if (item)
@@ -113,14 +73,13 @@ eos_result_t eos_config_set_bool(const char *key, bool value)
     else
         cJSON_AddBoolToObject(root, key, value);
 
-    int save_ret = _eos_config_save(root);
-    cJSON_Delete(root);
+    eos_result_t ret = _eos_config_save_and_broadcast(root);
 
-    if (save_ret != EOS_OK)
-        return EOS_ERR_FILE_ERROR;
+    if (ret == EOS_OK) {
+        EOS_LOG_I("Successfully set config item: %s=%s", key, value ? "true" : "false");
+    }
 
-    EOS_LOG_I("Successfully set config item: %s=%s", key, value ? "true" : "false");
-    return EOS_OK;
+    return ret;
 }
 
 eos_result_t eos_config_set_string(const char *key, const char *value)
@@ -129,10 +88,12 @@ eos_result_t eos_config_set_string(const char *key, const char *value)
 
     EOS_LOG_I("Try set \"%s\" = \"%s\"", key, value);
 
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-        return err;
+    cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root)
+            return EOS_ERR_MEM;
+    }
 
     cJSON *item = cJSON_GetObjectItem(root, key);
     if (item)
@@ -140,14 +101,13 @@ eos_result_t eos_config_set_string(const char *key, const char *value)
     else
         cJSON_AddStringToObject(root, key, value);
 
-    int save_ret = _eos_config_save(root);
-    cJSON_Delete(root);
+    eos_result_t ret = _eos_config_save_and_broadcast(root);
 
-    if (save_ret != EOS_OK)
-        return EOS_ERR_FILE_ERROR;
+    if (ret == EOS_OK) {
+        EOS_LOG_I("Successfully set config item: %s=%s", key, value);
+    }
 
-    EOS_LOG_I("Successfully set config item: %s=%s", key, value);
-    return EOS_OK;
+    return ret;
 }
 
 eos_result_t eos_config_set_number(const char *key, double value)
@@ -156,10 +116,12 @@ eos_result_t eos_config_set_number(const char *key, double value)
 
     EOS_LOG_I("Try set \"%s\" = \"%f\"", key, value);
 
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-        return err;
+    cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root)
+            return EOS_ERR_MEM;
+    }
 
     cJSON *item = cJSON_GetObjectItem(root, key);
     if (item)
@@ -167,113 +129,28 @@ eos_result_t eos_config_set_number(const char *key, double value)
     else
         cJSON_AddNumberToObject(root, key, value);
 
-    int save_ret = _eos_config_save(root);
-    cJSON_Delete(root);
+    eos_result_t ret = _eos_config_save_and_broadcast(root);
 
-    if (save_ret != EOS_OK)
-        return EOS_ERR_FILE_ERROR;
+    if (ret == EOS_OK) {
+        EOS_LOG_I("Successfully set config item: %s=%f", key, value);
+    }
 
-    EOS_LOG_I("Successfully set config item: %s=%f", key, value);
-    return EOS_OK;
+    return ret;
 }
 
 bool eos_config_get_bool(const char *key, bool default_value)
 {
-    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
-
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-    {
-        EOS_LOG_W("Returning default value for key '%s'", key);
-        return default_value;
-    }
-
-    cJSON *item = cJSON_GetObjectItem(root, key);
-    if (!item || !cJSON_IsBool(item))
-    {
-        if (!item)
-            EOS_LOG_D("Key '%s' not found in config, returning default", key);
-        else
-            EOS_LOG_W("Value for key '%s' is not a boolean, returning default", key);
-
-        cJSON_Delete(root);
-        return default_value;
-    }
-
-    bool result = cJSON_IsTrue(item);
-    cJSON_Delete(root);
-
-    EOS_LOG_D("Successfully got boolean config item: %s=%s", key, result ? "true" : "false");
-    return result;
+    return eos_storage_json_get_bool(EOS_CONFIG_FILE_PATH, key, default_value);
 }
 
 char *eos_config_get_string(const char *key, const char *default_value)
 {
-    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
-
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-    {
-        EOS_LOG_W("Returning default value for key '%s'", key);
-        return eos_strdup(default_value);
-    }
-
-    cJSON *item = cJSON_GetObjectItem(root, key);
-    if (!item || !cJSON_IsString(item))
-    {
-        if (!item)
-            EOS_LOG_D("Key '%s' not found in config, returning default", key);
-        else
-            EOS_LOG_W("Value for key '%s' is not a string, returning default", key);
-
-        cJSON_Delete(root);
-        return eos_strdup(default_value);
-    }
-
-    char *result = eos_strdup(item->valuestring);
-    cJSON_Delete(root);
-
-    if (!result)
-    {
-        EOS_LOG_E("Failed to duplicate string, returning default");
-        return eos_strdup(default_value);
-    }
-
-    EOS_LOG_D("Successfully got string config item: %s=%s", key, result);
-    return result;
+    return eos_storage_json_get_string(EOS_CONFIG_FILE_PATH, key, default_value);
 }
 
 double eos_config_get_number(const char *key, double default_value)
 {
-    EOS_CHECK_PTR_RETURN_VAL(key, default_value);
-
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-    {
-        EOS_LOG_W("Returning default value for key '%s'", key);
-        return default_value;
-    }
-
-    cJSON *item = cJSON_GetObjectItem(root, key);
-    if (!item || !cJSON_IsNumber(item))
-    {
-        if (!item)
-            EOS_LOG_D("Key '%s' not found in config, returning default", key);
-        else
-            EOS_LOG_W("Value for key '%s' is not a number, returning default", key);
-
-        cJSON_Delete(root);
-        return default_value;
-    }
-
-    double result = item->valuedouble;
-    cJSON_Delete(root);
-
-    EOS_LOG_D("Successfully got number config item: %s=%f", key, result);
-    return result;
+    return eos_storage_json_get_number(EOS_CONFIG_FILE_PATH, key, default_value);
 }
 
 eos_result_t _create_default_cfg_json(const char *path)
@@ -288,7 +165,6 @@ eos_result_t _create_default_cfg_json(const char *path)
     cJSON_AddStringToObject(root, EOS_CONFIG_KEY_LANGUAGE_STR, EOS_CONFIG_DEFAULT_LANG_STR);
     cJSON_AddStringToObject(root, EOS_CONFIG_KEY_WATCHFACE_ID_STR, EOS_CONFIG_DEFAULT_WATCHFACE_ID_STR);
 
-    // Initialize empty app_order array
     cJSON *app_order_array = cJSON_CreateArray();
     if (app_order_array)
         cJSON_AddItemToObject(root, EOS_CONFIG_KEY_APP_ORDER_ARRAY, app_order_array);
@@ -353,7 +229,7 @@ void eos_service_config_init()
         EOS_LOG_I("Bluetooth disable");
     }
 
-    uint8_t brightness = eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
+    uint8_t brightness = (uint8_t)eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
     eos_display_set_brightness(brightness, EOS_DISPLAY_DURATION_OFF);
@@ -367,12 +243,12 @@ void eos_service_config_init()
     }
     else
     {
-        uint8_t volume = eos_config_get_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, 20);
+        uint8_t volume = (uint8_t)eos_config_get_number(EOS_CONFIG_KEY_SPEAKER_VOLUME_NUMBER, 20);
         eos_speaker_set_volume(volume);
         EOS_LOG_I("Volume: %d", volume);
     }
 
-    uint8_t strength = eos_config_get_number(EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_HAPTIC_STRENGTH_NORMAL);
+    uint8_t strength = (uint8_t)eos_config_get_number(EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER, EOS_HAPTIC_STRENGTH_NORMAL);
     eos_haptic_set_strength(strength);
     EOS_LOG_I("Vibrator strength: %d", strength);
 }
@@ -385,10 +261,9 @@ eos_result_t eos_config_add_item(const char *key, const char *value)
         return EOS_ERR_VAR_NULL;
     }
 
-    int err;
-    cJSON *root = _eos_config_load(&err);
+    cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
     if (!root)
-        return err;
+        return EOS_ERR_FILE_ERROR;
 
     if (cJSON_HasObjectItem(root, key))
     {
@@ -399,46 +274,12 @@ eos_result_t eos_config_add_item(const char *key, const char *value)
 
     cJSON_AddStringToObject(root, key, value);
 
-    int save_ret = _eos_config_save(root);
-    cJSON_Delete(root);
-
-    if (save_ret != EOS_OK)
-        return EOS_ERR_FILE_ERROR;
-
-    EOS_LOG_I("Successfully added new config item: %s=%s", key, value);
-    return EOS_OK;
+    return _eos_config_save_and_broadcast(root);
 }
 
 cJSON *eos_config_get_json(const char *key)
 {
-    EOS_CHECK_PTR_RETURN_VAL(key, NULL);
-
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-    {
-        EOS_LOG_W("Failed to load config, returning NULL for key '%s'", key);
-        return NULL;
-    }
-
-    cJSON *item = cJSON_GetObjectItem(root, key);
-    if (!item || (!cJSON_IsObject(item) && !cJSON_IsArray(item)))
-    {
-        if (!item)
-            EOS_LOG_D("Key '%s' not found in config", key);
-        else
-            EOS_LOG_W("Value for key '%s' is not an object or array", key);
-
-        cJSON_Delete(root);
-        return NULL;
-    }
-
-    // Detach the item from root and return it
-    cJSON_DetachItemViaPointer(root, item);
-    cJSON_Delete(root);
-
-    EOS_LOG_D("Successfully got JSON config item: %s", key);
-    return item;
+    return eos_storage_json_get_json(EOS_CONFIG_FILE_PATH, key);
 }
 
 eos_result_t eos_config_set_json(const char *key, cJSON *json_value)
@@ -447,10 +288,12 @@ eos_result_t eos_config_set_json(const char *key, cJSON *json_value)
 
     EOS_LOG_I("Try set JSON \"%s\"", key);
 
-    int err;
-    cJSON *root = _eos_config_load(&err);
-    if (!root)
-        return err;
+    cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
+    if (!root) {
+        root = cJSON_CreateObject();
+        if (!root)
+            return EOS_ERR_MEM;
+    }
 
     cJSON *item = cJSON_GetObjectItem(root, key);
     if (item)
@@ -458,12 +301,11 @@ eos_result_t eos_config_set_json(const char *key, cJSON *json_value)
     else
         cJSON_AddItemToObject(root, key, json_value);
 
-    int save_ret = _eos_config_save(root);
-    cJSON_Delete(root);
+    eos_result_t ret = _eos_config_save_and_broadcast(root);
 
-    if (save_ret != EOS_OK)
-        return EOS_ERR_FILE_ERROR;
+    if (ret == EOS_OK) {
+        EOS_LOG_I("Successfully set JSON config item: %s", key);
+    }
 
-    EOS_LOG_I("Successfully set JSON config item: %s", key);
-    return EOS_OK;
+    return ret;
 }

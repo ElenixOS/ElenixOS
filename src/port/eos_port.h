@@ -15,9 +15,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include "eos_core.h"
-#include "eos_sensor.h"
 #include "eos_fs_port.h"
-#include "eos_port_sensor.h"
 #include "port/critical/eos_port_critical.h"
 
 /* Public macros ----------------------------------------------*/

@@ -16,8 +16,9 @@ extern "C" {
 #include "eos_core.h"
 #include "eos_config.h"
 #include "eos_storage_paths.h"
+#include "cJSON.h"
 /* Public macros ----------------------------------------------*/
-Configuration Keys
+/* Configuration Keys */
 /************************** Keys for system configuration information **************************/
 #define EOS_CONFIG_KEY_DEVICE_NAME_STR "device_name"
 #define EOS_CONFIG_KEY_LANGUAGE_STR "language"

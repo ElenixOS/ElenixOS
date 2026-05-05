@@ -28,6 +28,7 @@
 #include "eos_mem.h"
 #include "eos_basic_widgets.h"
 #include "eos_crown.h"
+#include "eos_service_battery.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _BTN_DEFAULT_COLOR EOS_THEME_SECONDARY_COLOR
@@ -259,20 +260,25 @@ static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
     lv_obj_add_event_cb(slider, _control_center_brightness_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
+static void _control_center_battery_update_display(lv_obj_t *label, lv_obj_t *btn)
+{
+    EOS_CHECK_PTR_RETURN(label && btn);
+
+    eos_battery_state_t state;
+    if (eos_battery_get_state(&state) && state.valid) {
+        if (state.charging) {
+            lv_label_set_text_fmt(label, RI_FLASHLIGHT_FILL " %d%%", state.percent);
+        } else {
+            lv_label_set_text_fmt(label, "%d%%", state.percent);
+        }
+    }
+}
+
 static void _control_center_battery_level_update_cb(lv_event_t *e)
 {
-    eos_sensor_t *sensor = lv_event_get_param(e);
     lv_obj_t *label = lv_event_get_target(e);
     lv_obj_t *btn = lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(sensor && label && btn);
-    if (sensor->data.bat.charging)
-    {
-        lv_label_set_text_fmt(label, RI_FLASHLIGHT_FILL " %d%%", sensor->data.bat.level);
-    }
-    else
-    {
-        lv_label_set_text_fmt(label, "%d%%", sensor->data.bat.level);
-    }
+    _control_center_battery_update_display(label, btn);
 }
 
 static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
@@ -283,14 +289,12 @@ static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
     lv_obj_set_style_bg_color(btn, _BTN_DEFAULT_COLOR, 0);
 
     lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text_fmt(label, "%d%%", eos_battery_service_get_level());
     lv_obj_center(label);
 
-    eos_event_add_cb(
-        label,
-        _control_center_battery_level_update_cb,
-        EOS_EVENT_SENSOR_REPORT_BAT,
-        (void *)btn);
+    lv_obj_add_event_cb(label, _control_center_battery_level_update_cb, eos_battery_get_event_id(), (void *)btn);
+
+    _control_center_battery_update_display(label, btn);
+
     return btn;
 }
 

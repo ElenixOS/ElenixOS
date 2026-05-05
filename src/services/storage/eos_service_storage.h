@@ -13,13 +13,111 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "eos_port.h"
 #include "eos_error.h"
+#include "cJSON.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
 
 /* Public function prototypes --------------------------------*/
+
+/************************** JSON Storage API **************************/
+
+/**
+ * @brief Load JSON file from storage
+ * @param path File path
+ * @return cJSON root object or NULL on failure
+ */
+cJSON *eos_storage_json_load(const char *path);
+
+/**
+ * @brief Save JSON object to file
+ * @param path File path
+ * @param root cJSON root object
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_save(const char *path, cJSON *root);
+
+/**
+ * @brief Get boolean value from JSON file
+ * @param path File path
+ * @param key Key name
+ * @param default_value Default value if key not found
+ * @return Boolean value
+ */
+bool eos_storage_json_get_bool(const char *path, const char *key, bool default_value);
+
+/**
+ * @brief Set boolean value in JSON file
+ * @param path File path
+ * @param key Key name
+ * @param value Boolean value
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_set_bool(const char *path, const char *key, bool value);
+
+/**
+ * @brief Get string value from JSON file
+ * @param path File path
+ * @param key Key name
+ * @param default_value Default value if key not found
+ * @return Allocated string (must free with eos_free), or default value
+ */
+char *eos_storage_json_get_string(const char *path, const char *key, const char *default_value);
+
+/**
+ * @brief Set string value in JSON file
+ * @param path File path
+ * @param key Key name
+ * @param value String value
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_set_string(const char *path, const char *key, const char *value);
+
+/**
+ * @brief Get number value from JSON file
+ * @param path File path
+ * @param key Key name
+ * @param default_value Default value if key not found
+ * @return Number value
+ */
+double eos_storage_json_get_number(const char *path, const char *key, double default_value);
+
+/**
+ * @brief Set number value in JSON file
+ * @param path File path
+ * @param key Key name
+ * @param value Number value
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_set_number(const char *path, const char *key, double value);
+
+/**
+ * @brief Get JSON object from JSON file
+ * @param path File path
+ * @param key Key name
+ * @return cJSON object (must call cJSON_Delete), or NULL if not found
+ */
+cJSON *eos_storage_json_get_json(const char *path, const char *key);
+
+/**
+ * @brief Set JSON object in JSON file
+ * @param path File path
+ * @param key Key name
+ * @param json_value cJSON object
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_set_json(const char *path, const char *key, cJSON *json_value);
+
+/**
+ * @brief Create JSON file with default content if not exist
+ * @param path File path
+ * @param default_json Default JSON string (NULL for empty object)
+ * @return Operation result
+ */
+eos_result_t eos_storage_json_create_if_not_exist(const char *path, const char *default_json);
 
 /**
  * @brief Check if target path is a directory

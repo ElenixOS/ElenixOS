@@ -28,7 +28,7 @@
 #include "eos_misc.h"
 #include "eos_theme.h"
 #include "eos_pkg_mgr.h"
-#include "eos_sensor.h"
+#include "eos_service_sensor.h"
 #include "eos_config.h"
 #include "eos_icon.h"
 #include "eos_service_display.h"

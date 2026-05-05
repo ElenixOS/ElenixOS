@@ -4,7 +4,7 @@
  */
 
 #include "eos_config.h"
-#ifdef EOS_ENABLE_TEST_APP
+#if EOS_ENABLE_TEST_APP
 
 #include "eos_test.h"
 
@@ -34,7 +34,11 @@
 #include "eos_toast.h"
 #include "eos_slide_widget.h"
 #include "eos_font.h"
-#include "eos_sensor.h"
+#include "eos_service_sensor.h"
+#include "eos_dev_sensor.h"
+#include "sensor/eos_test_sensor.h"
+#include "sensor/eos_test_sensor_chart.h"
+#include "sensor/eos_test_sensor_multi_chart.h"
 #include "eos_crown.h"
 #include "eos_app_header.h"
 #include "eos_service_storage.h"
@@ -1348,128 +1352,174 @@ static void _test_font_size()
     eos_label_set_font_size(label, EOS_FONT_SIZE_LARGE);
 }
 
-static void _sensor_meas_cb(lv_event_t *e)
+typedef struct {
+    lv_obj_t *table;
+    eos_dev_sensor_t *sensors[EOS_SENSOR_TYPE_MAX];
+    uint8_t sensor_count;
+    lv_timer_t *timer;
+} _sensor_test_data_t;
+
+static _sensor_test_data_t sensor_data;
+
+static void _sensor_update_table(_sensor_test_data_t *data)
 {
-    lv_obj_t *tb = lv_event_get_target(e);
-    eos_sensor_t *s = lv_event_get_param(e);
-    EOS_CHECK_PTR_RETURN(s && tb);
-    int32_t i = eos_sensor_get_type_by_event_code(lv_event_get_code(e));
+    if (!data || !data->table) {
+        return;
+    }
 
     const uint8_t _SENSOR_VAL_COL = 1;
-    switch (i)
-    {
-    case EOS_SENSOR_TYPE_ACCE: /**< 加速度传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "X=%d\nY=%d\nZ=%d",
-                                    s->data.acce.x,
-                                    s->data.acce.y,
-                                    s->data.acce.z);
-        break;
 
-    case EOS_SENSOR_TYPE_GYRO: /**< 陀螺仪传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "X=%d\nY=%d\nZ=%d",
-                                    s->data.gyro.x,
-                                    s->data.gyro.y,
-                                    s->data.gyro.z);
-        break;
+    for (uint8_t i = 0; i < data->sensor_count; i++) {
+        eos_dev_sensor_t *dev = data->sensors[i];
+        if (!dev) {
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL, "N/A");
+            continue;
+        }
 
-    case EOS_SENSOR_TYPE_MAG: /**< 磁传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "X=%d\nY=%d\nZ=%d",
-                                    s->data.mag.x,
-                                    s->data.mag.y,
-                                    s->data.mag.z);
-        break;
+        eos_sensor_raw_data_t raw_data;
+        eos_result_t result = eos_sensor_read_latest(dev->type, &raw_data);
 
-    case EOS_SENSOR_TYPE_TEMP: /**< 温度传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%.2f °C",
-                                    s->data.temp.temp / 100.0f);
-        break;
+        if (result != EOS_OK) {
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL, "N/A");
+            continue;
+        }
 
-    case EOS_SENSOR_TYPE_HUMI: /**< 相对湿度传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%.2f %%RH",
-                                    s->data.humi.humidity / 100.0f);
-        break;
+        switch (dev->type) {
+        case EOS_SENSOR_TYPE_ACCE:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "X=%d Y=%d Z=%d",
+                                        raw_data.data.acce.x,
+                                        raw_data.data.acce.y,
+                                        raw_data.data.acce.z);
+            break;
 
-    case EOS_SENSOR_TYPE_BARO: /**< 气压传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%.2f hPa",
-                                    s->data.baro.pressure / 100.0f);
-        break;
+        case EOS_SENSOR_TYPE_GYRO:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "X=%d Y=%d Z=%d",
+                                        raw_data.data.gyro.x,
+                                        raw_data.data.gyro.y,
+                                        raw_data.data.gyro.z);
+            break;
 
-    case EOS_SENSOR_TYPE_LIGHT: /**< 环境光传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%u lx",
-                                    s->data.light.lux);
-        break;
+        case EOS_SENSOR_TYPE_MAG:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "X=%d Y=%d Z=%d",
+                                        raw_data.data.mag.x,
+                                        raw_data.data.mag.y,
+                                        raw_data.data.mag.z);
+            break;
 
-    case EOS_SENSOR_TYPE_PROXIMITY: /**< 距离传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%u mm",
-                                    s->data.proximity.distance_mm);
-        break;
+        case EOS_SENSOR_TYPE_TEMP:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "%.2f C",
+                                        raw_data.data.temp.temp / 100.0f);
+            break;
 
-    case EOS_SENSOR_TYPE_HR: /**< 心率传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "HR=%u bpm\nSpO₂=%.2f%%",
-                                    s->data.hr.heart_rate,
-                                    s->data.hr.spo2 / 100.0f);
-        break;
+        case EOS_SENSOR_TYPE_BARO:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "%.2f hPa",
+                                        raw_data.data.baro.pressure / 100.0f);
+            break;
 
-    case EOS_SENSOR_TYPE_TVOC: /**< TVOC传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%u ppb",
-                                    s->data.tvoc.tvoc);
-        break;
+        case EOS_SENSOR_TYPE_LIGHT:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "%u lux",
+                                        (unsigned int)raw_data.data.light.lux);
+            break;
 
-    case EOS_SENSOR_TYPE_NOISE: /**< 噪声传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%.2f dB",
-                                    s->data.noise.noise_db / 100.0f);
-        break;
+        case EOS_SENSOR_TYPE_PROXIMITY:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "%u mm",
+                                        raw_data.data.proximity.distance_mm);
+            break;
 
-    case EOS_SENSOR_TYPE_STEP: /**< 计步传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%lu 步",
-                                    (unsigned long)s->data.step.steps);
-        break;
+        case EOS_SENSOR_TYPE_HR:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "HR=%u bpm",
+                                        raw_data.data.hr.heart_rate);
+            break;
 
-    case EOS_SENSOR_TYPE_FORCE: /**< 力传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%.2f N",
-                                    s->data.force.force / 100.0f);
-        break;
+        case EOS_SENSOR_TYPE_SPO2:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "SpO2=%u%%",
+                                        raw_data.data.spo2.spo2);
+            break;
 
-    case EOS_SENSOR_TYPE_BAT: /**< 电池电量传感器 */
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "%d%% %s",
-                                    s->data.bat.level,
-                                    s->data.bat.charging ? "(充电中)" : "(未充电)");
-        break;
+        case EOS_SENSOR_TYPE_STEP:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL,
+                                        "%lu steps",
+                                        (unsigned long)raw_data.data.step.steps);
+            break;
 
-    case EOS_SENSOR_TYPE_UNKNOWN:
-    default:
-        lv_table_set_cell_value_fmt(tb, i, _SENSOR_VAL_COL,
-                                    "未知传感器类型 (%d)", i);
-        break;
+        default:
+            lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL, "-");
+            break;
+        }
     }
 }
 
-static void _timer_cb(lv_timer_t *t)
+static void _sensor_timer_cb(lv_timer_t *t)
 {
+    _sensor_test_data_t *data = (_sensor_test_data_t *)lv_timer_get_user_data(t);
+    if (data && data->table && data->timer == t) {
+        _sensor_update_table(data);
+    }
+}
+
+static void _sensor_cleanup(_sensor_test_data_t *data)
+{
+    if (data) {
+        if (data->timer) {
+            lv_timer_delete(data->timer);
+            data->timer = NULL;
+        }
+        data->table = NULL;
+    }
+}
+
+static void _sensor_test_on_destroy(eos_activity_t *activity)
+{
+    LV_UNUSED(activity);
+    _sensor_cleanup(&sensor_data);
+}
+
+static const eos_activity_lifecycle_t _s_sensor_test_lifecycle = {
+    .on_enter = NULL,
+    .on_destroy = _sensor_test_on_destroy,
+    .on_pause = NULL,
+    .on_resume = NULL
+};
+
+static lv_obj_t *_create_sensor_test_scr(void)
+{
+    eos_activity_t *activity = eos_activity_create(&_s_sensor_test_lifecycle);
+    if (!activity) {
+        return NULL;
+    }
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return NULL;
+    }
+
+    eos_activity_set_title(activity, "Sensor Tester");
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+
+    eos_activity_enter(activity);
+    return view;
 }
 
 static void _test_sensor()
 {
-    lv_obj_t *scr = _create_new_scr();
+    lv_obj_t *scr = _create_sensor_test_scr();
+    if (!scr) {
+        return;
+    }
 
     lv_obj_t *list = eos_list_create(scr);
 
     lv_obj_t *tb = lv_table_create(list);
-    lv_table_set_row_count(tb, EOS_SENSOR_NUMBER + 1);
+    lv_table_set_row_count(tb, EOS_SENSOR_TYPE_MAX + 1);
     lv_table_set_column_count(tb, 2);
     lv_obj_set_width(tb, lv_pct(100));
     lv_table_set_cell_value(tb, 0, 0, "Sensor");
@@ -1477,22 +1527,45 @@ static void _test_sensor()
     lv_table_set_column_width(tb, 0, 180);
     lv_table_set_column_width(tb, 1, 180);
 
-    for (int i = 0; i < EOS_SENSOR_NUMBER; i++)
-    {
-        lv_table_set_cell_value(tb, i + 1, 0, eos_lang_get_text(STR_ID_SENSOR_START + 1 + i));
+    _sensor_cleanup(&sensor_data);
+
+    sensor_data.table = tb;
+    sensor_data.sensor_count = 0;
+
+    /* 遍历所有已注册的传感器设备 */
+    eos_dev_sensor_t *dev = eos_dev_sensor_get_list_head();
+    while (dev && sensor_data.sensor_count < EOS_SENSOR_TYPE_MAX) {
+        if (dev->name) {
+            sensor_data.sensors[sensor_data.sensor_count++] = dev;
+            lv_table_set_cell_value(tb, sensor_data.sensor_count, 0, dev->name);
+            lv_table_set_cell_value(tb, sensor_data.sensor_count, 1, "N/A");
+        }
+        dev = dev->_next;
     }
 
-    for (int i = 0; i < EOS_SENSOR_NUMBER; i++)
-    {
-        lv_table_set_cell_value(tb, i + 1, 1, "NaN");
+    if (sensor_data.sensor_count > 0) {
+        lv_table_set_row_count(tb, sensor_data.sensor_count + 1);
     }
 
-    for (int i = 1; i <= EOS_SENSOR_NUMBER; i++)
-    {
-        eos_event_add_cb(tb, _sensor_meas_cb, eos_sensor_get_event_code(i), NULL);
-        EOS_LOG_D("Sensor event add: %d", eos_sensor_get_event_code(i));
-    }
-    eos_sensor_read_async((eos_sensor_type_t)EOS_SENSOR_TYPE_ACCE);
+    sensor_data.timer = lv_timer_create(_sensor_timer_cb, 100, &sensor_data);
+}
+
+static void _test_sensor_refactor_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_sensor_start();
+}
+
+static void _test_sensor_chart_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_sensor_chart_start();
+}
+
+static void _test_sensor_multi_chart_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_sensor_multi_chart_start();
 }
 
 void eos_test_start(void)
@@ -1523,6 +1596,15 @@ void eos_test_start(void)
     // 传感器测试
     btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "SensorTester");
     lv_obj_add_event_cb(btn, _test_sensor, LV_EVENT_CLICKED, NULL);
+    // 传感器重构测试
+    btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "Sensor Refactor Test");
+    lv_obj_add_event_cb(btn, _test_sensor_refactor_cb, LV_EVENT_CLICKED, NULL);
+    // 传感器图表测试
+    btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "Sensor Chart");
+    lv_obj_add_event_cb(btn, _test_sensor_chart_cb, LV_EVENT_CLICKED, NULL);
+    // 多传感器状态图表
+    btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "Multi-Sensor Status");
+    lv_obj_add_event_cb(btn, _test_sensor_multi_chart_cb, LV_EVENT_CLICKED, NULL);
     // 音频播放测试
     btn = lv_list_add_button(test_list, LV_SYMBOL_AUDIO, "Audio Playback");
     lv_obj_add_event_cb(btn, _test_audio_page, LV_EVENT_CLICKED, NULL);

@@ -38,11 +38,13 @@
 #include "eos_font.h"
 #define EOS_LOG_TAG "Core"
 #include "eos_log.h"
-#include "eos_sensor.h"
+#include "eos_service_sensor.h"
 #include "eos_dispatcher.h"
 #include "eos_anim.h"
 #include "eos_control_center.h"
 #include "eos_service_storage.h"
+#include "eos_service_state.h"
+#include "eos_service_battery.h"
 #include "eos_service_pm.h"
 #include "eos_dfw.h"
 #include "eos_app_header.h"
@@ -136,6 +138,8 @@ void eos_init(void)
     eos_crown_init();
     script_engine_init();
     eos_service_config_init();
+    eos_service_state_init();
+    eos_service_battery_init();
     lv_font_t *default_font = eos_font_init();
     if (!default_font)
         _sys_init_err_handler("Failed to initialize default font");

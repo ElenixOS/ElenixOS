@@ -19,7 +19,8 @@ extern "C" {
 #include "eos_storage_paths.h"
 #include "lvgl.h"
 #include "eos_activity.h"
-/* Public macros -----DATA_DIR EOS_WATCHFACE_DIR "wf_data/"
+/* Public macros ----------------------------------------------*/
+#define EOS_WATCHFACE_DATA_DIR EOS_WATCHFACE_DIR "wf_data/"
 #define EOS_WATCHFACE_BUILTIN_FALLBACK_ID "builtin.fallback"
 #define EOS_WATCHFACE_MANIFEST_FILE_NAME "manifest.json"
 #define EOS_WATCHFACE_SNAPSHOT_FILE_NAME "snapshot.bin"

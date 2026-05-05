@@ -23,6 +23,8 @@
 #include "eos_anim.h"
 #include "eos_mem.h"
 #include "eos_activity.h"
+#include "eos_service_time.h"
+#include "eos_event.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _HEADER_HEIGHT 120

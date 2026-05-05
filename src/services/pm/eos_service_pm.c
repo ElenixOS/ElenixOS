@@ -13,6 +13,7 @@
 #define EOS_LOG_TAG "PowerManager"
 #include "eos_log.h"
 #include "eos_service_config.h"
+#include "eos_event.h"
 #include "eos_dev_power.h"
 #include "eos_config.h"
 #include "eos_touch.h"

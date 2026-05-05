@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "eos_config.h"
+#include "eos_service_config.h"
 #include "eos_dev_display.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -43,7 +44,7 @@ void eos_display_set_brightness(uint8_t brightness, eos_display_duration_t durat
         lv_anim_t a;
         lv_anim_init(&a);
         lv_anim_set_var(&a, NULL);
-        lv_anim_set_values(_saved_brightness, brightness);
+        lv_anim_set_values(&a, _saved_brightness, brightness);
         lv_anim_set_time(&a, duration_ms);
         lv_anim_set_exec_cb(&a, _brightness_anim_cb);
         lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);

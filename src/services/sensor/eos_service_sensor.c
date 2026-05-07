@@ -10,8 +10,8 @@
 #include "eos_port_critical.h"
 #include "eos_event.h"
 #include "eos_core.h"
-#define EOS_LOG_TAG "SensorService"
 #define EOS_LOG_DISABLE
+#define EOS_LOG_TAG "SensorService"
 #include "eos_log.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -83,7 +83,7 @@ eos_result_t eos_sensor_subscribe(eos_sensor_type_t type, eos_sensor_data_cb_t c
     inst->subscriber_count++;
 
     if (inst->device) {
-        eos_event_add_global_cb((lv_event_cb_t)cb, eos_dev_sensor_get_event_id(inst->device), user_data);
+        eos_event_subscribe(eos_dev_sensor_get_event_id(inst->device), cb, user_data);
     }
 
     if (inst->sample_period_ms == 0 || min_interval_ms < inst->sample_period_ms) {
@@ -104,7 +104,7 @@ eos_result_t eos_sensor_unsubscribe(eos_sensor_type_t type, eos_sensor_data_cb_t
     eos_sensor_service_instance_t *inst = &_instances[type];
 
     if (inst->device) {
-        eos_event_remove_global_cb_with_user_data(eos_dev_sensor_get_event_id(inst->device), (lv_event_cb_t)cb, user_data);
+        eos_event_unsubscribe_with_user_data(eos_dev_sensor_get_event_id(inst->device), cb, user_data);
     }
 
     if (inst->subscriber_count > 0) {
@@ -185,5 +185,5 @@ void eos_sensor_notify(eos_sensor_type_t type, const eos_sensor_data_t *data, ui
 
     EOS_LOG_I("eos_sensor_notify: type=%d, timestamp=%d", type, timestamp);
 
-    eos_event_broadcast(eos_dev_sensor_get_event_id(inst->device), &inst->latest_data);
+    eos_event_post(eos_dev_sensor_get_event_id(inst->device), &inst->latest_data, NULL);
 }

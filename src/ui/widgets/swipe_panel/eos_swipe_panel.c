@@ -8,7 +8,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "SwipePanel"
 #include "eos_log.h"
 #include "eos_event.h"
@@ -379,7 +378,7 @@ eos_swipe_panel_t *eos_swipe_panel_create(lv_obj_t *parent)
     sp->sw->target = DIR_DOWN_SHOW_TARGET_COORD;
     eos_swipe_panel_set_dir(sp, EOS_SWIPE_DIR_DOWN);
 
-    lv_obj_add_event_cb(sp->sw->touch_obj, _slide_widget_move_done_cb, EOS_EVENT_SLIDE_WIDGET_DONE, sp->sw);
+    eos_slide_widget_add_event_cb_done(sp->sw, _slide_widget_move_done_cb, sp->sw);
 
     lv_obj_remove_flag(parent, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_remove_flag(sp->swipe_obj, LV_OBJ_FLAG_SCROLLABLE);

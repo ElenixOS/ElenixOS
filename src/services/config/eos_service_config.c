@@ -48,7 +48,7 @@ static eos_result_t _eos_config_save_and_broadcast(cJSON *root)
     cJSON_Delete(root);
 
     if (ret == EOS_OK) {
-        eos_event_broadcast(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
+        eos_event_post(EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL, NULL);
     }
 
     return ret;
@@ -169,16 +169,9 @@ eos_result_t _create_default_cfg_json(const char *path)
     if (app_order_array)
         cJSON_AddItemToObject(root, EOS_CONFIG_KEY_APP_ORDER_ARRAY, app_order_array);
 
-    char *json_str = cJSON_PrintUnformatted(root);
-    if (!json_str)
-    {
-        cJSON_Delete(root);
-        return EOS_ERR_JSON_ERROR;
-    }
+    // 使用 storage 服务的 JSON 接口保存文件
+    eos_result_t ret = eos_storage_json_save(path, root);
 
-    eos_result_t ret = eos_storage_create_file_if_not_exist(path, json_str);
-
-    cJSON_free(json_str);
     cJSON_Delete(root);
 
     return ret;
@@ -202,18 +195,30 @@ void eos_service_config_init()
     eos_storage_mkdir_if_not_exist(EOS_SYS_RES_IMG_DIR);
     eos_storage_mkdir_if_not_exist(EOS_SYS_RES_FONT_DIR);
 
-    eos_file_t fp = eos_fs_open_read(EOS_CONFIG_FILE_PATH);
-    uint32_t size = 0;
-    eos_fs_size(fp, &size);
-    eos_fs_close(fp);
-
-    if ((!eos_storage_is_file(EOS_CONFIG_FILE_PATH)) || size == 0)
+    // 使用 storage 服务的 JSON 接口检查并创建默认配置文件
+    if (!eos_storage_is_file(EOS_CONFIG_FILE_PATH))
     {
-        eos_fs_remove(EOS_CONFIG_FILE_PATH);
         if (_create_default_cfg_json(EOS_CONFIG_FILE_PATH) != EOS_OK)
         {
             EOS_LOG_E("Create default config json failed");
             EOS_ASSERT(0);
+        }
+    }
+    else
+    {
+        // 检查配置文件是否有效
+        cJSON *root = eos_storage_json_load(EOS_CONFIG_FILE_PATH);
+        if (!root)
+        {
+            if (_create_default_cfg_json(EOS_CONFIG_FILE_PATH) != EOS_OK)
+            {
+                EOS_LOG_E("Create default config json failed");
+                EOS_ASSERT(0);
+            }
+        }
+        else
+        {
+            cJSON_Delete(root);
         }
     }
 
@@ -232,7 +237,7 @@ void eos_service_config_init()
     uint8_t brightness = (uint8_t)eos_config_get_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, 50);
     if (brightness < EOS_DISPLAY_BRIGHTNESS_MIN || brightness > EOS_DISPLAY_BRIGHTNESS_MAX)
         brightness = 50;
-    eos_display_set_brightness(brightness, EOS_DISPLAY_DURATION_OFF);
+    eos_display_set_brightness(brightness, EOS_DISPLAY_DURATION_OFF, false);
     EOS_LOG_I("Display brightness set: %d", brightness);
 
     bool mute = eos_config_get_bool(EOS_CONFIG_KEY_MUTE_BOOL, false);

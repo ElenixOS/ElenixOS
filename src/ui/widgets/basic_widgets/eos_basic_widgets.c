@@ -620,6 +620,7 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     lv_obj_t *button = g_list_transition_state.button;
     if (!(list_view && list && button))
     {
+        EOS_LOG_W("list_transition_play: invalid objects detected, skipping animation");
         return;
     }
 
@@ -1206,9 +1207,9 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
 
 /************************** Arbitrary Corner Radius **************************/
 
-static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
+static void _corner_radius_buffer_free(void *user_data)
 {
-    lv_image_dsc_t *dsc = lv_event_get_user_data(e);
+    lv_image_dsc_t *dsc = user_data;
     EOS_CHECK_PTR_RETURN(dsc);
     if (dsc->data)
     {
@@ -1217,6 +1218,18 @@ static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
     }
     eos_free(dsc);
     EOS_LOG_I("Rounded corner buffer cleared");
+}
+
+static void _obj_corner_radius_canvas_buffer_delete_cb(lv_event_t *e)
+{
+    lv_image_dsc_t *dsc = lv_event_get_user_data(e);
+    _corner_radius_buffer_free(dsc);
+}
+
+static void _obj_corner_radius_canvas_buffer_delete_eos_cb(eos_event_t *e)
+{
+    lv_image_dsc_t *dsc = eos_event_get_user_data(e);
+    _corner_radius_buffer_free(dsc);
 }
 
 void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
@@ -1344,22 +1357,23 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
     lv_obj_set_style_radius(obj, 0, 0);
 
     // If this object has previously been set with a corner radius background, release the old image buffer first.
-    lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
+    eos_event_post(EOS_EVENT_ROUNDED_CORNER_DELETE, NULL, obj);
 
     // Remove old event callback (if exists)
     lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);
+    eos_event_unsubscribe(EOS_EVENT_ROUNDED_CORNER_DELETE, _obj_corner_radius_canvas_buffer_delete_eos_cb);
 
-    // Add new event callback
-    if (
-        (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
-                             LV_EVENT_DELETE, dsc) == NULL) ||
-        (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
-                             EOS_EVENT_ROUNDED_CORNER_DELETE, dsc) == NULL))
+    // Add new event callback for LV_EVENT_DELETE
+    if (lv_obj_add_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb,
+                             LV_EVENT_DELETE, dsc) == NULL)
     {
         eos_free(dsc);
         eos_free(canvas_buf);
         return;
     }
+
+    // Add new event callback for EOS_EVENT_ROUNDED_CORNER_DELETE
+    eos_event_subscribe_ex(EOS_EVENT_ROUNDED_CORNER_DELETE, _obj_corner_radius_canvas_buffer_delete_eos_cb, dsc, obj);
 
     lv_obj_set_style_bg_image_src(obj, dsc, 0);
 }
@@ -1367,8 +1381,9 @@ void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners,
 void eos_obj_remove_corner_radius_bg(lv_obj_t *obj)
 {
     EOS_CHECK_PTR_RETURN(obj);
-    lv_obj_send_event(obj, EOS_EVENT_ROUNDED_CORNER_DELETE, NULL);
+    eos_event_post(EOS_EVENT_ROUNDED_CORNER_DELETE, NULL, obj);
     lv_obj_remove_event_cb(obj, _obj_corner_radius_canvas_buffer_delete_cb);
+    eos_event_unsubscribe(EOS_EVENT_ROUNDED_CORNER_DELETE, _obj_corner_radius_canvas_buffer_delete_eos_cb);
     lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_image_src(obj, NULL, 0);
     lv_obj_set_style_radius(obj, 0, 0);

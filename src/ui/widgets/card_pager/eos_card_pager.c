@@ -690,11 +690,9 @@ eos_card_pager_t *eos_card_pager_create(lv_obj_t *parent, eos_card_pager_dir_t d
     lv_obj_t *shared_touch = cp->sw1->touch_obj;
     lv_obj_add_event_cb(shared_touch, _sw1_pressed_cb, LV_EVENT_PRESSED, cp);
 
-    lv_obj_add_event_cb(shared_touch, _shared_touch_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, cp);
-
-    lv_obj_add_event_cb(shared_touch, _sw1_reachd_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, cp);
-
-    lv_obj_add_event_cb(shared_touch, _sw1_reverted_cb, EOS_EVENT_SLIDE_WIDGET_REVERTED, cp);
+    eos_slide_widget_add_event_cb_moving(cp->sw1, _shared_touch_moving_cb, cp);
+    eos_slide_widget_add_event_cb_reached_threshold(cp->sw1, _sw1_reachd_threshold_cb, cp);
+    eos_slide_widget_add_event_cb_reverted(cp->sw1, _sw1_reverted_cb, cp);
 
     lv_obj_move_foreground(cp->indicator_container);
     return cp;

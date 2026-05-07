@@ -104,7 +104,7 @@ typedef struct
 
 /* Function Implementations -----------------------------------*/
 static void _app_list_icon_clicked_cb(lv_event_t *e);
-static void _app_installed_cb(lv_event_t *e);
+static void _app_installed_cb(eos_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_refresh(lv_obj_t *bubble_grid);
 static void _app_list_open_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *from, eos_activity_t *to);
@@ -902,9 +902,9 @@ static void _app_list_close_app_anim_cb(lv_anim_timeline_t *at, eos_activity_t *
 /**
  * @brief This callback is automatically called when an app is installed to display the new app
  */
-static void _app_installed_cb(lv_event_t *e)
+static void _app_installed_cb(eos_event_t *e)
 {
-    lv_obj_t *bubble_grid = lv_event_get_user_data(e);
+    lv_obj_t *bubble_grid = eos_event_get_obj(e);
     EOS_CHECK_PTR_RETURN(bubble_grid);
     _app_list_refresh(bubble_grid);
 }
@@ -913,7 +913,7 @@ static void _container_delete_cb(lv_event_t *e)
 {
     lv_obj_t *bubble_grid = lv_event_get_target(e);
     EOS_CHECK_PTR_RETURN(bubble_grid);
-    eos_event_remove_cb(bubble_grid, EOS_EVENT_APP_INSTALLED, _app_installed_cb);
+    eos_event_unsubscribe_with_obj(EOS_EVENT_APP_INSTALLED, _app_installed_cb, bubble_grid);
 }
 
 void eos_app_list_enter(void)
@@ -951,7 +951,7 @@ void eos_app_list_enter(void)
 
     // Set callback
     lv_obj_add_event_cb(bubble_grid, _container_delete_cb, LV_EVENT_DELETE, NULL);
-    eos_event_add_cb(bubble_grid, _app_installed_cb, EOS_EVENT_APP_INSTALLED, (void *)bubble_grid);
+    eos_event_subscribe_ex(EOS_EVENT_APP_INSTALLED, _app_installed_cb, NULL, bubble_grid);
 
     // Refresh app list
     _app_list_refresh(bubble_grid);

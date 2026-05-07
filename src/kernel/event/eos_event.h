@@ -1,6 +1,6 @@
 /**
  * @file eos_event.h
- * @brief Event system
+ * @brief Event broadcast system - global broadcast using event ID as index
  */
 
 #ifndef EOS_EVENT_H
@@ -14,95 +14,106 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
-#include "eos_event_def.h"
+
 /* Public macros ----------------------------------------------*/
 
+#define EOS_EVENT_MAX (UINT32_MAX)
+
 /* Public typedefs --------------------------------------------*/
+
+/**
+ * @brief Event structure (private, opaque to users)
+ */
+typedef struct _eos_event_t eos_event_t;
+
+/**
+ * @brief Event callback function type
+ * @param e Event structure
+ */
+typedef void (*eos_event_cb_t)(eos_event_t *e);
 
 /**
  * @brief Event type definitions
  * @note New events can be added here
  */
-enum
+typedef enum
 {
-    EOS_EVENT_BASE = LV_EVENT_LAST,
-    EOS_EVENT_UNKNOWN = EOS_EVENT_BASE,
-    EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD,   /**< Slide exceeded threshold */
-    EOS_EVENT_SLIDE_WIDGET_REVERTED,            /**< Slide auto-reverted without exceeding threshold */
-    EOS_EVENT_SLIDE_WIDGET_MOVING,              /**< Triggered during sliding (including manual sliding and animation) */
-    EOS_EVENT_SLIDE_WIDGET_DONE,                /**< Slide completed */
-    EOS_EVENT_SLIDE_WIDGET_OPENED,              /**< Slide widget has been pulled out (global broadcast) */
-    EOS_EVENT_SLIDE_WIDGET_CLOSED,              /**< Slide widget has been pulled back (global broadcast) */
+    EOS_EVENT_UNKNOWN = 0,
     EOS_EVENT_APP_UNINSTALLED,                  /**< Application has been uninstalled */
     EOS_EVENT_APP_INSTALLED,                    /**< Application has been installed */
     EOS_EVENT_SYSTEM_SLEEP,                     /**< System entered sleep mode */
     EOS_EVENT_SYSTEM_DISPLAY_ON,                /**< System has been awakened */
     EOS_EVENT_SYSTEM_DISPLAY_AOD,               /**< Screen always-on mode has been activated */
     EOS_EVENT_SYSTEM_CONFIG_UPDATE,             /**< Configuration file has been updated */
-    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< Remove rounded corners, see `eos_obj_set_corner_radius_bg()` */
     EOS_EVENT_SCRIPT_STARTED,                   /**< Script has started */
     EOS_EVENT_SCRIPT_EXITED,                    /**< Script has exited */
     EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity page transition completed, param is current activity view */
-    /* Add new events here */
-    EOS_EVENT_SENSOR_REPORT_START,     /**< Used for sensor event sequence alignment   */
-    EOS_EVENT_SENSOR_REPORT_ACCE,      /**< Accelerometer sensor           */
-    EOS_EVENT_SENSOR_REPORT_GYRO,      /**< Gyroscope sensor             */
-    EOS_EVENT_SENSOR_REPORT_MAG,       /**< Magnetometer sensor              */
-    EOS_EVENT_SENSOR_REPORT_TEMP,      /**< Temperature sensor             */
-    EOS_EVENT_SENSOR_REPORT_HUMI,      /**< Relative humidity sensor          */
-    EOS_EVENT_SENSOR_REPORT_BARO,      /**< Barometric pressure sensor              */
-    EOS_EVENT_SENSOR_REPORT_LIGHT,     /**< Ambient light sensor            */
-    EOS_EVENT_SENSOR_REPORT_PROXIMITY, /**< Proximity sensor              */
-    EOS_EVENT_SENSOR_REPORT_HR,        /**< Heart rate sensor              */
-    EOS_EVENT_SENSOR_REPORT_TVOC,      /**< TOVC sensor             */
-    EOS_EVENT_SENSOR_REPORT_NOISE,     /**< Noise sensor             */
-    EOS_EVENT_SENSOR_REPORT_STEP,      /**< Step counter sensor             */
-    EOS_EVENT_SENSOR_REPORT_FORCE,     /**< Force sensor               */
-    EOS_EVENT_SENSOR_REPORT_BAT,       /**< Battery level sensor          */
-    EOS_EVENT_SENSOR_REPORT_END,       /**< Used for sensor event sequence alignment   */
+    EOS_EVENT_LANGUAGE_CHANGED,                 /**< Language has been changed */
+    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< Rounded corner canvas buffer delete event */
     EOS_EVENT_LAST
-};
-
-#if EOS_EVENT_LAST >= EOS_EVENT_USER_BASE
-#error "EOS_EVENT_LAST exceeds EOS_EVENT_USER_BASE, please adjust the event code definitions!"
-#endif
+} eos_event_code_t;
 
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief Add event callback
- * @param obj Object pointer (callback will be automatically removed when object is deleted)
- * @param event Event type
- * @param cb Callback function
- * @param user_data User data
- * @note lv_event_code_t is compatible with lv_event_code_t, so event code can be passed directly.
- * Example:
- *
- * `eos_event_add_cb(obj,cb,LV_EVENT_ALL,NULL);`
- *
- * `eos_event_add_cb(obj,cb,EOS_EVENT_APP_INSTALLED,NULL);`
- *
+ * @brief Get event ID for user-defined events
+ * @return New event ID starting from EOS_EVENT_LAST
  */
-void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data);
+eos_event_code_t eos_event_register_id(void);
 
 /**
- * @brief Remove event callback
- * - If not broadcasting: immediately remove from linked list and release, also call lv_obj_remove_event_cb
- * - If currently broadcasting: mark for deletion (deferred cleanup)
- * @param obj Object pointer
- * @param event Event type
- * @param cb Callback function
+ * @brief Subscribe to an event (basic version without lv_obj)
+ * @param event_id Event ID to subscribe
+ * @param cb Callback function to be called when event occurs
+ * @param user_data User data passed to callback
  */
-void eos_event_remove_cb(lv_obj_t *obj, lv_event_code_t event, lv_event_cb_t cb);
+void eos_event_subscribe(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data);
 
 /**
- * @brief Broadcast event
- * - Supports nested broadcasting
- * - During broadcast, when object or node is deleted, only mark it, and clean up uniformly after broadcast ends
- * @param event Event type to broadcast
+ * @brief Subscribe to an event with lv_obj association
+ * @param event_id Event ID to subscribe
+ * @param cb Callback function to be called when event occurs
+ * @param user_data User data passed to callback
+ * @param obj lv_obj associated with this subscription (can be NULL, used as payload only)
+ */
+void eos_event_subscribe_ex(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data, lv_obj_t *obj);
+
+/**
+ * @brief Post/Publish an event
+ * @param event_id Event ID to post
  * @param param Event parameter
+ * @param obj Event target object (can be NULL)
  */
-void eos_event_broadcast(lv_event_code_t event, void *param);
+void eos_event_post(eos_event_code_t event_id, void *param, lv_obj_t *obj);
+
+/**
+ * @brief Unsubscribe from an event
+ * @param event_id Event ID
+ * @param cb Callback function to remove
+ */
+void eos_event_unsubscribe(eos_event_code_t event_id, eos_event_cb_t cb);
+
+/**
+ * @brief Unsubscribe from an event with user_data distinction
+ * @param event_id Event ID
+ * @param cb Callback function to remove
+ * @param user_data User data to match
+ */
+void eos_event_unsubscribe_with_user_data(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data);
+
+/**
+ * @brief Unsubscribe all registrations for a specific callback
+ * @param cb Callback function
+ */
+void eos_event_unsubscribe_all(eos_event_cb_t cb);
+
+/**
+ * @brief Unsubscribe from an event with obj distinction
+ * @param event_id Event ID
+ * @param cb Callback function to remove
+ * @param obj Event target object to match
+ */
+void eos_event_unsubscribe_with_obj(eos_event_code_t event_id, eos_event_cb_t cb, lv_obj_t *obj);
 
 /**
  * @brief Allow active cleanup to be triggered externally (e.g., called during system idle)
@@ -110,35 +121,26 @@ void eos_event_broadcast(lv_event_code_t event, void *param);
 void eos_event_cleanup_now(void);
 
 /**
- * @brief Add global callback
- * @param cb Callback function
- * @param event Event type
- * @param user_data User data
+ * @brief Get user_data from event
+ * @param e Event structure
+ * @return user_data
  */
-void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user_data);
+void *eos_event_get_user_data(eos_event_t *e);
+
 /**
- * @brief Remove specified callback function under specified event
- * @param event Event type
- * @param cb Callback function
+ * @brief Get param from event
+ * @param e Event structure
+ * @return param
  */
-void eos_event_remove_global_cb(lv_event_code_t event, lv_event_cb_t cb);
+void *eos_event_get_param(eos_event_t *e);
+
 /**
- * @brief Remove specified callback function under specified event (distinguished by user_data)
- * @param event Event type
- * @param cb Callback function
- * @param user_data User data, used to distinguish different registrations of the same callback
+ * @brief Get obj from event
+ * @param e Event structure
+ * @return obj (can be NULL)
  */
-void eos_event_remove_global_cb_with_user_data(lv_event_code_t event, lv_event_cb_t cb, void *user_data);
-/**
- * @brief Remove all event registrations for specified global callback function
- * @param cb Callback function
- */
-void eos_event_remove_all_global_cbs(lv_event_cb_t cb);
-/**
- * @brief Register a new event ID for user-defined events
- * @return lv_event_code_t
- */
-lv_event_code_t eos_event_register_id(void);
+lv_obj_t *eos_event_get_obj(eos_event_t *e);
+
 #ifdef __cplusplus
 }
 #endif

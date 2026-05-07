@@ -16,7 +16,7 @@ extern "C" {
 #include "eos_error.h"
 #include "eos_dev_sensor.h"
 #include "eos_fifo.h"
-#include "lvgl.h"
+#include "eos_event.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -27,7 +27,7 @@ extern "C" {
 /**
  * @brief Sensor data callback function
  */
-typedef lv_event_cb_t eos_sensor_data_cb_t;
+typedef eos_event_cb_t eos_sensor_data_cb_t;
 
 /**
  * @brief Sensor service instance structure

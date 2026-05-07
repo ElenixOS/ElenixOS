@@ -200,6 +200,91 @@ eos_result_t eos_storage_mkdir_recursive(const char *path);
  */
 eos_result_t eos_storage_rm_recursive(const char *path);
 
+/************************** File Handle API **************************/
+
+/**
+ * @brief Open file for reading with path validation
+ * @param path File path
+ * @return File handle or EOS_FILE_INVALID on failure
+ */
+eos_file_t eos_storage_file_open_read(const char *path);
+
+/**
+ * @brief Open file for writing with path validation
+ * @param path File path
+ * @return File handle or EOS_FILE_INVALID on failure
+ */
+eos_file_t eos_storage_file_open_write(const char *path);
+
+/**
+ * @brief Close file handle
+ * @param fp File handle
+ */
+void eos_storage_file_close(eos_file_t fp);
+
+/**
+ * @brief Seek to offset in file
+ * @param fp File handle
+ * @param offset Offset to seek to
+ * @return 0 on success, negative error code on failure
+ */
+int eos_storage_file_seek(eos_file_t fp, uint32_t offset);
+
+/**
+ * @brief Read data from file
+ * @param fp File handle
+ * @param buf Buffer to read into
+ * @param size Number of bytes to read
+ * @return Number of bytes read, or negative error code
+ */
+ssize_t eos_storage_file_read(eos_file_t fp, void *buf, size_t size);
+
+/**
+ * @brief Write data to file
+ * @param fp File handle
+ * @param buf Buffer to write from
+ * @param size Number of bytes to write
+ * @return Number of bytes written, or negative error code
+ */
+ssize_t eos_storage_file_write(eos_file_t fp, const void *buf, size_t size);
+
+/**
+ * @brief Get file size
+ * @param fp File handle
+ * @param size Output pointer for file size
+ * @return 0 on success, negative error code on failure
+ */
+int eos_storage_file_size(eos_file_t fp, uint32_t *size);
+
+/**
+ * @brief Remove file with path validation
+ * @param path File path
+ * @return 0 on success, negative error code on failure
+ */
+int eos_storage_file_remove(const char *path);
+
+/**
+ * @brief Open directory with path validation
+ * @param path Directory path
+ * @return Directory handle or NULL on failure
+ */
+eos_dir_t eos_storage_dir_open(const char *path);
+
+/**
+ * @brief Read directory entry
+ * @param dir Directory handle
+ * @param name_buf Buffer to store entry name
+ * @param buf_size Size of buffer
+ * @return 0 on success, negative error code on failure
+ */
+int eos_storage_dir_read(eos_dir_t dir, char *name_buf, size_t buf_size);
+
+/**
+ * @brief Close directory handle
+ * @param dir Directory handle
+ */
+void eos_storage_dir_close(eos_dir_t dir);
+
 #ifdef __cplusplus
 }
 #endif

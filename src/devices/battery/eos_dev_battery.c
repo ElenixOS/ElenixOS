@@ -25,10 +25,9 @@ static eos_dev_battery_t _battery_dev = {0};
  * @brief Register battery device operations
  *
  * @param ops Pointer to battery device operations structure
- * @param design_capacity_mah Battery design capacity in mAh
  * @return None
  */
-void eos_dev_battery_register(const eos_battery_dev_ops_t *ops, uint16_t design_capacity_mah)
+void eos_dev_battery_register(const eos_battery_dev_ops_t *ops, eos_charge_mAh_t design_capacity)
 {
     if (!ops) {
         EOS_LOG_E("Register failed: ops is NULL");
@@ -40,14 +39,16 @@ void eos_dev_battery_register(const eos_battery_dev_ops_t *ops, uint16_t design_
         return;
     }
 
-    if (!ops->get_percent && !ops->get_voltage_mv) {
-        EOS_LOG_E("Register failed: need at least get_percent or get_voltage_mv");
-        return;
-    }
-
     _battery_dev.ops = *ops;
-    _battery_dev.design_capacity_mah = design_capacity_mah;
-    EOS_LOG_I("Battery device registered, design capacity: %u mAh", design_capacity_mah);
+    _battery_dev.design_capacity = design_capacity;
+
+    if(design_capacity != EOS_BATTERY_CAPACITY_UNDEFINED)
+    {
+        EOS_LOG_I("Battery device registered, design capacity: %d mAh", design_capacity);
+    }else
+    {
+        EOS_LOG_E("Battery device registered with undefined design capacity");
+    }
 }
 
 eos_dev_battery_t *eos_dev_battery_get_instance(void)

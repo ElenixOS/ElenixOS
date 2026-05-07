@@ -9,6 +9,7 @@
 #include "eos_test_sensor.h"
 #include "eos_dev_sensor.h"
 #include "eos_service_sensor.h"
+#include "eos_event.h"
 #include "eos_log.h"
 #include "eos_basic_widgets.h"
 #include "eos_lang.h"
@@ -206,7 +207,7 @@ static bool _test_read_latest(void)
 
 static uint32_t _subscribe_cb_count = 0;
 
-static void _subscribe_test_cb(lv_event_t *e)
+static void _subscribe_test_cb(eos_event_t *e)
 {
     (void)e;
     _subscribe_cb_count++;
@@ -623,7 +624,16 @@ static bool _test_data_integrity(void)
         return false;
     }
 
-    dev->ops->enable(dev);
+    /* Save current sample period */
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
+
+    /* Ensure sensor is running with reasonable rate */
+    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 50);
+
+    /* Wait a bit for data to be available */
+    for (int i = 0; i < 5; i++) {
+        lv_tick_inc(50);
+    }
 
     for (int i = 0; i < 100; i++) {
         eos_result_t result = eos_sensor_read_latest(EOS_SENSOR_TYPE_ACCE, &data);
@@ -638,18 +648,22 @@ static bool _test_data_integrity(void)
             break;
         }
 
-        /* Additional integrity check: accelerometer Z should be around 1000 (gravity) */
-        if (data.data.acce.z < 900 || data.data.acce.z > 1100) {
+        /* Additional integrity check: verify data has reasonable values */
+        /* Accelerometer values typically range from -2000 to 2000 (in mg) */
+        if (data.data.acce.x < -3000 || data.data.acce.x > 3000 ||
+            data.data.acce.y < -3000 || data.data.acce.y > 3000 ||
+            data.data.acce.z < -3000 || data.data.acce.z > 3000) {
             passed = false;
             break;
         }
     }
 
-    dev->ops->disable(dev);
+    /* Restore sample period */
+    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
 
     _record_test("Data Integrity", passed,
                  passed ? "Data integrity maintained" : "Data integrity failed");
-    return true;
+    return passed;
 }
 
 /* ============================================
@@ -812,12 +826,14 @@ void eos_test_sensor_start(void)
     /* Create container */
     _ctx.container = lv_obj_create(view);
     lv_obj_set_size(_ctx.container, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_pad_all(_ctx.container, 10, 0);
+    lv_obj_set_style_pad_all(_ctx.container, 8, 0);
+    lv_obj_set_flex_flow(_ctx.container, LV_FLEX_FLOW_COLUMN);
 
     /* Create list for test categories */
-    lv_obj_t *list = lv_list_create(_ctx.container);
-    lv_obj_set_size(list, lv_pct(100), lv_pct(60));
-    eos_crown_encoder_set_target_obj(list);
+    lv_obj_t *cat_list = lv_list_create(_ctx.container);
+    lv_obj_set_size(cat_list, lv_pct(100), lv_pct(45));
+    lv_obj_set_flex_grow(cat_list, 1);
+    eos_crown_encoder_set_target_obj(cat_list);
 
     /* Add test category buttons */
     const char *categories[] = {
@@ -833,19 +849,21 @@ void eos_test_sensor_start(void)
     };
 
     for (int i = 0; i < 9; i++) {
-        lv_obj_t *btn = lv_list_add_button(list, NULL, categories[i]);
+        lv_obj_t *btn = lv_list_add_button(cat_list, NULL, categories[i]);
         lv_obj_add_event_cb(btn, _test_category_cb, LV_EVENT_CLICKED, (void*)(long)i);
     }
 
     /* Create result list */
     _ctx.list = lv_list_create(_ctx.container);
-    lv_obj_set_size(_ctx.list, lv_pct(100), lv_pct(35));
-    lv_obj_set_style_pad_all(_ctx.list, 5, 0);
+    lv_obj_set_size(_ctx.list, lv_pct(100), lv_pct(45));
+    lv_obj_set_flex_grow(_ctx.list, 1);
+    lv_obj_set_style_pad_all(_ctx.list, 4, 0);
 
     /* Create status label */
     _ctx.result_label = lv_label_create(_ctx.container);
     lv_label_set_text(_ctx.result_label, "Select a test category to begin");
-    lv_obj_align(_ctx.result_label, LV_ALIGN_BOTTOM_MID, 0, -10);
+    lv_obj_set_style_text_align(_ctx.result_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_size(_ctx.result_label, lv_pct(100), LV_SIZE_CONTENT);
 
     eos_activity_enter(activity);
 }

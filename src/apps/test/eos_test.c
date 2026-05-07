@@ -39,6 +39,9 @@
 #include "sensor/eos_test_sensor.h"
 #include "sensor/eos_test_sensor_chart.h"
 #include "sensor/eos_test_sensor_multi_chart.h"
+#include "event/eos_test_event.h"
+#include "battery/eos_test_battery_history.h"
+#include "package/eos_test_package.h"
 #include "eos_crown.h"
 #include "eos_app_header.h"
 #include "eos_service_storage.h"
@@ -268,8 +271,9 @@ static void _test_app_debug_destroy_bar(void)
 }
 
 static void _test_app_debug_create_bar(void);
+static void _test_app_debug_app_installed_cb(eos_event_t *e);
 
-static void _test_app_debug_script_exited_cb(lv_event_t *e)
+static void _test_app_debug_script_exited_cb(eos_event_t *e)
 {
     LV_UNUSED(e);
 
@@ -306,8 +310,8 @@ static void _test_app_debug_register_global_cb(void)
     // eos_event_add_global_cb(_test_app_debug_global_screen_loaded_cb,
     //                         EOS_EVENT_GLOBAL_SCREEN_LOADED,
     //                         NULL);
-    eos_event_add_global_cb(_test_app_debug_script_exited_cb,
-                            EOS_EVENT_SCRIPT_EXITED,
+    eos_event_subscribe(EOS_EVENT_SCRIPT_EXITED,
+                            _test_app_debug_script_exited_cb,
                             NULL);
     s_test_app_debug.global_cb_registered = true;
 }
@@ -317,8 +321,8 @@ static void _test_app_debug_unregister_global_cb(void)
     if (!s_test_app_debug.global_cb_registered)
         return;
 
-    eos_event_remove_all_global_cbs(_test_app_debug_global_screen_loaded_cb);
-    eos_event_remove_all_global_cbs(_test_app_debug_script_exited_cb);
+    eos_event_unsubscribe_all(_test_app_debug_script_exited_cb);
+    eos_event_unsubscribe(EOS_EVENT_APP_INSTALLED, _test_app_debug_app_installed_cb);
     eos_event_cleanup_now();
     s_test_app_debug.global_cb_registered = false;
 }
@@ -665,10 +669,10 @@ static void _test_app_debug_app_btn_create(lv_obj_t *parent, const char *app_id)
     eos_pkg_free(&pkg);
 }
 
-static void _test_app_debug_app_installed_cb(lv_event_t *e)
+static void _test_app_debug_app_installed_cb(eos_event_t *e)
 {
-    lv_obj_t *parent = lv_event_get_target(e);
-    const char *installed_app_id = lv_event_get_param(e);
+    lv_obj_t *parent = eos_event_get_user_data(e);
+    const char *installed_app_id = eos_event_get_param(e);
     EOS_CHECK_PTR_RETURN(parent && installed_app_id);
 
     _test_app_debug_app_btn_create(parent, installed_app_id);
@@ -764,7 +768,7 @@ static void _test_app_debugger(void)
     lv_obj_t *app_list = lv_list_create(scr);
     lv_obj_set_width(app_list, lv_pct(100));
     lv_obj_set_flex_grow(app_list, 1);
-    eos_event_add_cb(app_list, _test_app_debug_app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
+    eos_event_subscribe_ex(EOS_EVENT_APP_INSTALLED, _test_app_debug_app_installed_cb, app_list, NULL);
 
     size_t app_list_size = eos_app_get_installed();
     for (size_t i = 0; i < app_list_size; i++)
@@ -805,9 +809,9 @@ static void _test_msg_list_cb(lv_event_t *e)
                     "You're not a varsity athlete the first time "
                     "you play a new sport.";
 
-    // 添加消息项
+    // Add a new message item
     eos_msg_list_item_t *item = eos_msg_list_item_create(msg_list);
-    // 设置内容
+    // Set the content
     eos_msg_list_item_set_title(item, "Settings");
     eos_msg_list_item_set_msg(item, message);
     eos_msg_list_item_set_time(item, "12:30");
@@ -1008,24 +1012,24 @@ static void _test_image_input_cb(lv_event_t *e)
 
     if (code == LV_EVENT_CLICKED)
     {
-        // 点击文本框时显示键盘
+        // Click the text box to display the keyboard
         lv_obj_remove_flag(kb, LV_OBJ_FLAG_HIDDEN);
     }
     else if (code == LV_EVENT_READY || code == LV_EVENT_DEFOCUSED)
     {
-        // 按下确认键或失去焦点时处理
+        // Process when the confirm key is pressed or the focus is lost
         const char *path = lv_textarea_get_text(ta);
 
         if (strlen(path) > 0)
         {
-            // 设置图片源
+            // Set image source
             eos_img_set_src(img, path);
 
-            // 清除文本框内容
+            // Clear text box content
             lv_textarea_set_text(ta, "");
         }
 
-        // 隐藏键盘
+        // Hide keyboard
         lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
     }
 }
@@ -1297,7 +1301,7 @@ static lv_obj_t *_add_slide_wdiget(lv_obj_t *parent)
 
     eos_slide_widget_t *sw = eos_slide_widget_create_with_touch(obj, obj, EOS_SLIDE_DIR_HOR, EOS_DISPLAY_WIDTH, EOS_THRESHOLD_30);
     eos_slide_widget_set_bidirectional(sw, true);
-    lv_obj_add_event_cb(sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, sw);
+    eos_slide_widget_add_event_cb_reached_threshold(sw, _slide_widget_reached_threshold_cb, sw);
 
     return obj;
 }
@@ -1326,7 +1330,7 @@ static void _test_slide_widget()
     // lv_obj_t *label = lv_label_create(reset_btn);
     // lv_obj_align(reset_btn, LV_ALIGN_BOTTOM_MID, 0, -40);
     // lv_obj_add_event_cb(reset_btn, _slide_widget_reset_btn_clicked_cb, LV_EVENT_CLICKED, obj);
-    // lv_obj_add_event_cb(sw->touch_obj, _slide_widget_moving_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, label);
+    // eos_slide_widget_add_event_cb_moving(sw, _slide_widget_moving_cb, label);
 }
 
 static void _test_font_size()
@@ -1568,6 +1572,24 @@ static void _test_sensor_multi_chart_cb(lv_event_t *e)
     eos_test_sensor_multi_chart_start();
 }
 
+static void _test_event_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_event_start();
+}
+
+static void _test_battery_history_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_battery_history_start();
+}
+
+static void _test_package_cb(lv_event_t *e)
+{
+    (void)e;
+    eos_test_package_start();
+}
+
 void eos_test_start(void)
 {
     eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
@@ -1605,6 +1627,15 @@ void eos_test_start(void)
     // 多传感器状态图表
     btn = lv_list_add_button(test_list, RI_SENSOR_LINE, "Multi-Sensor Status");
     lv_obj_add_event_cb(btn, _test_sensor_multi_chart_cb, LV_EVENT_CLICKED, NULL);
+    // 事件系统测试
+    btn = lv_list_add_button(test_list, RI_BUG_LINE, "Event System Test");
+    lv_obj_add_event_cb(btn, _test_event_cb, LV_EVENT_CLICKED, NULL);
+    // 电池历史图表测试
+    btn = lv_list_add_button(test_list, RI_BATTERY_FILL, "Battery History");
+    lv_obj_add_event_cb(btn, _test_battery_history_cb, LV_EVENT_CLICKED, NULL);
+    // 插件安装测试
+    btn = lv_list_add_button(test_list, LV_SYMBOL_FILE, "Package Installer");
+    lv_obj_add_event_cb(btn, _test_package_cb, LV_EVENT_CLICKED, NULL);
     // 音频播放测试
     btn = lv_list_add_button(test_list, LV_SYMBOL_AUDIO, "Audio Playback");
     lv_obj_add_event_cb(btn, _test_audio_page, LV_EVENT_CLICKED, NULL);

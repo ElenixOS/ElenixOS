@@ -97,7 +97,7 @@ void _sys_init_err_handler(const char *err_msg)
 
 void eos_logo_play(bool anim)
 {
-    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_OFF);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_OFF, false);
 
     lv_obj_t *scr = lv_screen_active();
 

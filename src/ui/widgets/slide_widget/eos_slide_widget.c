@@ -9,24 +9,76 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "SlideWidget"
 #include "eos_log.h"
 #include "eos_config.h"
 #include "eos_theme.h"
-#include "eos_event.h"
 #include "eos_anim.h"
 #include "eos_port.h"
 #include "eos_basic_widgets.h"
 #include "eos_mem.h"
+#include "eos_event.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_TOUCH_AREA 0 /**< Highlight touch area */
 #define SLIDE_ANIM_DURATION 120
 
 /* Variables --------------------------------------------------*/
+static lv_event_code_t _event_reached_threshold = LV_EVENT_LAST;
+static lv_event_code_t _event_reverted = LV_EVENT_LAST;
+static lv_event_code_t _event_moving = LV_EVENT_LAST;
+static lv_event_code_t _event_done = LV_EVENT_LAST;
+static lv_event_code_t _event_opened = LV_EVENT_LAST;
+static lv_event_code_t _event_closed = LV_EVENT_LAST;
 
 /* Function Implementations -----------------------------------*/
+
+void eos_slide_widget_init(void)
+{
+    _event_reached_threshold = lv_event_register_id();
+    _event_reverted = lv_event_register_id();
+    _event_moving = lv_event_register_id();
+    _event_done = lv_event_register_id();
+    _event_opened = lv_event_register_id();
+    _event_closed = lv_event_register_id();
+    EOS_LOG_I("Slide widget events registered");
+}
+
+void eos_slide_widget_add_event_cb_reached_threshold(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_reached_threshold, user_data);
+}
+
+void eos_slide_widget_add_event_cb_reverted(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_reverted, user_data);
+}
+
+void eos_slide_widget_add_event_cb_moving(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_moving, user_data);
+}
+
+void eos_slide_widget_add_event_cb_done(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_done, user_data);
+}
+
+void eos_slide_widget_add_event_cb_opened(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_opened, user_data);
+}
+
+void eos_slide_widget_add_event_cb_closed(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data)
+{
+    EOS_CHECK_PTR_RETURN(sw);
+    lv_obj_add_event_cb(sw->touch_obj, cb, _event_closed, user_data);
+}
 
 static const char *_state_to_str(eos_slide_widget_state_t state)
 {
@@ -138,7 +190,7 @@ static void _touch_obj_pressing_cb(lv_event_t *e)
             lv_obj_set_x(sw->target_obj, new_pos);
         }
     }
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)new_pos);
+    lv_obj_send_event(sw->touch_obj, _event_moving, (void *)(intptr_t)new_pos);
 }
 
 /************************** RELEASED **************************/
@@ -150,17 +202,17 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
     eos_slide_widget_state_t transit_state = sw->state;
     eos_slide_widget_state_t settle_state = sw->settle_state;
 
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, NULL);
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_DONE, sw);
+    lv_obj_send_event(sw->touch_obj, _event_moving, NULL);
+    lv_obj_send_event(sw->touch_obj, _event_done, sw);
 
     transit_state = sw->state;
     if (transit_state == EOS_SLIDE_WIDGET_STATE_THRESHOLD)
     {
-        lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, sw);
+        lv_obj_send_event(sw->touch_obj, _event_reached_threshold, sw);
     }
     else if (transit_state == EOS_SLIDE_WIDGET_STATE_REVERTING)
     {
-        lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_REVERTED, sw);
+        lv_obj_send_event(sw->touch_obj, _event_reverted, sw);
     }
 
     if (sw->state != transit_state)
@@ -173,11 +225,11 @@ static void _slide_widget_anim_completed_cb(lv_anim_t *a)
 
     if (settle_state == EOS_SLIDE_WIDGET_STATE_OPEN)
     {
-        eos_event_broadcast(EOS_EVENT_SLIDE_WIDGET_OPENED, sw);
+        lv_obj_send_event(sw->touch_obj, _event_opened, sw);
     }
     else if (settle_state == EOS_SLIDE_WIDGET_STATE_IDLE)
     {
-        eos_event_broadcast(EOS_EVENT_SLIDE_WIDGET_CLOSED, sw);
+        lv_obj_send_event(sw->touch_obj, _event_closed, sw);
     }
 
     eos_anim_blocker_hide();
@@ -194,7 +246,7 @@ static void _moving_set_x(void *var, int32_t value)
     {
         lv_obj_set_x(sw->target_obj, value);
     }
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)value);
+    lv_obj_send_event(sw->touch_obj, _event_moving, (void *)(intptr_t)value);
 }
 
 static void _moving_set_y(void *var, int32_t value)
@@ -208,7 +260,7 @@ static void _moving_set_y(void *var, int32_t value)
     {
         lv_obj_set_y(sw->target_obj, value);
     }
-    lv_obj_send_event(sw->touch_obj, EOS_EVENT_SLIDE_WIDGET_MOVING, (void *)(intptr_t)value);
+    lv_obj_send_event(sw->touch_obj, _event_moving, (void *)(intptr_t)value);
 }
 
 static void _touch_obj_released_cb(lv_event_t *e)
@@ -452,6 +504,13 @@ static void _slide_widget_init_common(eos_slide_widget_t *sw,
                                       lv_coord_t target,
                                       eos_threshold_t threshold)
 {
+    static bool s_initialized = false;
+    if (!s_initialized)
+    {
+        eos_slide_widget_init();
+        s_initialized = true;
+    }
+
     EOS_CHECK_PTR_RETURN(sw && touch_obj && target_obj);
 
     sw->dir = dir;

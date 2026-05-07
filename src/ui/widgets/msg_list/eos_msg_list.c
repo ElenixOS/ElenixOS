@@ -178,7 +178,7 @@ static void _msg_list_item_clicked_cb(lv_event_t *e)
         lv_obj_t *icon = lv_image_create(detail_container);
         lv_obj_set_size(icon, _ICON_LARGE_WIDTH, _ICON_LARGE_HEIGHT);
         lv_obj_set_style_border_width(icon, 0, 0);
-        lv_image_set_src(icon, lv_image_get_src(original_icon));
+        eos_img_set_src(icon, lv_image_get_src(original_icon));
         eos_img_set_size(icon, _ICON_LARGE_WIDTH, _ICON_LARGE_HEIGHT);
         lv_obj_remove_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
     }
@@ -259,8 +259,8 @@ eos_msg_list_item_t *eos_msg_list_item_create(eos_msg_list_t *list)
     lv_obj_update_layout(item->container);
     eos_slide_widget_t *sw = eos_slide_widget_create_with_touch(item->container, item->container, EOS_SLIDE_DIR_HOR, EOS_DISPLAY_WIDTH, EOS_THRESHOLD_40);
     eos_slide_widget_set_bidirectional(sw, true);
-    lv_obj_add_event_cb(sw->touch_obj, _slide_widget_reached_threashold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, list);
-    lv_obj_add_event_cb(sw->touch_obj, _msg_list_item_clicked_cb, EOS_EVENT_SLIDE_WIDGET_REVERTED, NULL);
+    eos_slide_widget_add_event_cb_reached_threshold(sw, _slide_widget_reached_threashold_cb, list);
+    eos_slide_widget_add_event_cb_reverted(sw, _msg_list_item_clicked_cb, NULL);
     // 第一行
     item->row1 = lv_obj_create(item->container);
     lv_obj_set_size(item->row1, lv_pct(100), 64);
@@ -565,7 +565,7 @@ eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     msg_list->swipe_panel = eos_swipe_panel_create(parent);
     EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list->swipe_panel, NULL, msg_list);
     eos_swipe_panel_set_dir(msg_list->swipe_panel, EOS_SWIPE_DIR_DOWN);
-    lv_obj_add_event_cb(msg_list->swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, NULL);
+    eos_slide_widget_add_event_cb_reached_threshold(msg_list->swipe_panel->sw, _slide_widget_reached_threshold_cb, NULL);
 
     msg_list->list = lv_list_create(msg_list->swipe_panel->swipe_obj);
     EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list->list, NULL, msg_list);

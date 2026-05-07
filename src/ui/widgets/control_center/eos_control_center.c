@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eos_swipe_panel.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "ControlCenter"
 #include "eos_log.h"
 #include "eos_theme.h"
@@ -233,7 +232,7 @@ static void _control_center_brightness_value_changed_cb(lv_event_t *e)
 
     // Get current Slider value
     int32_t value = lv_slider_get_value(slider);
-    eos_display_set_brightness((uint8_t)value, EOS_DISPLAY_DURATION_OFF);
+    eos_display_set_brightness((uint8_t)value, EOS_DISPLAY_DURATION_OFF, false);
 
     // Map Slider value to angle
     int32_t angle = (int32_t)value * 18;
@@ -260,25 +259,36 @@ static void _control_center_brightness_btn_clicked_cb(lv_event_t *e)
     lv_obj_add_event_cb(slider, _control_center_brightness_slider_delete_cb, LV_EVENT_DELETE, NULL);
 }
 
-static void _control_center_battery_update_display(lv_obj_t *label, lv_obj_t *btn)
+static void _control_center_battery_update_display(lv_obj_t *label)
 {
-    EOS_CHECK_PTR_RETURN(label && btn);
+    EOS_CHECK_PTR_RETURN(label);
 
     eos_battery_state_t state;
-    if (eos_battery_get_state(&state) && state.valid) {
-        if (state.charging) {
+    if (eos_battery_get_state(&state))
+    {
+        if (state.charging)
+        {
             lv_label_set_text_fmt(label, RI_FLASHLIGHT_FILL " %d%%", state.percent);
-        } else {
+        }
+        else
+        {
             lv_label_set_text_fmt(label, "%d%%", state.percent);
         }
     }
+    else
+    {
+        lv_label_set_text(label, "N/A");
+    }
 }
 
-static void _control_center_battery_level_update_cb(lv_event_t *e)
+static void _control_center_battery_level_update_cb(eos_event_t *e)
 {
-    lv_obj_t *label = lv_event_get_target(e);
-    lv_obj_t *btn = lv_event_get_user_data(e);
-    _control_center_battery_update_display(label, btn);
+    lv_obj_t *label = eos_event_get_obj(e);
+    if (!label || !lv_obj_is_valid(label))
+    {
+        return;
+    }
+    _control_center_battery_update_display(label);
 }
 
 static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
@@ -291,9 +301,10 @@ static lv_obj_t *_control_center_create_battery(lv_obj_t *parent)
     lv_obj_t *label = lv_label_create(btn);
     lv_obj_center(label);
 
-    lv_obj_add_event_cb(label, _control_center_battery_level_update_cb, eos_battery_get_event_id(), (void *)btn);
+    _control_center_battery_update_display(label);
 
-    _control_center_battery_update_display(label, btn);
+    eos_event_code_t event_id = eos_battery_get_event_id();
+    eos_event_subscribe_ex(event_id, _control_center_battery_level_update_cb, NULL, label);
 
     return btn;
 }
@@ -415,10 +426,10 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 #if EOS_ANIMATION_ENABLE
     lv_obj_add_event_cb(container, _list_scroll_cb, LV_EVENT_SCROLL, container);
-    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_MOVING, container);
-    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _list_scroll_cb, EOS_EVENT_SLIDE_WIDGET_DONE, container);
+    eos_slide_widget_add_event_cb_moving(swipe_panel->sw, _list_scroll_cb, container);
+    eos_slide_widget_add_event_cb_done(swipe_panel->sw, _list_scroll_cb, container);
 #endif /* EOS_ANIMATION_ENABLE */
-    lv_obj_add_event_cb(swipe_panel->sw->touch_obj, _slide_widget_reached_threshold_cb, EOS_EVENT_SLIDE_WIDGET_REACHED_THRESHOLD, container);
+    eos_slide_widget_add_event_cb_reached_threshold(swipe_panel->sw, _slide_widget_reached_threshold_cb, container);
     cc->container = container;
     lv_obj_t *btn;
     /************************** Bluetooth switch **************************/
@@ -506,8 +517,9 @@ eos_control_center_t *eos_control_center_get_instance(void)
     return control_center_instance;
 }
 
-static void _system_config_update_event_cb(lv_event_t *e)
+static void _system_config_update_event_cb(eos_event_t *e)
 {
+    LV_UNUSED(e);
     EOS_CHECK_PTR_RETURN(control_center_instance);
 
     // Update Bluetooth switch state
@@ -536,5 +548,5 @@ static void _system_config_update_event_cb(lv_event_t *e)
 void eos_control_center_init(void)
 {
     control_center_instance = eos_control_center_create(lv_layer_top());
-    eos_event_add_global_cb(_system_config_update_event_cb, EOS_EVENT_SYSTEM_CONFIG_UPDATE, NULL);
+    eos_event_subscribe(EOS_EVENT_SYSTEM_CONFIG_UPDATE, _system_config_update_event_cb, NULL);
 }

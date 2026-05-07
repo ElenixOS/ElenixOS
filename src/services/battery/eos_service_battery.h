@@ -15,6 +15,7 @@ extern "C" {
 #include <stdbool.h>
 #include "eos_error.h"
 #include "eos_dev_battery.h"
+#include "eos_event.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -30,6 +31,25 @@ extern "C" {
 #define EOS_STATE_KEY_CYCLE_COUNT          "cycle_count"
 
 /* Public typedefs --------------------------------------------*/
+
+/**
+ * @brief Battery mode enumeration
+ */
+typedef enum {
+    EOS_BATTERY_MODE_NORMAL = 0,
+    EOS_BATTERY_MODE_LOW_POWER,
+    EOS_BATTERY_MODE_CHARGING,
+    EOS_BATTERY_MODE_ACTIVE,
+    EOS_BATTERY_MODE_COUNT,
+} eos_battery_mode_t;
+
+/**
+ * @brief Battery policy structure
+ */
+typedef struct {
+    uint32_t interval_ms;
+    uint8_t threshold_percent;
+} eos_battery_policy_t;
 
 /**
  * @brief Battery raw data from hardware
@@ -155,6 +175,24 @@ uint32_t eos_battery_get_cycle_count(void);
 void eos_battery_set_calc_fn(eos_battery_calc_fn_t fn);
 
 /**
+ * @brief Set policy for a specific battery mode
+ *
+ * @param mode Battery mode
+ * @param policy Pointer to policy structure
+ * @return EOS_OK on success, EOS_ERR_INVALID_PARAM if mode is invalid
+ */
+eos_result_t eos_battery_set_policy(eos_battery_mode_t mode, const eos_battery_policy_t *policy);
+
+/**
+ * @brief Get policy for a specific battery mode
+ *
+ * @param mode Battery mode
+ * @param policy Pointer to policy structure to fill
+ * @return EOS_OK on success, EOS_ERR_INVALID_PARAM if mode is invalid
+ */
+eos_result_t eos_battery_get_policy(eos_battery_mode_t mode, eos_battery_policy_t *policy);
+
+/**
  * @brief Get event ID for battery state changes
  *
  * Use this event ID to register for battery state change notifications.
@@ -162,7 +200,7 @@ void eos_battery_set_calc_fn(eos_battery_calc_fn_t fn);
  *
  * @return Event ID for battery state change events
  */
-uint32_t eos_battery_get_event_id(void);
+eos_event_code_t eos_battery_get_event_id(void);
 
 /**
  * @brief Get battery history entry count

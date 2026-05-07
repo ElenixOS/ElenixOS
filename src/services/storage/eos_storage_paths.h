@@ -25,7 +25,7 @@ extern "C" {
  */
 
 /** @brief System base directory */
-#define EOS_SYS_DIR EOS_SYS_ROOT_DIR ".sys/"
+#define EOS_SYS_DIR "/.sys/"
 
 /* Configuration Storage -----*/
 /** @brief Configuration files directory */

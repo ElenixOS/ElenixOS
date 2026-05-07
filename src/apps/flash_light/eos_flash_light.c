@@ -11,7 +11,6 @@
 #include "eos_theme.h"
 #include "eos_config.h"
 #include "eos_swipe_panel.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "FlashLight"
 #include "eos_log.h"
 #include "eos_event.h"
@@ -40,6 +39,7 @@
 #define _INDICATOR_MODE1_INACTIVE_COLOR EOS_COLOR_BLACK
 #define _INDICATOR_MODE2_ACTIVE_COLOR EOS_COLOR_BLACK
 #define _INDICATOR_MODE2_INACTIVE_COLOR EOS_COLOR_TEXT_GREY
+#define _BRIGHTNESS_DURATION 750
 typedef struct
 {
     eos_swipe_panel_t *sp;
@@ -118,7 +118,7 @@ static void _flash_light_on_destroy(eos_activity_t *a)
     }
 
     _flash_light_delete(NULL);
-    eos_display_restore(EOS_DISPLAY_DURATION_OFF);
+    eos_display_restore(_BRIGHTNESS_DURATION);
 }
 
 static inline void _flash_light_delete(_pressing_user_data_t *ud)
@@ -149,7 +149,7 @@ static void _swipe_panel_pull_back_cb(lv_event_t *e)
     if (swipe_obj_coord_y >= EOS_DISPLAY_HEIGHT)
     {
         _flash_light_delete(ud);
-        eos_display_restore(EOS_DISPLAY_DURATION_MEDIUM);
+        eos_display_restore(_BRIGHTNESS_DURATION);
     }
 }
 
@@ -397,16 +397,8 @@ void eos_flash_light_show(void)
 
     ud->sp = sp;
 
-    lv_obj_add_event_cb(
-        sp->sw->touch_obj,
-        _swipe_panel_pull_back_cb,
-        EOS_EVENT_SLIDE_WIDGET_DONE,
-        ud);
-    lv_obj_add_event_cb(
-        sp->sw->touch_obj,
-        _swipe_panel_moving_cb,
-        EOS_EVENT_SLIDE_WIDGET_MOVING,
-        ud);
+    eos_slide_widget_add_event_cb_done(sp->sw, _swipe_panel_pull_back_cb, ud);
+    eos_slide_widget_add_event_cb_moving(sp->sw, _swipe_panel_moving_cb, ud);
     int32_t touch_area_height = EOS_DISPLAY_HEIGHT * 0.2;
     lv_obj_set_height(sp->sw->touch_obj, touch_area_height);
 
@@ -442,12 +434,12 @@ void eos_flash_light_show(void)
                         LV_EVENT_CLICKED,
                         ud);
 
-    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_MEDIUM);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, _BRIGHTNESS_DURATION, true);
 }
 
 void eos_flash_light_enter(void)
 {
-    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, EOS_DISPLAY_DURATION_MEDIUM);
+    eos_display_set_brightness(EOS_DISPLAY_BRIGHTNESS_MAX, _BRIGHTNESS_DURATION, true);
     eos_activity_t *a = eos_activity_create(&_flash_light_lifecycle);
     if(!a) return;
 

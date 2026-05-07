@@ -127,10 +127,10 @@ void eos_dev_sensor_report_state(eos_dev_sensor_t *dev, eos_dev_state_t state)
     eos_critical_leave(ctx);
 }
 
-lv_event_code_t eos_dev_sensor_get_event_id(eos_dev_sensor_t *dev)
+eos_event_code_t eos_dev_sensor_get_event_id(eos_dev_sensor_t *dev)
 {
     if (!dev)
-        return LV_EVENT_ALL;
+        return EOS_EVENT_UNKNOWN;
 
     return dev->_event_id;
 }

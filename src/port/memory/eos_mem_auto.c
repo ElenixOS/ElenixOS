@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "eos_port.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "MemAuto"
 #include "eos_log.h"
 #include "eos_config.h"

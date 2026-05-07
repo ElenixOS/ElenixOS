@@ -37,8 +37,10 @@ typedef enum
  * @param duration_ms Animation duration in milliseconds,
  * use EOS_DISPLAY_DURATION_OFF for instant change,
  * can use eos_display_duration_t presets
+ * @param is_temporary If true, save current brightness and set new brightness temporarily.
+ * Call eos_display_restore() to restore to saved brightness.
  */
-void eos_display_set_brightness(uint8_t brightness, eos_display_duration_t duration_ms);
+void eos_display_set_brightness(uint8_t brightness, eos_display_duration_t duration_ms, bool is_temporary);
 
 /**
  * @brief Power on the display

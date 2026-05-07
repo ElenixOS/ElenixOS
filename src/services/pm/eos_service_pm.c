@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "PowerManager"
 #include "eos_log.h"
 #include "eos_service_config.h"
@@ -64,14 +63,14 @@ static void _pm_set_state(eos_pm_state_t state)
     switch (state)
     {
     case EOS_PM_DISPLAY_ON:
-        eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_ON, NULL);
+        eos_event_post(EOS_EVENT_SYSTEM_DISPLAY_ON, NULL, NULL);
         dev->ops->set_power(DEV_POWER_STATE_ON);
         if (t)
             lv_timer_resume(t);
         break;
     case EOS_PM_SLEEP:
         lv_timer_pause(t);
-        eos_event_broadcast(EOS_EVENT_SYSTEM_SLEEP, NULL);
+        eos_event_post(EOS_EVENT_SYSTEM_SLEEP, NULL, NULL);
 #if EOS_DFW_ENABLE
         eos_dfw_sync();
 #endif /* EOS_DFW_ENABLE */
@@ -79,7 +78,7 @@ static void _pm_set_state(eos_pm_state_t state)
         break;
     case EOS_PM_DISPLAY_AOD:
         lv_timer_pause(t);
-        eos_event_broadcast(EOS_EVENT_SYSTEM_DISPLAY_AOD, NULL);
+        eos_event_post(EOS_EVENT_SYSTEM_DISPLAY_AOD, NULL, NULL);
         dev->ops->set_power(DEV_POWER_STATE_AOD);
         break;
     default:

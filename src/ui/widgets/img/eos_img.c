@@ -8,15 +8,13 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <string.h>
 #include "lvgl.h"
 #define EOS_LOG_TAG "Image"
 #include "eos_log.h"
 #include "eos_port.h"
 #include "eos_mem.h"
+#include "eos_service_storage.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -78,42 +76,28 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
     // Avoid data leakage
     lv_image_set_src(img_obj, NULL);
 
-    // Open new image file
-    eos_file_t fp = eos_fs_open_read(bin_path);
+    // Get file size using storage service
+    eos_file_t fp = eos_storage_file_open_read(bin_path);
     if (fp == EOS_FILE_INVALID)
     {
         EOS_LOG_E("Failed to open file");
         return;
     }
-
-    // Get file size
     uint32_t file_size = 0;
-    eos_fs_size(fp, &file_size);
+    eos_storage_file_size(fp, &file_size);
+    eos_storage_file_close(fp);
 
     if (file_size <= 0)
     {
         EOS_LOG_E("Invalid file size");
-        eos_fs_close(fp);
         return;
     }
 
-    // Allocate memory
-    void *bin_data = eos_malloc(file_size);
+    // Read file content using storage service
+    void *bin_data = eos_storage_read_file(bin_path);
     if (!bin_data)
     {
-        EOS_LOG_E("Failed to allocate memory for image");
-        eos_fs_close(fp);
-        return;
-    }
-
-    // Read file content to memory
-    ssize_t bytes_read = eos_fs_read(fp, bin_data, file_size);
-    eos_fs_close(fp); // Close file descriptor immediately after reading
-
-    if (bytes_read != file_size)
-    {
-        EOS_LOG_E("Failed to read complete file (read %zd of %ld bytes)", bytes_read, file_size);
-        eos_free(bin_data);
+        EOS_LOG_E("Failed to read file");
         return;
     }
 
@@ -142,6 +126,16 @@ void eos_img_set_src(lv_obj_t *img_obj, const char *bin_path)
 
     // Set image source
     lv_image_set_src(img_obj, img_dsc);
+
+    // Auto scale to fit the object size
+    lv_coord_t obj_w = lv_obj_get_width(img_obj);
+    lv_coord_t obj_h = lv_obj_get_height(img_obj);
+    if (obj_w > 0 && obj_h > 0 && img_dsc->header.w > 0 && img_dsc->header.h > 0)
+    {
+        lv_image_set_scale_x(img_obj, (uint32_t)((obj_w * 256) / img_dsc->header.w));
+        lv_image_set_scale_y(img_obj, (uint32_t)((obj_h * 256) / img_dsc->header.h));
+    }
+
     // Add delete event callback and attach user data to callback
     lv_obj_add_event_cb(img_obj, _img_delete_event_cb, LV_EVENT_DELETE, img_dsc);
     EOS_LOG_D("Image Set OK");

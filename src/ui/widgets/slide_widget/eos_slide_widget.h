@@ -75,6 +75,12 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief Initialize slide widget component (register event IDs)
+ * @note Should be called during system initialization
+ */
+void eos_slide_widget_init(void);
+
+/**
  * @brief Move from start position to end position
  * @param sw Target slide widget
  * @param start Start coordinate
@@ -125,6 +131,20 @@ void eos_slide_widget_set_anim_transition(eos_slide_widget_t *sw,
                                           eos_slide_widget_state_t transit_state,
                                           eos_slide_widget_state_t settle_state);
 void eos_slide_widget_delete(eos_slide_widget_t *sw);
+
+/**
+ * @brief Register callback for slide widget events
+ * @param sw Slide widget
+ * @param cb Callback function (lv_event_cb_t)
+ * @param user_data User data passed to callback
+ */
+void eos_slide_widget_add_event_cb_reached_threshold(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+void eos_slide_widget_add_event_cb_reverted(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+void eos_slide_widget_add_event_cb_moving(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+void eos_slide_widget_add_event_cb_done(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+void eos_slide_widget_add_event_cb_opened(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+void eos_slide_widget_add_event_cb_closed(eos_slide_widget_t *sw, lv_event_cb_t cb, void *user_data);
+
 #ifdef __cplusplus
 }
 #endif

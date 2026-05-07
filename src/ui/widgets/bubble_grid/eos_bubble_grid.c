@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "lvgl/src/misc/lv_ll.h"
+#include "eos_img.h"
 /* Macros and Definitions -------------------------------------*/
 
 #define FX_SHIFT 8 /* Fixed-point fractional bits. */
@@ -1364,7 +1365,7 @@ void eos_bubble_set_icon_src(lv_obj_t * obj, uint32_t index, const void * src)
     }
 
     if(node->image_obj != NULL && src != NULL) {
-        lv_image_set_src(node->image_obj, src);
+        eos_img_set_src(node->image_obj, src);
     }
     else if(node->bubble_obj != NULL && node->image_obj != NULL) {
         lv_obj_add_flag(node->bubble_obj, LV_OBJ_FLAG_HIDDEN);

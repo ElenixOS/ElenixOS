@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eos_dispatcher.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "eos_log.h"
 #include "eos_service_pm.h"
@@ -51,10 +50,8 @@ static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
 static void _clear_scrollable_obj_async_cb(void *user_data);
-static void _activity_view_switched_cb(lv_event_t *e);
+static void _activity_view_switched_cb(eos_event_t *e);
 static void _activity_view_switched_async_cb(void *user_data);
-static void _slide_widget_state_changed_cb(lv_event_t *e);
-static void _slide_widget_state_changed_async_cb(void *user_data);
 static void _apply_pending_rebind_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(lv_anim_t *a);
@@ -356,9 +353,9 @@ static void _scrollable_obj_scroll_end_cb(lv_event_t *e)
     _scrollbar_schedule_hide();
 }
 
-static void _activity_view_switched_cb(lv_event_t *e)
+static void _activity_view_switched_cb(eos_event_t *e)
 {
-    lv_obj_t *view = (lv_obj_t *)lv_event_get_param(e);
+    lv_obj_t *view = (lv_obj_t *)eos_event_get_param(e);
     lv_async_call(_activity_view_switched_async_cb, view);
 }
 
@@ -366,26 +363,6 @@ static void _activity_view_switched_async_cb(void *user_data)
 {
     lv_obj_t *view = (lv_obj_t *)user_data;
     eos_crown_encoder_set_target_view(view);
-}
-
-static void _slide_widget_state_changed_cb(lv_event_t *e)
-{
-    lv_async_call(_slide_widget_state_changed_async_cb, lv_event_get_param(e));
-}
-
-static void _slide_widget_state_changed_async_cb(void *user_data)
-{
-    eos_slide_widget_t *sw = (eos_slide_widget_t *)user_data;
-    if (sw && sw->state == EOS_SLIDE_WIDGET_STATE_OPEN && sw->target_obj && lv_obj_is_valid(sw->target_obj))
-    {
-        lv_obj_t *target = _find_scrollable_obj(sw->target_obj);
-        if (target)
-        {
-            /* 滑动面板已打开，优先作为滚动对象 */
-            eos_crown_encoder_set_target_obj(target);
-            return;
-        }
-    }
 }
 
 static bool _obj_is_visible_for_crown(lv_obj_t *obj)
@@ -620,13 +597,5 @@ void eos_crown_init(void)
         lv_timer_pause(scrollbar_hide_timer);
     }
 
-    eos_event_add_global_cb(_activity_view_switched_cb,
-                            EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,
-                            NULL);
-    eos_event_add_global_cb(_slide_widget_state_changed_cb,
-                            EOS_EVENT_SLIDE_WIDGET_OPENED,
-                            NULL);
-    eos_event_add_global_cb(_slide_widget_state_changed_cb,
-                            EOS_EVENT_SLIDE_WIDGET_CLOSED,
-                            NULL);
+    eos_event_subscribe(EOS_EVENT_ACTIVITY_SCREEN_SWITCHED, _activity_view_switched_cb, NULL);
 }

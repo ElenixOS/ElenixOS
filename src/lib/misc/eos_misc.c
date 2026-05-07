@@ -8,7 +8,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Misc"
 #include "eos_log.h"
 #include "eos_port.h"

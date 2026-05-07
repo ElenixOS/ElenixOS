@@ -11,7 +11,6 @@
 #include <string.h>
 #include "eos_misc.h"
 #include "eos_port.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "App"
 #include "eos_log.h"
 #include "eos_pkg_mgr.h"
@@ -41,13 +40,17 @@ static bool app_list_initialized = false;
 
 /* Function Implementations -----------------------------------*/
 
-// 添加排序相关的函数声明
+// Application order functions
 static eos_result_t _eos_app_order_save(void);
 static eos_result_t _eos_app_order_load(void);
 static eos_result_t _eos_app_order_add(const char *app_id);
 static eos_result_t _eos_app_order_remove(const char *app_id);
 
-// 在变量定义部分添加应用顺序列表
+// App delete callbacks
+static void _app_delete_cb(lv_event_t *e);
+static void _app_delete_eos_cb(eos_event_t *e);
+
+// Application order list
 static cJSON *app_order_json = NULL;
 
 /**
@@ -329,7 +332,7 @@ eos_result_t _eos_app_list_get_installed(void)
     char name_buf[256];
 
     // Open application installation directory
-    dir = eos_fs_opendir(EOS_APP_INSTALLED_DIR);
+    dir = eos_storage_dir_open(EOS_APP_INSTALLED_DIR);
     if (dir == NULL)
     {
         EOS_LOG_E("Failed to open app dir: %s", EOS_APP_INSTALLED_DIR);
@@ -337,7 +340,7 @@ eos_result_t _eos_app_list_get_installed(void)
     }
 
     // Iterate through all entries in the directory
-    while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
+    while (eos_storage_dir_read(dir, name_buf, sizeof(name_buf)) == 0)
     {
         // Skip "." and ".." directories
         if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
@@ -351,14 +354,14 @@ eos_result_t _eos_app_list_get_installed(void)
                  EOS_APP_INSTALLED_DIR "%s", name_buf);
 
         // Check if it is a directory
-        if (eos_fs_type(full_path) == EOS_FS_TYPE_DIR)
+        if (eos_storage_is_dir(full_path))
         {
             EOS_LOG_D("Found installed app: %s", name_buf);
             _eos_app_list_add(&app_list, name_buf);
         }
     }
 
-    eos_fs_closedir(dir);
+    eos_storage_dir_close(dir);
 
     EOS_LOG_I("Loaded %zu installed apps", app_list.size);
     return EOS_OK;
@@ -393,7 +396,7 @@ eos_result_t _eos_app_list_refresh()
 eos_result_t eos_app_install(const char *eapk_path)
 {
     EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
-    // 获取软件包头
+    // Get package header
     eos_pkg_header_t header;
     if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
     {
@@ -405,20 +408,20 @@ eos_result_t eos_app_install(const char *eapk_path)
         EOS_LOG_E("Invalid package id");
         return EOS_FAILED;
     }
-    // 拼接路径
+    // Concatenate path
     char path[PATH_MAX];
     snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header.pkg_id);
     EOS_LOG_D("APP_PATH: %s", path);
-    // 检查应用是否存在
+    // Check if app exists
     if (eos_storage_is_dir(path))
     {
-        // 如果存在则删除
+        // If exists, delete it
         eos_storage_rm_recursive(path);
     }
-    // 创建应用名称的文件夹
-    if (eos_fs_mkdir(path) == 0)
+    // Create app directory
+    if (eos_storage_mkdir_if_not_exist(path) == EOS_OK)
     {
         EOS_LOG_I("Created dir: %s\n", path);
     }
@@ -426,7 +429,7 @@ eos_result_t eos_app_install(const char *eapk_path)
     {
         EOS_LOG_E("Failed mkdir: %s\n", path);
     }
-    // 安装应用程序
+    // Install application
     script_pkg_type_t type = SCRIPT_TYPE_APPLICATION;
     eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
     if (ret != EOS_OK)
@@ -436,32 +439,28 @@ eos_result_t eos_app_install(const char *eapk_path)
         return EOS_FAILED;
     }
     eos_storage_mkdir_if_not_exist(data_path);
-    // 添加到顺序列表
+    // Add to order list
     _eos_app_order_add(header.pkg_id);
     _eos_app_list_refresh();
     EOS_LOG_D("App installed successfully: %s", header.pkg_name);
     const char *app_id = eos_app_list_get_existing_id(header.pkg_id);
     EOS_LOG_D("app_id=%s\npkg_id=%s", app_id, header.pkg_id);
-    eos_event_broadcast(EOS_EVENT_APP_INSTALLED, (void *)app_id);
+    eos_event_post(EOS_EVENT_APP_INSTALLED, (void *)app_id, NULL);
     return EOS_OK;
 }
 
 eos_result_t eos_app_uninstall(const char *app_id)
 {
     EOS_LOG_D("Uninstall: %s", app_id);
-    // 卸载应用程序
-    eos_event_broadcast(EOS_EVENT_APP_UNINSTALLED, (void *)app_id);
-
-    // 从顺序列表中移除
-    _eos_app_order_remove(app_id);
 
     char path[PATH_MAX];
     snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", app_id);
     char data_path[PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", app_id);
+
     if (!eos_storage_is_dir(path))
     {
-        EOS_LOG_E("App does not esist: %s", app_id);
+        EOS_LOG_E("App does not exist: %s", app_id);
         return EOS_FAILED;
     }
 
@@ -473,18 +472,20 @@ eos_result_t eos_app_uninstall(const char *app_id)
         return EOS_FAILED;
     }
 
-    // 清理应用数据
     if (eos_storage_is_dir(data_path))
     {
         ret = eos_storage_rm_recursive(data_path);
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_E("Remove data failed, code: %d", ret);
+        }
     }
 
-    if (ret != EOS_OK)
-    {
-        EOS_LOG_E("Uninstall failed, code: %d", ret);
-        return EOS_FAILED;
-    }
+    _eos_app_order_remove(app_id);
     _eos_app_list_refresh();
+
+    eos_event_post(EOS_EVENT_APP_UNINSTALLED, (void *)app_id, NULL);
+
     EOS_LOG_D("App uninstalled successfully: %s", app_id);
     return EOS_OK;
 }
@@ -492,13 +493,24 @@ eos_result_t eos_app_uninstall(const char *app_id)
 static void _app_delete_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
-    const char *deleted_app_id = lv_event_get_param(e);
     const char *obj_app_id = lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(obj);
     EOS_LOG_D("_app_delete_cb target obj=%p", obj);
+    lv_obj_remove_event_cb(obj, _app_delete_cb);
+    eos_event_unsubscribe(EOS_EVENT_APP_UNINSTALLED, _app_delete_eos_cb);
+}
+
+static void _app_delete_eos_cb(eos_event_t *e)
+{
+    const char *deleted_app_id = eos_event_get_param(e);
+    lv_obj_t *obj = eos_event_get_obj(e);
+    const char *obj_app_id = eos_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(obj);
+    EOS_LOG_D("_app_delete_eos_cb target obj=%p", obj);
     if (strcmp(deleted_app_id, obj_app_id) == 0)
     {
-        eos_event_remove_cb(obj, EOS_EVENT_APP_UNINSTALLED, _app_delete_cb);
+        lv_obj_remove_event_cb(obj, _app_delete_cb);
+        eos_event_unsubscribe(EOS_EVENT_APP_UNINSTALLED, _app_delete_eos_cb);
         lv_obj_delete_async(obj);
     }
 }
@@ -507,10 +519,8 @@ void eos_app_obj_auto_delete(lv_obj_t *obj, const char *app_id)
 {
     EOS_CHECK_PTR_RETURN(obj);
     EOS_LOG_D("Auto del regesited: %s, ptr: %p", app_id, obj);
-    eos_event_add_cb(obj,
-                     _app_delete_cb,
-                     EOS_EVENT_APP_UNINSTALLED,
-                     (void *)app_id);
+    lv_obj_add_event_cb(obj, _app_delete_cb, LV_EVENT_DELETE, (void *)app_id);
+    eos_event_subscribe_ex(EOS_EVENT_APP_UNINSTALLED, _app_delete_eos_cb, (void *)app_id, obj);
 }
 
 eos_result_t eos_app_init(void)

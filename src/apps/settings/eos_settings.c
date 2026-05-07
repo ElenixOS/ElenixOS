@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Settings"
 #include "eos_log.h"
 #include "lvgl.h"
@@ -123,14 +122,14 @@ static void _settings_view_bluetooth(lv_event_t *e)
 static void _brightness_slider_value_changed_cb(lv_event_t *e)
 {
     lv_obj_t *sl = lv_event_get_target(e);
-    eos_display_set_brightness((uint8_t)lv_slider_get_value(sl), EOS_DISPLAY_DURATION_OFF);
+    eos_display_set_brightness((uint8_t)lv_slider_get_value(sl), EOS_DISPLAY_DURATION_OFF, false);
 }
 
 static void _brightness_slider_released_cb(lv_event_t *e)
 {
     lv_obj_t *sl = lv_event_get_target(e);
     int32_t val = lv_slider_get_value(sl);
-    eos_display_set_brightness((uint8_t)val, EOS_DISPLAY_DURATION_OFF);
+    eos_display_set_brightness((uint8_t)val, EOS_DISPLAY_DURATION_OFF, false);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
 }
 
@@ -146,7 +145,7 @@ static void _brightness_slider_minus_cb(lv_event_t *e)
     val -= 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
-    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION, false);
 }
 
 static void _brightness_slider_plus_cb(lv_event_t *e)
@@ -161,7 +160,7 @@ static void _brightness_slider_plus_cb(lv_event_t *e)
     val += 5;
     lv_slider_set_value(slider, val, LV_ANIM_ON);
     eos_config_set_number(EOS_CONFIG_KEY_DISPLAY_BRIGHTNESS_NUMBER, val);
-    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION);
+    eos_display_set_brightness((uint8_t)val, _BRIGHTNESS_SMOOTH_DURATION, false);
 }
 
 static void _aod_mode_switch_cb(lv_event_t *e)
@@ -459,7 +458,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
     const char *app_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(app_id);
 
-    // 获取清单文件
+    // Get app manifest
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
@@ -484,7 +483,7 @@ static void _settings_app_list_btn_cb(lv_event_t *e)
         return;
     }
 
-    // 创建新的页面用于绘制应用详情页
+    // Create new activity for app details
     eos_activity_t *a = eos_activity_create(NULL);
     EOS_CHECK_PTR_RETURN(a);
     lv_obj_t *view = eos_activity_get_view(a);
@@ -569,7 +568,7 @@ static void _app_btn_create(lv_obj_t *parent, const char *app_id)
     }
     EOS_LOG_D("Icon: %s", icon_path);
 
-    // 获取清单文件
+    // Get app manifest
     char manifest_path[PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME,
              app_id);
@@ -588,10 +587,10 @@ static void _app_btn_create(lv_obj_t *parent, const char *app_id)
     eos_pkg_free(&pkg);
 }
 
-static void _app_installed_cb(lv_event_t *e)
+static void _app_installed_cb(eos_event_t *e)
 {
-    lv_obj_t *parent = lv_event_get_target(e);
-    const char *installed_app_id = lv_event_get_param(e);
+    lv_obj_t *parent = eos_event_get_user_data(e);
+    const char *installed_app_id = eos_event_get_param(e);
     EOS_CHECK_PTR_RETURN(parent && installed_app_id);
     _app_btn_create(parent, installed_app_id);
 }
@@ -599,15 +598,40 @@ static void _app_installed_cb(lv_event_t *e)
 /**
  * @brief App list in system settings
  */
+static void _settings_view_apps_on_destroy(eos_activity_t *a)
+{
+    lv_obj_t *view = eos_activity_get_view(a);
+    if (view)
+    {
+        lv_obj_t *app_list = lv_obj_get_child(view, 0);
+        if (app_list)
+        {
+            eos_event_unsubscribe_with_obj(EOS_EVENT_APP_INSTALLED, _app_installed_cb, app_list);
+        }
+    }
+}
+
 static void _settings_view_apps(lv_event_t *e)
 {
-    // Create a new page to draw the app list
-    lv_obj_t *view = NULL;
-    eos_activity_t *a = _create_activity_with_header(STR_ID_SETTINGS_APPS, &view);
-    EOS_CHECK_PTR_RETURN(a && view);
+    // Create a new activity to draw the app list
+    static const eos_activity_lifecycle_t lifecycle = {
+        .on_destroy = _settings_view_apps_on_destroy,
+        .on_enter = NULL,
+        .on_pause = NULL,
+        .on_resume = NULL
+    };
+
+    eos_activity_t *a = eos_activity_create(&lifecycle);
+    EOS_CHECK_PTR_RETURN(a);
+
+    lv_obj_t *view = eos_activity_get_view(a);
+    EOS_CHECK_PTR_RETURN(view);
+
+    eos_activity_set_title_id(a, STR_ID_SETTINGS_APPS);
+    eos_activity_set_app_header_visible(a, true);
 
     lv_obj_t *app_list = eos_list_create(view);
-    eos_event_add_cb(app_list, _app_installed_cb, EOS_EVENT_APP_INSTALLED, NULL);
+    eos_event_subscribe_ex(EOS_EVENT_APP_INSTALLED, _app_installed_cb, NULL, app_list);
 
     size_t app_list_size = eos_app_get_installed();
     for (size_t i = 0; i < app_list_size; i++)
@@ -763,9 +787,10 @@ static void _settings_view_general(lv_event_t *e)
     lv_obj_t *list = eos_list_create(view);
 
     lv_obj_t *btn;
-    // 语言设置
+    // Language settings
     btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_LANGUAGE);
     lv_obj_add_event_cb(btn, _settings_view_language, LV_EVENT_CLICKED, NULL);
+    // Device info
     btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_GENERAL_DEVICE_INFO);
     lv_obj_add_event_cb(btn, _settings_view_device_info, LV_EVENT_CLICKED, NULL);
     eos_activity_enter(a);
@@ -788,22 +813,22 @@ void eos_settings_enter(void)
     lv_obj_t *settings_list = eos_list_create(view);
 
     lv_obj_t *btn;
-    // 蓝牙设置
+    // Bluetooth settings
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_BLUE, RI_BLUETOOTH_FILL, STR_ID_SETTINGS_BLUETOOTH);
     lv_obj_add_event_cb(btn, _settings_view_bluetooth, LV_EVENT_CLICKED, NULL);
-    // 显示设置
+    // Display settings
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_ORANGE, RI_SUN_FILL, STR_ID_SETTINGS_DISPLAY);
     lv_obj_add_event_cb(btn, _settings_view_display, LV_EVENT_CLICKED, NULL);
-    // 通知设置
+    // Notification settings
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_RED, RI_NOTIFICATION_2_FILL, STR_ID_SETTINGS_NOTIFICATION);
     lv_obj_add_event_cb(btn, _settings_view_notification, LV_EVENT_CLICKED, NULL);
-    // 声音与触感反馈
+    // Sound and haptics settings
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_PINK, RI_VOLUME_UP_FILL, STR_ID_SETTINGS_SOUNDS_AND_HAPTICS);
     lv_obj_add_event_cb(btn, _settings_view_sound_and_haptics, LV_EVENT_CLICKED, NULL);
-    // 应用列表
+    // App list
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREEN, RI_FILE_LIST_LINE, STR_ID_SETTINGS_APPS);
     lv_obj_add_event_cb(btn, _settings_view_apps, LV_EVENT_CLICKED, NULL);
-    // 其他设置
+    // General settings
     btn = eos_list_add_round_icon_button_str_id(settings_list, EOS_COLOR_GREY, RI_TOOLS_FILL, STR_ID_SETTINGS_GENERAL);
     lv_obj_add_event_cb(btn, _settings_view_general, LV_EVENT_CLICKED, NULL);
 

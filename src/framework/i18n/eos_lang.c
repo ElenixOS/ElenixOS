@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "eos_event.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Language"
 #include "eos_log.h"
 #include "lvgl.h"
@@ -202,8 +201,18 @@ static const char *const language_list[LANG_MAX_NUMBER] = {
 static const char **current_lang = NULL;   // Current language pointer
 static bool lang_initialized = false; // Language system initialized flag
 
+// Internal label registry to track label -> str_id mapping
+#define MAX_LANG_LABELS 128
+static struct
+{
+    lv_obj_t *label;
+    lang_string_id_t str_id;
+} s_lang_label_registry[MAX_LANG_LABELS];
+static uint32_t s_lang_label_count = 0;
+
 // Function declarations
-static void lang_event_cb(lv_event_t *e);
+static void lang_event_eos_cb(eos_event_t *e);
+static void _lang_label_obj_deleted_cb(eos_event_t *e);
 
 /* Function Implementations -----------------------------------*/
 void eos_lang_set_current_id(language_id_t lang);
@@ -237,7 +246,7 @@ void eos_lang_set_current_id(language_id_t lang)
     }
 
     // Use event broadcast system to refresh all labels
-    eos_event_broadcast(LV_EVENT_REFRESH, NULL);
+    eos_event_post(EOS_EVENT_LANGUAGE_CHANGED, NULL, NULL);
 
     EOS_LOG_D("Language changed");
 }
@@ -306,30 +315,93 @@ language_id_t eos_lang_get_current_id_with_str(const char *language_str)
     return eos_lang_parse_name(language_str);
 }
 
-static void lang_event_cb(lv_event_t *e)
+static int _lang_label_find_by_obj(lv_obj_t *label)
 {
-    lv_obj_t *label = lv_event_get_target(e);
-
-    // user_data stores str_id + 1 to avoid STR_ID_LANGUAGE(0) conflict with NULL
-    uintptr_t raw_id = (uintptr_t)lv_event_get_user_data(e);
-    if (raw_id == 0)
+    for (uint32_t i = 0; i < s_lang_label_count; i++)
     {
-        EOS_LOG_E("No id for label");
+        if (s_lang_label_registry[i].label == label)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int _lang_label_find_by_str_id(lang_string_id_t str_id)
+{
+    for (uint32_t i = 0; i < s_lang_label_count; i++)
+    {
+        if (s_lang_label_registry[i].str_id == str_id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void _lang_label_register(lv_obj_t *label, lang_string_id_t str_id)
+{
+    if (s_lang_label_count >= MAX_LANG_LABELS)
+    {
+        EOS_LOG_E("Lang label registry full!");
+        return;
+    }
+    int idx = _lang_label_find_by_obj(label);
+    if (idx >= 0)
+    {
+        s_lang_label_registry[idx].str_id = str_id;
+        return;
+    }
+    s_lang_label_registry[s_lang_label_count].label = label;
+    s_lang_label_registry[s_lang_label_count].str_id = str_id;
+    s_lang_label_count++;
+}
+
+static void _lang_label_unregister(lv_obj_t *label)
+{
+    int idx = _lang_label_find_by_obj(label);
+    if (idx < 0)
+    {
+        return;
+    }
+    for (uint32_t i = idx; i < s_lang_label_count - 1; i++)
+    {
+        s_lang_label_registry[i] = s_lang_label_registry[i + 1];
+    }
+    s_lang_label_count--;
+}
+
+static lang_string_id_t _lang_label_get_str_id(lv_obj_t *label)
+{
+    int idx = _lang_label_find_by_obj(label);
+    if (idx < 0)
+    {
+        return STR_ID_LANGUAGE;
+    }
+    return s_lang_label_registry[idx].str_id;
+}
+
+static void lang_event_eos_cb(eos_event_t *e)
+{
+    lv_obj_t *label = eos_event_get_user_data(e);
+    if (!label || !lv_obj_is_valid(label))
+    {
         return;
     }
 
-    lang_string_id_t id = (lang_string_id_t)(raw_id - 1U);
-    const char *text = eos_lang_get_text(id);
+    lang_string_id_t str_id = _lang_label_get_str_id(label);
+    const char *text = eos_lang_get_text(str_id);
     if (text)
     {
         lv_label_set_text(label, text);
     }
 }
 
-static void _lang_label_delete_cb(lv_event_t *e)
+static void _lang_label_deleted_cb(lv_event_t *e)
 {
     lv_obj_t *label = lv_event_get_target(e);
-    eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
+    _lang_label_unregister(label);
+    eos_event_unsubscribe_with_user_data(EOS_EVENT_LANGUAGE_CHANGED, lang_event_eos_cb, label);
 }
 
 void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id)
@@ -342,8 +414,10 @@ void eos_label_set_text_id(lv_obj_t *label, lang_string_id_t str_id)
         lv_label_set_text(label, text);
     }
 
-    eos_event_remove_cb(label, LV_EVENT_REFRESH, lang_event_cb);
-    eos_event_add_cb(label, lang_event_cb, LV_EVENT_REFRESH, (void *)((uintptr_t)str_id + 1U));
+    _lang_label_register(label, str_id);
+    eos_event_unsubscribe_with_user_data(EOS_EVENT_LANGUAGE_CHANGED, lang_event_eos_cb, label);
+    eos_event_subscribe_ex(EOS_EVENT_LANGUAGE_CHANGED, lang_event_eos_cb, label, NULL);
+    lv_obj_add_event_cb(label, _lang_label_deleted_cb, LV_EVENT_DELETE, NULL);
 }
 
 lv_obj_t *eos_lang_label_create(lv_obj_t *parent, lang_string_id_t str_id)

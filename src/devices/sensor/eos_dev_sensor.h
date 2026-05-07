@@ -15,6 +15,7 @@ extern "C" {
 #include <stdbool.h>
 #include "eos_device.h"
 #include "eos_error.h"
+#include "eos_event.h"
 #include "lvgl.h"
 
 /* Public macros ----------------------------------------------*/
@@ -191,7 +192,7 @@ struct eos_dev_sensor_t {
     const char *name;
     eos_sensor_type_t type;
     eos_dev_state_t _state;
-    lv_event_code_t _event_id;
+    eos_event_code_t _event_id;
     struct eos_dev_sensor_t *_next;
 };
 
@@ -244,9 +245,9 @@ void eos_dev_sensor_report_state(eos_dev_sensor_t *dev, eos_dev_state_t state);
 /**
  * @brief Get sensor device event ID
  * @param dev Device pointer
- * @return lv_event_code_t Event ID
+ * @return eos_event_code_t Event ID
  */
-lv_event_code_t eos_dev_sensor_get_event_id(eos_dev_sensor_t *dev);
+eos_event_code_t eos_dev_sensor_get_event_id(eos_dev_sensor_t *dev);
 
 /**
  * @brief Get sensor device type

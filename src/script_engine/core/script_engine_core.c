@@ -152,108 +152,52 @@ static jerry_value_t _module_resolve_cb(const jerry_value_t specifier,
 
     EOS_LOG_D("Full path: %s", full_path);
 
-    // 读取模块文件内容
-    eos_file_t file = eos_fs_open_read(full_path);
-    if (file == EOS_FILE_INVALID)
+    // 读取模块文件内容使用 storage 服务
+    char *source_str = eos_storage_read_file(full_path);
+    if (!source_str)
     {
         EOS_LOG_E("Failed to read dependency: %s", full_path);
         return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to read dependency");
     }
 
-    // 获取文件大小
-    uint32_t file_size;
-    if (eos_fs_size(file, &file_size) != 0)
-    {
-        EOS_LOG_E("Failed to get file size: %s", full_path);
-        eos_fs_close(file);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to get file size");
-    }
-
-    // 分配内存并读取文件内容
-    jerry_char_t *source_p = eos_malloc(file_size + 1);
-    if (!source_p)
-    {
-        EOS_LOG_E("Failed to allocate memory for file content: %s", full_path);
-        eos_fs_close(file);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to allocate memory");
-    }
-
-    int bytes_read = eos_fs_read(file, source_p, file_size);
-    eos_fs_close(file);
-
-    if (bytes_read != (int)file_size)
-    {
-        EOS_LOG_E("Failed to read file content: %s", full_path);
-        eos_free(source_p);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to read file content");
-    }
-
-    source_p[file_size] = '\0';
+    jerry_size_t file_size = strlen(source_str);
 
     jerry_parse_options_t parse_options;
     parse_options.options = JERRY_PARSE_MODULE | JERRY_PARSE_HAS_SOURCE_NAME | JERRY_PARSE_HAS_USER_VALUE;
     parse_options.source_name = jerry_string_sz(full_path);
     parse_options.user_value = jerry_string_sz(engine_ctx.base_path);
 
-    jerry_value_t result = jerry_parse(source_p, file_size, &parse_options);
+    jerry_value_t result = jerry_parse((const jerry_char_t *)source_str, file_size, &parse_options);
 
     jerry_value_free(parse_options.source_name);
     jerry_value_free(parse_options.user_value);
-    eos_free(source_p);
+    eos_free(source_str);
 
     return result;
 }
 
 static jerry_value_t _read_and_parse_module(const char *file_path)
 {
-    // 读取模块文件内容
-    eos_file_t file = eos_fs_open_read(file_path);
-    if (file == EOS_FILE_INVALID)
+    // 读取模块文件内容使用 storage 服务
+    char *source_str = eos_storage_read_file(file_path);
+    if (!source_str)
     {
         EOS_LOG_E("Failed to read module file: %s", file_path);
         return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to read module file");
     }
 
-    // 获取文件大小
-    uint32_t file_size;
-    if (eos_fs_size(file, &file_size) != 0)
-    {
-        EOS_LOG_E("Failed to get file size: %s", file_path);
-        eos_fs_close(file);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to get file size");
-    }
-
-    // 分配内存并读取文件内容
-    jerry_char_t *source_p = eos_malloc(file_size + 1);
-    if (!source_p)
-    {
-        EOS_LOG_E("Failed to allocate memory for file content: %s", file_path);
-        eos_fs_close(file);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to allocate memory");
-    }
-
-    int bytes_read = eos_fs_read(file, source_p, file_size);
-    eos_fs_close(file);
-
-    if (bytes_read != (int)file_size)
-    {
-        EOS_LOG_E("Failed to read file content: %s", file_path);
-        eos_free(source_p);
-        return jerry_throw_sz(JERRY_ERROR_COMMON, "Failed to read file content");
-    }
-
-    source_p[file_size] = '\0';
+    jerry_size_t file_size = strlen(source_str);
 
     jerry_parse_options_t parse_options;
     parse_options.options = JERRY_PARSE_MODULE | JERRY_PARSE_HAS_SOURCE_NAME | JERRY_PARSE_HAS_USER_VALUE;
     parse_options.source_name = jerry_string_sz(file_path);
     parse_options.user_value = jerry_string_sz(engine_ctx.base_path);
 
-    jerry_value_t result = jerry_parse(source_p, file_size, &parse_options);
+    jerry_value_t result = jerry_parse((const jerry_char_t *)source_str, file_size, &parse_options);
 
     jerry_value_free(parse_options.source_name);
     jerry_value_free(parse_options.user_value);
-    eos_free(source_p);
+    eos_free(source_str);
 
     return result;
 }
@@ -544,7 +488,7 @@ static script_engine_result_t _change_state(script_state_t new_state)
     switch (new_state)
     {
     case SCRIPT_STATE_STOPPED:
-        eos_event_broadcast(EOS_EVENT_SCRIPT_EXITED, NULL);
+        eos_event_post(EOS_EVENT_SCRIPT_EXITED, NULL, NULL);
         break;
 
     default:
@@ -1103,7 +1047,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
                 {
                     _change_state(SCRIPT_STATE_SUSPEND);
                 }
-                eos_event_broadcast(EOS_EVENT_SCRIPT_STARTED, NULL);
+                eos_event_post(EOS_EVENT_SCRIPT_STARTED, NULL, NULL);
                 result = SE_OK;
             }
 

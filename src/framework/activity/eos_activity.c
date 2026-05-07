@@ -24,6 +24,7 @@
 #include "eos_control_center.h"
 #include "eos_msg_list.h"
 #include "eos_event.h"
+#include "eos_img.h"
 /* Macros and Definitions -------------------------------------*/
 #define _ACTIVITY_STACK_INIT_CAPACITY 8
 #define _DEFAULT_TITLE_COLOR EOS_COLOR_BLUE
@@ -130,6 +131,12 @@ static void _activity_run_destroy(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
 
+    // Call on_destroy callback before destroying resources
+    if (activity->lifecycle && activity->lifecycle->on_destroy)
+    {
+        activity->lifecycle->on_destroy(activity);
+    }
+
     activity->user_data = NULL;
 
     if (activity->view && lv_obj_is_valid(activity->view))
@@ -186,7 +193,7 @@ static void _activity_mark_visible(eos_activity_t *activity)
 {
     g_activity_ctx.visible_activity = activity;
     g_activity_ctx.transition_in_progress = false;
-    eos_event_broadcast(EOS_EVENT_ACTIVITY_SCREEN_SWITCHED, activity ? activity->view : NULL);
+    eos_event_post(EOS_EVENT_ACTIVITY_SCREEN_SWITCHED, activity ? activity->view : NULL, activity ? activity->view : NULL);
 }
 
 static void _snapshot_img_delete_cb(lv_event_t *e)
@@ -334,11 +341,6 @@ static void _activity_switch_to(eos_activity_t *next_activity)
 
     eos_control_center_hide();
     eos_msg_list_hide();
-
-    if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_destroy)
-    {
-        cur_activity->lifecycle->on_destroy(cur_activity);
-    }
 
     if (cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_pause)
     {

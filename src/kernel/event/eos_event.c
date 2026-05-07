@@ -1,6 +1,6 @@
 /**
- * @file eos_event.c
- * @brief Event system
+ * @file eos_event_bus.c
+ * @brief Event broadcast system - global broadcast using event ID as index
  */
 
 #include "eos_event.h"
@@ -10,47 +10,59 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #define EOS_LOG_DISABLE
-#define EOS_LOG_TAG "EventSystem"
+#define EOS_LOG_TAG "EventBus"
 #include "eos_log.h"
 #include "eos_port.h"
 #include "eos_config.h"
-#include "lvgl_private.h"
 #include "eos_mem.h"
+
 /* Macros and Definitions -------------------------------------*/
+
+/**
+ * @brief Event structure (private implementation)
+ */
+struct _eos_event_t
+{
+    void *user_data;
+    void *param;
+    lv_obj_t *obj;
+};
+
 /**
  * @brief Event callback node structure
  */
 typedef struct _event_node_t
 {
-    lv_obj_t *obj;
-    lv_event_code_t event;
-    lv_event_cb_t cb;
+    eos_event_code_t event_id;
+    eos_event_cb_t cb;
     void *user_data;
+    lv_obj_t *obj;
     struct _event_node_t *next;
     bool marked_for_delete;
-    bool is_global;
 } event_node_t;
+
 /* Variables --------------------------------------------------*/
 static event_node_t *event_list_head = NULL;
 static int g_broadcast_depth = 0;
 static bool g_event_list_modified = false;
+static eos_event_code_t g_next_event_id = EOS_EVENT_LAST;
 
 /* Function Implementations -----------------------------------*/
 
-#if EOS_COMPILE_MODE == DEBUG
+#if EOS_COMPIPILE_MODE == DEBUG
 void _event_list_show(void)
 {
     event_node_t *curr = event_list_head;
-    EOS_LOG_I("Event list:");
+    EOS_LOG_I("Event bus list:");
     while (curr)
     {
-        EOS_LOG_I(" current: [%p] obj[%p] event[%d] cb[%p] marked[%d] global[%d]",
-                  curr, curr->obj, (int)curr->event, (void *)curr->cb,
-                  curr->marked_for_delete ? 1 : 0, curr->is_global ? 1 : 0);
+        EOS_LOG_I(" current: [%p] event[%d] cb[%p] marked[%d]",
+                  curr, (int)curr->event_id, (void *)curr->cb,
+                  curr->marked_for_delete ? 1 : 0);
         curr = curr->next;
     }
 }
-#endif /* EOS_COMPILE_MODE */
+#endif
 
 /**
  * @brief Mark matching nodes for deletion, deferred cleanup
@@ -65,8 +77,8 @@ static void _mark_node_deleted_by_predicate(bool (*pred)(event_node_t *, void *)
             {
                 n->marked_for_delete = true;
                 g_event_list_modified = true;
-                EOS_LOG_D("Marked node [%p] obj[%p] event[%d] cb[%p] global[%d] for deletion",
-                          n, n->obj, (int)n->event, (void *)n->cb, n->is_global ? 1 : 0);
+                EOS_LOG_D("Marked node [%p] event[%d] cb[%p] for deletion",
+                          n, (int)n->event_id, (void *)n->cb);
             }
         }
     }
@@ -85,8 +97,8 @@ static void _cleanup_deleted_nodes(void)
             event_node_t *tmp = *curr;
             *curr = (*curr)->next;
 
-            EOS_LOG_D("Freeing node [%p] obj[%p] event[%d] cb[%p] global[%d]",
-                      tmp, tmp->obj, (int)tmp->event, (void *)tmp->cb, tmp->is_global ? 1 : 0);
+            EOS_LOG_D("Freeing node [%p] event[%d] cb[%p]",
+                      tmp, (int)tmp->event_id, (void *)tmp->cb);
 
             eos_free(tmp);
             g_event_list_modified = true;
@@ -98,63 +110,57 @@ static void _cleanup_deleted_nodes(void)
     }
 }
 
-static bool _pred_match_obj(event_node_t *n, void *ctx)
-{
-    lv_obj_t *obj = ctx;
-    return (n->obj == obj && !n->is_global);
-}
-
-static bool _pred_match_global_cb(event_node_t *n, void *ctx)
-{
-    lv_event_cb_t cb = ctx;
-    return (n->is_global && n->cb == cb);
-}
-
-static bool _pred_match_global_event_cb(event_node_t *n, void *ctx)
+static bool _pred_match_event_cb(event_node_t *n, void *ctx)
 {
     struct
     {
-        lv_event_code_t event;
-        lv_event_cb_t cb;
+        uint32_t event_id;
+        eos_event_cb_t cb;
     } *params = ctx;
 
-    return (n->is_global && n->event == params->event && n->cb == params->cb);
+    return (n->event_id == params->event_id && n->cb == params->cb);
 }
 
-static void _obj_delete_cb(lv_event_t *e)
+static bool _pred_match_cb(event_node_t *n, void *ctx)
 {
-    lv_obj_t *obj = lv_event_get_target(e);
-    EOS_LOG_D("_obj_delete_cb: obj [%p]", obj);
-
-    if (g_broadcast_depth > 0)
-    {
-        _mark_node_deleted_by_predicate(_pred_match_obj, obj);
-    }
-    else
-    {
-        _mark_node_deleted_by_predicate(_pred_match_obj, obj);
-        _cleanup_deleted_nodes();
-    }
+    eos_event_cb_t cb = ctx;
+    return (n->cb == cb);
 }
 
-static bool _has_obj_delete_guard_cb(lv_obj_t *obj)
+static bool _pred_match_event_cb_user_data(event_node_t *n, void *ctx)
 {
-    uint32_t cnt = lv_obj_get_event_count(obj);
-    for (uint32_t i = 0; i < cnt; i++)
+    struct
     {
-        lv_event_dsc_t *dsc = lv_obj_get_event_dsc(obj, i);
-        if (!dsc)
-            continue;
-        if (lv_event_dsc_get_cb(dsc) == _obj_delete_cb)
-            return true;
-    }
-    return false;
+        uint32_t event_id;
+        eos_event_cb_t cb;
+        void *user_data;
+    } *params = ctx;
+
+    return (n->event_id == params->event_id && n->cb == params->cb && n->user_data == params->user_data);
 }
 
-void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, void *user_data)
+eos_event_code_t eos_event_register_id(void)
 {
-    EOS_CHECK_PTR_RETURN(obj && cb);
-    EOS_LOG_I("Event %d add callback: [%p], obj: [%p]", (int)event, (void *)cb, (void *)obj);
+    if (g_next_event_id >= EOS_EVENT_MAX)
+    {
+        EOS_LOG_E("Failed to register event ID - no more IDs available");
+        return EOS_EVENT_UNKNOWN;
+    }
+
+    uint32_t new_id = g_next_event_id++;
+    EOS_LOG_I("Registered new event ID: %d", new_id);
+    return new_id;
+}
+
+void eos_event_subscribe(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data)
+{
+    eos_event_subscribe_ex(event_id, cb, user_data, NULL);
+}
+
+void eos_event_subscribe_ex(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data, lv_obj_t *obj)
+{
+    EOS_CHECK_PTR_RETURN(cb);
+    EOS_LOG_I("Subscribe event %d, callback: [%p], obj: [%p]", (int)event_id, (void *)cb, (void *)obj);
 
     event_node_t *new_node = eos_malloc(sizeof(event_node_t));
     if (!new_node)
@@ -163,58 +169,23 @@ void eos_event_add_cb(lv_obj_t *obj, lv_event_cb_t cb, lv_event_code_t event, vo
         return;
     }
 
+    new_node->event_id = event_id;
+    new_node->cb = cb;
+    new_node->user_data = user_data;
     new_node->obj = obj;
-    new_node->event = event;
-    new_node->cb = cb;
-    new_node->user_data = user_data;
     new_node->next = NULL;
     new_node->marked_for_delete = false;
-    new_node->is_global = false;
 
     new_node->next = event_list_head;
     event_list_head = new_node;
 
-    lv_obj_add_event_cb(obj, cb, event, user_data);
-
-    if (!_has_obj_delete_guard_cb(obj))
-    {
-        lv_obj_add_event_cb(obj, _obj_delete_cb, LV_EVENT_DELETE, NULL);
-    }
+    EOS_LOG_D("Event callback subscribed successfully");
 }
 
-void eos_event_add_global_cb(lv_event_cb_t cb, lv_event_code_t event, void *user_data)
+static void eos_event_unsubscribe_ex(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data)
 {
-    EOS_CHECK_PTR_RETURN(cb);
-    EOS_LOG_I("Add global event callback: event[%d] cb[%p]", (int)event, (void *)cb);
-
-    event_node_t *new_node = eos_malloc(sizeof(event_node_t));
-    if (!new_node)
-    {
-        EOS_LOG_E("Failed to allocate global event node");
-        return;
-    }
-
-    new_node->obj = NULL;
-    new_node->event = event;
-    new_node->cb = cb;
-    new_node->user_data = user_data;
-    new_node->next = NULL;
-    new_node->marked_for_delete = false;
-    new_node->is_global = true;
-
-    new_node->next = event_list_head;
-    event_list_head = new_node;
-
-    EOS_LOG_D("Global event callback added successfully");
-}
-
-static void eos_event_remove_cb_ex(lv_obj_t *obj,
-                                   lv_event_code_t event,
-                                   lv_event_cb_t cb,
-                                   void *user_data)
-{
-    EOS_LOG_I("Remove callback: obj[%p] event[%d] cb[%p] user_data[%p] broadcasting=%d",
-              (void *)obj, (int)event, (void *)cb, user_data, g_broadcast_depth);
+    EOS_LOG_I("Unsubscribe: event[%d] cb[%p] user_data[%p] broadcasting=%d",
+              (int)event_id, (void *)cb, user_data, g_broadcast_depth);
 
     event_node_t **curr = &event_list_head;
     bool removed = false;
@@ -222,21 +193,7 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
     while (*curr)
     {
         event_node_t *n = *curr;
-        bool match = true;
-
-        if (obj == NULL)
-        {
-            if (!n->is_global)
-                match = false;
-        }
-        else
-        {
-            if (n->is_global || n->obj != obj)
-                match = false;
-        }
-
-        if (match && (n->event != event || n->cb != cb))
-            match = false;
+        bool match = (n->event_id == event_id && n->cb == cb);
 
         if (match && user_data != NULL && n->user_data != user_data)
             match = false;
@@ -248,23 +205,11 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
             {
                 n->marked_for_delete = true;
                 g_event_list_modified = true;
-
-                if (!n->is_global && n->obj)
-                {
-                    lv_obj_remove_event_cb(n->obj, cb);
-                }
-
                 curr = &(*curr)->next;
             }
             else
             {
                 *curr = n->next;
-
-                if (!n->is_global && n->obj)
-                {
-                    lv_obj_remove_event_cb(n->obj, cb);
-                }
-
                 eos_free(n);
                 continue;
             }
@@ -281,76 +226,100 @@ static void eos_event_remove_cb_ex(lv_obj_t *obj,
     }
 }
 
-void eos_event_remove_cb(lv_obj_t *obj,
-                         lv_event_code_t event,
-                         lv_event_cb_t cb)
+void eos_event_unsubscribe(eos_event_code_t event_id, eos_event_cb_t cb)
 {
-    eos_event_remove_cb_ex(obj, event, cb, NULL);
+    eos_event_unsubscribe_ex(event_id, cb, NULL);
 }
 
-void eos_event_remove_cb_with_user_data(lv_obj_t *obj,
-                                        lv_event_code_t event,
-                                        lv_event_cb_t cb,
-                                        void *user_data)
+void eos_event_unsubscribe_with_user_data(eos_event_code_t event_id, eos_event_cb_t cb, void *user_data)
 {
-    eos_event_remove_cb_ex(obj, event, cb, user_data);
+    eos_event_unsubscribe_ex(event_id, cb, user_data);
 }
 
-inline void eos_event_remove_global_cb(lv_event_code_t event,
-                                       lv_event_cb_t cb)
+void eos_event_unsubscribe_all(eos_event_cb_t cb)
 {
-    eos_event_remove_cb_ex(NULL, event, cb, NULL);
+    EOS_CHECK_PTR_RETURN(cb);
+    EOS_LOG_I("Unsubscribe all events for cb[%p]", (void *)cb);
+
+    if (g_broadcast_depth > 0)
+    {
+        _mark_node_deleted_by_predicate(_pred_match_cb, cb);
+    }
+    else
+    {
+        _mark_node_deleted_by_predicate(_pred_match_cb, cb);
+        _cleanup_deleted_nodes();
+    }
 }
 
-inline void eos_event_remove_global_cb_with_user_data(lv_event_code_t event,
-                                                      lv_event_cb_t cb,
-                                                      void *user_data)
+void eos_event_unsubscribe_with_obj(eos_event_code_t event_id, eos_event_cb_t cb, lv_obj_t *obj)
 {
-    eos_event_remove_cb_ex(NULL, event, cb, user_data);
+    EOS_LOG_I("Unsubscribe with obj: event[%d] cb[%p] obj[%p] broadcasting=%d",
+              (int)event_id, (void *)cb, (void *)obj, g_broadcast_depth);
+
+    event_node_t **curr = &event_list_head;
+    bool removed = false;
+
+    while (*curr)
+    {
+        event_node_t *n = *curr;
+        bool match = (n->event_id == event_id && n->cb == cb && n->obj == obj);
+
+        if (match)
+        {
+            removed = true;
+            if (g_broadcast_depth > 0)
+            {
+                n->marked_for_delete = true;
+                g_event_list_modified = true;
+                curr = &(*curr)->next;
+            }
+            else
+            {
+                *curr = n->next;
+                eos_free(n);
+                continue;
+            }
+        }
+        else
+        {
+            curr = &(*curr)->next;
+        }
+    }
+
+    if (!removed)
+    {
+        EOS_LOG_W("Callback not found for removal with obj");
+    }
 }
 
-void eos_event_broadcast(lv_event_code_t event, void *param)
+void eos_event_post(eos_event_code_t event_id, void *param, lv_obj_t *obj)
 {
-    EOS_LOG_I("Broadcast event: [%d] (begin) depth=%d", (int)event, g_broadcast_depth + 1);
+    EOS_LOG_I("Post event: [%d] (begin) depth=%d", (int)event_id, g_broadcast_depth + 1);
     g_broadcast_depth++;
     bool local_list_was_modified = false;
     event_node_t *curr = event_list_head;
+
     while (curr)
     {
         event_node_t *next = curr->next;
 
-        EOS_LOG_D("Broadcast visiting node [%p] obj[%p] event[%d] marked[%d] global[%d]",
-                  curr, curr->obj, (int)curr->event, curr->marked_for_delete ? 1 : 0, curr->is_global ? 1 : 0);
+        EOS_LOG_D("Post visiting node [%p] event[%d] marked[%d]",
+                  curr, (int)curr->event_id, curr->marked_for_delete ? 1 : 0);
 
-        if (!curr->marked_for_delete && curr->event == event)
+        if (!curr->marked_for_delete && curr->event_id == event_id)
         {
-            if (curr->is_global)
-            {
-                EOS_LOG_D("Calling global callback [%p] for event [%d]", (void *)curr->cb, (int)event);
+            EOS_LOG_D("Calling callback [%p] for event [%d]", (void *)curr->cb, (int)event_id);
 
-                lv_event_t e;
-                e.code = event;
-                e.param = param;
-                e.user_data = curr->user_data;
-                e.current_target = NULL;
-                e.original_target = NULL;
+            eos_event_t e;
+            e.user_data = curr->user_data;
+            e.param = param;
+            e.obj = curr->obj;
 
-                curr->cb(&e);
+            curr->cb(&e);
 
-                if (g_event_list_modified)
-                    local_list_was_modified = true;
-            }
-            else if (curr->obj && lv_obj_is_valid(curr->obj) && lv_obj_has_class(curr->obj, &lv_obj_class))
-            {
-                lv_obj_t *target = curr->obj;
-                lv_result_t res = lv_obj_send_event(target, event, param);
-                if (res != LV_RESULT_OK)
-                {
-                    EOS_LOG_W("Failed to send event %d to obj [%p]", (int)event, (void *)target);
-                }
-                if (g_event_list_modified)
-                    local_list_was_modified = true;
-            }
+            if (g_event_list_modified)
+                local_list_was_modified = true;
         }
 
         curr = next;
@@ -362,20 +331,20 @@ void eos_event_broadcast(lv_event_code_t event, void *param)
     {
         if (g_event_list_modified || local_list_was_modified)
         {
-            EOS_LOG_D("Cleaning up marked nodes after broadcast");
+            EOS_LOG_D("Cleaning up marked nodes after post");
             _cleanup_deleted_nodes();
             g_event_list_modified = false;
         }
     }
 
-    EOS_LOG_I("Broadcast event: [%d] (end) depth=%d", (int)event, g_broadcast_depth);
+    EOS_LOG_I("Post event: [%d] (end) depth=%d", (int)event_id, g_broadcast_depth);
 }
 
 void eos_event_cleanup_now(void)
 {
     if (g_broadcast_depth > 0)
     {
-        EOS_LOG_W("Cleanup requested during broadcast; marking only.");
+        EOS_LOG_W("Cleanup requested during post; marking only.");
         g_event_list_modified = true;
         return;
     }
@@ -383,29 +352,23 @@ void eos_event_cleanup_now(void)
     g_event_list_modified = false;
 }
 
-void eos_event_remove_all_global_cbs(lv_event_cb_t cb)
+void *eos_event_get_user_data(eos_event_t *e)
 {
-    EOS_CHECK_PTR_RETURN(cb);
-    EOS_LOG_I("Remove all global callbacks for cb[%p]", (void *)cb);
-
-    if (g_broadcast_depth > 0)
-    {
-        _mark_node_deleted_by_predicate(_pred_match_global_cb, cb);
-    }
-    else
-    {
-        _mark_node_deleted_by_predicate(_pred_match_global_cb, cb);
-        _cleanup_deleted_nodes();
-    }
+    if (!e)
+        return NULL;
+    return e->user_data;
 }
 
-lv_event_code_t eos_event_register_id(void)
+void *eos_event_get_param(eos_event_t *e)
 {
-    lv_event_code_t new_id = lv_event_register_id();
-    if(new_id > EOS_EVENT_USER_MAX)
-    {
-        EOS_LOG_E("Failed to register event ID");
-        return EOS_EVENT_UNKNOWN;
-    }
-    return new_id;
+    if (!e)
+        return NULL;
+    return e->param;
+}
+
+lv_obj_t *eos_event_get_obj(eos_event_t *e)
+{
+    if (!e)
+        return NULL;
+    return e->obj;
 }

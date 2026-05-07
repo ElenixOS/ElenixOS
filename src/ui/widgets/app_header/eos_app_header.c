@@ -9,7 +9,6 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "AppHeader"
 #include "eos_log.h"
 #include "eos_core.h"
@@ -563,7 +562,7 @@ void eos_app_header_init(void)
     // 标题文字
     app_header->title_label = lv_label_create(app_header->container);
     _set_title_style(app_header->title_label);
-    eos_event_add_cb(app_header->title_label, _update_title_label, LV_EVENT_REFRESH, NULL);
+    lv_obj_add_event_cb(app_header->title_label, _update_title_label, LV_EVENT_REFRESH, NULL);
 
     // 默认隐藏 app_header
     lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);

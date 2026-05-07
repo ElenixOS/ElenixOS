@@ -124,7 +124,7 @@ eos_result_t _eos_watchface_list_get_installed()
     char name_buf[256];
 
     // Open application installation directory
-    dir = eos_fs_opendir(EOS_WATCHFACE_INSTALLED_DIR);
+    dir = eos_storage_dir_open(EOS_WATCHFACE_INSTALLED_DIR);
     if (!dir)
     {
         EOS_LOG_E("Failed to open watchface directory: %s", EOS_WATCHFACE_INSTALLED_DIR);
@@ -132,7 +132,7 @@ eos_result_t _eos_watchface_list_get_installed()
     }
 
     // Traverse all entries in the directory
-    while (eos_fs_readdir(dir, name_buf, sizeof(name_buf)) == 0)
+    while (eos_storage_dir_read(dir, name_buf, sizeof(name_buf)) == 0)
     {
         // Skip "." and ".." directories
         if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0)
@@ -153,7 +153,7 @@ eos_result_t _eos_watchface_list_get_installed()
         }
     }
 
-    eos_fs_closedir(dir);
+    eos_storage_dir_close(dir);
     EOS_LOG_I("Loaded %zu installed watchfaces", watchface_list.size);
     return EOS_OK;
 }
@@ -203,7 +203,7 @@ eos_result_t eos_watchface_install(const char *eapk_path)
         eos_storage_rm_recursive(path);
     }
     // Create folder with application name
-    if (eos_fs_mkdir(path) == 0)
+    if (eos_storage_mkdir_if_not_exist(path) == EOS_OK)
     {
         EOS_LOG_I("Created dir: %s\n", path);
     }
@@ -256,7 +256,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
     // Clean up application data
     if (eos_storage_is_dir(data_path))
     {
-        ret = eos_storage_rm_recursive(path);
+        ret = eos_storage_rm_recursive(data_path);
     }
 
     if (ret != EOS_OK)

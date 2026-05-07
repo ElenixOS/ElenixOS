@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include "lvgl.h"
 #include "cJSON.h"
-#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "WatchfaceList"
 #include "eos_log.h"
 #include "eos_watchface.h"

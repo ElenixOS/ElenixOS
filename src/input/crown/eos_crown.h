@@ -15,6 +15,7 @@ extern "C" {
 #include <stdbool.h>
 #include "eos_core.h"
 #include "input/eos_input.h"
+#include "eos_slide_widget.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
@@ -53,6 +54,11 @@ void eos_crown_encoder_report(eos_crown_encoder_diff_t diff);
  * @brief Initialize
  */
 void eos_crown_init(void);
+/**
+ * @brief Register slide widget to enable automatic encoder targeting when the widget is opened
+ * @param sw Target slide widget
+ */
+void eos_crown_encoder_register_slide_widget(eos_slide_widget_t *sw);
 #ifdef __cplusplus
 }
 #endif

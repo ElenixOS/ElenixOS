@@ -565,6 +565,7 @@ eos_msg_list_t *eos_msg_list_create(lv_obj_t *parent)
     msg_list->swipe_panel = eos_swipe_panel_create(parent);
     EOS_CHECK_PTR_RETURN_VAL_FREE(msg_list->swipe_panel, NULL, msg_list);
     eos_swipe_panel_set_dir(msg_list->swipe_panel, EOS_SWIPE_DIR_DOWN);
+    eos_crown_encoder_register_slide_widget(msg_list->swipe_panel->sw);
     eos_slide_widget_add_event_cb_reached_threshold(msg_list->swipe_panel->sw, _slide_widget_reached_threshold_cb, NULL);
 
     msg_list->list = lv_list_create(msg_list->swipe_panel->swipe_obj);

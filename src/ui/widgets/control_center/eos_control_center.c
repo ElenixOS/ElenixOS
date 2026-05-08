@@ -406,6 +406,7 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
 
     eos_swipe_panel_t *swipe_panel = eos_swipe_panel_create(parent);
     eos_swipe_panel_set_dir(swipe_panel, EOS_SWIPE_DIR_UP);
+    eos_crown_encoder_register_slide_widget(swipe_panel->sw);
     eos_swipe_panel_show_handle_bar(swipe_panel);
     cc->swipe_panel = swipe_panel;
 
@@ -424,6 +425,7 @@ eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
                           LV_FLEX_ALIGN_CENTER, // Cross axis (vertical direction) centered
                           LV_FLEX_ALIGN_START);
     lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
 #if EOS_ANIMATION_ENABLE
     lv_obj_add_event_cb(container, _list_scroll_cb, LV_EVENT_SCROLL, container);
     eos_slide_widget_add_event_cb_moving(swipe_panel->sw, _list_scroll_cb, container);

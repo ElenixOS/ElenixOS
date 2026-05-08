@@ -60,6 +60,8 @@ static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
 static void _set_target_obj_immediate(lv_obj_t *obj);
 static void _set_target_view_immediate(lv_obj_t *view);
 static bool _obj_is_visible_for_crown(lv_obj_t *obj);
+static void _slide_widget_state_changed_cb(lv_event_t *e);
+static void _slide_widget_state_changed_async_cb(void *user_data);
 /* Function Implementations -----------------------------------*/
 
 static void _scrollbar_schedule_hide(void)
@@ -363,6 +365,33 @@ static void _activity_view_switched_async_cb(void *user_data)
 {
     lv_obj_t *view = (lv_obj_t *)user_data;
     eos_crown_encoder_set_target_view(view);
+}
+
+static void _slide_widget_state_changed_cb(lv_event_t *e)
+{
+    lv_async_call(_slide_widget_state_changed_async_cb, lv_event_get_param(e));
+}
+
+static void _slide_widget_state_changed_async_cb(void *user_data)
+{
+    eos_slide_widget_t *sw = (eos_slide_widget_t *)user_data;
+    if (sw && sw->state == EOS_SLIDE_WIDGET_STATE_OPEN && sw->target_obj && lv_obj_is_valid(sw->target_obj))
+    {
+        lv_obj_t *target = _find_scrollable_obj(sw->target_obj);
+        if (target)
+        {
+            eos_crown_encoder_set_target_obj(target);
+            return;
+        }
+    }
+}
+
+void eos_crown_encoder_register_slide_widget(eos_slide_widget_t *sw)
+{
+    if (!sw)
+        return;
+
+    eos_slide_widget_add_event_cb_opened(sw, _slide_widget_state_changed_cb, NULL);
 }
 
 static bool _obj_is_visible_for_crown(lv_obj_t *obj)

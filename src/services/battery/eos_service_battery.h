@@ -179,7 +179,7 @@ void eos_battery_set_calc_fn(eos_battery_calc_fn_t fn);
  *
  * @param mode Battery mode
  * @param policy Pointer to policy structure
- * @return EOS_OK on success, EOS_ERR_INVALID_PARAM if mode is invalid
+ * @return EOS_OK on success, EOS_ERR_INVALID_ARG if mode is invalid
  */
 eos_result_t eos_battery_set_policy(eos_battery_mode_t mode, const eos_battery_policy_t *policy);
 
@@ -188,7 +188,7 @@ eos_result_t eos_battery_set_policy(eos_battery_mode_t mode, const eos_battery_p
  *
  * @param mode Battery mode
  * @param policy Pointer to policy structure to fill
- * @return EOS_OK on success, EOS_ERR_INVALID_PARAM if mode is invalid
+ * @return EOS_OK on success, EOS_ERR_INVALID_ARG if mode is invalid
  */
 eos_result_t eos_battery_get_policy(eos_battery_mode_t mode, eos_battery_policy_t *policy);
 

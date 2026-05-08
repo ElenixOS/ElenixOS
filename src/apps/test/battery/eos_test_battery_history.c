@@ -9,6 +9,8 @@
 #include "eos_test_battery_history.h"
 
 /* Includes ---------------------------------------------------*/
+#include <stdio.h>
+#include <stdlib.h>
 #include "eos_service_battery.h"
 #include "eos_log.h"
 #include "eos_basic_widgets.h"

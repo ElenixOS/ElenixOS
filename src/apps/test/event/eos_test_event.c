@@ -6,23 +6,23 @@
 #include "eos_config.h"
 #if EOS_ENABLE_TEST_APP
 
-#include "eos_event.h"
-#include "eos_log.h"
-#include "eos_basic_widgets.h"
-#include "eos_lang.h"
-#include "lvgl.h"
+/* Includes ---------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include "eos_activity.h"
 #include "eos_app_header.h"
 #include "eos_crown.h"
+#include "eos_event.h"
+#include "eos_log.h"
+#include "eos_basic_widgets.h"
+#include "eos_lang.h"
+#include "lvgl.h"
+#include "eos_error.h"
 
+/* Macros and Definitions -------------------------------------*/
 #define EOS_LOG_TAG "EventTest"
 
-/* ============================================
- * Internal types and variables
- * ============================================ */
-
+/* Variables --------------------------------------------------*/
 typedef struct {
     lv_obj_t *container;
     lv_obj_t *list;
@@ -36,17 +36,13 @@ typedef struct {
 
 static _test_context_t _ctx = {0};
 
-/* Test tracking variables */
 static uint32_t _cb_call_count = 0;
 static void *_cb_last_user_data = NULL;
 static void *_cb_last_param = NULL;
 static lv_obj_t *_cb_last_obj = NULL;
 static eos_event_code_t _test_event_id = EOS_EVENT_UNKNOWN;
 
-/* ============================================
- * Test utility functions
- * ============================================ */
-
+/* Function Implementations -----------------------------------*/
 static void _update_result(const char *text)
 {
     if (_ctx.result_label) {
@@ -77,10 +73,6 @@ static void _record_test(const char *name, bool passed, const char *details)
     }
 }
 
-/* ============================================
- * Test Callback Functions
- * ============================================ */
-
 static void _test_event_cb(eos_event_t *e)
 {
     _cb_call_count++;
@@ -94,10 +86,6 @@ static void _test_event_cb2(eos_event_t *e)
     _cb_call_count++;
     (void)e;
 }
-
-/* ============================================
- * Event System Tests
- * ============================================ */
 
 static bool _test_event_register_id(void)
 {
@@ -327,10 +315,6 @@ static bool _test_event_obj_payload(void)
     return passed;
 }
 
-/* ============================================
- * Test Categories
- * ============================================ */
-
 static void _run_basic_tests(void)
 {
     _update_result("Running Basic Event Tests...");
@@ -361,10 +345,6 @@ static void _run_advanced_tests(void)
     _test_event_null_safety();
     _test_event_obj_payload();
 }
-
-/* ============================================
- * Main Test Function
- * ============================================ */
 
 static void _test_category_cb(lv_event_t *e)
 {

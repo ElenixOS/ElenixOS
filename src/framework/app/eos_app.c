@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "eos_misc.h"
 #include "eos_port.h"
 #define EOS_LOG_TAG "App"
 #include "eos_log.h"
@@ -403,7 +402,7 @@ eos_result_t eos_app_install(const char *eapk_path)
         EOS_LOG_E("Read header failed: %s", eapk_path);
         return EOS_FAILED;
     }
-    if (!eos_is_valid_filename(header.pkg_id))
+    if (!eos_storage_is_valid_filename(header.pkg_id))
     {
         EOS_LOG_E("Invalid package id");
         return EOS_FAILED;

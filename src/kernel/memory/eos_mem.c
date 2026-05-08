@@ -118,6 +118,21 @@ void *eos_malloc(size_t size)
     return p;
 }
 
+char *eos_strdup(const char *s)
+{
+    if (!s)
+        return NULL;
+
+    size_t len = strlen(s) + 1;
+    char *copy = eos_malloc(len);
+    if (copy)
+    {
+        memcpy(copy, s, len);
+    }
+
+    return copy;
+}
+
 void eos_free(void *ptr)
 {
     if (!ptr)

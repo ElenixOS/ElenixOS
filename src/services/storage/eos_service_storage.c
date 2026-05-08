@@ -14,7 +14,6 @@
 #include "eos_mem.h"
 #include "eos_dfw.h"
 #include "cJSON.h"
-#include "eos_misc.h"
 /* Macros and Definitions -------------------------------------*/
 #define _FILE_NAME_MAX_LENGTH 256
 /* Variables --------------------------------------------------*/
@@ -55,6 +54,32 @@ static bool _storage_sanitize_path(const char *path, char *out_path, size_t out_
     }
 
     snprintf(out_path, out_path_size, "%s%s", sys_root, path);
+    return true;
+}
+
+bool eos_storage_is_valid_filename(const char *name)
+{
+    if (!name || name[0] == '\0')
+    {
+        EOS_LOG_E("Filename NULL");
+        return false;
+    }
+
+    const char *invalid_chars = "/\\:*?\"<>|";
+
+    for (const char *p = name; *p; p++)
+    {
+        if ((unsigned char)*p < 32)
+        {
+            EOS_LOG_E("Filename control char");
+            return false;
+        }
+        if (strchr(invalid_chars, *p))
+        {
+            EOS_LOG_E("Filename invalid char");
+            return false;
+        }
+    }
     return true;
 }
 

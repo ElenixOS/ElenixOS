@@ -1,5 +1,5 @@
 /**
- * @file eos_event_bus.c
+ * @file eos_event.c
  * @brief Event broadcast system - global broadcast using event ID as index
  */
 

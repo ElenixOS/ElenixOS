@@ -8,13 +8,14 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lvgl.h"
 #include "cJSON.h"
 #define EOS_LOG_TAG "WatchfaceList"
 #include "eos_log.h"
 #include "eos_watchface.h"
 #include "eos_basic_widgets.h"
-#include "eos_misc.h"
+#include "eos_pkg_mgr.h"
 #include "eos_img.h"
 #include "eos_port.h"
 #include "eos_anim.h"

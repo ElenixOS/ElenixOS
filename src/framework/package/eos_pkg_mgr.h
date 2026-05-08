@@ -65,6 +65,12 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
+ * @brief Release and clear data inside script package
+ * @param pkg Target script package
+ */
+void eos_pkg_free(script_pkg_t *pkg);
+
+/**
  * @brief Read package header
  * @param pkg_path Package path
  * @param header Package header structure pointer

@@ -9,7 +9,7 @@
 #include "eos_dev_sensor.h"
 #include "eos_event.h"
 #include "eos_port_critical.h"
-
+#include "eos_mem.h"
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
@@ -34,7 +34,7 @@ eos_result_t eos_dev_sensor_register(const char *name, eos_sensor_type_t type, c
         iter = iter->_next;
     }
 
-    eos_dev_sensor_t *sensor = (eos_dev_sensor_t *)malloc(sizeof(eos_dev_sensor_t));
+    eos_dev_sensor_t *sensor = (eos_dev_sensor_t *)eos_malloc(sizeof(eos_dev_sensor_t));
     if (!sensor) {
         eos_critical_leave(ctx);
         return EOS_ERR_MEM;

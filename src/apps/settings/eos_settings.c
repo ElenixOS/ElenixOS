@@ -24,7 +24,6 @@
 #include "eos_swipe_panel.h"
 #include "eos_app.h"
 #include "eos_watchface.h"
-#include "eos_misc.h"
 #include "eos_theme.h"
 #include "eos_pkg_mgr.h"
 #include "eos_service_sensor.h"

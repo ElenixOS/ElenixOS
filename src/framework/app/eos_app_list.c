@@ -9,13 +9,14 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lvgl.h"
 #include "cJSON.h"
 #define EOS_LOG_TAG "AppList"
 #include "eos_log.h"
 #include "eos_app.h"
 #include "eos_basic_widgets.h"
-#include "eos_misc.h"
+#include "eos_pkg_mgr.h"
 #include "eos_img.h"
 #include "eos_port.h"
 #include "eos_anim.h"
@@ -23,7 +24,6 @@
 #include "eos_service_config.h"
 #include "eos_event.h"
 #include "eos_lang.h"
-#include "script_engine_core.h"
 #include "eos_settings.h"
 #include "eos_flash_light.h"
 #include "eos_service_storage.h"

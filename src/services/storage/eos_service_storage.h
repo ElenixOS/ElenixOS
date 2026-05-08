@@ -23,6 +23,13 @@ extern "C" {
 
 /* Public function prototypes --------------------------------*/
 
+/**
+ * @brief Check if it's a valid filename for storage operations
+ * @param name File name
+ * @return true if valid, false otherwise
+ */
+bool eos_storage_is_valid_filename(const char *name);
+
 /************************** JSON Storage API **************************/
 
 /**

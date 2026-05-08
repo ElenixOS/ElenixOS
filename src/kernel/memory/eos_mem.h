@@ -28,6 +28,16 @@ extern "C" {
 void *eos_malloc(size_t size);
 
 /**
+ * @brief Create a copy of the given string
+ * @param s Source string
+ * @return char* Returns newly allocated string pointer on success
+ *
+ * Returns NULL if memory allocation fails
+ * @note Use `eos_free(str)` to release the copied string
+ */
+char *eos_strdup(const char *s);
+
+/**
  * @brief Allocate a block of continuous memory and fill it with zeros
  * @param size Memory size, unit: bytes
  * @return void* Returns memory address on success, otherwise returns NULL

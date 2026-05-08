@@ -17,13 +17,13 @@
 #include "cJSON.h"
 
 #include "eos_port.h"
-#include "eos_misc.h"
 #include "eos_icon.h"
 #include "eos_watchface.h"
 #include "eos_app.h"
 #include "eos_config.h"
 #include "eos_service_storage.h"
 #include "eos_mem.h"
+#include "eos_pkg_mgr.h"
 #include "eos_event.h"
 #include "eos_cqueue.h"
 

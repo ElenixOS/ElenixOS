@@ -85,7 +85,7 @@ static jerry_value_t _module_import_cb(const jerry_value_t specifier,
                                        const jerry_value_t user_value,
                                        void *user_p)
 {
-    // 如果队列不存在，创建一个
+    // If the queue doesn't exist, create it
     if (!g_module_queue)
     {
         g_module_queue = eos_cqueue_create(SCRIPT_DEFAULT_CQUEUE_CAPACITY);
@@ -96,7 +96,7 @@ static jerry_value_t _module_import_cb(const jerry_value_t specifier,
         }
     }
 
-    // 分配模块任务
+    // Allocate a module task
     module_task_t *task = eos_malloc_zeroed(sizeof(module_task_t));
     if (!task)
     {
@@ -110,7 +110,7 @@ static jerry_value_t _module_import_cb(const jerry_value_t specifier,
     jerry_value_t promise = jerry_promise();
     task->promise = jerry_value_copy(promise);
 
-    // 将任务加入队列
+    // Enqueue the task
     if (!eos_cqueue_enqueue(g_module_queue, task))
     {
         EOS_LOG_E("Failed to enqueue module task");
@@ -140,19 +140,19 @@ static jerry_value_t _module_resolve_cb(const jerry_value_t specifier,
 
     if (specifier_buffer[0] == '.' && (specifier_buffer[1] == '/' || specifier_buffer[1] == '\\'))
     {
-        // 相对路径，使用脚本的基础路径
+        // Relative path: use the script's base path
         const char *referrer_path = engine_ctx.base_path ? engine_ctx.base_path : "/";
         snprintf(full_path, sizeof(full_path), "%s%s", referrer_path, specifier_buffer + 2);
     }
     else
     {
-        // 绝对路径或模块名，直接使用
+        // Absolute path or module name: use directly
         snprintf(full_path, sizeof(full_path), "%s", (const char *)specifier_buffer);
     }
 
     EOS_LOG_D("Full path: %s", full_path);
 
-    // 读取模块文件内容使用 storage 服务
+    // Read module file content using the storage service
     char *source_str = eos_storage_read_file(full_path);
     if (!source_str)
     {
@@ -178,7 +178,7 @@ static jerry_value_t _module_resolve_cb(const jerry_value_t specifier,
 
 static jerry_value_t _read_and_parse_module(const char *file_path)
 {
-    // 读取模块文件内容使用 storage 服务
+    // Read module file content using the storage service
     char *source_str = eos_storage_read_file(file_path);
     if (!source_str)
     {
@@ -277,7 +277,7 @@ static void _process_module_queue(void)
         jerry_value_free(namespace_value);
         jerry_value_free(module_value);
 
-        // 清理任务资源
+        // Clean up task resources
         _cleanup_module_task(task);
     }
 }
@@ -670,7 +670,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
         return -SE_FAILED;
     }
 
-    // 释放原有指针（如果有），防止内存泄漏
+    // Free existing pointers (if any) to prevent memory leaks
     if (pkg->id)
         eos_free((void *)pkg->id);
     if (pkg->name)
@@ -682,7 +682,7 @@ script_engine_result_t script_engine_get_manifest(const char *manifest_path, scr
     if (pkg->description)
         eos_free((void *)pkg->description);
 
-    // 分配并赋值
+    // Allocate and assign values
     pkg->id = eos_strdup(id->valuestring);
     pkg->name = eos_strdup(name->valuestring);
     pkg->version = eos_strdup(version->valuestring);
@@ -706,7 +706,7 @@ void script_engine_register_functions(jerry_value_t parent,
 
         jerry_value_t target_obj = parent;
 
-        // 如果指定了 class_name，则获取或创建 class 对象
+        // If class_name is specified, get or create the class object
         if (class_name != NULL)
         {
             jerry_value_t class_key = jerry_string_sz(class_name);
@@ -714,7 +714,7 @@ void script_engine_register_functions(jerry_value_t parent,
 
             if (jerry_value_is_undefined(class_obj))
             {
-                // class 不存在，创建并挂到 parent
+                // If class doesn't exist, create it and attach to parent
                 jerry_value_free(class_obj);
                 class_obj = jerry_object();
                 jerry_value_free(
@@ -722,17 +722,17 @@ void script_engine_register_functions(jerry_value_t parent,
             }
 
             jerry_value_free(class_key);
-            target_obj = class_obj; // 方法挂到 class 下
+            target_obj = class_obj; // Methods are attached under the class
         }
 
-        // 创建函数
+        // Create function
         jerry_value_t fn = jerry_function_external(entries[i].handler);
         jerry_value_t method_key = jerry_string_sz(method_name);
 
         jerry_value_free(
             jerry_object_set(target_obj, method_key, fn));
 
-        // 释放
+        // Free resources
         jerry_value_free(method_key);
         jerry_value_free(fn);
 
@@ -826,10 +826,10 @@ script_engine_result_t script_engine_request_stop(void)
         return SE_OK;
 
     case SCRIPT_STATE_RUNNING:
-        // 请求停止，等待状态转换
+        // Request stop and wait for state change
         _change_state(SCRIPT_STATE_STOPPING);
 
-        // 等待脚本停止
+        // Wait for the script to stop
         for (int timeout = 0; timeout < 100; timeout++)
         {
             if (engine_ctx.state != SCRIPT_STATE_STOPPING)
@@ -838,14 +838,14 @@ script_engine_result_t script_engine_request_stop(void)
             }
         }
 
-        // 如果还在STOPPING状态，强制清理
+        // If still in STOPPING state, force cleanup
         if (engine_ctx.state == SCRIPT_STATE_STOPPING)
         {
             EOS_LOG_W("Force stopping script due to timeout");
             return _script_engine_stop_and_cleanup();
         }
 
-        // 正常停止流程
+        // Normal stop flow
         if (engine_ctx.state == SCRIPT_STATE_STOPPED)
         {
             return SE_OK;
@@ -912,10 +912,10 @@ script_engine_result_t script_engine_init(void)
         return -SE_ERR_NOT_INITIALIZED;
     }
 
-    // 初始化 JerryScript VM
+    // Initialize JerryScript VM
     jerry_init(SCRIPT_INIT_FLAGS);
 
-    // 注册函数和初始化
+    // Initialize SNI and related functions
     sni_init();
 
     engine_ctx.initialized = true;
@@ -938,7 +938,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
         return -SE_ERR_NOT_INITIALIZED;
     }
 
-    // 检查当前状态是否允许运行新脚本
+    // Check if current state allows running a new script
     if (engine_ctx.state != SCRIPT_STATE_STOPPED &&
         engine_ctx.state != SCRIPT_STATE_ERROR)
     {
@@ -953,25 +953,25 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
         return -SE_ERR_MALLOC;
     }
 
-    // 设置当前脚本
+    // Set the current script
     engine_ctx.current_script = owned_script;
     _change_state(SCRIPT_STATE_RUNNING);
 
-    // 设置基础路径
+    // Set base path
     engine_ctx.base_path = engine_ctx.current_script->base_path ? engine_ctx.current_script->base_path : "/";
 
-    // 创建新realm
+    // Create a new realm
     jerry_value_t new_realm = jerry_realm();
     engine_ctx.old_realm = jerry_set_realm(new_realm);
 
-    // 挂载 API
+    // Mount APIs
     sni_mount(new_realm);
 
-    // 设置停止回调和日志
+    // Set stop callback and logging
     jerry_halt_handler(16, _vm_exec_stop_callback, NULL);
     jerry_log_set_level(JERRY_LOG_LEVEL_DEBUG);
 
-    // 设置全局script_info变量
+    // Set global script_info variable
     jerry_value_t global = jerry_current_realm();
     jerry_value_t script_info = _script_engine_create_info(engine_ctx.current_script);
     jerry_value_t key = jerry_string_sz("scriptInfo");
@@ -980,10 +980,10 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
     jerry_value_free(script_info);
     jerry_value_free(global);
 
-    // 注册模块导入回调
+    // Register module import callback
     jerry_module_on_import(_module_import_cb, NULL);
 
-    // 执行脚本
+    // Parse and execute the script
     jerry_parse_options_t parse_options;
     parse_options.options = JERRY_PARSE_MODULE | JERRY_PARSE_HAS_SOURCE_NAME | JERRY_PARSE_HAS_USER_VALUE;
     parse_options.source_name = jerry_string_sz("main.js");
@@ -997,7 +997,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
     jerry_value_free(parse_options.source_name);
     jerry_value_free(parse_options.user_value);
 
-    // 清理脚本字符串
+    // Free the script string
     eos_free((void *)engine_ctx.current_script->script_str);
     engine_ctx.current_script->script_str = NULL;
 
@@ -1005,7 +1005,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
 
     if (!jerry_value_is_exception(parsed_code))
     {
-        // 开始链接模块
+        // Start linking module
         EOS_LOG_I("Linking module");
         jerry_value_t link_result = jerry_module_link(parsed_code, _module_resolve_cb, NULL);
 
@@ -1028,13 +1028,13 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
             {
                 if (engine_ctx.state == SCRIPT_STATE_STOPPING)
                 {
-                    // 请求停止导致的异常，正常处理
+                    // Exception caused by requested stop; handle as normal
                     EOS_LOG_D("Script stopped by request");
                     result = SE_OK;
                 }
                 else
                 {
-                    // 执行出错
+                    // Execution error
                     _script_engine_exception_handler("Script Runtime", run_result);
                     _change_state(SCRIPT_STATE_ERROR);
                     result = -SE_ERR_JERRY_EXCEPTION;
@@ -1042,7 +1042,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
             }
             else
             {
-                // 执行成功
+                // Execution succeeded
                 if (engine_ctx.state == SCRIPT_STATE_RUNNING)
                 {
                     _change_state(SCRIPT_STATE_SUSPEND);
@@ -1056,7 +1056,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
     }
     else
     {
-        // 解析出错
+        // Parse error
         _script_engine_exception_handler("Script Parse", parsed_code);
         _change_state(SCRIPT_STATE_ERROR);
         result = -SE_ERR_INVALID_JS;
@@ -1064,18 +1064,18 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
 
     jerry_value_free(parsed_code);
 
-    // 处理模块队列
+    // Process module queue
     _process_module_queue();
 
-    // 运行 promise jobs
+    // Run promise jobs
     EOS_LOG_D("Running promise jobs...");
     jerry_value_free(jerry_run_jobs());
 
-    // 清理模块队列
+    // Clean up module queue
     _cleanup_module_queue();
     jerry_module_cleanup(jerry_undefined());
 
-    // 如果执行出错，清理资源
+    // If execution failed, clean up resources
     if (result != SE_OK && engine_ctx.state == SCRIPT_STATE_ERROR)
     {
         _engine_cleanup();
@@ -1199,7 +1199,7 @@ script_engine_result_t script_engine_clean_up(void)
         script_engine_request_stop();
     }
 
-    // 清理模块队列
+    // Clean up module queue
     _cleanup_module_queue();
     jerry_module_cleanup(jerry_undefined());
 

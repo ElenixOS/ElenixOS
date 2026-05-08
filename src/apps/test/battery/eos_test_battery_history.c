@@ -7,6 +7,8 @@
 #if EOS_ENABLE_TEST_APP
 
 #include "eos_test_battery_history.h"
+
+/* Includes ---------------------------------------------------*/
 #include "eos_service_battery.h"
 #include "eos_log.h"
 #include "eos_basic_widgets.h"
@@ -17,11 +19,10 @@
 #include "lvgl.h"
 #include <math.h>
 
+/* Macros and Definitions -------------------------------------*/
 #define EOS_LOG_TAG "BatteryHistory"
 
-/* ============================================
- * Internal types and variables
- * ============================================ */
+/* Variables --------------------------------------------------*/
 
 typedef struct {
     lv_obj_t *chart;
@@ -34,9 +35,7 @@ typedef struct {
 
 static _chart_context_t _ctx = {0};
 
-/* ============================================
- * Chart update callback
- * ============================================ */
+/* Function Implementations -----------------------------------*/
 
 static void _chart_update_cb(lv_timer_t *timer)
 {
@@ -77,10 +76,6 @@ static void _chart_update_cb(lv_timer_t *timer)
     }
 }
 
-/* ============================================
- * Activity lifecycle
- * ============================================ */
-
 static void _battery_history_on_destroy(eos_activity_t *activity)
 {
     LV_UNUSED(activity);
@@ -105,10 +100,6 @@ static const eos_activity_lifecycle_t _s_battery_history_lifecycle = {
     .on_pause = NULL,
     .on_resume = NULL
 };
-
-/* ============================================
- * Main test function
- * ============================================ */
 
 void eos_test_battery_history_start(void)
 {

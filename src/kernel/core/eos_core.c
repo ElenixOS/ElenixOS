@@ -77,9 +77,10 @@ static void _print_boot_info(void)
 {
     char build_date[16];
     _format_build_date(build_date, sizeof(build_date));
-    EOS_LOG_I("===========================================");
-    EOS_LOG_I("ElenixOS v" ELENIX_OS_VERSION_FULL " (build %s)", build_date);
-    EOS_LOG_I("===========================================");
+    EOS_LOG_I("System initializing...");
+    EOS_LOG_I("ElenixOS v" ELENIX_OS_VERSION_FULL);
+    EOS_LOG_I("build: %s %s", build_date, __TIME__);
+    EOS_LOG_I("build mode: %s", EOS_COMPILE_MODE==DEBUG?"DEBUG":"RELEASE");
 }
 
 static lv_indev_t *_get_key_indev()

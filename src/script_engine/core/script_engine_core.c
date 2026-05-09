@@ -33,6 +33,8 @@
 #define SCRIPT_INIT_FLAGS JERRY_INIT_MEM_STATS
 #define SCRIPT_DEFAULT_CQUEUE_CAPACITY 10
 #define SCRIPT_ERROR_STACK_BUF_SIZE 256
+#define SCRIPT_BACKTRACE_MAX_FRAMES 16
+#define SCRIPT_BACKTRACE_SOURCE_SIZE 128
 
 /**
  * @brief Module task structure
@@ -55,6 +57,9 @@ typedef struct
     bool initialized;             /**< Whether engine is initialized */
     char *error_info;             /**< Last run error information */
     const char *base_path;        /**< Script base path */
+    script_error_location_t error_location; /**< Error location info */
+    script_error_location_t backtrace[SCRIPT_BACKTRACE_MAX_FRAMES]; /**< Error backtrace */
+    uint32_t backtrace_count;     /**< Number of backtrace frames */
 } script_engine_context_t;
 
 /* Variables --------------------------------------------------*/
@@ -338,6 +343,27 @@ const char *script_engine_get_error_info(void)
     return engine_ctx.error_info ? engine_ctx.error_info : "";
 }
 
+const script_error_location_t *script_engine_get_error_location(void)
+{
+    return &engine_ctx.error_location;
+}
+
+const script_error_location_t *script_engine_get_error_backtrace(uint32_t *count)
+{
+    if (count != NULL)
+    {
+        *count = engine_ctx.backtrace_count;
+    }
+    return engine_ctx.backtrace;
+}
+
+uint32_t script_engine_get_backtrace_count(void)
+{
+    return engine_ctx.backtrace_count;
+}
+
+static void _clear_error_location(void);
+
 static void _clear_error_info(void)
 {
     if (engine_ctx.error_info)
@@ -345,6 +371,7 @@ static void _clear_error_info(void)
         eos_free(engine_ctx.error_info);
         engine_ctx.error_info = NULL;
     }
+    _clear_error_location();
 }
 
 static void _script_pkg_destroy(script_pkg_t *pkg)
@@ -560,11 +587,271 @@ inline void script_engine_set_prop_string(jerry_value_t obj,
     jerry_value_free(prop);
 }
 
+static void _clear_error_location(void)
+{
+    memset(&engine_ctx.error_location, 0, sizeof(script_error_location_t));
+    memset(engine_ctx.backtrace, 0, sizeof(engine_ctx.backtrace));
+    engine_ctx.backtrace_count = 0;
+}
+
+static void _parse_backtrace_from_js_array(jerry_value_t backtrace_array)
+{
+    _clear_error_location();
+
+    if (!jerry_value_is_array(backtrace_array))
+    {
+        return;
+    }
+
+    uint32_t array_len = jerry_array_length(backtrace_array);
+    if (array_len == 0)
+    {
+        return;
+    }
+
+    uint32_t max_frames = array_len;
+    if (max_frames > SCRIPT_BACKTRACE_MAX_FRAMES)
+    {
+        max_frames = SCRIPT_BACKTRACE_MAX_FRAMES;
+    }
+
+    for (uint32_t i = 0; i < max_frames; i++)
+    {
+        jerry_value_t element = jerry_object_get_index(backtrace_array, i);
+        if (!jerry_value_is_string(element))
+        {
+            jerry_value_free(element);
+            continue;
+        }
+
+        jerry_char_t buffer[SCRIPT_ERROR_STACK_BUF_SIZE];
+        jerry_size_t copied = jerry_string_to_buffer(element, JERRY_ENCODING_UTF8, buffer, SCRIPT_ERROR_STACK_BUF_SIZE - 1);
+        buffer[copied] = '\0';
+        jerry_value_free(element);
+
+        // 解析类似 "at main.js:5:15" 的字符串
+        const char *str = (const char *)buffer;
+        script_error_location_t *loc = &engine_ctx.backtrace[i];
+
+        // 查找文件名
+        const char *file_start = strstr(str, " ");
+        if (file_start == NULL)
+        {
+            file_start = str;
+        }
+        else
+        {
+            file_start++;
+        }
+
+        const char *colon1 = strchr(file_start, ':');
+        if (colon1 == NULL)
+        {
+            continue;
+        }
+
+        const char *colon2 = strchr(colon1 + 1, ':');
+        if (colon2 == NULL)
+        {
+            continue;
+        }
+
+        // 提取文件名
+        size_t file_len = colon1 - file_start;
+        if (file_len > SCRIPT_BACKTRACE_SOURCE_SIZE - 1)
+        {
+            file_len = SCRIPT_BACKTRACE_SOURCE_SIZE - 1;
+        }
+        strncpy(loc->source_name, file_start, file_len);
+        loc->source_name[file_len] = '\0';
+
+        // 提取行号和列号
+        loc->line = (uint32_t)atoi(colon1 + 1);
+        loc->column = (uint32_t)atoi(colon2 + 1);
+
+        engine_ctx.backtrace_count++;
+    }
+
+    if (engine_ctx.backtrace_count > 0)
+    {
+        engine_ctx.error_location = engine_ctx.backtrace[0];
+    }
+}
+
+static void _capture_error_backtrace(void)
+{
+    if (!jerry_feature_enabled(JERRY_FEATURE_LINE_INFO))
+    {
+        EOS_LOG_W("Line info disabled, backtrace not available");
+        _clear_error_location();
+        return;
+    }
+
+    jerry_value_t backtrace_array = jerry_backtrace(SCRIPT_BACKTRACE_MAX_FRAMES);
+    if (jerry_value_is_exception(backtrace_array))
+    {
+        EOS_LOG_E("jerry_backtrace returned exception");
+        jerry_value_free(backtrace_array);
+        _clear_error_location();
+        return;
+    }
+
+    uint32_t array_len = jerry_array_length(backtrace_array);
+
+    for (uint32_t i = 0; i < array_len && i < 5; i++)
+    {
+        jerry_value_t element = jerry_object_get_index(backtrace_array, i);
+        if (jerry_value_is_string(element))
+        {
+            jerry_char_t buffer[256];
+            jerry_size_t copied = jerry_string_to_buffer(element, JERRY_ENCODING_UTF8, buffer, sizeof(buffer) - 1);
+            buffer[copied] = '\0';
+            EOS_LOG_D("  backtrace[%u]: %s", i, (const char *)buffer);
+        }
+        jerry_value_free(element);
+    }
+
+    _parse_backtrace_from_js_array(backtrace_array);
+    jerry_value_free(backtrace_array);
+}
+
+static void _log_backtrace(void)
+{
+    if (engine_ctx.backtrace_count == 0)
+    {
+        if (engine_ctx.error_location.line > 0)
+        {
+            EOS_LOG_E("  --> %s:%u:%u",
+                      engine_ctx.error_location.source_name,
+                      engine_ctx.error_location.line,
+                      engine_ctx.error_location.column);
+        }
+        return;
+    }
+
+    EOS_LOG_E("Backtrace:");
+    for (uint32_t i = 0; i < engine_ctx.backtrace_count; i++)
+    {
+        script_error_location_t *loc = &engine_ctx.backtrace[i];
+        if (loc->source_name[0] != '\0')
+        {
+            EOS_LOG_E("  %u: %s:%u:%u", i, loc->source_name, loc->line, loc->column);
+        }
+        else
+        {
+            EOS_LOG_E("  %u: <unknown>", i);
+        }
+    }
+}
+
+static void _extract_error_location_from_exception(jerry_value_t exception_value)
+{
+    if (!jerry_value_is_object(exception_value))
+    {
+        return;
+    }
+
+    _clear_error_location();
+
+    jerry_value_t stack_prop = jerry_object_get_sz(exception_value, "stack");
+    if (jerry_value_is_object(stack_prop))
+    {
+        if (jerry_value_is_array(stack_prop))
+        {
+            uint32_t array_len = jerry_array_length(stack_prop);
+
+            for (uint32_t i = 0; i < array_len && engine_ctx.backtrace_count < SCRIPT_BACKTRACE_MAX_FRAMES; i++)
+            {
+                jerry_value_t element = jerry_object_get_index(stack_prop, i);
+                if (jerry_value_is_string(element))
+                {
+                    jerry_char_t buffer[SCRIPT_ERROR_STACK_BUF_SIZE];
+                    jerry_size_t copied = jerry_string_to_buffer(element, JERRY_ENCODING_UTF8,
+                                                                 buffer, sizeof(buffer) - 1);
+                    buffer[copied] = '\0';
+
+                    script_error_location_t *loc = &engine_ctx.backtrace[engine_ctx.backtrace_count];
+
+                    const char *line_start = (const char *)buffer;
+                    const char *colon1 = strchr(line_start, ':');
+                    const char *colon2 = NULL;
+
+                    if (colon1)
+                    {
+                        colon2 = strchr(colon1 + 1, ':');
+                    }
+
+                    if (colon1 && colon2 && colon2 > colon1)
+                    {
+                        size_t name_len = colon1 - line_start;
+                        if (name_len > SCRIPT_BACKTRACE_SOURCE_SIZE - 1)
+                        {
+                            name_len = SCRIPT_BACKTRACE_SOURCE_SIZE - 1;
+                        }
+                        memcpy(loc->source_name, line_start, name_len);
+                        loc->source_name[name_len] = '\0';
+
+                        loc->line = (uint32_t)atoi(colon1 + 1);
+                        loc->column = (uint32_t)atoi(colon2 + 1);
+
+                        if (engine_ctx.backtrace_count == 0)
+                        {
+                            engine_ctx.error_location = *loc;
+                        }
+
+                        engine_ctx.backtrace_count++;
+                    }
+                }
+                jerry_value_free(element);
+            }
+        }
+        jerry_value_free(stack_prop);
+        return;
+    }
+    jerry_value_free(stack_prop);
+
+    jerry_value_t line_prop = jerry_object_get_sz(exception_value, "lineNumber");
+    if (jerry_value_is_number(line_prop))
+    {
+        engine_ctx.error_location.line = (uint32_t)jerry_value_as_number(line_prop);
+    }
+    jerry_value_free(line_prop);
+
+    jerry_value_t col_prop = jerry_object_get_sz(exception_value, "columnNumber");
+    if (jerry_value_is_number(col_prop))
+    {
+        engine_ctx.error_location.column = (uint32_t)jerry_value_as_number(col_prop);
+    }
+    jerry_value_free(col_prop);
+
+    jerry_value_t msg_prop = jerry_object_get_sz(exception_value, "message");
+    if (jerry_value_is_string(msg_prop))
+    {
+        jerry_size_t size = jerry_string_size(msg_prop, JERRY_ENCODING_UTF8);
+        if (size > 0 && size < SCRIPT_BACKTRACE_SOURCE_SIZE)
+        {
+            jerry_string_to_buffer(msg_prop, JERRY_ENCODING_UTF8,
+                                  (jerry_char_t *)engine_ctx.error_location.source_name,
+                                  size);
+            engine_ctx.error_location.source_name[size] = '\0';
+        }
+        else if (size >= SCRIPT_BACKTRACE_SOURCE_SIZE)
+        {
+            jerry_string_to_buffer(msg_prop, JERRY_ENCODING_UTF8,
+                                  (jerry_char_t *)engine_ctx.error_location.source_name,
+                                  SCRIPT_BACKTRACE_SOURCE_SIZE - 1);
+            engine_ctx.error_location.source_name[SCRIPT_BACKTRACE_SOURCE_SIZE - 1] = '\0';
+        }
+    }
+    jerry_value_free(msg_prop);
+}
+
 /**
  * @brief Parse JS error variable and print error reason
  */
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
+    EOS_LOG_E("===================================");
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_value_t final_str_val = value;
     char stack_buf[SCRIPT_ERROR_STACK_BUF_SIZE];
@@ -591,7 +878,7 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
             jerry_string_to_buffer(final_str_val, JERRY_ENCODING_CESU8,
                                    (jerry_char_t *)buf, req_sz);
             buf[req_sz] = '\0';
-            EOS_LOG_E("[%s]%s", tag, buf);
+            EOS_LOG_E("%s Error: %s", tag, buf);
             _set_error_info(buf);
 
             if (need_free)
@@ -612,7 +899,12 @@ static void _script_engine_exception_handler(const char *tag, jerry_value_t resu
     }
 
     jerry_value_free(final_str_val);
+
+    _extract_error_location_from_exception(value);
+    _log_backtrace();
+
     jerry_value_free(value);
+    EOS_LOG_E("===================================");
 }
 /**
  * @brief Convert script_pkg_t to JS object (for JS to access script_info)

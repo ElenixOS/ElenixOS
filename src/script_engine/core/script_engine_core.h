@@ -1,4 +1,4 @@
-﻿
+
 /**
  * @file script_engine_core.h
  * @brief Application system external interface definition
@@ -60,6 +60,16 @@ typedef struct {
 } script_pkg_t;
 
 /**
+ * @brief Script error location structure
+ */
+typedef struct
+{
+    char source_name[128]; /**< Source file name */
+    uint32_t line;         /**< Line number */
+    uint32_t column;       /**< Column number */
+} script_error_location_t;
+
+/**
  * @brief Script engine running result
  */
 typedef enum {
@@ -94,6 +104,22 @@ jerry_value_t script_engine_throw_error(const char *message);
  * @return const char* Error message string
  */
 const char *script_engine_get_error_info(void);
+/**
+ * @brief Get error location information from last error
+ * @return const script_error_location_t* Pointer to error location structure
+ */
+const script_error_location_t *script_engine_get_error_location(void);
+/**
+ * @brief Get error backtrace from last error
+ * @param count Pointer to store backtrace frame count (can be NULL)
+ * @return const script_error_location_t* Pointer to backtrace array
+ */
+const script_error_location_t *script_engine_get_error_backtrace(uint32_t *count);
+/**
+ * @brief Get the number of backtrace frames from last error
+ * @return uint32_t Number of backtrace frames
+ */
+uint32_t script_engine_get_backtrace_count(void);
 /**
  * @brief Add parameter to specified JerryScript object (numeric type)
  * @param obj Target object

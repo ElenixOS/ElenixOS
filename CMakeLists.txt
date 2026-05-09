@@ -51,8 +51,9 @@ target_link_libraries(elenixos_lib PRIVATE cjson)
 
 # JerryScript
 add_compile_options(-Wno-gnu-folding-constant)
-set(JERRY_VM_HALT 1 CACHE INTERNAL "Enable VM halt feature")
-set(JERRY_MEM_STATS 1 CACHE INTERNAL "Enable memory stats")
+set(JERRY_VM_HALT ON CACHE INTERNAL "Enable VM halt feature")
+set(JERRY_MEM_STATS ON CACHE INTERNAL "Enable memory stats")
+set(JERRY_LINE_INFO ON CACHE INTERNAL "Enable line info feature")
 set(JERRY_CMDLINE OFF CACHE BOOL "Build jerry command line tool?" FORCE)
 set(JERRY_CMDLINE_TEST OFF CACHE BOOL "Build jerry test command line tool?" FORCE)
 set(JERRY_CMDLINE_SNAPSHOT OFF CACHE BOOL "Build jerry snapshot command line tool?" FORCE)

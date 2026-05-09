@@ -77,6 +77,7 @@ static bool _list_transition_select_state_for_activity(eos_activity_t *expected_
 static lv_obj_t *_list_transition_resolve_button_target(lv_obj_t *list, lv_obj_t *target);
 static void _list_transition_list_clicked_cb(lv_event_t *e);
 static void _list_transition_list_delete_cb(lv_event_t *e);
+static void _list_transition_cancel_anims_for_list(lv_obj_t *list);
 static void _list_transition_set_scale_cb(void *var, int32_t value);
 static void _list_transition_set_translate_x_cb(void *var, int32_t value);
 static void _list_transition_init_scale_anim(lv_anim_t *anim, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration);
@@ -376,6 +377,8 @@ static void _list_transition_list_delete_cb(lv_event_t *e)
         return;
     }
 
+    _list_transition_cancel_anims_for_list(list);
+
     for (uint32_t i = g_list_transition_state_history_count; i > 0U; i--)
     {
         if (g_list_transition_state_history[i - 1U].list == list)
@@ -387,6 +390,31 @@ static void _list_transition_list_delete_cb(lv_event_t *e)
     if (g_list_transition_state.list == list)
     {
         _list_transition_clear_state();
+    }
+}
+
+static void _list_transition_cancel_anims_for_list(lv_obj_t *list)
+{
+    if (!(list && lv_obj_is_valid(list)))
+    {
+        return;
+    }
+
+    lv_obj_t *children[_LIST_TRANSITION_MAX_VISIBLE_ITEMS] = {0};
+    uint32_t child_cnt = _list_transition_collect_all_children(list, children, _LIST_TRANSITION_MAX_VISIBLE_ITEMS);
+    for (uint32_t i = 0U; i < child_cnt; i++)
+    {
+        if (children[i] && lv_obj_is_valid(children[i]))
+        {
+            lv_anim_delete(children[i], NULL);
+        }
+    }
+
+    lv_anim_delete(list, NULL);
+
+    if (g_list_transition_state.button && lv_obj_is_valid(g_list_transition_state.button))
+    {
+        lv_anim_delete(g_list_transition_state.button, NULL);
     }
 }
 
@@ -484,11 +512,19 @@ bool eos_list_transition_should_animate(eos_activity_t *from, eos_activity_t *to
 
 static void _list_transition_set_scale_cb(void *var, int32_t value)
 {
+    if (!(var && lv_obj_is_valid((lv_obj_t *)var)))
+    {
+        return;
+    }
     lv_obj_set_style_transform_scale((lv_obj_t *)var, value, 0);
 }
 
 static void _list_transition_set_translate_x_cb(void *var, int32_t value)
 {
+    if (!(var && lv_obj_is_valid((lv_obj_t *)var)))
+    {
+        return;
+    }
     lv_obj_set_style_translate_x((lv_obj_t *)var, value, 0);
 }
 

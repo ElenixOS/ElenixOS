@@ -218,6 +218,25 @@ char *script_engine_get_current_script_name(void);
  * @return script_pkg_type_t
  */
 script_pkg_type_t script_engine_get_current_script_type(void);
+/**
+ * @brief Call a JavaScript function with engine state check
+ * @param func Function to call
+ * @param this_val Value of 'this' keyword
+ * @param args_p Array of argument values
+ * @param args_count Number of arguments
+ * @return jerry_value_t Function result, or undefined if engine is stopping/stopped
+ */
+jerry_value_t script_engine_call(jerry_value_t func, jerry_value_t this_val, const jerry_value_t args_p[], const jerry_length_t args_count);
+/**
+ * @brief Set script execution timeout
+ * @param timeout_ms Timeout in milliseconds, 0 means no timeout
+ */
+void script_engine_set_timeout(uint32_t timeout_ms);
+/**
+ * @brief Get script execution timeout
+ * @return uint32_t Timeout in milliseconds
+ */
+uint32_t script_engine_get_timeout(void);
 #ifdef __cplusplus
 }
 #endif

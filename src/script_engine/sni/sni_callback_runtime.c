@@ -14,6 +14,7 @@
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
+#include "script_engine_core.h"
 #include "uthash.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -122,7 +123,7 @@ static void sni_cb_event_dispatch(lv_event_t *e)
     sni_cb_event_prepare_js_event(event_obj, e, ctx->js_user_data);
 
     jerry_value_t args[1] = {event_obj};
-    jerry_value_t ret = jerry_call(ctx->js_cb, jerry_undefined(), args, 1);
+    jerry_value_t ret = script_engine_call(ctx->js_cb, jerry_undefined(), args, 1);
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
     {
@@ -181,7 +182,7 @@ static void sni_cb_timer_dispatch(lv_timer_t *t)
     lv_timer_t *timer_ptr = t;
     jerry_value_t js_timer = sni_tb_c2js(&timer_ptr, SNI_H_LV_TIMER);
     jerry_value_t args[2] = {js_timer, ctx->js_user_data};
-    jerry_value_t ret = jerry_call(ctx->js_cb, jerry_undefined(), args, 2);
+    jerry_value_t ret = script_engine_call(ctx->js_cb, jerry_undefined(), args, 2);
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
     {
@@ -496,7 +497,7 @@ static void sni_cb_anim_call_void_slot(sni_anim_callback_ctx_t *ctx, sni_anim_cb
 
     jerry_value_t js_anim = sni_cb_anim_make_js_anim(ctx);
     jerry_value_t args[1] = {js_anim};
-    jerry_value_t ret = jerry_call(ctx->cb_slots[slot], jerry_undefined(), args, 1);
+    jerry_value_t ret = script_engine_call(ctx->cb_slots[slot], jerry_undefined(), args, 1);
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
     {
@@ -518,7 +519,7 @@ static void sni_cb_anim_custom_exec_dispatch(lv_anim_t *a, int32_t value)
     jerry_value_t js_anim = sni_cb_anim_make_js_anim(ctx);
     jerry_value_t js_value = sni_tb_c2js(&value, SNI_T_INT32);
     jerry_value_t args[2] = {js_anim, js_value};
-    jerry_value_t ret = jerry_call(ctx->cb_slots[SNI_ANIM_CB_SLOT_CUSTOM_EXEC], jerry_undefined(), args, 2);
+    jerry_value_t ret = script_engine_call(ctx->cb_slots[SNI_ANIM_CB_SLOT_CUSTOM_EXEC], jerry_undefined(), args, 2);
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
     {
@@ -566,7 +567,7 @@ static int32_t sni_cb_anim_call_int_slot(sni_anim_callback_ctx_t *ctx, sni_anim_
     int32_t result = fallback;
     jerry_value_t js_anim = sni_cb_anim_make_js_anim(ctx);
     jerry_value_t args[1] = {js_anim};
-    jerry_value_t ret = jerry_call(ctx->cb_slots[slot], jerry_undefined(), args, 1);
+    jerry_value_t ret = script_engine_call(ctx->cb_slots[slot], jerry_undefined(), args, 1);
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
     {

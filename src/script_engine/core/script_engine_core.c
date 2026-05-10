@@ -17,6 +17,7 @@
 #include "cJSON.h"
 
 #include "eos_port.h"
+#include "eos_core.h"
 #include "eos_icon.h"
 #include "eos_watchface.h"
 #include "eos_app.h"
@@ -26,6 +27,7 @@
 #include "eos_pkg_mgr.h"
 #include "eos_event.h"
 #include "eos_cqueue.h"
+#include "eos_dispatcher.h"
 
 #include "sni.h"
 
@@ -35,6 +37,7 @@
 #define SCRIPT_ERROR_STACK_BUF_SIZE 256
 #define SCRIPT_BACKTRACE_MAX_FRAMES 16
 #define SCRIPT_BACKTRACE_SOURCE_SIZE 128
+#define SCRIPT_DEFAULT_TIMEOUT_MS 3000
 
 /**
  * @brief Module task structure
@@ -60,6 +63,8 @@ typedef struct
     script_error_location_t error_location; /**< Error location info */
     script_error_location_t backtrace[SCRIPT_BACKTRACE_MAX_FRAMES]; /**< Error backtrace */
     uint32_t backtrace_count;     /**< Number of backtrace frames */
+    uint32_t script_start_time;   /**< Script execution start time (tick) */
+    uint32_t script_timeout_ms;   /**< Script execution timeout (ms), 0 = no timeout */
 } script_engine_context_t;
 
 /* Variables --------------------------------------------------*/
@@ -67,7 +72,9 @@ static script_engine_context_t engine_ctx = {
     .state = SCRIPT_STATE_STOPPED,
     .current_script = NULL,
     .initialized = false,
-    .base_path = NULL};
+    .base_path = NULL,
+    .script_start_time = 0,
+    .script_timeout_ms = SCRIPT_DEFAULT_TIMEOUT_MS};
 
 static eos_cqueue_t *g_module_queue = NULL;
 
@@ -1048,6 +1055,17 @@ static jerry_value_t _vm_exec_stop_callback(void *user_p)
         return jerry_string_sz("Script terminated by request");
     }
 
+    if (engine_ctx.script_timeout_ms > 0 && engine_ctx.state == SCRIPT_STATE_RUNNING)
+    {
+        uint32_t elapsed = eos_tick_get() - engine_ctx.script_start_time;
+        if (elapsed >= engine_ctx.script_timeout_ms)
+        {
+            EOS_LOG_W("Script execution timeout (%u ms)", elapsed);
+            _change_state(SCRIPT_STATE_STOPPING);
+            return jerry_string_sz("Script execution timeout");
+        }
+    }
+
     return jerry_undefined();
 }
 
@@ -1069,6 +1087,46 @@ char *script_engine_get_current_script_name(void)
 script_pkg_type_t script_engine_get_current_script_type(void)
 {
     return engine_ctx.current_script ? engine_ctx.current_script->type : SCRIPT_TYPE_UNKNOWN;
+}
+
+jerry_value_t script_engine_call(jerry_value_t func, jerry_value_t this_val, const jerry_value_t args_p[], const jerry_length_t args_count)
+{
+    script_state_t state = script_engine_get_state();
+    if (state == SCRIPT_STATE_STOPPING || state == SCRIPT_STATE_STOPPED)
+    {
+        EOS_LOG_W("Script engine is in %s state, rejecting JS call", state == SCRIPT_STATE_STOPPING ? "STOPPING" : "STOPPED");
+        return jerry_undefined();
+    }
+
+    bool was_suspended = (state == SCRIPT_STATE_SUSPEND);
+    if (was_suspended)
+    {
+        _change_state(SCRIPT_STATE_RUNNING);
+        if (engine_ctx.script_timeout_ms > 0)
+        {
+            engine_ctx.script_start_time = eos_tick_get();
+        }
+    }
+
+    jerry_value_t result = jerry_call(func, this_val, args_p, args_count);
+
+    state = script_engine_get_state();
+    if (state == SCRIPT_STATE_RUNNING)
+    {
+        _change_state(SCRIPT_STATE_SUSPEND);
+    }
+
+    return result;
+}
+
+void script_engine_set_timeout(uint32_t timeout_ms)
+{
+    engine_ctx.script_timeout_ms = timeout_ms;
+}
+
+uint32_t script_engine_get_timeout(void)
+{
+    return engine_ctx.script_timeout_ms;
 }
 
 /**
@@ -1119,52 +1177,12 @@ script_engine_result_t script_engine_request_stop(void)
 
     case SCRIPT_STATE_RUNNING:
         _change_state(SCRIPT_STATE_STOPPING);
-
-        for (int timeout = 0; timeout < 100; timeout++)
-        {
-            if (engine_ctx.state != SCRIPT_STATE_STOPPING)
-            {
-                break;
-            }
-            lv_timer_handler();
-            eos_delay(1);
-        }
-
-        if (engine_ctx.state == SCRIPT_STATE_STOPPING)
-        {
-            EOS_LOG_W("Force stopping script due to timeout");
-            return _script_engine_stop_and_cleanup();
-        }
-
-        if (engine_ctx.state == SCRIPT_STATE_STOPPED)
-        {
-            return SE_OK;
-        }
-        break;
+        eos_dispatcher_call((eos_dispatcher_cb_t)_script_engine_stop_and_cleanup, NULL);
+        return SE_OK;
 
     case SCRIPT_STATE_STOPPING:
-        EOS_LOG_W("Script is already stopping, waiting for completion");
-        for (int timeout = 0; timeout < 100; timeout++)
-        {
-            if (engine_ctx.state != SCRIPT_STATE_STOPPING)
-            {
-                break;
-            }
-            lv_timer_handler();
-            eos_delay(1);
-        }
-
-        if (engine_ctx.state == SCRIPT_STATE_STOPPING)
-        {
-            EOS_LOG_W("Force stopping script from STOPPING state due to timeout");
-            return _script_engine_stop_and_cleanup();
-        }
-
-        if (engine_ctx.state == SCRIPT_STATE_STOPPED)
-        {
-            return SE_OK;
-        }
-        break;
+        EOS_LOG_D("Script is already stopping");
+        return SE_OK;
 
     case SCRIPT_STATE_SUSPEND:
         EOS_LOG_D("Stopping from SUSPEND state");
@@ -1178,8 +1196,6 @@ script_engine_result_t script_engine_request_stop(void)
         EOS_LOG_W("Cannot stop from current state: %d", engine_ctx.state);
         return -SE_ERR_INVALID_STATE;
     }
-
-    return SE_OK;
 }
 
 script_engine_result_t script_engine_init(void)
@@ -1247,6 +1263,7 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
 
     // Set the current script
     engine_ctx.current_script = owned_script;
+    engine_ctx.script_start_time = eos_tick_get();
     _change_state(SCRIPT_STATE_RUNNING);
 
     // Set base path
@@ -1367,8 +1384,9 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
     _cleanup_module_queue();
     jerry_module_cleanup(jerry_undefined());
 
-    // If execution failed, clean up resources
-    if (result != SE_OK && engine_ctx.state == SCRIPT_STATE_ERROR)
+    // If execution failed or script was stopped, clean up resources
+    if ((result != SE_OK && engine_ctx.state == SCRIPT_STATE_ERROR) ||
+        engine_ctx.state == SCRIPT_STATE_STOPPING)
     {
         _engine_cleanup();
         if (engine_ctx.current_script)

@@ -48,6 +48,8 @@
 #include "eos_mem.h"
 #include "eos_theme.h"
 #include "eos_activity.h"
+#include "eos_panel.h"
+#include "eos_fault_panel.h"
 
 /* Macros and Definitions -------------------------------------*/
 // #define TEST_USE_ZH_FONT
@@ -1084,6 +1086,240 @@ static void _test_toast()
     lv_obj_add_event_cb(toast, _toast_clicked_cb, LV_EVENT_CLICKED, NULL);
 }
 
+static void _test_panel_basic()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    lv_obj_remove_style_all(view);
+    lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+
+    eos_panel_cfg_t cfg = {
+        .icon_bg_color = EOS_COLOR_BLUE,
+        .icon_type = EOS_PANEL_ICON_TYPE_SYMBOL,
+        .icon_src = RI_INFORMATION_LINE,
+        .title_text = "Panel Title",
+        .message_text = "This is a basic panel test message",
+        .confirm_btn_id = STR_ID_OK,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_BACK,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+    };
+
+    eos_panel_t *panel = eos_panel_create(view, &cfg);
+    if (panel) {
+        EOS_LOG_I("Basic panel created successfully");
+    }
+}
+
+static void _test_panel_with_extra_slot()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    lv_obj_remove_style_all(view);
+    lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+
+    eos_panel_cfg_t cfg = {
+        .icon_bg_color = EOS_COLOR_GREEN,
+        .icon_type = EOS_PANEL_ICON_TYPE_SYMBOL,
+        .icon_src = RI_CHECK_FILL,
+        .title_text = "Extra Slot Test",
+        .message_text = "Adding custom content to extra slot",
+        .confirm_btn_id = 0,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_BACK,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+    };
+
+    eos_panel_t *panel = eos_panel_create(view, &cfg);
+    if (panel) {
+        lv_obj_t *extra_slot = eos_panel_get_extra_slot(panel);
+        if (extra_slot) {
+            lv_obj_t *switch_label = lv_label_create(extra_slot);
+            lv_label_set_text(switch_label, "Option 1: Sample Switch");
+            lv_obj_set_width(switch_label, EOS_PANEL_CONTENT_WIDTH);
+
+            lv_obj_t *switch_btn = lv_switch_create(extra_slot);
+            lv_obj_set_width(switch_btn, 50);
+        }
+        EOS_LOG_I("Panel with extra slot created successfully");
+    }
+}
+
+static void _test_fault_panel_bug()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    eos_fault_cfg_t cfg = {
+        .icon_type = EOS_FAULT_ICON_BUG,
+        .custom_icon = NULL,
+        .title_id = STR_ID_ERROR,
+        .title_text = NULL,
+        .message_id = 0,
+        .message_text = "A runtime exception occurred",
+        .confirm_btn_id = 0,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_BACK,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+        .icon_color = EOS_COLOR_RED,
+    };
+
+    eos_fault_panel_t *fault_panel = eos_fault_panel_create_on_activity(NULL, &cfg);
+    if (fault_panel) {
+        EOS_LOG_I("Bug fault panel created successfully");
+    }
+}
+
+static void _test_fault_panel_warning()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    eos_fault_cfg_t cfg = {
+        .icon_type = EOS_FAULT_ICON_WARNING,
+        .custom_icon = NULL,
+        .title_id = 0,
+        .title_text = "Warning",
+        .message_id = 0,
+        .message_text = "This is a warning message",
+        .confirm_btn_id = STR_ID_OK,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_CANCEL,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+        .icon_color = EOS_COLOR_ORANGE,
+    };
+
+    eos_fault_panel_t *fault_panel = eos_fault_panel_create_on_activity(NULL, &cfg);
+    if (fault_panel) {
+        EOS_LOG_I("Warning fault panel created successfully");
+    }
+}
+
+static void _test_fault_panel_info()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    eos_fault_cfg_t cfg = {
+        .icon_type = EOS_FAULT_ICON_INFO,
+        .custom_icon = NULL,
+        .title_id = 0,
+        .title_text = "Information",
+        .message_id = 0,
+        .message_text = "This is an information message",
+        .confirm_btn_id = 0,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_OK,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+        .icon_color = EOS_COLOR_BLUE,
+    };
+
+    eos_fault_panel_t *fault_panel = eos_fault_panel_create_on_activity(NULL, &cfg);
+    if (fault_panel) {
+        EOS_LOG_I("Info fault panel created successfully");
+    }
+}
+
+static void _test_panel_no_icon()
+{
+    lv_obj_t *view = _create_new_scr();
+    if (!view) {
+        EOS_LOG_E("Failed to create view");
+        return;
+    }
+
+    lv_obj_remove_style_all(view);
+    lv_obj_add_style(view, eos_theme_get_view_style(), 0);
+
+    eos_panel_cfg_t cfg = {
+        .icon_bg_color = EOS_COLOR_RED,
+        .icon_type = EOS_PANEL_ICON_TYPE_NONE,
+        .icon_src = NULL,
+        .title_text = "No Icon Panel",
+        .message_text = "This panel has no icon",
+        .confirm_btn_id = STR_ID_OK,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = STR_ID_BACK,
+        .cancel_btn_text = NULL,
+        .cancel_cb = NULL,
+    };
+
+    eos_panel_t *panel = eos_panel_create(view, &cfg);
+    if (panel) {
+        EOS_LOG_I("No icon panel created successfully");
+    }
+}
+
+static void _test_panel_list()
+{
+    eos_activity_t *activity = eos_activity_get_current();
+    if (!activity) {
+        EOS_LOG_E("No current activity");
+        return;
+    }
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view) {
+        return;
+    }
+
+    lv_obj_t *list = lv_list_create(view);
+    lv_obj_set_size(list, lv_pct(100), lv_pct(100));
+    eos_crown_encoder_set_target_obj(list);
+
+    lv_obj_t *btn;
+    lv_obj_t *label = lv_list_add_text(list, RI_WINDOW_LINE " Panel Test List");
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "Basic Panel");
+    lv_obj_add_event_cb(btn, _test_panel_basic, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "Extra Slot");
+    lv_obj_add_event_cb(btn, _test_panel_with_extra_slot, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "Fault Bug");
+    lv_obj_add_event_cb(btn, _test_fault_panel_bug, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "Fault Warning");
+    lv_obj_add_event_cb(btn, _test_fault_panel_warning, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "Fault Info");
+    lv_obj_add_event_cb(btn, _test_fault_panel_info, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_button(list, RI_WINDOW_LINE, "No Icon");
+    lv_obj_add_event_cb(btn, _test_panel_no_icon, LV_EVENT_CLICKED, NULL);
+
+    eos_activity_enter(activity);
+}
+
 static const char *_test_audio_resolve_path(void)
 {
     if (eos_storage_is_file(s_test_audio_primary_path))
@@ -1672,6 +1908,9 @@ void eos_test_start(void)
     // 测试 Toast
     btn = lv_list_add_button(test_list, RI_MESSAGE_2_FILL, "Toast");
     lv_obj_add_event_cb(btn, _test_toast, LV_EVENT_CLICKED, NULL);
+    // 测试 Panel
+    btn = lv_list_add_button(test_list, RI_WINDOW_LINE, "Panel");
+    lv_obj_add_event_cb(btn, _test_panel_list, LV_EVENT_CLICKED, NULL);
     // 测试 LVGL 默认符号
     btn = lv_list_add_button(test_list, RI_OMEGA, "LVGL Symbols");
     lv_obj_add_event_cb(btn, _test_show_all_lv_symbols_list, LV_EVENT_CLICKED, NULL);

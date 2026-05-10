@@ -174,7 +174,7 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt);
  *
  * Returns NULL if creation failed
  */
-lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id);
+lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, lang_string_id_t id);
 /**
  * @brief Add a placeholder with specified pixel height to list
  * @param list Target list

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lvgl.h"
 #include "eos_port.h"
 #define EOS_LOG_TAG "App"
 #include "eos_log.h"
@@ -19,6 +20,16 @@
 #include "eos_app_list.h"
 #include "eos_service_storage.h"
 #include "eos_mem.h"
+#include "eos_activity.h"
+#include "eos_lang.h"
+#include "eos_theme.h"
+#include "eos_std_widgets.h"
+#include "eos_accordion.h"
+#include "eos_basic_widgets.h"
+#include "eos_icon.h"
+#include "eos_panel.h"
+#include "eos_fault_panel.h"
+#include "eos_font.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_APP_LIST_DEFAULT_CAPACITY 1 // 列表默认容量大小
@@ -576,4 +587,110 @@ eos_result_t eos_app_init(void)
     }
 
     return EOS_OK;
+}
+
+static const char *_eos_script_error_get_reason(eos_script_error_type_t error_type)
+{
+    switch (error_type)
+    {
+    case EOS_SCRIPT_FAULT_ERROR_EXCEPTION:
+        return "Runtime exception";
+    case EOS_SCRIPT_FAULT_ERROR_PARSE:
+        return "Parse error";
+    case EOS_SCRIPT_FAULT_ERROR_MODULE_LINK:
+        return "Module link error";
+    case EOS_SCRIPT_FAULT_UNRESPONSIVE:
+        return "Unresponsive";
+    default:
+        return "Unknown error";
+    }
+}
+
+void eos_app_handle_script_error(eos_script_error_type_t error_type,
+                                 int32_t error_code,
+                                 const char *app_id,
+                                 const eos_script_error_handler_cfg_t *cfg)
+{
+    EOS_LOG_E("Script error handling - type:%d, code:%d, app_id:%s",
+              error_type, error_code, app_id ? app_id : "NULL");
+
+    const char *reason = _eos_script_error_get_reason(error_type);
+
+    eos_fault_cfg_t fault_cfg = {
+        .icon_type = EOS_FAULT_ICON_BUG,
+        .icon_color = EOS_COLOR_RED,
+        .title_id = STR_ID_ERROR,
+        .message_text = eos_lang_get_text(STR_ID_APP_RUN_ERR),
+        .confirm_btn_id = 0,
+        .confirm_btn_text = NULL,
+        .confirm_cb = NULL,
+        .cancel_btn_id = cfg && cfg->button_id != 0 ? cfg->button_id : STR_ID_BACK,
+        .cancel_btn_text = cfg && cfg->button_text ? cfg->button_text : NULL,
+        .cancel_cb = cfg && cfg->button_callback ? cfg->button_callback : NULL,
+    };
+
+    eos_fault_panel_t *fault_panel = eos_fault_panel_create(&fault_cfg);
+    if (!fault_panel)
+    {
+        EOS_LOG_E("Failed to create fault panel");
+        return;
+    }
+
+    lv_obj_t *extra_slot = eos_fault_panel_get_extra_slot(fault_panel);
+    if (extra_slot)
+    {
+        char info_str[256];
+        const char *error_info = script_engine_get_error_info();
+        if (error_info && error_info[0] != '\0') {
+            snprintf(info_str, sizeof(info_str),
+                     "Code: %d\nID: %s\nErrorType: %s\nError: %s",
+                     error_code,
+                     app_id ? app_id : "Unknown",
+                     reason,
+                     error_info);
+        } else {
+            snprintf(info_str, sizeof(info_str),
+                     "Code: %d\nID: %s\nErrorType: %s",
+                     error_code,
+                     app_id ? app_id : "Unknown",
+                     reason);
+        }
+
+        lv_obj_t *err_label = lv_label_create(extra_slot);
+        lv_label_set_text(err_label, info_str);
+        lv_obj_set_width(err_label, EOS_PANEL_CONTENT_WIDTH);
+        lv_label_set_long_mode(err_label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_style_text_color(err_label, EOS_COLOR_GREY_1, 0);
+        eos_label_set_font_size(err_label, EOS_FONT_SIZE_SMALL);
+
+        uint32_t backtrace_count = script_engine_get_backtrace_count();
+        if (backtrace_count > 0)
+        {
+            const script_error_location_t *backtrace = script_engine_get_error_backtrace(NULL);
+            if (backtrace)
+            {
+                eos_accordion_t *accordion = eos_accordion_create(extra_slot, eos_lang_get_text(STR_ID_APP_RUN_ERR_BACKTRACE));
+                lv_obj_t *accordion_content = accordion->content;
+                lv_obj_t *backtrace_label = lv_label_create(accordion_content);
+
+                lv_obj_set_style_text_color(accordion->title_label, EOS_COLOR_GREY_1, 0);
+                lv_obj_set_style_text_color(accordion->arrow_label, EOS_COLOR_GREY_1, 0);
+                lv_obj_set_style_text_color(backtrace_label, EOS_COLOR_GREY_1, 0);
+
+                eos_label_set_font_size(accordion->title_label, EOS_FONT_SIZE_SMALL);
+                eos_label_set_font_size(accordion->arrow_label, EOS_FONT_SIZE_SMALL);
+                eos_label_set_font_size(backtrace_label, EOS_FONT_SIZE_SMALL);
+
+                char backtrace_str[1024] = {0};
+                char temp_str[256];
+                for (uint32_t i = 0; i < backtrace_count; i++)
+                {
+                    snprintf(temp_str, sizeof(temp_str), "#%u: %s:%u:%u\n",
+                             i, backtrace[i].source_name, backtrace[i].line, backtrace[i].column);
+                    strncat(backtrace_str, temp_str, sizeof(backtrace_str) - strlen(backtrace_str) - 1);
+                }
+                lv_label_set_text(backtrace_label, backtrace_str);
+            }
+        }
+    }
 }

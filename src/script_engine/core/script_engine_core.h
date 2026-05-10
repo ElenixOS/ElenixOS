@@ -88,8 +88,20 @@ typedef enum {
     SE_ERR_STACK_EMPTY,          /**< Stack empty */
     SE_ERR_MALLOC,               /**< Memory allocation error */
     SE_ERR_INVALID_STATE,        /**< Invalid state */
+    SE_ERR_TIMEOUT,              /**< Script execution timeout */
     SE_ERR_UNKNOWN               /**< Unknown error */
 } script_engine_result_t;
+
+/**
+ * @brief Script error type enumeration
+ */
+typedef enum {
+    EOS_SCRIPT_FAULT_ERROR_UNKNOWN = 0,   /**< Unknown error */
+    EOS_SCRIPT_FAULT_ERROR_EXCEPTION,     /**< Script execution exception */
+    EOS_SCRIPT_FAULT_UNRESPONSIVE,        /**< Script execution timeout/unresponsive */
+    EOS_SCRIPT_FAULT_ERROR_PARSE,         /**< Script parse error */
+    EOS_SCRIPT_FAULT_ERROR_MODULE_LINK,   /**< Module link error */
+} eos_script_error_type_t;
 
 /* Public function prototypes --------------------------------*/
 

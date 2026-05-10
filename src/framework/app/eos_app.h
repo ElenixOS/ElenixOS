@@ -18,17 +18,38 @@ extern "C" {
 #include "eos_service_config.h"
 #include "eos_storage_paths.h"
 #include "lvgl.h"
+#include "script_engine_core.h"
 
-/* Public macros -----------_APP_DIR "app_data/"
-/************************** File Name Definitions **************************/
+/* Public macros ----------------------------------------------*/
 #define EOS_APP_ICON_FILE_NAME  "icon.bin"
 #define EOS_APP_MANIFEST_FILE_NAME "manifest.json"
 #define EOS_APP_SCRIPT_ENTRY_FILE_NAME "main.js"
-/************************** Configuration Files **************************/
-/* App order is now stored in cfg.json under "app_order" key */
 /* Public typedefs --------------------------------------------*/
 
+/**
+ * @brief Script error handler configuration
+ */
+typedef struct {
+    const char *title_text;            /**< Error title text (NULL for default) */
+    lang_string_id_t title_id;         /**< Error title string ID (0 for default) */
+    const char *button_text;           /**< Button text (NULL for default) */
+    lang_string_id_t button_id;        /**< Button string ID (0 for default) */
+    lv_event_cb_t button_callback;     /**< Button click callback (NULL for default back) */
+} eos_script_error_handler_cfg_t;
+
 /* Public function prototypes --------------------------------*/
+
+/**
+ * @brief Handle script execution error
+ * @param error_type Type of script error
+ * @param error_code Error code from script engine
+ * @param app_id Application ID that caused the error
+ * @param cfg Optional configuration for customizing error page
+ */
+void eos_app_handle_script_error(eos_script_error_type_t error_type,
+                                 int32_t error_code,
+                                 const char *app_id,
+                                 const eos_script_error_handler_cfg_t *cfg);
 
 /**
  * @brief Move app with target ID to specified position for app_list sorting

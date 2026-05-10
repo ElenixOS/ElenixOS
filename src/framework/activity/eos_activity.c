@@ -756,7 +756,7 @@ const char *eos_activity_get_title(eos_activity_t *activity)
 void eos_activity_set_title(eos_activity_t *activity, const char *title)
 {
     EOS_CHECK_PTR_RETURN(activity);
-    if (activity->title.string)
+    if (activity->title.type == _TITLE_TYPE_STRING && activity->title.string)
     {
         eos_free(activity->title.string);
         activity->title.string = NULL;
@@ -777,7 +777,7 @@ void eos_activity_set_title(eos_activity_t *activity, const char *title)
 void eos_activity_set_title_id(eos_activity_t *activity, lang_string_id_t id)
 {
     EOS_CHECK_PTR_RETURN(activity);
-    if (activity->title.string)
+    if (activity->title.type == _TITLE_TYPE_STRING && activity->title.string)
     {
         eos_free(activity->title.string);
         activity->title.string = NULL;

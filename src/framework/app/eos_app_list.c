@@ -166,56 +166,24 @@ static void _app_on_enter(eos_activity_t *a)
     script_engine_result_t ret = script_engine_run(&ctx->pkg);
     if (ret != SE_OK)
     {
-        lv_obj_clean(app_view);
-        lv_obj_remove_style_all(app_view);
-        lv_obj_add_style(app_view, eos_theme_get_view_style(), 0);
-        eos_activity_set_title_color(a, EOS_COLOR_RED);
-        eos_activity_set_title_id(a, STR_ID_ERROR);
-
-        lv_obj_t *list = eos_std_info_create(
-            app_view,
-            EOS_COLOR_RED,
-            RI_BUG_LINE,
-            eos_lang_get_text(STR_ID_APP_RUN_ERR_TITLE),
-            eos_lang_get_text(STR_ID_APP_RUN_ERR));
-        char info_str[1024];
-        snprintf(info_str, sizeof(info_str),
-                 "Code: %d\nAppID: %s\nError: %s",
-                 ret, ctx->app_id, script_engine_get_error_info());
-        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-
-        eos_accordion_t *accordion = eos_accordion_create(list, eos_lang_get_text(STR_ID_APP_RUN_ERR_BACKTRACE));
-        lv_obj_set_width(accordion->container, lv_pct(90));
-        lv_obj_t *accordion_content = accordion->content;
-        lv_obj_t *backtrace_label = lv_label_create(accordion_content);
-
-        lv_obj_set_style_text_color(accordion->title_label, EOS_COLOR_GREY_1, 0);
-        lv_obj_set_style_text_color(accordion->arrow_label, EOS_COLOR_GREY_1, 0);
-        lv_obj_set_style_text_color(backtrace_label, EOS_COLOR_GREY_1, 0);
-
-        uint32_t backtrace_count = script_engine_get_backtrace_count();
-        if (backtrace_count > 0)
-        {
-            const script_error_location_t *backtrace = script_engine_get_error_backtrace(NULL);
-            if (backtrace)
-            {
-                char backtrace_str[1024] = {0};
-                char temp_str[256];
-                for (uint32_t i = 0; i < backtrace_count; i++)
-                {
-                    snprintf(temp_str, sizeof(temp_str), "#%u: %s:%u:%u\n",
-                             i, backtrace[i].source_name, backtrace[i].line, backtrace[i].column);
-                    strncat(backtrace_str, temp_str, sizeof(backtrace_str) - strlen(backtrace_str) - 1);
-                }
-                lv_label_set_text(backtrace_label, backtrace_str);
-            }
+        // Determine error type based on error code
+        eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
+        if (ret == -SE_ERR_TIMEOUT) {
+            error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
         }
         else
         {
-            lv_label_set_text(backtrace_label, "No backtrace available");
+            // Check error info for timeout if code doesn't indicate it
+            const char *error_info = script_engine_get_error_info();
+            if (error_info && strstr(error_info, "timeout")) {
+                error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
+            }
         }
 
-        lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_BACK), eos_activity_back_cb, NULL);
+        // Only handle error if it hasn't been handled already (timeout is handled inside script_engine_run)
+        if (ret != -SE_ERR_TIMEOUT) {
+            eos_app_handle_script_error(error_type, ret, ctx->app_id, NULL);
+        }
         EOS_LOG_E("Application encounter a fatal error");
     }
 }

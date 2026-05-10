@@ -12,7 +12,6 @@
 #include "lvgl.h"
 #include "eos_core.h"
 #include "eos_lang.h"
-// #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "BasicWidgets"
 #include "eos_log.h"
 #include "eos_image.h"
@@ -946,7 +945,7 @@ lv_obj_t *eos_list_add_entry_button(lv_obj_t *list, const char *txt)
     return btn;
 }
 
-lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, language_id_t id)
+lv_obj_t *eos_list_add_entry_button_str_id(lv_obj_t *list, lang_string_id_t id)
 {
     // Create button
     lv_obj_t *btn = _list_btn_container_create(list);

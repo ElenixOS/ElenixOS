@@ -27,6 +27,7 @@
 #include "eos_activity.h"
 #include "eos_app_header.h"
 #include "eos_accordion.h"
+#include "eos_app.h"
 /* Macros and Definitions -------------------------------------*/
 #define EOS_WATCHFACE_LIST_DEFAULT_CAPACITY 1
 /**
@@ -387,49 +388,22 @@ static void _start_watchface(eos_activity_t *a)
     script_engine_result_t ret = script_engine_run(&pkg);
     if (ret != SE_OK)
     {
-        lv_obj_t *list = eos_std_info_create(
-            eos_activity_get_view(a),
-            EOS_COLOR_RED,
-            RI_BUG_LINE,
-            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR_TITLE),
-            eos_lang_get_text(STR_ID_WATCHFACE_RUN_ERR));
-        lv_obj_set_style_pad_top(list, 30, 0);
-        char info_str[1024];
-        snprintf(info_str, sizeof(info_str), "Code: %d\nWFID: %s\nError: %s", ret, wf_id, script_engine_get_error_info());
-        lv_obj_t *err_label = eos_list_add_comment(list, info_str);
-
-        eos_accordion_t *accordion = eos_accordion_create(list, eos_lang_get_text(STR_ID_APP_RUN_ERR_BACKTRACE));
-        lv_obj_set_width(accordion->container, lv_pct(90));
-        lv_obj_t *accordion_content = accordion->content;
-        lv_obj_t *backtrace_label = lv_label_create(accordion_content);
-
-        lv_obj_set_style_text_color(accordion->title_label, EOS_COLOR_GREY_1, 0);
-        lv_obj_set_style_text_color(accordion->arrow_label, EOS_COLOR_GREY_1, 0);
-        lv_obj_set_style_text_color(backtrace_label, EOS_COLOR_GREY_1, 0);
-
-        uint32_t backtrace_count = script_engine_get_backtrace_count();
-        if (backtrace_count > 0)
-        {
-            const script_error_location_t *backtrace = script_engine_get_error_backtrace(NULL);
-            if (backtrace)
-            {
-                char backtrace_str[1024] = {0};
-                char temp_str[256];
-                for (uint32_t i = 0; i < backtrace_count; i++)
-                {
-                    snprintf(temp_str, sizeof(temp_str), "#%u: %s:%u:%u\n",
-                             i, backtrace[i].source_name, backtrace[i].line, backtrace[i].column);
-                    strncat(backtrace_str, temp_str, sizeof(backtrace_str) - strlen(backtrace_str) - 1);
-                }
-                lv_label_set_text(backtrace_label, backtrace_str);
-            }
-        }
-        else
-        {
-            lv_label_set_text(backtrace_label, "No backtrace available");
+        // Determine error type based on error info
+        eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
+        const char *error_info = script_engine_get_error_info();
+        if (error_info && strstr(error_info, "timeout")) {
+            error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
         }
 
-        lv_obj_t *btn = eos_button_create(list, eos_lang_get_text(STR_ID_WATCHFACE_SWITCH), _watchface_long_pressed_cb, NULL);
+        // Configure custom error handler for watchface
+        eos_script_error_handler_cfg_t cfg = {
+            .title_id = STR_ID_WATCHFACE_RUN_ERR_TITLE,
+            .button_id = STR_ID_WATCHFACE_SWITCH,
+            .button_callback = _watchface_long_pressed_cb,
+        };
+
+        // Use the new generic error handler
+        eos_app_handle_script_error(error_type, ret, wf_id, &cfg);
         EOS_LOG_E("Watchface encounter a fatal error");
     }
 

@@ -65,6 +65,7 @@ typedef struct
     uint32_t backtrace_count;     /**< Number of backtrace frames */
     uint32_t script_start_time;   /**< Script execution start time (tick) */
     uint32_t script_timeout_ms;   /**< Script execution timeout (ms), 0 = no timeout */
+    bool stop_is_timeout;         /**< Flag indicating if stop was caused by timeout */
 } script_engine_context_t;
 
 /* Variables --------------------------------------------------*/
@@ -74,7 +75,8 @@ static script_engine_context_t engine_ctx = {
     .initialized = false,
     .base_path = NULL,
     .script_start_time = 0,
-    .script_timeout_ms = SCRIPT_DEFAULT_TIMEOUT_MS};
+    .script_timeout_ms = SCRIPT_DEFAULT_TIMEOUT_MS,
+    .stop_is_timeout = false};
 
 static eos_cqueue_t *g_module_queue = NULL;
 
@@ -1061,6 +1063,7 @@ static jerry_value_t _vm_exec_stop_callback(void *user_p)
         if (elapsed >= engine_ctx.script_timeout_ms)
         {
             EOS_LOG_W("Script execution timeout (%u ms)", elapsed);
+            engine_ctx.stop_is_timeout = true;
             _change_state(SCRIPT_STATE_STOPPING);
             return jerry_string_sz("Script execution timeout");
         }
@@ -1109,6 +1112,44 @@ jerry_value_t script_engine_call(jerry_value_t func, jerry_value_t this_val, con
     }
 
     jerry_value_t result = jerry_call(func, this_val, args_p, args_count);
+
+    // Check for exceptions during jerry_call
+    if (jerry_value_is_exception(result))
+    {
+        if (engine_ctx.state == SCRIPT_STATE_STOPPING)
+        {
+            if (engine_ctx.stop_is_timeout)
+            {
+                // Timeout error during jerry_call
+                EOS_LOG_W("Script call timeout");
+
+                // Handle script error
+                const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+                eos_app_handle_script_error(EOS_SCRIPT_FAULT_UNRESPONSIVE, -SE_ERR_TIMEOUT, script_id, NULL);
+            }
+            else
+            {
+                EOS_LOG_D("Script call stopped by request");
+            }
+        }
+        else
+        {
+            // Handle exception during jerry_call
+            _script_engine_exception_handler("Jerry Call", result);
+            _change_state(SCRIPT_STATE_ERROR);
+
+            // Check if this is a timeout
+            eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
+            const char *error_info = script_engine_get_error_info();
+            if (error_info && strstr(error_info, "timeout")) {
+                error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
+            }
+
+            // Handle script error
+            const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+            eos_app_handle_script_error(error_type, -SE_ERR_JERRY_EXCEPTION, script_id, NULL);
+        }
+    }
 
     state = script_engine_get_state();
     if (state == SCRIPT_STATE_RUNNING)
@@ -1176,6 +1217,7 @@ script_engine_result_t script_engine_request_stop(void)
         return SE_OK;
 
     case SCRIPT_STATE_RUNNING:
+        engine_ctx.stop_is_timeout = false;
         _change_state(SCRIPT_STATE_STOPPING);
         eos_dispatcher_call((eos_dispatcher_cb_t)_script_engine_stop_and_cleanup, NULL);
         return SE_OK;
@@ -1325,6 +1367,10 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
             _change_state(SCRIPT_STATE_ERROR);
             jerry_value_free(link_result);
             result = -SE_ERR_JERRY_EXCEPTION;
+
+            // Handle script error
+            const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+            eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_MODULE_LINK, result, script_id, NULL);
         }
         else
         {
@@ -1337,9 +1383,22 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
             {
                 if (engine_ctx.state == SCRIPT_STATE_STOPPING)
                 {
-                    // Exception caused by requested stop; handle as normal
-                    EOS_LOG_D("Script stopped by request");
-                    result = SE_OK;
+                    if (engine_ctx.stop_is_timeout)
+                    {
+                        // Timeout error
+                        EOS_LOG_W("Script execution timeout");
+                        result = -SE_ERR_TIMEOUT;
+
+                        // Handle script error
+                        const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+                        eos_app_handle_script_error(EOS_SCRIPT_FAULT_UNRESPONSIVE, result, script_id, NULL);
+                    }
+                    else
+                    {
+                        // Exception caused by requested stop; handle as normal
+                        EOS_LOG_D("Script stopped by request");
+                        result = SE_OK;
+                    }
                 }
                 else
                 {
@@ -1347,6 +1406,17 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
                     _script_engine_exception_handler("Script Runtime", run_result);
                     _change_state(SCRIPT_STATE_ERROR);
                     result = -SE_ERR_JERRY_EXCEPTION;
+
+                    // Check if this is a timeout
+                    eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
+                    const char *error_info = script_engine_get_error_info();
+                    if (error_info && strstr(error_info, "timeout")) {
+                        error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
+                    }
+
+                    // Handle script error
+                    const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+                    eos_app_handle_script_error(error_type, result, script_id, NULL);
                 }
             }
             else
@@ -1369,6 +1439,10 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
         _script_engine_exception_handler("Script Parse", parsed_code);
         _change_state(SCRIPT_STATE_ERROR);
         result = -SE_ERR_INVALID_JS;
+
+        // Handle script error
+        const char *script_id = engine_ctx.current_script ? engine_ctx.current_script->id : NULL;
+        eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_PARSE, result, script_id, NULL);
     }
 
     jerry_value_free(parsed_code);
@@ -1398,6 +1472,9 @@ script_engine_result_t script_engine_run(const script_pkg_t *script_package)
         _change_state(SCRIPT_STATE_STOPPED);
         _collect_script_garbage();
     }
+
+    // Reset stop_is_timeout flag
+    engine_ctx.stop_is_timeout = false;
 
     return result;
 }

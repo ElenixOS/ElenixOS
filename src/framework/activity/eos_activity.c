@@ -78,7 +78,7 @@ struct eos_activity_t
         eos_activity_title_type_t type;
     } title;
 
-    const eos_activity_lifecycle_t *lifecycle;
+    eos_activity_lifecycle_t lifecycle;
 
     void *user_data;
 };
@@ -132,9 +132,9 @@ static void _activity_run_destroy(eos_activity_t *activity)
     EOS_CHECK_PTR_RETURN(activity);
 
     // Call on_destroy callback before destroying resources
-    if (activity->lifecycle && activity->lifecycle->on_destroy)
+    if (activity->lifecycle.on_destroy)
     {
-        activity->lifecycle->on_destroy(activity);
+        activity->lifecycle.on_destroy(activity);
     }
 
     activity->user_data = NULL;
@@ -342,19 +342,19 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
     eos_control_center_hide();
     eos_msg_list_hide();
 
-    if (!is_returning && cur_activity && cur_activity->lifecycle && cur_activity->lifecycle->on_pause)
+        if (!is_returning && cur_activity && cur_activity->lifecycle.on_pause)
     {
-        cur_activity->lifecycle->on_pause(cur_activity);
+            cur_activity->lifecycle.on_pause(cur_activity);
     }
 
-    if (!next_activity->has_started && next_activity->lifecycle && next_activity->lifecycle->on_enter)
+        if (!next_activity->has_started && next_activity->lifecycle.on_enter)
     {
-        next_activity->lifecycle->on_enter(next_activity);
+            next_activity->lifecycle.on_enter(next_activity);
         next_activity->has_started = true;
     }
-    else if (is_returning && next_activity->has_started && next_activity->lifecycle && next_activity->lifecycle->on_resume)
+        else if (is_returning && next_activity->has_started && next_activity->lifecycle.on_resume)
     {
-        next_activity->lifecycle->on_resume(next_activity);
+            next_activity->lifecycle.on_resume(next_activity);
     }
 
     if (eos_activity_is_app_header_visible(next_activity))
@@ -959,9 +959,9 @@ eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
 
     g_activity_ctx.watchface_activity = initial_activity;
 
-    if (initial_activity->lifecycle && initial_activity->lifecycle->on_enter)
+        if (initial_activity->lifecycle.on_enter)
     {
-        initial_activity->lifecycle->on_enter(initial_activity);
+            initial_activity->lifecycle.on_enter(initial_activity);
         initial_activity->has_started = true;
     }
     _activity_show(initial_activity);
@@ -1002,7 +1002,14 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     {
         activity->view = NULL;
     }
-    activity->lifecycle = lifecycle;
+    if (lifecycle)
+    {
+        activity->lifecycle = *lifecycle;
+    }
+    else
+    {
+        memset(&activity->lifecycle, 0, sizeof(activity->lifecycle));
+    }
     activity->type = EOS_ACTIVITY_TYPE_APP;
     activity->snapshot_ref_count = 0;
     activity->is_app_header_visible = false;

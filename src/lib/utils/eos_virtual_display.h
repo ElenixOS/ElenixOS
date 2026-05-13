@@ -19,7 +19,7 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
-typedef struct eos_virtual_display_t;
+typedef struct eos_virtual_display_t eos_virtual_display_t;
 /* Public function prototypes --------------------------------*/
 
 /**

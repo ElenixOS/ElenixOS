@@ -17,7 +17,8 @@
 #include "eos_mem.h"
 
 /* Macros and Definitions -------------------------------------*/
-typedef struct
+
+struct eos_virtual_display_t
 {
     lv_obj_t *canvas;
     lv_color_t *canvas_buf;
@@ -31,7 +32,8 @@ typedef struct
     int32_t touch_x;
     int32_t touch_y;
     bool pressed;
-} eos_virtual_display_t;
+};
+
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/

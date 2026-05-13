@@ -16,6 +16,7 @@ extern "C" {
 #include "lvgl.h"
 #include "eos_lang.h"
 #include "eos_activity.h"
+#include "eos_corner_radius.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -42,17 +43,6 @@ typedef struct
     uint16_t plus_label_scale;
     uint16_t minus_label_scale;
 } eos_list_slider_t;
-
-/**
- * @brief Set specified corner radius positions, used with `eos_obj_set_corner_radius_bg()`
- */
-typedef enum
-{
-    EOS_ROUND_TOP_LEFT = 0x1 << 0,     /**< Top left corner rounded */
-    EOS_ROUND_TOP_RIGHT = 0x1 << 1,    /**< Top right corner rounded */
-    EOS_ROUND_BOTTOM_RIGHT = 0x1 << 2, /**< Bottom right corner rounded */
-    EOS_ROUND_BOTTOM_LEFT = 0x1 << 3,  /**< Bottom left corner rounded */
-} eos_corner_round_t;
 
 /* Public function prototypes --------------------------------*/
 
@@ -294,18 +284,6 @@ lv_obj_t *eos_row_create(lv_obj_t *parent,
  * Returns NULL if creation failed
  */
 lv_obj_t *eos_list_add_title_container(lv_obj_t *list, const char *title);
-/**
- * @brief Set background with specified corner radius for object
- * @param obj Object
- * @param corners Specified corners, example: `EOS_ROUND_TOP_LEFT | EOS_ROUND_BOTTOM_LEFT`
- * @param radius Corner radius
- * @param color Background color
- */
-void eos_obj_set_corner_radius_bg(lv_obj_t *obj, eos_corner_round_t corners, lv_coord_t radius, lv_color_t color);
-/**
- * @brief Remove corner radius background from an object
- */
-void eos_obj_remove_corner_radius_bg(lv_obj_t *obj);
 #ifdef __cplusplus
 }
 #endif

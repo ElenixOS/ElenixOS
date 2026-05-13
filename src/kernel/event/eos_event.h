@@ -49,7 +49,6 @@ typedef enum
     EOS_EVENT_SCRIPT_EXITED,                    /**< Script has exited */
     EOS_EVENT_ACTIVITY_SCREEN_SWITCHED,         /**< Activity page transition completed, param is current activity view */
     EOS_EVENT_LANGUAGE_CHANGED,                 /**< Language has been changed */
-    EOS_EVENT_ROUNDED_CORNER_DELETE,            /**< Rounded corner canvas buffer delete event */
     EOS_EVENT_LAST
 } eos_event_code_t;
 

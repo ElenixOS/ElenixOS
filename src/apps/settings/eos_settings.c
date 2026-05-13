@@ -34,7 +34,7 @@
 #include "eos_service_storage.h"
 #include "eos_service_pm.h"
 #include "eos_app_header.h"
-#include "eos_radio_list.h"
+#include "eos_radio_page.h"
 #include "eos_lang.h"
 #include "eos_mem.h"
 #include "eos_font.h"
@@ -209,24 +209,25 @@ static void _wake_duration_radio_list_selection_changed_cb(lv_event_t *e)
 
 static void _wake_duration_entry_button_clicked_cb(lv_event_t *e)
 {
-    eos_radio_list_t *rl = eos_radio_list_enter(eos_lang_get_text(STR_ID_SETTINGS_WAKE_DURATION));
+    eos_radio_page_t *rp = eos_radio_page_create(eos_lang_get_text(STR_ID_SETTINGS_WAKE_DURATION));
     char str[32];
     snprintf(str, sizeof(str), eos_lang_get_text(STR_ID_SETTINGS_WAKE_FOR_N_SECONDS), 15);
-    uint32_t timeout_15_item_index = eos_radio_list_add_item(rl, str);
+    uint32_t timeout_15_item_index = eos_radio_page_add_item(rp, str);
     snprintf(str, sizeof(str), eos_lang_get_text(STR_ID_SETTINGS_WAKE_FOR_N_SECONDS), 70);
-    uint32_t timeout_70_item_index = eos_radio_list_add_item(rl, str);
-    eos_radio_list_add_event_cb(rl, _wake_duration_radio_list_selection_changed_cb, NULL);
-    eos_radio_list_set_subtitle(rl, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP));
-    eos_radio_list_set_comment(rl, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT));
+    uint32_t timeout_70_item_index = eos_radio_page_add_item(rp, str);
+    eos_radio_page_add_event_cb(rp, _wake_duration_radio_list_selection_changed_cb, NULL);
+    eos_radio_page_set_subtitle(rp, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP));
+    eos_radio_page_set_comment(rp, eos_lang_get_text(STR_ID_SETTINGS_WAKE_ON_TAP_COMMENT));
     uint32_t timeout = eos_config_get_number(EOS_CONFIG_KEY_SLEEP_TIMEOUT_SEC_NUMBER, 15);
     if (timeout == 15)
     {
-        eos_radio_list_check(rl, timeout_15_item_index);
+        eos_radio_page_check(rp, timeout_15_item_index);
     }
     else
     {
-        eos_radio_list_check(rl, timeout_70_item_index);
+        eos_radio_page_check(rp, timeout_70_item_index);
     }
+    eos_radio_page_show(rp);
 }
 
 static void _settings_view_display(lv_event_t *e)
@@ -359,29 +360,30 @@ static void _haptics_radio_list_selection_changed_cb(lv_event_t *e)
 
 static void _haptics_entry_button_clicked_cb(lv_event_t *e)
 {
-    eos_radio_list_t *rl = eos_radio_list_enter(eos_lang_get_text(STR_ID_SETTINGS_HAPTICS));
-    eos_radio_list_add_item(rl, eos_lang_get_text(STR_ID_OFF));
-    eos_radio_list_add_item(rl, eos_lang_get_text(STR_ID_NORMAL));
-    eos_radio_list_add_item(rl, eos_lang_get_text(STR_ID_INTENSE));
-    eos_radio_list_set_subtitle(rl, eos_lang_get_text(STR_ID_SETTINGS_HAPTICS_STRENGTH));
-    eos_radio_list_add_event_cb(rl, _haptics_radio_list_selection_changed_cb, NULL);
+    eos_radio_page_t *rp = eos_radio_page_create(eos_lang_get_text(STR_ID_SETTINGS_HAPTICS));
+    eos_radio_page_add_item(rp, eos_lang_get_text(STR_ID_OFF));
+    eos_radio_page_add_item(rp, eos_lang_get_text(STR_ID_NORMAL));
+    eos_radio_page_add_item(rp, eos_lang_get_text(STR_ID_INTENSE));
+    eos_radio_page_set_subtitle(rp, eos_lang_get_text(STR_ID_SETTINGS_HAPTICS_STRENGTH));
+    eos_radio_page_add_event_cb(rp, _haptics_radio_list_selection_changed_cb, NULL);
     eos_haptic_strength_t s = eos_config_get_number(
         EOS_CONFIG_KEY_VIBRATOR_STRENGTH_NUMBER,
         EOS_HAPTIC_STRENGTH_NORMAL);
     switch (s)
     {
     case EOS_HAPTIC_STRENGTH_OFF:
-        eos_radio_list_check(rl, 0);
+        eos_radio_page_check(rp, 0);
         break;
     case EOS_HAPTIC_STRENGTH_NORMAL:
-        eos_radio_list_check(rl, 1);
+        eos_radio_page_check(rp, 1);
         break;
     case EOS_HAPTIC_STRENGTH_INTENSE:
-        eos_radio_list_check(rl, 2);
+        eos_radio_page_check(rp, 2);
         break;
     default:
         break;
     }
+    eos_radio_page_show(rp);
 }
 
 static void _settings_view_sound_and_haptics(lv_event_t *e)

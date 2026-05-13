@@ -1,17 +1,18 @@
 /**
- * @file eos_radio_list.c
- * @brief Radio list page
+ * @file eos_radio_page.c
+ * @brief Radio page - single-selection list page
  */
 
-#include "eos_radio_list.h"
+#include "eos_radio_page.h"
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
-#define EOS_LOG_TAG "RadioList"
+#define EOS_LOG_TAG "RadioPage"
 #include "eos_log.h"
 #include "eos_port.h"
 #include "eos_basic_widgets.h"
+#include "eos_corner_radius.h"
 #include "eos_app_header.h"
 #include "eos_theme.h"
 #include "eos_icon.h"
@@ -24,7 +25,7 @@
 
 #define _RADIO_ITEM_TITLE_LABEL_INDEX 0
 #define _RADIO_ITEM_CHECK_LABEL_INDEX 1
-struct eos_radio_list_t
+struct eos_radio_page_t
 {
     lv_obj_t *screen;
     lv_obj_t *subtitle_label;
@@ -32,6 +33,7 @@ struct eos_radio_list_t
     lv_obj_t *comment_label;
     lv_obj_t *last_right_label;
     lv_obj_t *last_item;
+    eos_activity_t *activity;
     uint32_t selected_index;
     uint32_t item_number;
 };
@@ -39,46 +41,46 @@ struct eos_radio_list_t
 
 /* Function Implementations -----------------------------------*/
 
-static void _radio_item_check(eos_radio_list_t *rl, lv_obj_t *right_label)
+static void _radio_item_check(eos_radio_page_t *rp, lv_obj_t *right_label)
 {
-    if (rl->last_right_label == right_label)
+    if (rp->last_right_label == right_label)
         return;
     lv_obj_remove_flag(right_label, LV_OBJ_FLAG_HIDDEN);
-    if (rl->last_right_label)
+    if (rp->last_right_label)
     {
-        lv_obj_add_flag(rl->last_right_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(rp->last_right_label, LV_OBJ_FLAG_HIDDEN);
     }
-    rl->last_right_label = right_label;
+    rp->last_right_label = right_label;
 }
 
 static void _radio_item_clicked_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
     uint32_t index = (uint32_t)lv_obj_get_user_data(obj);
-    eos_radio_list_t *rl = lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(rl);
+    eos_radio_page_t *rp = lv_event_get_user_data(e);
+    EOS_CHECK_PTR_RETURN(rp);
     lv_obj_t *label = lv_obj_get_child(obj, _RADIO_ITEM_CHECK_LABEL_INDEX);
     EOS_CHECK_PTR_RETURN(label);
-    _radio_item_check(rl, label);
-    lv_obj_send_event(rl->radio_item_container, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)index);
+    _radio_item_check(rp, label);
+    lv_obj_send_event(rp->radio_item_container, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)index);
 }
 
-void eos_radio_list_check(eos_radio_list_t *rl, uint32_t index)
+void eos_radio_page_check(eos_radio_page_t *rp, uint32_t index)
 {
-    EOS_CHECK_PTR_RETURN(rl);
-    lv_obj_t *item = lv_obj_get_child(rl->radio_item_container, index);
+    EOS_CHECK_PTR_RETURN(rp);
+    lv_obj_t *item = lv_obj_get_child(rp->radio_item_container, index);
     EOS_CHECK_PTR_RETURN(item);
     lv_obj_t *check_label = lv_obj_get_child(item, _RADIO_ITEM_CHECK_LABEL_INDEX);
     EOS_CHECK_PTR_RETURN(check_label);
-    _radio_item_check(rl, check_label);
+    _radio_item_check(rp, check_label);
 }
 
-uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
+uint32_t eos_radio_page_add_item(eos_radio_page_t *rp, const char *txt)
 {
-    EOS_CHECK_PTR_RETURN_VAL(rl && txt && rl->radio_item_container, EOS_INVALID_RADIO_INDEX);
-    lv_obj_t *item = lv_button_create(rl->radio_item_container);
+    EOS_CHECK_PTR_RETURN_VAL(rp && txt && rp->radio_item_container, EOS_INVALID_RADIO_INDEX);
+    lv_obj_t *item = lv_button_create(rp->radio_item_container);
     lv_obj_set_size(item, lv_pct(100), _RADIO_ITEM_HEIGHT);
-    lv_obj_set_style_bg_color(item, EOS_COLOR_DARK_GREY_2, 0);
+    lv_obj_set_style_bg_color(item, EOS_THEME_BUTTON_COLOR, 0);
     lv_obj_set_style_bg_opa(item, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(item, 0, 0);
     lv_obj_set_style_pad_hor(item, EOS_LIST_CONTAINER_PAD_ALL, 0);
@@ -94,24 +96,22 @@ uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
     lv_label_set_text(title_label, txt);
     lv_obj_align(title_label, LV_ALIGN_LEFT_MID, 0, 0);
 
-    // Note: If you want to add or remove objects within the item, you need to modify the label index in `_radio_item_clicked_cb`
     lv_obj_t *check_label = lv_label_create(item);
     lv_label_set_text(check_label, RI_CHECK_FILL);
     lv_obj_set_style_text_color(check_label, EOS_COLOR_GREEN, 0);
     lv_obj_align(check_label, LV_ALIGN_RIGHT_MID, 0, 0);
-    if (rl->item_number == 0)
+    if (rp->item_number == 0)
     {
-        _radio_item_check(rl, check_label);
+        _radio_item_check(rp, check_label);
         eos_obj_set_corner_radius_bg(item,
                                      EOS_ROUND_TOP_LEFT | EOS_ROUND_TOP_RIGHT,
                                      EOS_ITEM_RADIUS, EOS_THEME_BUTTON_COLOR);
     }
     else
     {
-        if (rl->item_number > 1)
+        if (rp->item_number > 1)
         {
-            // 已经有两个对象，需要删除第二个对象的圆角
-            eos_obj_remove_corner_radius_bg(rl->last_item);
+            eos_obj_remove_corner_radius_bg(rp->last_item);
         }
         eos_obj_set_corner_radius_bg(item,
                                      EOS_ROUND_BOTTOM_LEFT | EOS_ROUND_BOTTOM_RIGHT,
@@ -119,54 +119,53 @@ uint32_t eos_radio_list_add_item(eos_radio_list_t *rl, const char *txt)
         lv_obj_add_flag(check_label, LV_OBJ_FLAG_HIDDEN);
     }
 
-    // 设置label顺序以便能够找到check_label
     lv_obj_move_to_index(title_label, _RADIO_ITEM_TITLE_LABEL_INDEX);
     lv_obj_move_to_index(check_label, _RADIO_ITEM_CHECK_LABEL_INDEX);
 
-    lv_obj_set_user_data(item, (void *)(intptr_t)rl->item_number);
-    lv_obj_add_event_cb(item, _radio_item_clicked_cb, LV_EVENT_CLICKED, rl);
+    lv_obj_set_user_data(item, (void *)(intptr_t)rp->item_number);
+    lv_obj_add_event_cb(item, _radio_item_clicked_cb, LV_EVENT_CLICKED, rp);
 
-    rl->last_item = item;
-    uint32_t item_index = rl->item_number;
-    rl->item_number++;
+    rp->last_item = item;
+    uint32_t item_index = rp->item_number;
+    rp->item_number++;
 
     return item_index;
 }
 
-void eos_radio_list_set_subtitle(eos_radio_list_t *rl, const char *subtitle)
+void eos_radio_page_set_subtitle(eos_radio_page_t *rp, const char *subtitle)
 {
-    EOS_CHECK_PTR_RETURN(rl && subtitle && rl->subtitle_label);
-    lv_label_set_text(rl->subtitle_label, subtitle);
+    EOS_CHECK_PTR_RETURN(rp && subtitle && rp->subtitle_label);
+    lv_label_set_text(rp->subtitle_label, subtitle);
 }
 
-void eos_radio_list_set_comment(eos_radio_list_t *rl, const char *comment)
+void eos_radio_page_set_comment(eos_radio_page_t *rp, const char *comment)
 {
-    EOS_CHECK_PTR_RETURN(rl && comment && rl->comment_label);
-    lv_label_set_text(rl->comment_label, comment);
+    EOS_CHECK_PTR_RETURN(rp && comment && rp->comment_label);
+    lv_label_set_text(rp->comment_label, comment);
 }
 
-void eos_radio_list_add_event_cb(eos_radio_list_t *rl, lv_event_cb_t event_cb, void *user_data)
+void eos_radio_page_add_event_cb(eos_radio_page_t *rp, lv_event_cb_t event_cb, void *user_data)
 {
-    EOS_CHECK_PTR_RETURN(rl && rl->radio_item_container);
-    lv_obj_add_event_cb(rl->radio_item_container, event_cb, LV_EVENT_VALUE_CHANGED, user_data);
+    EOS_CHECK_PTR_RETURN(rp && rp->radio_item_container);
+    lv_obj_add_event_cb(rp->radio_item_container, event_cb, LV_EVENT_VALUE_CHANGED, user_data);
 }
 
-static const eos_activity_lifecycle_t radio_list_lifecycle = {
+static const eos_activity_lifecycle_t radio_page_lifecycle = {
     .on_enter = NULL,
     .on_destroy = NULL,
     .on_pause = NULL,
     .on_resume = NULL,
 };
 
-eos_radio_list_t *eos_radio_list_enter(const char *title)
+eos_radio_page_t *eos_radio_page_create(const char *title)
 {
-    eos_radio_list_t *rl = eos_malloc_zeroed(sizeof(eos_radio_list_t));
-    EOS_CHECK_PTR_RETURN_VAL(rl, NULL);
+    eos_radio_page_t *rp = eos_malloc_zeroed(sizeof(eos_radio_page_t));
+    EOS_CHECK_PTR_RETURN_VAL(rp, NULL);
 
-    rl->item_number = 0;
-    rl->selected_index = 0;
+    rp->item_number = 0;
+    rp->selected_index = 0;
 
-    eos_activity_t *a = eos_activity_create(&radio_list_lifecycle);
+    eos_activity_t *a = eos_activity_create(&radio_page_lifecycle);
     EOS_CHECK_PTR_RETURN_VAL(a, NULL);
     eos_activity_set_title(a, title);
     eos_activity_set_app_header_visible(a, true);
@@ -174,7 +173,7 @@ eos_radio_list_t *eos_radio_list_enter(const char *title)
 
     lv_obj_t *list = eos_list_create(view);
 
-    rl->subtitle_label = eos_list_add_title(list, title);
+    rp->subtitle_label = eos_list_add_title(list, title);
 
     lv_obj_t *con = lv_obj_create(list);
     lv_obj_remove_style_all(con);
@@ -188,10 +187,16 @@ eos_radio_list_t *eos_radio_list_enter(const char *title)
     lv_obj_set_style_pad_top(con, 0, 0);
     lv_obj_set_style_pad_bottom(con, 0, 0);
 
-    rl->radio_item_container = con;
-    rl->comment_label = eos_list_add_comment(list, "");
+    rp->radio_item_container = con;
+    rp->comment_label = eos_list_add_comment(list, "");
+    rp->activity = a;
 
-    eos_activity_set_user_data(a, rl);
-    eos_activity_enter(a);
-    return rl;
+    eos_activity_set_user_data(a, rp);
+    return rp;
+}
+
+void eos_radio_page_show(eos_radio_page_t *rp)
+{
+    EOS_CHECK_PTR_RETURN(rp);
+    eos_activity_enter(rp->activity);
 }

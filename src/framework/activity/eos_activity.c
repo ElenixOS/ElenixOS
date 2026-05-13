@@ -109,7 +109,7 @@ static eos_activity_ctx_t _activity_ctx = {
     .active_anim_ctx = NULL,
 };
 
-static eos_activity_anim_cb_t g_anim_callback_routes[EOS_ACTIVITY_TYPE_COUNT][EOS_ACTIVITY_TYPE_COUNT] = {0};
+static eos_activity_anim_cb_t _anim_callback_routes[EOS_ACTIVITY_TYPE_COUNT][EOS_ACTIVITY_TYPE_COUNT] = {0};
 
 /* Function Implementations -----------------------------------*/
 static void _update_app_header_if_needed(eos_activity_t *activity);
@@ -168,7 +168,7 @@ static void _activity_reset_context(void)
     _activity_ctx.transition_in_progress = false;
     _activity_ctx.snapshot_capture_window = false;
     _activity_ctx.active_anim_ctx = NULL;
-    memset(g_anim_callback_routes, 0, sizeof(g_anim_callback_routes));
+    memset(_anim_callback_routes, 0, sizeof(_anim_callback_routes));
 }
 
 static void _activity_show(eos_activity_t *activity)
@@ -571,12 +571,12 @@ eos_result_t eos_activity_register_anim_route(eos_activity_type_t from_type,
         return EOS_FAILED;
     }
 
-    if (g_anim_callback_routes[from_type][to_type] != NULL)
+    if (_anim_callback_routes[from_type][to_type] != NULL)
     {
         EOS_LOG_W("Animation route duplicated: from=%d to=%d, overwrite", from_type, to_type);
     }
 
-    g_anim_callback_routes[from_type][to_type] = cb;
+    _anim_callback_routes[from_type][to_type] = cb;
     return EOS_OK;
 }
 
@@ -589,7 +589,7 @@ eos_activity_anim_cb_t eos_activity_get_anim_route(eos_activity_type_t from_type
         return NULL;
     }
 
-    return g_anim_callback_routes[from_type][to_type];
+    return _anim_callback_routes[from_type][to_type];
 }
 
 void *eos_activity_get_user_data(eos_activity_t *activity)

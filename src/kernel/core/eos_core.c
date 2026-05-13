@@ -57,7 +57,7 @@
 /* Macros and Definitions -------------------------------------*/
 
 /* Variables --------------------------------------------------*/
-static bool g_is_inited = false;
+static bool _is_inited = false;
 /* Function Implementations -----------------------------------*/
 
 static const char *months = "JanFebMarAprMayJunJulAugSepOctNovDec";
@@ -185,17 +185,17 @@ void eos_init(void)
     // Activity controller will automatically delete Logo Screen
     if (eos_activity_controller_init(watchface_activity) != EOS_OK)
         _sys_init_err_handler("Failed to initialize activity controller");
-    g_is_inited = true;
+    _is_inited = true;
 }
 
 bool eos_is_initialized(void)
 {
-    return g_is_inited;
+    return _is_inited;
 }
 
 uint32_t eos_main_loop(void)
 {
-    if (!g_is_inited)
+    if (!_is_inited)
     {
         EOS_LOG_E("System not initialized. Please call eos_init() before eos_main_loop().");
         return 0;

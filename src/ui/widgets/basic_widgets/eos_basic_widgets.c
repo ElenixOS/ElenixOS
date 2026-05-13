@@ -61,18 +61,20 @@ typedef struct
     lv_obj_t *button;
     eos_activity_t *activity;
     int32_t button_hidden_x;
+    uint32_t sequence;
 } eos_list_transition_state_t;
 
-static eos_list_transition_state_t _list_transition_state = {0};
-static eos_list_transition_state_t _list_transition_state_history[_LIST_TRANSITION_STATE_HISTORY_CAP] = {0};
-static uint32_t _list_transition_state_history_count = 0U;
-static int32_t _list_transition_selected_index = -1;
+static eos_list_transition_state_t *_list_transition_state = NULL;
+static uint32_t _list_transition_sequence = 0U;
 
+static eos_list_transition_state_t *_list_transition_get_state(lv_obj_t *list);
 static void _list_transition_clear_state(void);
-static void _list_transition_remove_state_at(uint32_t idx);
-static void _list_transition_prune_invalid_states(void);
 static void _list_transition_record_state(lv_obj_t *list, lv_obj_t *button, eos_activity_t *activity);
 static bool _list_transition_select_state_for_activity(eos_activity_t *expected_activity);
+static void _list_transition_select_state_from_tree(lv_obj_t *root,
+                                                    eos_activity_t *expected_activity,
+                                                    eos_list_transition_state_t **best_state,
+                                                    uint32_t *best_sequence);
 static lv_obj_t *_list_transition_resolve_button_target(lv_obj_t *list, lv_obj_t *target);
 static void _list_transition_list_clicked_cb(lv_event_t *e);
 static void _list_transition_list_delete_cb(lv_event_t *e);
@@ -235,6 +237,7 @@ lv_obj_t *eos_list_create(lv_obj_t *parent)
 {
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
     lv_obj_t *list = lv_list_create(parent);
+    eos_list_transition_state_t *state = eos_malloc_zeroed(sizeof(eos_list_transition_state_t));
     lv_obj_set_size(list, lv_pct(100), lv_pct(100));
     lv_obj_set_style_pad_ver(list, 0, 0);
     lv_obj_set_style_pad_hor(list, 10, 0);
@@ -242,58 +245,72 @@ lv_obj_t *eos_list_create(lv_obj_t *parent)
     lv_obj_set_style_pad_top(list, _LIST_HEAD_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_style_pad_bottom(list, _LIST_TAIL_PLACEHOLDER_HEIGHT, 0);
     lv_obj_set_flex_align(list, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    if (state)
+    {
+        state->list = list;
+        lv_obj_set_user_data(list, state);
+    }
+    else
+    {
+        EOS_LOG_E("Failed to allocate list transition state for list %p", list);
+    }
     lv_obj_add_event_cb(list, _list_transition_list_clicked_cb, LV_EVENT_PRESSED, list);
     lv_obj_add_event_cb(list, _list_transition_list_clicked_cb, LV_EVENT_CLICKED, list);
     lv_obj_add_event_cb(list, _list_transition_list_delete_cb, LV_EVENT_DELETE, list);
     return list;
 }
 
-static void _list_transition_clear_state(void)
+static eos_list_transition_state_t *_list_transition_get_state(lv_obj_t *list)
 {
-    _list_transition_state.list = NULL;
-    _list_transition_state.button = NULL;
-    _list_transition_state.activity = NULL;
-    _list_transition_state.button_hidden_x = 0;
-    _list_transition_selected_index = -1;
+    if (!(list && lv_obj_is_valid(list) && lv_obj_check_type(list, &lv_list_class)))
+    {
+        return NULL;
+    }
+
+    eos_list_transition_state_t *state = (eos_list_transition_state_t *)lv_obj_get_user_data(list);
+    if (state)
+    {
+        state->list = list;
+    }
+
+    return state;
 }
 
-static void _list_transition_remove_state_at(uint32_t idx)
+static void _list_transition_clear_state(void)
 {
-    if (idx >= _list_transition_state_history_count)
+    _list_transition_state = NULL;
+}
+
+static void _list_transition_select_state_from_tree(lv_obj_t *root,
+                                                    eos_activity_t *expected_activity,
+                                                    eos_list_transition_state_t **best_state,
+                                                    uint32_t *best_sequence)
+{
+    if (!(root && expected_activity && best_state && best_sequence))
     {
         return;
     }
 
-    for (uint32_t i = idx; i + 1U < _list_transition_state_history_count; i++)
+    if (lv_obj_check_type(root, &lv_list_class))
     {
-        _list_transition_state_history[i] = _list_transition_state_history[i + 1U];
-    }
-    _list_transition_state_history_count--;
-
-    if (_list_transition_selected_index == (int32_t)idx)
-    {
-        _list_transition_selected_index = -1;
-    }
-    else if (_list_transition_selected_index > (int32_t)idx)
-    {
-        _list_transition_selected_index--;
-    }
-}
-
-static void _list_transition_prune_invalid_states(void)
-{
-    for (uint32_t i = 0U; i < _list_transition_state_history_count;)
-    {
-        eos_list_transition_state_t *s = &_list_transition_state_history[i];
-        bool valid = s->list && s->button && s->activity &&
-                     lv_obj_is_valid(s->list) && lv_obj_is_valid(s->button) &&
-                     _list_transition_is_descendant_of(s->button, s->list);
-        if (!valid)
+        eos_list_transition_state_t *state = _list_transition_get_state(root);
+        if (state && state->button && lv_obj_is_valid(state->button) &&
+            _list_transition_is_descendant_of(state->button, state->list) &&
+            state->sequence >= *best_sequence)
         {
-            _list_transition_remove_state_at(i);
-            continue;
+            *best_sequence = state->sequence;
+            *best_state = state;
         }
-        i++;
+    }
+
+    uint32_t child_cnt = lv_obj_get_child_count(root);
+    for (uint32_t i = 0U; i < child_cnt; i++)
+    {
+        lv_obj_t *child = lv_obj_get_child(root, i);
+        if (child)
+        {
+            _list_transition_select_state_from_tree(child, expected_activity, best_state, best_sequence);
+        }
     }
 }
 
@@ -304,33 +321,17 @@ static void _list_transition_record_state(lv_obj_t *list, lv_obj_t *button, eos_
         return;
     }
 
-    _list_transition_prune_invalid_states();
-
-    eos_list_transition_state_t new_state = {
-        .list = list,
-        .button = button,
-        .activity = activity,
-        .button_hidden_x = 0,
-    };
-
-    for (uint32_t i = 0U; i < _list_transition_state_history_count; i++)
+    eos_list_transition_state_t *state = _list_transition_get_state(list);
+    if (!state)
     {
-        if (_list_transition_state_history[i].list == list)
-        {
-            _list_transition_remove_state_at(i);
-            break;
-        }
+        return;
     }
 
-    if (_list_transition_state_history_count >= _LIST_TRANSITION_STATE_HISTORY_CAP)
-    {
-        _list_transition_remove_state_at(0U);
-    }
-
-    _list_transition_state_history[_list_transition_state_history_count] = new_state;
-    _list_transition_selected_index = (int32_t)_list_transition_state_history_count;
-    _list_transition_state_history_count++;
-    _list_transition_state = new_state;
+    state->list = list;
+    state->button = button;
+    state->activity = activity;
+    state->sequence = ++_list_transition_sequence;
+    _list_transition_state = state;
 }
 
 static bool _list_transition_select_state_for_activity(eos_activity_t *expected_activity)
@@ -340,32 +341,18 @@ static bool _list_transition_select_state_for_activity(eos_activity_t *expected_
         return false;
     }
 
-    _list_transition_prune_invalid_states();
-
     lv_obj_t *expected_view = eos_activity_get_view(expected_activity);
     if (!(expected_view && lv_obj_is_valid(expected_view)))
     {
         return false;
     }
 
-    for (uint32_t i = _list_transition_state_history_count; i > 0U; i--)
-    {
-        eos_list_transition_state_t *s = &_list_transition_state_history[i - 1U];
-        if (!_list_transition_is_descendant_of(s->list, expected_view))
-        {
-            continue;
-        }
-        if (!_list_transition_is_descendant_of(s->button, s->list))
-        {
-            continue;
-        }
+    eos_list_transition_state_t *best_state = NULL;
+    uint32_t best_sequence = 0U;
+    _list_transition_select_state_from_tree(expected_view, expected_activity, &best_state, &best_sequence);
+    _list_transition_state = best_state;
 
-        _list_transition_selected_index = (int32_t)(i - 1U);
-        _list_transition_state = *s;
-        return true;
-    }
-
-    return false;
+    return best_state != NULL;
 }
 
 static void _list_transition_list_delete_cb(lv_event_t *e)
@@ -378,17 +365,15 @@ static void _list_transition_list_delete_cb(lv_event_t *e)
 
     _list_transition_cancel_anims_for_list(list);
 
-    for (uint32_t i = _list_transition_state_history_count; i > 0U; i--)
+    eos_list_transition_state_t *state = _list_transition_get_state(list);
+    if (state)
     {
-        if (_list_transition_state_history[i - 1U].list == list)
+        if (_list_transition_state == state)
         {
-            _list_transition_remove_state_at(i - 1U);
+            _list_transition_clear_state();
         }
-    }
-
-    if (_list_transition_state.list == list)
-    {
-        _list_transition_clear_state();
+        lv_obj_set_user_data(list, NULL);
+        eos_free(state);
     }
 }
 
@@ -411,9 +396,9 @@ static void _list_transition_cancel_anims_for_list(lv_obj_t *list)
 
     lv_anim_delete(list, NULL);
 
-    if (_list_transition_state.button && lv_obj_is_valid(_list_transition_state.button))
+    if (_list_transition_state && _list_transition_state->button && lv_obj_is_valid(_list_transition_state->button))
     {
-        lv_anim_delete(_list_transition_state.button, NULL);
+        lv_anim_delete(_list_transition_state->button, NULL);
     }
 }
 
@@ -500,9 +485,9 @@ bool eos_list_transition_should_animate(eos_activity_t *from, eos_activity_t *to
         return false;
     }
 
-    if (_list_transition_state.activity != expected_activity)
+    if (_list_transition_state->activity != expected_activity)
     {
-        EOS_LOG_D("should_animate: activity mismatch tolerated, saved=%p, expected=%p", _list_transition_state.activity, expected_activity);
+        EOS_LOG_D("should_animate: activity mismatch tolerated, saved=%p, expected=%p", _list_transition_state->activity, expected_activity);
     }
 
     EOS_LOG_D("should_animate: PASS - will animate");
@@ -650,8 +635,9 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     eos_activity_t *list_activity = back ? to : from;
     eos_activity_t *page_activity = back ? from : to;
     lv_obj_t *list_view = eos_activity_get_view(list_activity);
-    lv_obj_t *list = _list_transition_state.list;
-    lv_obj_t *button = _list_transition_state.button;
+    eos_list_transition_state_t *state = _list_transition_state;
+    lv_obj_t *list = state ? state->list : NULL;
+    lv_obj_t *button = state ? state->button : NULL;
     if (!(list_view && list && button))
     {
         EOS_LOG_W("list_transition_play: invalid objects detected, skipping animation");
@@ -713,9 +699,9 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     int32_t computed_hidden_x = -(btn_area.x1 + btn_w + 16);
     int32_t style_translate_x = lv_obj_get_style_translate_x(button, 0);
     int32_t button_hidden_x = computed_hidden_x;
-    if (_list_transition_state.button_hidden_x < 0)
+    if (state->button_hidden_x < 0)
     {
-        button_hidden_x = _list_transition_state.button_hidden_x;
+        button_hidden_x = state->button_hidden_x;
     }
 
     int32_t button_start_x;
@@ -729,11 +715,7 @@ void eos_list_transition_play(lv_anim_timeline_t *at, eos_activity_t *from, eos_
     {
         button_start_x = 0;
         button_end_x = button_hidden_x;
-        _list_transition_state.button_hidden_x = button_hidden_x;
-        if (_list_transition_selected_index >= 0 && (uint32_t)_list_transition_selected_index < _list_transition_state_history_count)
-        {
-            _list_transition_state_history[_list_transition_selected_index].button_hidden_x = button_hidden_x;
-        }
+        state->button_hidden_x = button_hidden_x;
     }
     int32_t page_start_x = back ? 0 : EOS_DISPLAY_WIDTH;
     int32_t page_end_x = back ? EOS_DISPLAY_WIDTH : 0;

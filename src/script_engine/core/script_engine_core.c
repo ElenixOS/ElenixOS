@@ -1095,9 +1095,9 @@ script_pkg_type_t script_engine_get_current_script_type(void)
 jerry_value_t script_engine_call(jerry_value_t func, jerry_value_t this_val, const jerry_value_t args_p[], const jerry_length_t args_count)
 {
     script_state_t state = script_engine_get_state();
-    if (state == SCRIPT_STATE_STOPPING || state == SCRIPT_STATE_STOPPED)
+    if (state != SCRIPT_STATE_RUNNING && state != SCRIPT_STATE_SUSPEND)
     {
-        EOS_LOG_W("Script engine is in %s state, rejecting JS call", state == SCRIPT_STATE_STOPPING ? "STOPPING" : "STOPPED");
+        EOS_LOG_W("Script engine is in %d state, rejecting JS call", state);
         return jerry_undefined();
     }
 

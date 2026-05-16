@@ -18,7 +18,7 @@ extern "C" {
 #include "eos_service_config.h"
 #include "eos_storage_paths.h"
 #include "lvgl.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 
 /* Public macros ----------------------------------------------*/
 #define EOS_APP_ICON_FILE_NAME  "icon.bin"

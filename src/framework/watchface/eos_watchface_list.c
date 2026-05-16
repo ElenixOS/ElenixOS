@@ -19,7 +19,7 @@
 #include "eos_image.h"
 #include "eos_port.h"
 #include "eos_anim.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "eos_service_config.h"
 #include "eos_service_storage.h"
 #include "eos_activity.h"
@@ -40,15 +40,13 @@
  */
 static void _watchface_list_btn_cb(lv_event_t *e)
 {
-    if (script_engine_get_state() != SCRIPT_STATE_STOPPED)
-    {
-        EOS_LOG_E("Another script running");
-        return;
-    }
     const char *watchface_id = (const char *)lv_event_get_user_data(e);
     EOS_CHECK_PTR_RETURN(watchface_id);
-    eos_config_set_string(EOS_CONFIG_KEY_WATCHFACE_ID_STR, watchface_id);
-    eos_activity_back();
+
+    EOS_LOG_I("Watchface list: User selected watchface: %s", watchface_id);
+
+    // Switch to the selected watchface
+    eos_watchface_switch_to(watchface_id);
 }
 
 void eos_watchface_list_enter(void)
@@ -76,10 +74,10 @@ void eos_watchface_list_enter(void)
         const char *watchface_id = eos_watchface_list_get_id(i);
         lv_obj_t *item = lv_obj_create(cont);
         lv_obj_set_size(item, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-        lv_obj_set_flex_flow(item, LV_FLEX_FLOW_COLUMN); // 垂直布局
+        lv_obj_set_flex_flow(item, LV_FLEX_FLOW_COLUMN); // Vertical layout
         lv_obj_set_style_pad_all(item, 0, 0);
         lv_obj_set_style_margin_left(item, 50, 0);
-        lv_obj_set_style_pad_gap(item, 20, 0); // snapshot 和 label 的间距
+        lv_obj_set_style_pad_gap(item, 20, 0); // Space between label and snapshot
         lv_obj_set_style_border_width(item, 0, 0);
         lv_obj_set_style_shadow_width(item, 0, 0);
         lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
@@ -107,7 +105,7 @@ void eos_watchface_list_enter(void)
             }
         }
 
-        /* Outer container: used to display border, rounded corners and corner clipping, snapshot has 12px padding inside the container */
+        // Outer container: used to display border, rounded corners and corner clipping, snapshot has 12px padding inside the container
         lv_obj_t *snapshot_container = lv_obj_create(item);
         lv_obj_set_size(snapshot_container, _SNAPSHOT_CONTAINER_W, _SNAPSHOT_CONTAINER_H);
         lv_obj_set_style_border_width(snapshot_container, _SNAPSHOT_CONTAINER_BORDER, 0);
@@ -121,7 +119,7 @@ void eos_watchface_list_enter(void)
         lv_obj_remove_flag(snapshot_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_center(snapshot_container);
 
-        /* Image clip container: responsible for snapshot layout, corner clipping and rounded corners */
+        // Image clip container: responsible for snapshot layout, corner clipping and rounded corners
         lv_obj_t *snapshot_clip_container = lv_obj_create(snapshot_container);
         lv_obj_set_size(snapshot_clip_container,
                 _SNAPSHOT_CONTAINER_W - (_SNAPSHOT_CONTAINER_PAD * 2),
@@ -138,14 +136,14 @@ void eos_watchface_list_enter(void)
         lv_obj_remove_flag(snapshot_clip_container, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_obj_center(snapshot_clip_container);
 
-        /* Snapshot fills the new parent container */
+        // Snapshot fills the new parent container
         lv_obj_t *watchface_snapshot = lv_image_create(snapshot_clip_container);
         lv_obj_set_size(watchface_snapshot, lv_pct(100), lv_pct(100));
         lv_obj_set_style_shadow_width(watchface_snapshot, 0, 0);
         lv_obj_set_style_margin_all(watchface_snapshot, 0, 0);
         lv_obj_set_style_pad_all(watchface_snapshot, 0, 0);
         lv_obj_center(watchface_snapshot);
-        /* Remove CLICKABLE flag to let touch events pass to parent object */
+        // Remove CLICKABLE flag to let touch events pass to parent object
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_remove_flag(watchface_snapshot, LV_OBJ_FLAG_CLICK_FOCUSABLE);
         lv_image_set_src(watchface_snapshot, icon_path);

@@ -27,7 +27,7 @@
 #include "eos_app.h"
 #include "eos_app_list.h"
 #include "eos_core.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "eos_pkg_mgr.h"
 #include "eos_watchface_list.h"
 #include "eos_icon.h"

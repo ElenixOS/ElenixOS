@@ -19,6 +19,7 @@ extern "C" {
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/
+
 typedef struct eos_activity_t eos_activity_t;
 
 typedef enum
@@ -49,22 +50,37 @@ typedef struct
 /* Public function prototypes --------------------------------*/
 
 /**
- * @brief Initialize Activity controller
- * @param initial_activity Initial Activity, cannot be NULL
+ * @brief Initialize Activity controller with root Activity
+ * @param root_activity Root Activity (e.g., watchface), cannot be NULL
  * @return eos_result_t EOS_OK success, EOS_FAILED failed
+ * @note The root Activity is managed separately from the stack and will not be destroyed by back()
+ * @note The root Activity should be created with eos_activity_create_root() which auto-creates the view
  */
-eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity);
-
-/**
- * @brief Deinitialize Activity controller and release all Activities
- */
-void eos_activity_controller_deinit(void);
+eos_result_t eos_activity_controller_init(eos_activity_t *root_activity);
 
 /**
  * @brief Create an Activity
  * @return eos_activity_t* Returns Activity pointer on success, NULL on failure
  */
 eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle);
+
+/**
+ * @brief Create a root Activity (watchface) with immediate view creation
+ * @param lifecycle Activity lifecycle callbacks
+ * @return eos_activity_t* Returns Activity pointer on success, NULL on failure
+ *
+ * Differences from eos_activity_create():
+ * - Always creates view immediately with standard style (no lazy creation)
+ * - Designed for root activities (watchfaces) that need custom content
+ * - Auto-creates root_screen if not exists (lazy initialization)
+ *
+ * Usage:
+ * 1. Create: eos_activity_create_root(&lifecycle)  // view created immediately
+ * 2. Initialize: eos_activity_controller_init(root_activity)
+ *
+ * Note: Can be called before or after eos_activity_controller_init()
+ */
+eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecycle);
 
 /**
  * @brief Get Activity user data
@@ -207,9 +223,11 @@ lv_color_t eos_activity_get_app_header_time_only_text_color(eos_activity_t *acti
 lv_obj_t *eos_activity_get_view(eos_activity_t *activity);
 
 /**
- * @brief Set Activity View
+ * @brief Set Activity View (internal use only)
  * @param activity Activity pointer
- * @param view View object, returns NULL on failure
+ * @param view View object
+ * @note This function should only be called inside on_enter callback.
+ *       External modification of Activity's view is prohibited to prevent view loss.
  */
 void eos_activity_set_view(eos_activity_t *activity, lv_obj_t *view);
 
@@ -218,6 +236,28 @@ void eos_activity_set_view(eos_activity_t *activity, lv_obj_t *view);
  * @return lv_obj_t* Root Screen object, returns NULL on failure
  */
 lv_obj_t *eos_activity_get_root_screen(void);
+
+/**
+ * @brief Replace the root Activity (e.g., switch watchface)
+ * @param new_root New root Activity to set
+ * @return eos_result_t EOS_OK success, EOS_FAILED failed
+ *
+ * Lifecycle:
+ * 1. If old root exists, call its on_destroy()
+ * 2. Set new root as current root
+ * 3. Call new root's on_enter()
+ * 4. Display new root's view
+ *
+ * @note The old root Activity is destroyed and should not be used after this call.
+ *       The new root Activity must have been created with eos_activity_create().
+ */
+eos_result_t eos_activity_replace_root(eos_activity_t *new_root);
+
+/**
+ * @brief Get current root Activity
+ * @return eos_activity_t* Root Activity pointer, returns NULL if not initialized
+ */
+eos_activity_t *eos_activity_get_root(void);
 
 /**
  * @brief Get Activity view snapshot
@@ -229,8 +269,9 @@ lv_obj_t *eos_activity_get_root_screen(void);
 lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_header);
 
 /**
- * @brief Get Watchface Activity
- * @return eos_activity_t* Watchface Activity pointer, returns NULL on failure
+ * @brief Get Watchface Activity (deprecated, use eos_activity_get_root instead)
+ * @return eos_activity_t* Watchface (root) Activity pointer, returns NULL on failure
+ * @deprecated This function is kept for backward compatibility. Use eos_activity_get_root() instead.
  */
 eos_activity_t *eos_activity_get_watchface(void);
 
@@ -253,8 +294,10 @@ void eos_activity_enter(eos_activity_t *activity);
 eos_result_t eos_activity_back(void);
 
 /**
- * @brief Return directly to watchface Activity and clear all stacked Activities
+ * @brief Return directly to root Activity and clear all stacked Activities
  * @return eos_result_t EOS_OK success, EOS_FAILED failed
+ * @note This function destroys all Activities in the stack and returns to the root Activity.
+ *       The root Activity's on_resume() will be called.
  */
 eos_result_t eos_activity_back_to_watchface(void);
 
@@ -289,8 +332,8 @@ eos_activity_t *eos_activity_get_previous(void);
 bool eos_activity_is_transition_in_progress(void);
 
 /**
- * @brief Get bottom Activity in stack (usually watchface Activity)
- * @return eos_activity_t* Bottom Activity in stack, returns NULL on failure
+ * @brief Get bottom Activity in stack (or root Activity if stack is empty)
+ * @return eos_activity_t* Bottom Activity in stack, or root Activity if stack empty, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_bottom(void);
 

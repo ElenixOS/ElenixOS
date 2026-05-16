@@ -13,7 +13,7 @@
 #include "eos_mem.h"
 #include "eos_port.h"
 #include "lvgl.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"

@@ -17,7 +17,7 @@
 #include "sni_api_export.h"
 #include "eos_log.h"
 #include "eos_mem.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "eos_font.h"
 #include "eos_activity.h"
 #include "eos_service_time.h"

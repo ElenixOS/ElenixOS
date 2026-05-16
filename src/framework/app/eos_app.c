@@ -15,7 +15,7 @@
 #include "eos_log.h"
 #include "eos_pkg_mgr.h"
 #include "eos_event.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "cJSON.h"
 #include "eos_app_list.h"
 #include "eos_service_storage.h"

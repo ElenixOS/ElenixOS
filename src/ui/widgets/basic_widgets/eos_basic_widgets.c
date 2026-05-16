@@ -16,7 +16,7 @@
 #include "eos_log.h"
 #include "eos_image.h"
 #include "eos_event.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "eos_theme.h"
 #include "eos_port.h"
 #include "eos_icon.h"

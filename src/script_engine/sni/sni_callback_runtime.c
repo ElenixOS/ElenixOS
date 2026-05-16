@@ -14,7 +14,7 @@
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
 #include "sni_types.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "uthash.h"
 
 /* Macros and Definitions -------------------------------------*/

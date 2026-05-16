@@ -17,7 +17,7 @@ extern "C"
 #include "eos_core.h"
 #include "eos_app.h"
 #include "eos_watchface.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 /* Public macros ----------------------------------------------*/
 #define EOS_PKG_APP_MAGIC           "EAPK"
 #define EOS_PKG_WATCHFACE_MAGIC     "EWPK"

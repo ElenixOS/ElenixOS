@@ -11,7 +11,7 @@
 #include "lvgl.h"
 #include "sni_types.h"
 #include "eos_mem.h"
-#include "script_engine_core.h"
+#include "script_engine_manager.h"
 #include "jerryscript.h"
 #include "sni_lv_types.h"
 #include "eos_event.h"

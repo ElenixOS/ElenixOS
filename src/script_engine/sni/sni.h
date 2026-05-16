@@ -32,6 +32,18 @@ void sni_init(void);
  */
 void sni_mount(jerry_value_t js_realm);
 
+/**
+ * @brief Unmount SNI resources associated with a Realm.
+ *
+ * Called at a well-defined point when a realm is destroyed, to clean up
+ * any native handles (timers, event callbacks, etc.) before the realm is
+ * freed.  Currently a placeholder – the implementation will be added when
+ * sandbox resource tracking is introduced.
+ *
+ * @param js_realm JerryScript Realm object being torn down
+ */
+void sni_unmount(jerry_value_t js_realm);
+
 #ifdef __cplusplus
 }
 #endif

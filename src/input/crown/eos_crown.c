@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eos_dispatcher.h"
+#define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "Crown"
 #include "eos_log.h"
 #include "eos_service_pm.h"

@@ -84,7 +84,7 @@ struct eos_activity_t
 
 typedef struct
 {
-    eos_activity_t *watchface_activity;
+    eos_activity_t *root_activity;        /**< Root Activity (e.g., watchface), not in stack */
     eos_activity_t *current_activity;
     eos_activity_t *visible_activity;
     eos_activity_t *previous_activity;
@@ -97,7 +97,7 @@ typedef struct
 
 /* Variables --------------------------------------------------*/
 static eos_activity_ctx_t _activity_ctx = {
-    .watchface_activity = NULL,
+    .root_activity = NULL,
     .current_activity = NULL,
     .visible_activity = NULL,
     .previous_activity = NULL,
@@ -158,7 +158,7 @@ static void _activity_run_destroy(eos_activity_t *activity)
 
 static void _activity_reset_context(void)
 {
-    _activity_ctx.watchface_activity = NULL;
+    _activity_ctx.root_activity = NULL;
     _activity_ctx.current_activity = NULL;
     _activity_ctx.visible_activity = NULL;
     _activity_ctx.previous_activity = NULL;
@@ -173,8 +173,9 @@ static void _activity_reset_context(void)
 static void _activity_show(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
-    if (!activity->view)
+    if (!activity->view || !lv_obj_is_valid(activity->view))
     {
+        EOS_LOG_W("_activity_show: Invalid or NULL view for activity, skipping");
         return;
     }
 
@@ -333,9 +334,9 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
             next_activity->lifecycle.on_enter(next_activity);
         next_activity->has_started = true;
     }
-        else if (is_returning && next_activity->has_started && next_activity->lifecycle.on_resume)
+    else if (is_returning && next_activity->has_started && next_activity->lifecycle.on_resume)
     {
-            next_activity->lifecycle.on_resume(next_activity);
+        next_activity->lifecycle.on_resume(next_activity);
     }
 
     if (eos_activity_is_app_header_visible(next_activity))
@@ -718,7 +719,88 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
 
 eos_activity_t *eos_activity_get_watchface(void)
 {
-    return _activity_ctx.watchface_activity;
+    return _activity_ctx.root_activity;
+}
+
+eos_result_t eos_activity_replace_root(eos_activity_t *new_root)
+{
+    EOS_CHECK_PTR_RETURN_VAL(new_root, EOS_FAILED);
+
+    if (!_controller_initialized())
+    {
+        EOS_LOG_E("Activity controller not initialized");
+        return EOS_FAILED;
+    }
+
+    if (_activity_ctx.transition_in_progress)
+    {
+        EOS_LOG_W("Activity transition in progress");
+        return EOS_FAILED;
+    }
+
+    EOS_CHECK_PTR_RETURN_VAL(new_root->view, EOS_FAILED);
+
+    // Destroy old root completely
+    if (_activity_ctx.root_activity)
+    {
+        eos_activity_t *old_root = _activity_ctx.root_activity;
+
+        // Call on_destroy for old root
+        if (old_root->lifecycle.on_destroy)
+        {
+            old_root->lifecycle.on_destroy(old_root);
+        }
+
+        // Clean up old root's view
+        if (old_root->view && lv_obj_is_valid(old_root->view))
+        {
+            lv_obj_delete(old_root->view);
+            old_root->view = NULL;
+        }
+
+        // Free the old activity structure itself
+        eos_free(old_root);
+        _activity_ctx.root_activity = NULL;
+    }
+
+    // Set new root
+    _activity_ctx.root_activity = new_root;
+
+    // Ensure new root's view is parented to root screen
+    if (lv_obj_get_parent(new_root->view) != _activity_ctx.root_screen)
+    {
+        lv_obj_set_parent(new_root->view, _activity_ctx.root_screen);
+    }
+
+    _activity_ctx.current_activity = new_root;
+    _activity_ctx.visible_activity = new_root;
+
+    // Enter new root (call on_enter) - now eos_view_active() will return correct view
+    if (new_root->lifecycle.on_enter)
+    {
+        new_root->lifecycle.on_enter(new_root);
+        new_root->has_started = true;
+    }
+
+    // Display new root
+    _activity_show(new_root);
+
+    if (new_root->is_app_header_visible)
+    {
+        eos_app_header_show(new_root);
+    }
+    else
+    {
+        eos_app_header_hide();
+    }
+
+    EOS_LOG_I("Root Activity replaced successfully");
+    return EOS_OK;
+}
+
+eos_activity_t *eos_activity_get_root(void)
+{
+    return _activity_ctx.root_activity;
 }
 
 const char *eos_activity_get_title(eos_activity_t *activity)
@@ -894,66 +976,109 @@ lv_obj_t *eos_view_active(void)
     return current->view;
 }
 
-eos_result_t eos_activity_controller_init(eos_activity_t *initial_activity)
+eos_result_t eos_activity_controller_init(eos_activity_t *root_activity)
 {
-    EOS_CHECK_PTR_RETURN_VAL(initial_activity, EOS_FAILED);
+    EOS_CHECK_PTR_RETURN_VAL(root_activity, EOS_FAILED);
 
     if (_controller_initialized())
     {
-        eos_activity_controller_deinit();
-    }
-
-    if (lv_screen_active())
-    {
-        lv_obj_delete(lv_screen_active());
-    }
-    _activity_ctx.root_screen = lv_obj_create(NULL);
-    lv_obj_set_scrollbar_mode(_activity_ctx.root_screen, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_remove_flag(_activity_ctx.root_screen, LV_OBJ_FLAG_SCROLLABLE);
-    lv_screen_load(_activity_ctx.root_screen);
-
-    _activity_ctx.activity_stack = eos_stack_create_with_mode(_ACTIVITY_STACK_INIT_CAPACITY, EOS_STACK_CAPACITY_FIXED);
-    if (!_activity_ctx.activity_stack)
-    {
-        if (_activity_ctx.root_screen)
-        {
-            lv_obj_delete(_activity_ctx.root_screen);
-            _activity_ctx.root_screen = NULL;
-        }
+        EOS_LOG_E("Activity controller already initialized, cannot reinitialize");
         return EOS_FAILED;
     }
 
-    if (!initial_activity->view)
+    // Lazy initialization: create root_screen and stack if not exist
+    // This allows eos_activity_create_root() to be called before controller_init()
+    if (!_activity_ctx.root_screen)
     {
-        initial_activity->view = _view_create(_activity_ctx.root_screen);
-    }
-    else
-    {
-        lv_obj_set_parent(initial_activity->view, _activity_ctx.root_screen);
+        if (lv_screen_active())
+        {
+            lv_obj_delete(lv_screen_active());
+        }
+        _activity_ctx.root_screen = lv_obj_create(NULL);
+        lv_obj_set_scrollbar_mode(_activity_ctx.root_screen, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_remove_flag(_activity_ctx.root_screen, LV_OBJ_FLAG_SCROLLABLE);
+        lv_screen_load(_activity_ctx.root_screen);
+        EOS_LOG_D("controller_init: Lazy-created root_screen");
     }
 
-    if (!initial_activity->view)
+    if (!_activity_ctx.activity_stack)
     {
+        _activity_ctx.activity_stack = eos_stack_create_with_mode(_ACTIVITY_STACK_INIT_CAPACITY, EOS_STACK_CAPACITY_FIXED);
+        if (!_activity_ctx.activity_stack)
+        {
+            if (_activity_ctx.root_screen)
+            {
+                lv_obj_delete(_activity_ctx.root_screen);
+                _activity_ctx.root_screen = NULL;
+            }
+            return EOS_FAILED;
+        }
+        EOS_LOG_D("controller_init: Lazy-created activity_stack");
+    }
+
+    // Set root Activity
+    _activity_ctx.root_activity = root_activity;
+
+    // Root activity must have view created by eos_activity_create_root()
+    if (!root_activity->view)
+    {
+        EOS_LOG_E("controller_init: Root activity has no view (must use eos_activity_create_root)");
         eos_stack_destroy(_activity_ctx.activity_stack);
         _activity_reset_context();
         return EOS_FAILED;
     }
 
-    _activity_ctx.watchface_activity = initial_activity;
+    EOS_LOG_D("controller_init: root_activity=%p, root_screen=%p, current_view=%p",
+              (void *)root_activity, (void *)_activity_ctx.root_screen,
+              (void *)(root_activity ? root_activity->view : NULL));
 
-        if (initial_activity->lifecycle.on_enter)
+    if (root_activity->view)
     {
-            initial_activity->lifecycle.on_enter(initial_activity);
-        initial_activity->has_started = true;
+        if (lv_obj_is_valid(root_activity->view))
+        {
+            lv_obj_set_parent(root_activity->view, _activity_ctx.root_screen);
+        }
+        else
+        {
+            // View is invalid (dangling pointer), reset to NULL so on_enter can recreate
+            EOS_LOG_W("controller_init: Detected invalid/dangling view pointer");
+            root_activity->view = NULL;
+        }
     }
-    _activity_show(initial_activity);
-    _activity_ctx.current_activity = initial_activity;
-    _activity_ctx.visible_activity = initial_activity;
+
+    // Enter root Activity (this will call on_enter which creates the view)
+    EOS_LOG_I("controller_init: Calling on_enter for root activity...");
+    if (root_activity->lifecycle.on_enter)
+    {
+        root_activity->lifecycle.on_enter(root_activity);
+        root_activity->has_started = true;
+    }
+    else
+    {
+        EOS_LOG_E("controller_init: Root activity has no on_enter callback!");
+    }
+
+    EOS_LOG_D("controller_init: After on_enter - view=%p, valid=%s",
+              (void *)root_activity->view,
+              (root_activity->view && lv_obj_is_valid(root_activity->view)) ? "yes" : "no");
+
+    // Verify view was created by on_enter
+    if (!root_activity->view || !lv_obj_is_valid(root_activity->view))
+    {
+        EOS_LOG_E("Root activity's on_enter failed to create a valid view (view=%p)",
+                  (void *)root_activity->view);
+        eos_stack_destroy(_activity_ctx.activity_stack);
+        _activity_reset_context();
+        return EOS_FAILED;
+    }
+    _activity_show(root_activity);
+    _activity_ctx.current_activity = root_activity;
+    _activity_ctx.visible_activity = root_activity;
     _activity_ctx.transition_in_progress = false;
 
-    if (initial_activity->is_app_header_visible)
+    if (root_activity->is_app_header_visible)
     {
-        eos_app_header_show(initial_activity);
+        eos_app_header_show(root_activity);
     }
     else
     {
@@ -1006,6 +1131,59 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     return activity;
 }
 
+eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecycle)
+{
+    // Lazy initialization: auto-create root_screen if not exists
+    // This allows create_root() to be called before controller_init()
+    if (!_activity_ctx.root_screen)
+    {
+        if (lv_screen_active())
+        {
+            lv_obj_delete(lv_screen_active());
+        }
+        _activity_ctx.root_screen = lv_obj_create(NULL);
+        lv_obj_set_scrollbar_mode(_activity_ctx.root_screen, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_remove_flag(_activity_ctx.root_screen, LV_OBJ_FLAG_SCROLLABLE);
+        lv_screen_load(_activity_ctx.root_screen);
+        EOS_LOG_D("create_root: Auto-created root_screen (lazy init)");
+    }
+
+    eos_activity_t *activity = eos_malloc_zeroed(sizeof(eos_activity_t));
+    if (!activity)
+    {
+        return NULL;
+    }
+
+    // Always create view immediately with standard style
+    activity->view = _view_create(_activity_ctx.root_screen);
+    if (!activity->view)
+    {
+        eos_free(activity);
+        return NULL;
+    }
+
+    if (lifecycle)
+    {
+        activity->lifecycle = *lifecycle;
+    }
+    else
+    {
+        memset(&activity->lifecycle, 0, sizeof(activity->lifecycle));
+    }
+    activity->type = EOS_ACTIVITY_TYPE_WATCHFACE;
+    activity->snapshot_ref_count = 0;
+    activity->is_app_header_visible = false;
+    activity->is_app_header_time_only = false;
+    activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
+    activity->destroy_on_exit = false;
+    activity->title.color = _DEFAULT_TITLE_COLOR;
+    activity->title.type = _TITLE_TYPE_INVALID;
+    activity->title.string = NULL;
+    activity->user_data = NULL;
+
+    return activity;
+}
+
 void eos_activity_enter(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
@@ -1026,9 +1204,10 @@ void eos_activity_enter(eos_activity_t *activity)
         return;
     }
 
-    if (activity == _activity_ctx.watchface_activity)
+    // Prevent entering root Activity through normal enter (use replace_root instead)
+    if (activity == _activity_ctx.root_activity)
     {
-        _activity_switch_to(activity, false);
+        EOS_LOG_W("Use eos_activity_replace_root() to switch root Activity");
         return;
     }
 
@@ -1059,14 +1238,17 @@ eos_result_t eos_activity_back(void)
         return EOS_FAILED;
     }
 
+    // If stack is empty, we're at root - cannot go back further
     if (eos_stack_get_size(_activity_ctx.activity_stack) == 0)
     {
-        if (_activity_ctx.watchface_activity && _activity_ctx.current_activity != _activity_ctx.watchface_activity)
+        if (_activity_ctx.current_activity == _activity_ctx.root_activity)
         {
-            _activity_switch_to(_activity_ctx.watchface_activity, true);
-            return EOS_OK;
+            // Already at root, cannot back
+            return EOS_FAILED;
         }
-        return EOS_FAILED;
+        // This shouldn't happen, but if current is not root and stack is empty, go to root
+        _activity_switch_to(_activity_ctx.root_activity, true);
+        return EOS_OK;
     }
 
     eos_activity_t *current = eos_stack_pop(_activity_ctx.activity_stack);
@@ -1078,7 +1260,8 @@ eos_result_t eos_activity_back(void)
     eos_activity_t *prev = NULL;
     if (eos_stack_get_size(_activity_ctx.activity_stack) == 0)
     {
-        prev = _activity_ctx.watchface_activity;
+        // Stack empty, return to root
+        prev = _activity_ctx.root_activity;
     }
     else
     {
@@ -1105,18 +1288,20 @@ eos_result_t eos_activity_back_to_watchface(void)
         return EOS_FAILED;
     }
 
-    eos_activity_t *watchface = _activity_ctx.watchface_activity;
+    eos_activity_t *root = _activity_ctx.root_activity;
     eos_activity_t *current = _activity_ctx.current_activity;
-    if (!watchface || !current)
+    if (!root || !current)
     {
         return EOS_FAILED;
     }
 
-    if (current == watchface)
+    if (current == root)
     {
+        // Already at root
         return EOS_OK;
     }
 
+    // Destroy all activities in stack
     while (eos_stack_get_size(_activity_ctx.activity_stack) > 0)
     {
         eos_activity_t *activity = eos_stack_pop(_activity_ctx.activity_stack);
@@ -1128,10 +1313,12 @@ eos_result_t eos_activity_back_to_watchface(void)
         _activity_run_destroy(activity);
     }
 
+    // Mark current activity for destruction
     eos_activity_t *cur_activity = _activity_ctx.current_activity;
     cur_activity->destroy_on_exit = true;
 
-    _activity_switch_to(watchface, true);
+    // Switch to root (will call on_resume)
+    _activity_switch_to(root, true);
     return EOS_OK;
 }
 
@@ -1148,8 +1335,8 @@ eos_activity_t *eos_activity_get_current(void)
     }
     if (_activity_ctx.current_activity)
         return _activity_ctx.current_activity;
-    if (_activity_ctx.watchface_activity)
-        return _activity_ctx.watchface_activity;
+    if (_activity_ctx.root_activity)
+        return _activity_ctx.root_activity;
     return NULL;
 }
 
@@ -1184,39 +1371,13 @@ eos_activity_t *eos_activity_get_bottom(void)
     {
         return NULL;
     }
-    return _activity_ctx.watchface_activity;
-}
 
-void eos_activity_controller_deinit(void)
-{
-    if (!_activity_ctx.activity_stack)
+    // If stack has items, return bottom of stack
+    if (eos_stack_get_size(_activity_ctx.activity_stack) > 0)
     {
-        if (_activity_ctx.root_screen)
-        {
-            lv_obj_delete(_activity_ctx.root_screen);
-            _activity_ctx.root_screen = NULL;
-        }
-        return;
+        return eos_stack_peek(_activity_ctx.activity_stack);
     }
 
-    while (eos_stack_get_size(_activity_ctx.activity_stack) > 0)
-    {
-        eos_activity_t *activity = eos_stack_pop(_activity_ctx.activity_stack);
-        _activity_run_destroy(activity);
-    }
-
-    if (_activity_ctx.watchface_activity)
-    {
-        _activity_run_destroy(_activity_ctx.watchface_activity);
-        _activity_ctx.watchface_activity = NULL;
-    }
-
-    eos_stack_destroy(_activity_ctx.activity_stack);
-
-    if (_activity_ctx.root_screen)
-    {
-        lv_obj_delete(_activity_ctx.root_screen);
-    }
-
-    _activity_reset_context();
+    // Stack empty, return root activity
+    return _activity_ctx.root_activity;
 }

@@ -28,6 +28,24 @@ extern "C" {
 void eos_touch_init(void);
 
 /**
+ * @brief Bind the unified touch stream to an LVGL pointer input device.
+ *
+ * The existing input callback is retained as the physical-input source and
+ * is called before EOS arbitrates physical and synthetic samples.  Platform
+ * ports must call this for the pointer indev that represents the screen.
+ *
+ * @param indev LVGL pointer input device owned by the platform.
+ * @return true when the device was bound, otherwise false.
+ */
+bool eos_touch_bind_indev(lv_indev_t *indev);
+
+/**
+ * @brief Check whether the unified touch stream is bound to an LVGL indev.
+ * @return true when a valid binding is active, otherwise false.
+ */
+bool eos_touch_is_bound(void);
+
+/**
  * @brief Automated input control ownership state.
  */
 typedef enum

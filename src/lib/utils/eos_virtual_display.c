@@ -15,6 +15,7 @@
 #include "eos_log.h"
 #include "eos_port.h"
 #include "eos_mem.h"
+#include "eos_touch.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -243,6 +244,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
     lv_indev_set_read_cb(vd->indev, _virtual_input_read);
     lv_indev_set_user_data(vd->indev, vd);
     lv_indev_set_display(vd->indev, vd->disp);
+    (void)eos_touch_bind_indev(vd->indev);
     return vd->disp;
 }
 

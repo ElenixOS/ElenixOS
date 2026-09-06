@@ -12,9 +12,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#define EOS_LOG_TAG "ESH/UI"
+#include "eos_log.h"
 
 #define UI_DEFAULT_SWIPE_DURATION_MS (300U)
 #define UI_MAX_SWIPE_DURATION_MS (5000U)
+
+static int ui_require_touch_binding(esh_cmd_ctx_t *ctx)
+{
+    if (eos_touch_is_bound())
+    {
+        return 1;
+    }
+
+    EOS_LOG_E("ui command unavailable: touch input is not bound; platform must call eos_touch_bind_indev()");
+    (void)esh_printf(ctx, "ERR: touch input is not bound; this feature is unavailable\r\n");
+    return 0;
+}
 
 static int ui_help(esh_cmd_ctx_t *ctx)
 {
@@ -166,6 +180,11 @@ int esh_builtin_cmd_ui(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     if (argc < 2)
     {
         return ui_help(ctx);
+    }
+
+    if (!ui_require_touch_binding(ctx))
+    {
+        return -1;
     }
 
     if (strcmp(argv[1], "control") == 0)

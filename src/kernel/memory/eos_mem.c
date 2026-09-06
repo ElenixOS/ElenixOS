@@ -7,6 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,12 +33,26 @@
 /* Types ------------------------------------------------------*/
 typedef struct eos_mem_header eos_mem_header_t;
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+typedef max_align_t eos_mem_alignment_t;
+#else
+typedef union
+{
+    void *pointer;
+    long double long_double;
+    long long long_long;
+} eos_mem_alignment_t;
+#endif
+
 /* The max_align_t member keeps the user pointer correctly aligned on every
- * platform supported by the C implementation. The header is returned to the
- * provider as one allocation, so this does not require a metadata heap. */
+ * platform supported by the C implementation. C99 does not define
+ * max_align_t, so the fallback covers the alignment of the standard
+ * fundamental types available to the implementation. The header is returned
+ * to the provider as one allocation, so this does not require a metadata
+ * heap. */
 struct eos_mem_header
 {
-    max_align_t alignment;
+    eos_mem_alignment_t alignment;
     uint32_t magic;
     uint16_t version;
     uint16_t flags;
@@ -94,6 +109,13 @@ static void eos_mem_record_allocation_failure(size_t size,
 /* Weak platform hook -----------------------------------------*/
 EOS_WEAK void eos_mem_platform_init(void)
 {
+}
+
+EOS_WEAK void eos_mem_alloc_failed(size_t size, eos_mem_alloc_failure_kind_t kind, uintptr_t caller_pc)
+{
+    (void)size;
+    (void)kind;
+    (void)caller_pc;
 }
 
 static void *eos_mem_cjson_malloc(size_t size)
@@ -878,6 +900,8 @@ size_t eos_mem_get_free_bytes(void)
 }
 
 /* LVGL adapter -----------------------------------------------*/
+#if EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE
+
 void lv_mem_init(void)
 {
     eos_mem_ensure_initialized();
@@ -971,3 +995,13 @@ void lv_mem_monitor_core(lv_mem_monitor_t *mon_p)
         mon_p->frag_pct = frag_pct > UINT8_MAX ? UINT8_MAX : (uint8_t)frag_pct;
     }
 }
+
+lv_result_t lv_mem_test_core(void)
+{
+    eos_mem_stats_t stats;
+
+    eos_mem_get_stats(&stats);
+    return stats.invariant_errors == 0U ? LV_RESULT_OK : LV_RESULT_INVALID;
+}
+
+#endif /* EOS_OVERRIDE_LVGL_STDLIB_MALLOC_ENABLE */

@@ -1008,6 +1008,21 @@ static int _esh_cmd_help(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     return EOS_OK;
 }
 
+/* PE/COFF builds do not have the ELF/Mach-O command section used by the
+ * Native Unix targets.  Keep the frontend release command in the fallback
+ * built-in table so Windows exposes the same ESH command set. */
+#if !ESH_USE_LINKER_SECTION
+static int _esh_cmd_exit(esh_cmd_ctx_t *ctx, int argc, char *argv[])
+{
+    (void)argc;
+    (void)argv;
+    return (int)esh_request_release(ctx);
+}
+#define ESH_BUILTIN_EXIT_COMMAND(_) _(exit, _esh_cmd_exit, "release the active ESH frontend")
+#else
+#define ESH_BUILTIN_EXIT_COMMAND(_)
+#endif
+
 #if EOS_COMPILE_MODE == EOS_DEBUG
 #define ESH_BUILTIN_JS_COMMAND(_) _(js, esh_builtin_cmd_js, "evaluate JavaScript")
 #else
@@ -1015,6 +1030,7 @@ static int _esh_cmd_help(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 #endif
 
 #define ESH_BUILTIN_COMMANDS(_)                                                    \
+    ESH_BUILTIN_EXIT_COMMAND(_)                                                    \
     _(help, _esh_cmd_help, "list available commands")                              \
     _(version, _esh_cmd_version, "show ElenixOS kernel version")                   \
     _(pwd, _esh_cmd_pwd, "print the current directory")                            \
@@ -1071,6 +1087,7 @@ ESH_BUILTIN_COMMANDS(_ESH_EXPORT_BUILTIN)
 static const esh_command_t _esh_builtin_commands[] = {ESH_BUILTIN_COMMANDS(_ESH_DEFINE_BUILTIN)};
 #undef _ESH_DEFINE_BUILTIN
 #undef ESH_BUILTIN_COMMANDS
+#undef ESH_BUILTIN_EXIT_COMMAND
 #undef ESH_BUILTIN_JS_COMMAND
 
 const esh_command_t *_esh_builtin_command_begin(void)

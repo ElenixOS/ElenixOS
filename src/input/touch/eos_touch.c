@@ -6,8 +6,10 @@
 #include "eos_touch.h"
 
 /* Includes ---------------------------------------------------*/
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define EOS_LOG_TAG "Touch"
 #include "eos_config.h"
 #include "eos_log.h"
@@ -31,7 +33,11 @@
  */
 #define EOS_TOUCH_LONG_PRESS_TIME 400
 #define EOS_TOUCH_INJECT_QUEUE_SIZE 64U
-#define EOS_TOUCH_MARKER_SIZE 26U
+#define EOS_TOUCH_TRACE_MAX_POINTS 32U
+#define EOS_TOUCH_TRACE_LINE_WIDTH 14U
+#define EOS_TOUCH_TRACE_START_SIZE 48U
+#define EOS_TOUCH_MARKER_SIZE 64U
+#define EOS_TOUCH_MARKER_CORE_SIZE 20U
 #define EOS_TOUCH_INDEV_PERIOD_MS 33U
 #define EOS_TOUCH_CONTROL_GLOW_INSET 4U
 #define EOS_TOUCH_CONTROL_BANNER_WIDTH (EOS_DISPLAY_WIDTH - 80U)
@@ -64,6 +70,12 @@ static uint8_t _eos_touch_inject_pressed_delivered;
 static uint8_t _eos_touch_inject_abort_release_pending;
 static uint8_t _eos_touch_ready;
 static lv_obj_t *_eos_touch_marker;
+static lv_obj_t *_eos_touch_marker_core;
+static lv_obj_t *_eos_touch_trace_start;
+static lv_obj_t *_eos_touch_trace_line;
+static lv_draw_buf_t *_eos_touch_trace_draw_buf;
+static lv_point_precise_t _eos_touch_trace_points[EOS_TOUCH_TRACE_MAX_POINTS];
+static uint8_t _eos_touch_trace_point_count;
 static lv_obj_t *_eos_touch_control_glow;
 static lv_obj_t *_eos_touch_control_banner;
 static lv_obj_t *_eos_touch_control_label;
@@ -79,6 +91,11 @@ static lv_indev_read_cb_t _eos_touch_platform_read_cb;
 /* Function Implementations -----------------------------------*/
 
 static void _eos_touch_marker_hide(void);
+static void _eos_touch_trace_reset(void);
+static void _eos_touch_trace_update(void);
+static void _eos_touch_trace_add(int32_t x, int32_t y);
+static void _eos_touch_trace_render(void);
+static void _eos_touch_trace_canvas_delete_cb(lv_event_t *event);
 static bool _eos_touch_coordinate_valid(int32_t x, int32_t y);
 static void _eos_touch_bound_read_cb(lv_indev_t *indev, lv_indev_data_t *data);
 static void _eos_touch_bound_indev_delete_cb(lv_event_t *event);
@@ -202,22 +219,83 @@ void eos_touch_init(void)
         lv_obj_remove_style_all(_eos_touch_marker);
         lv_obj_set_size(_eos_touch_marker, EOS_TOUCH_MARKER_SIZE, EOS_TOUCH_MARKER_SIZE);
         lv_obj_set_style_radius(_eos_touch_marker, LV_RADIUS_CIRCLE, 0);
-        /* Bright, cool gradient for a Codex-like touch affordance: white at
-         * the top, fading to a soft mint/cyan at the bottom. */
-        lv_obj_set_style_bg_color(_eos_touch_marker, lv_color_hex(0xFFFFFF), 0);
-        lv_obj_set_style_bg_grad_color(_eos_touch_marker, lv_color_hex(0xB8F3E6), 0);
-        lv_obj_set_style_bg_grad_dir(_eos_touch_marker, LV_GRAD_DIR_VER, 0);
-        lv_obj_set_style_bg_opa(_eos_touch_marker, LV_OPA_80, 0);
-        lv_obj_set_style_border_width(_eos_touch_marker, 2, 0);
-        lv_obj_set_style_border_color(_eos_touch_marker, lv_color_hex(0xFFFFFF), 0);
-        lv_obj_set_style_border_opa(_eos_touch_marker, LV_OPA_90, 0);
-        lv_obj_set_style_shadow_width(_eos_touch_marker, 8, 0);
-        lv_obj_set_style_shadow_spread(_eos_touch_marker, 1, 0);
-        lv_obj_set_style_shadow_color(_eos_touch_marker, lv_color_hex(0x8DE8D7), 0);
-        lv_obj_set_style_shadow_opa(_eos_touch_marker, LV_OPA_50, 0);
+        lv_obj_set_style_bg_opa(_eos_touch_marker, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(_eos_touch_marker, 7, 0);
+        lv_obj_set_style_border_color(_eos_touch_marker, lv_color_hex(0x2D65DE), 0);
+        lv_obj_set_style_border_opa(_eos_touch_marker, LV_OPA_COVER, 0);
         lv_obj_remove_flag(_eos_touch_marker, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(_eos_touch_marker, LV_OBJ_FLAG_HIDDEN);
     }
+
+    if (_eos_touch_marker_core == NULL)
+    {
+        _eos_touch_marker_core = lv_obj_create(lv_layer_top());
+        lv_obj_remove_style_all(_eos_touch_marker_core);
+        lv_obj_set_size(_eos_touch_marker_core, EOS_TOUCH_MARKER_CORE_SIZE, EOS_TOUCH_MARKER_CORE_SIZE);
+        lv_obj_set_style_radius(_eos_touch_marker_core, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(_eos_touch_marker_core, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_bg_opa(_eos_touch_marker_core, LV_OPA_COVER, 0);
+        lv_obj_remove_flag(_eos_touch_marker_core, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(_eos_touch_marker_core, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (_eos_touch_trace_start == NULL)
+    {
+        _eos_touch_trace_start = lv_obj_create(lv_layer_top());
+        lv_obj_remove_style_all(_eos_touch_trace_start);
+        lv_obj_set_size(_eos_touch_trace_start, EOS_TOUCH_TRACE_START_SIZE, EOS_TOUCH_TRACE_START_SIZE);
+        lv_obj_set_style_radius(_eos_touch_trace_start, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(_eos_touch_trace_start, lv_color_hex(0x78A0EC), 0);
+        lv_obj_set_style_bg_opa(_eos_touch_trace_start, LV_OPA_40, 0);
+        lv_obj_remove_flag(_eos_touch_trace_start, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(_eos_touch_trace_start, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (_eos_touch_trace_line == NULL)
+    {
+        _eos_touch_trace_line = lv_canvas_create(lv_layer_top());
+        if (_eos_touch_trace_line == NULL)
+        {
+            EOS_LOG_E("Failed to create touch trace line");
+        }
+        else
+        {
+            _eos_touch_trace_draw_buf =
+                lv_draw_buf_create(EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT, LV_COLOR_FORMAT_ARGB8888, LV_STRIDE_AUTO);
+            if (_eos_touch_trace_draw_buf == NULL)
+            {
+                EOS_LOG_E("Failed to create touch trace buffer");
+                lv_obj_delete(_eos_touch_trace_line);
+                _eos_touch_trace_line = NULL;
+            }
+            else
+            {
+                lv_canvas_set_draw_buf(_eos_touch_trace_line, _eos_touch_trace_draw_buf);
+                lv_obj_remove_style_all(_eos_touch_trace_line);
+                lv_obj_set_style_bg_opa(_eos_touch_trace_line, LV_OPA_TRANSP, 0);
+                lv_obj_add_event_cb(_eos_touch_trace_line, _eos_touch_trace_canvas_delete_cb, LV_EVENT_DELETE, NULL);
+                lv_obj_set_size(_eos_touch_trace_line, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
+                lv_obj_set_pos(_eos_touch_trace_line, 0, 0);
+                lv_obj_remove_flag(_eos_touch_trace_line, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_add_flag(_eos_touch_trace_line, LV_OBJ_FLAG_HIDDEN);
+            }
+        }
+    }
+
+    if (_eos_touch_trace_line != NULL && _eos_touch_trace_draw_buf != NULL)
+    {
+        lv_canvas_fill_bg(_eos_touch_trace_line, lv_color_black(), LV_OPA_TRANSP);
+    }
+
+    /* The canvas owns the rendered pixels; the trace is rasterized whenever
+     * its control-point list changes, so the draw callback never has to
+     * submit a collection of independently antialiased line segments. */
+    if (_eos_touch_trace_line != NULL && _eos_touch_trace_draw_buf == NULL)
+    {
+        lv_obj_add_flag(_eos_touch_trace_line, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    _eos_touch_trace_reset();
 
     if (_eos_touch_control_glow == NULL)
     {
@@ -321,6 +399,7 @@ static void _eos_touch_reset_queue(void)
     _eos_touch_inject_current_repeat = 0U;
     _eos_touch_inject_release_queued = 0U;
     _eos_touch_inject_pressed_delivered = 0U;
+    _eos_touch_trace_reset();
 }
 
 static void _eos_touch_control_overlay_set(bool visible)
@@ -479,7 +558,9 @@ static eos_touch_inject_result_t _eos_touch_begin(void)
 
 static void _eos_touch_marker_set(int32_t x, int32_t y)
 {
-    if (_eos_touch_marker == NULL)
+    _eos_touch_trace_add(x, y);
+
+    if (_eos_touch_marker == NULL || _eos_touch_marker_core == NULL)
     {
         return;
     }
@@ -487,8 +568,13 @@ static void _eos_touch_marker_set(int32_t x, int32_t y)
     lv_obj_set_pos(_eos_touch_marker,
                    (lv_coord_t)(x - (int32_t)(EOS_TOUCH_MARKER_SIZE / 2U)),
                    (lv_coord_t)(y - (int32_t)(EOS_TOUCH_MARKER_SIZE / 2U)));
+    lv_obj_set_pos(_eos_touch_marker_core,
+                   (lv_coord_t)(x - (int32_t)(EOS_TOUCH_MARKER_CORE_SIZE / 2U)),
+                   (lv_coord_t)(y - (int32_t)(EOS_TOUCH_MARKER_CORE_SIZE / 2U)));
     lv_obj_clear_flag(_eos_touch_marker, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(_eos_touch_marker_core, LV_OBJ_FLAG_HIDDEN);
     lv_obj_move_foreground(_eos_touch_marker);
+    lv_obj_move_foreground(_eos_touch_marker_core);
 }
 
 static void _eos_touch_marker_hide(void)
@@ -497,6 +583,209 @@ static void _eos_touch_marker_hide(void)
     {
         lv_obj_add_flag(_eos_touch_marker, LV_OBJ_FLAG_HIDDEN);
     }
+    if (_eos_touch_marker_core != NULL)
+    {
+        lv_obj_add_flag(_eos_touch_marker_core, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (_eos_touch_trace_start != NULL)
+    {
+        lv_obj_add_flag(_eos_touch_trace_start, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (_eos_touch_trace_line != NULL)
+    {
+        lv_obj_add_flag(_eos_touch_trace_line, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void _eos_touch_trace_canvas_delete_cb(lv_event_t *event)
+{
+    (void)event;
+    if (_eos_touch_trace_draw_buf != NULL)
+    {
+        lv_draw_buf_destroy(_eos_touch_trace_draw_buf);
+        _eos_touch_trace_draw_buf = NULL;
+    }
+}
+
+static void _eos_touch_trace_reset(void)
+{
+    _eos_touch_trace_point_count = 0U;
+    if (_eos_touch_trace_line != NULL && _eos_touch_trace_draw_buf != NULL)
+    {
+        lv_canvas_fill_bg(_eos_touch_trace_line, lv_color_black(), LV_OPA_TRANSP);
+    }
+    _eos_touch_marker_hide();
+}
+
+static void _eos_touch_trace_update(void)
+{
+    if (_eos_touch_trace_line != NULL)
+    {
+        if (_eos_touch_trace_point_count > 1U)
+        {
+            lv_obj_clear_flag(_eos_touch_trace_line, LV_OBJ_FLAG_HIDDEN);
+        }
+        else
+        {
+            lv_obj_add_flag(_eos_touch_trace_line, LV_OBJ_FLAG_HIDDEN);
+        }
+        _eos_touch_trace_render();
+    }
+
+    if (_eos_touch_trace_start != NULL && _eos_touch_trace_point_count > 1U)
+    {
+        lv_obj_set_pos(_eos_touch_trace_start,
+                       (lv_coord_t)(_eos_touch_trace_points[0].x - (int32_t)(EOS_TOUCH_TRACE_START_SIZE / 2U)),
+                       (lv_coord_t)(_eos_touch_trace_points[0].y - (int32_t)(EOS_TOUCH_TRACE_START_SIZE / 2U)));
+        lv_obj_clear_flag(_eos_touch_trace_start, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void _eos_touch_trace_add(int32_t x, int32_t y)
+{
+    if ((_eos_touch_trace_point_count > 0U) && (_eos_touch_trace_points[_eos_touch_trace_point_count - 1U].x == x)
+        && (_eos_touch_trace_points[_eos_touch_trace_point_count - 1U].y == y))
+    {
+        return;
+    }
+
+    if (_eos_touch_trace_point_count >= EOS_TOUCH_TRACE_MAX_POINTS)
+    {
+        memmove(&_eos_touch_trace_points[0],
+                &_eos_touch_trace_points[1],
+                sizeof(_eos_touch_trace_points[0]) * (EOS_TOUCH_TRACE_MAX_POINTS - 1U));
+        _eos_touch_trace_point_count = EOS_TOUCH_TRACE_MAX_POINTS - 1U;
+    }
+
+    _eos_touch_trace_points[_eos_touch_trace_point_count].x = x;
+    _eos_touch_trace_points[_eos_touch_trace_point_count].y = y;
+    _eos_touch_trace_point_count++;
+    _eos_touch_trace_update();
+}
+
+static void _eos_touch_trace_render(void)
+{
+    const lv_point_precise_t *draw_points = _eos_touch_trace_points;
+    uint32_t draw_point_count = _eos_touch_trace_point_count;
+    uint32_t stride;
+    int32_t min_x = EOS_DISPLAY_WIDTH;
+    int32_t min_y = EOS_DISPLAY_HEIGHT;
+    int32_t max_x = 0;
+    int32_t max_y = 0;
+    const double half_width = EOS_TOUCH_TRACE_LINE_WIDTH / 2.0;
+    const double antialias_width = 1.5;
+    const lv_color_t trace_color = lv_color_hex(0x0c68fa);
+
+    if (_eos_touch_trace_draw_buf == NULL)
+    {
+        return;
+    }
+
+    lv_canvas_fill_bg(_eos_touch_trace_line, lv_color_black(), LV_OPA_TRANSP);
+    if (_eos_touch_trace_point_count < 2U)
+    {
+        return;
+    }
+
+    for (uint32_t i = 0U; i < draw_point_count; i++)
+    {
+        min_x = LV_MIN(min_x, (int32_t)draw_points[i].x);
+        min_y = LV_MIN(min_y, (int32_t)draw_points[i].y);
+        max_x = LV_MAX(max_x, (int32_t)draw_points[i].x);
+        max_y = LV_MAX(max_y, (int32_t)draw_points[i].y);
+    }
+
+    min_x = LV_MAX(0, (int32_t)floor((double)min_x - half_width - antialias_width));
+    min_y = LV_MAX(0, (int32_t)floor((double)min_y - half_width - antialias_width));
+    max_x = LV_MIN((int32_t)EOS_DISPLAY_WIDTH - 1, (int32_t)ceil((double)max_x + half_width + antialias_width));
+    max_y = LV_MIN((int32_t)EOS_DISPLAY_HEIGHT - 1, (int32_t)ceil((double)max_y + half_width + antialias_width));
+    stride = _eos_touch_trace_draw_buf->header.stride;
+
+    /* Rasterize the exact piecewise-linear path once per pixel.  The minimum
+     * distance makes joins naturally round and avoids the visible seams caused
+     * by layering LVGL line segments.  Count separated runs of nearby line
+     * segments as separate passes through the pixel.  This preserves the
+     * seamless union for one pass, while allowing a retraced/overlapping path
+     * to build up opacity naturally. */
+    for (int32_t y = min_y; y <= max_y; y++)
+    {
+        for (int32_t x = min_x; x <= max_x; x++)
+        {
+            double px = (double)x + 0.5;
+            double py = (double)y + 0.5;
+            double min_distance_squared = INFINITY;
+            double stroke_threshold = half_width + antialias_width;
+            uint32_t path_passes = 0U;
+            bool previous_segment_hit = false;
+
+            for (uint32_t i = 0U; i + 1U < draw_point_count; i++)
+            {
+                double x1 = (double)draw_points[i].x;
+                double y1 = (double)draw_points[i].y;
+                double dx = (double)draw_points[i + 1U].x - x1;
+                double dy = (double)draw_points[i + 1U].y - y1;
+                double length_squared = (dx * dx) + (dy * dy);
+                double ratio;
+                double nearest_x;
+                double nearest_y;
+                double distance_x;
+                double distance_y;
+                double distance_squared;
+
+                if (length_squared <= 0.0)
+                {
+                    continue;
+                }
+                ratio = (((px - x1) * dx) + ((py - y1) * dy)) / length_squared;
+                ratio = LV_CLAMP(0.0, ratio, 1.0);
+                nearest_x = x1 + (ratio * dx);
+                nearest_y = y1 + (ratio * dy);
+                distance_x = px - nearest_x;
+                distance_y = py - nearest_y;
+                distance_squared = (distance_x * distance_x) + (distance_y * distance_y);
+                min_distance_squared = LV_MIN(min_distance_squared, distance_squared);
+
+                /* Adjacent line segments belong to the same passage.  A
+                 * second passage is only counted after a gap in segment
+                 * indices, which prevents normal joins from becoming darker
+                 * merely because their segments overlap spatially. */
+                if (distance_squared < (stroke_threshold * stroke_threshold))
+                {
+                    if (!previous_segment_hit)
+                    {
+                        path_passes++;
+                    }
+                    previous_segment_hit = true;
+                }
+                else
+                {
+                    previous_segment_hit = false;
+                }
+            }
+
+            double distance = sqrt(min_distance_squared);
+            if (distance < stroke_threshold)
+            {
+                double coverage = (half_width + antialias_width - distance) / (2.0 * antialias_width);
+                double base_alpha;
+                double accumulated_alpha;
+                lv_color32_t *pixel;
+
+                coverage = LV_CLAMP(0.0, coverage, 1.0);
+                path_passes = LV_MAX(path_passes, 1U);
+                base_alpha = ((double)LV_OPA_60 / 255.0) * coverage;
+                accumulated_alpha = 1.0 - pow(1.0 - base_alpha, (double)path_passes);
+                pixel = (lv_color32_t *)(_eos_touch_trace_draw_buf->data + ((uint32_t)y * stride)
+                                         + ((uint32_t)x * sizeof(lv_color32_t)));
+                pixel->red = trace_color.red;
+                pixel->green = trace_color.green;
+                pixel->blue = trace_color.blue;
+                pixel->alpha = (uint8_t)lround(255.0 * accumulated_alpha);
+            }
+        }
+    }
+
+    lv_obj_invalidate(_eos_touch_trace_line);
 }
 
 bool eos_touch_read_injected(lv_indev_data_t *data)
@@ -581,6 +870,7 @@ eos_touch_inject_result_t eos_touch_inject_down(int32_t x, int32_t y)
         _eos_touch_inject_active = 0U;
         return EOS_TOUCH_INJECT_QUEUE_FULL;
     }
+    _eos_touch_trace_add(x, y);
     return EOS_TOUCH_INJECT_OK;
 }
 
@@ -598,7 +888,12 @@ eos_touch_inject_result_t eos_touch_inject_move(int32_t x, int32_t y)
     {
         return EOS_TOUCH_INJECT_BUSY;
     }
-    return _eos_touch_enqueue(x, y, LV_INDEV_STATE_PR, 1U) ? EOS_TOUCH_INJECT_OK : EOS_TOUCH_INJECT_QUEUE_FULL;
+    if (!_eos_touch_enqueue(x, y, LV_INDEV_STATE_PR, 1U))
+    {
+        return EOS_TOUCH_INJECT_QUEUE_FULL;
+    }
+    _eos_touch_trace_add(x, y);
+    return EOS_TOUCH_INJECT_OK;
 }
 
 eos_touch_inject_result_t eos_touch_inject_up(int32_t x, int32_t y)
@@ -620,6 +915,7 @@ eos_touch_inject_result_t eos_touch_inject_up(int32_t x, int32_t y)
         return EOS_TOUCH_INJECT_QUEUE_FULL;
     }
     _eos_touch_inject_release_queued = 1U;
+    _eos_touch_trace_add(x, y);
     return EOS_TOUCH_INJECT_OK;
 }
 

@@ -21,6 +21,7 @@
 #define _ESH_YMODEM_ACK 0x06U
 #define _ESH_YMODEM_NAK 0x15U
 #define _ESH_YMODEM_CAN 0x18U
+#define _ESH_CTRL_C 0x03U
 #define _ESH_YMODEM_CRC 'C'
 #define _ESH_YMODEM_DATA_SIZE 128U
 #define _ESH_YMODEM_BLOCK_SIZE 1024U
@@ -516,6 +517,12 @@ eos_result_t esh_ymodem_input(struct esh *esh, const uint8_t *data, size_t lengt
 
     for (index = 0U; index < length && esh->input_mode == ESH_INPUT_YMODEM; index++)
     {
+        if (data[index] == _ESH_CTRL_C)
+        {
+            esh_ymodem_abort(esh);
+            break;
+        }
+
         esh->ymodem.last_activity_tick = eos_tick_get();
         esh->ymodem.retry_count = 0U;
         result = _esh_ymodem_process_byte(esh, data[index]);

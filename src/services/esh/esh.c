@@ -13,6 +13,8 @@
 /* Macros and Definitions -------------------------------------*/
 #define _ESH_BACKSPACE 0x08U
 #define _ESH_DELETE 0x7FU
+#define _ESH_CTRL_C 0x03U
+#define _ESH_CTRL_U 0x15U
 #define _ESH_ESCAPE 0x1BU
 #define _ESH_ENTER_CR 0x0DU
 #define _ESH_ENTER_LF 0x0AU
@@ -503,6 +505,17 @@ static eos_result_t _esh_process_byte(esh_t *esh, uint8_t byte)
     }
 
     esh->ignore_lf = false;
+
+    if (byte == _ESH_CTRL_C || byte == _ESH_CTRL_U)
+    {
+        eos_result_t result = _esh_clear_visible_line(esh);
+        _esh_reset_line(esh);
+        if (result != EOS_OK)
+        {
+            return result;
+        }
+        return _esh_write_prompt(esh);
+    }
 
     if (byte == _ESH_ENTER_CR || byte == _ESH_ENTER_LF)
     {

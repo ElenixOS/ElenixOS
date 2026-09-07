@@ -460,6 +460,8 @@ eos_result_t eos_sensor_set_sample_period(eos_sensor_type_t type, uint32_t perio
         return EOS_ERR_INVALID_ARG;
 
     eos_sensor_service_instance_t *inst = &_instances[type];
+    uint32_t old_period_ms = inst->sample_period_ms;
+    bool was_enabled = inst->is_enabled;
 
     /* Mode policy clamp */
     eos_sensor_policy_t *policy = &_policies[_current_mode];
@@ -496,7 +498,8 @@ eos_result_t eos_sensor_set_sample_period(eos_sensor_type_t type, uint32_t perio
             }
             inst->is_enabled = true;
 
-            if (inst->device->ops->set_sample_rate)
+            /* Do not reprogram the device when the effective period is unchanged. */
+            if ((old_period_ms != period_ms || !was_enabled) && inst->device->ops->set_sample_rate)
             {
                 uint32_t hz = 1000 / period_ms;
                 if (hz == 0)

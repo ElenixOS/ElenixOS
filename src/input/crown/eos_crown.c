@@ -29,6 +29,7 @@
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
+#define _NON_TOUCH_HAPTIC_MIN_INTERVAL 50
 
 #define _SCROLLBAR_WIDTH 12
 #define _SCROLLBAR_HEIGHT 90
@@ -46,6 +47,8 @@ static lv_timer_t *scrollbar_hide_timer = NULL;
 static lv_obj_t *pending_rebind_target = NULL;
 static bool pending_rebind_is_view = true;
 static bool pending_rebind_scheduled = false;
+static uint32_t non_touch_scroll_last_haptic_tick;
+static bool non_touch_scroll_haptic_primed;
 
 static void _scrollable_obj_scrolled_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
@@ -57,6 +60,7 @@ static void _activity_view_switched_async_cb(void *user_data);
 static void _apply_pending_rebind_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(eos_anim_t *a);
+static void _crown_encoder_scroll_async_cb(void *user_data);
 static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
 static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
 static void _set_target_obj_immediate(lv_obj_t *obj);
@@ -266,6 +270,37 @@ static void _crown_encoder_async_cb(void *user_data)
     }
 }
 
+static void _crown_encoder_scroll_async_cb(void *user_data)
+{
+    int32_t delta = (int32_t)(intptr_t)user_data;
+    int32_t dy;
+
+    if (!scrollable_obj || !lv_obj_is_valid(scrollable_obj) || !lv_obj_is_visible(scrollable_obj))
+    {
+        _clear_scrollable_obj();
+        return;
+    }
+
+    if (scrollable_root && lv_obj_is_valid(scrollable_root) && !lv_obj_is_visible(scrollable_root))
+    {
+        return;
+    }
+
+    if (delta == 0)
+        return;
+
+    dy = delta * encoder_reverse;
+    _scrollbar_set_focused();
+    if (!non_touch_scroll_haptic_primed
+        || lv_tick_elaps(non_touch_scroll_last_haptic_tick) >= _NON_TOUCH_HAPTIC_MIN_INTERVAL)
+    {
+        eos_haptic_tick();
+        non_touch_scroll_last_haptic_tick = lv_tick_get();
+        non_touch_scroll_haptic_primed = true;
+    }
+    lv_obj_scroll_by_bounded(scrollable_obj, 0, dy, LV_ANIM_OFF);
+}
+
 static void _scrollable_obj_scrolled_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
@@ -311,6 +346,7 @@ static void _scrollable_obj_scrolled_cb(lv_event_t *e)
 
 static void _indev_touched_cb(lv_event_t *e)
 {
+    non_touch_scroll_haptic_primed = false;
     _scrollbar_set_unfocused();
 }
 
@@ -578,6 +614,12 @@ void eos_crown_encoder_set_reverse(bool reverse)
 void eos_crown_encoder_report(eos_crown_encoder_diff_t diff)
 {
     eos_dispatcher_call(_crown_encoder_async_cb, (void *)(intptr_t)diff);
+}
+
+void eos_crown_encoder_scroll_report(int32_t delta)
+{
+    if (delta != 0)
+        eos_dispatcher_call(_crown_encoder_scroll_async_cb, (void *)(intptr_t)delta);
 }
 
 void eos_crown_button_report(eos_button_state_t state)

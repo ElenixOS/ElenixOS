@@ -635,22 +635,46 @@ def parse_string_constant(value_text: str) -> Optional[str]:
     return None
 
 
-def load_lvgl_version(lvgl_data: Dict[str, Any]) -> Tuple[int, int, int]:
-    """Load the exact LVGL version captured when lvgl.json was generated."""
-    version = lvgl_data.get("_lvgl_version")
-    if not isinstance(version, dict):
-        raise SystemExit(
-            "[Error] lvgl.json has no _lvgl_version metadata; regenerate it with LVGL's gen_json.py"
-        )
+def resolve_lvgl_version_header(lvgl_json_path: Path, configured_path: Optional[Path]) -> Path:
+    """Find the LVGL version header used by the generated API description."""
+    if configured_path is not None:
+        if configured_path.is_file():
+            return configured_path
+        raise SystemExit(f"[Error] LVGL version header not found: {configured_path}")
 
-    components: List[int] = []
-    for component in ("major", "minor", "patch"):
-        value = version.get(component)
-        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-            raise SystemExit(f"[Error] lvgl.json has invalid LVGL version component: {component}")
-        components.append(value)
+    candidates = []
+    if len(lvgl_json_path.parents) > 3:
+        candidates.append(lvgl_json_path.parents[3] / "lv_version.h")
+    candidates.append(Path(__file__).resolve().parents[3] / "lvgl" / "lv_version.h")
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
 
-    return components[0], components[1], components[2]
+    searched = ", ".join(str(candidate) for candidate in candidates)
+    raise SystemExit(f"[Error] unable to locate LVGL version header; searched: {searched}")
+
+
+def load_lvgl_version(version_header_path: Path) -> Tuple[int, int, int]:
+    """Read the LVGL version directly from lv_version.h."""
+    try:
+        version_text = version_header_path.read_text(encoding="utf-8")
+    except OSError as err:
+        raise SystemExit(f"[Error] unable to read LVGL version header: {version_header_path}") from err
+
+    version: Dict[str, int] = {}
+    for match in re.finditer(
+        r"^\s*#define\s+LVGL_VERSION_(MAJOR|MINOR|PATCH)\s+(\d+)\s*$",
+        version_text,
+        re.MULTILINE,
+    ):
+        version[match.group(1).lower()] = int(match.group(2))
+
+    missing = [component for component in ("major", "minor", "patch") if component not in version]
+    if missing:
+        missing_text = ", ".join(f"LVGL_VERSION_{component.upper()}" for component in missing)
+        raise SystemExit(f"[Error] {missing_text} missing from {version_header_path}")
+
+    return version["major"], version["minor"], version["patch"]
 
 
 def render_lvgl_compatibility_guard(
@@ -2158,6 +2182,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lvgl-json", required=True, help="Path to LVGL API JSON")
     parser.add_argument("--lv-types", required=True, help="Path to lv_types JSON")
     parser.add_argument(
+        "--lvgl-version-header",
+        required=False,
+        help="Path to LVGL lv_version.h; inferred from --lvgl-json when omitted",
+    )
+    parser.add_argument(
         "--export-sni-types",
         required=False,
         help="Optional output file path for encountered SNI_H_*/SNI_V_* (one per line)",
@@ -2179,10 +2208,14 @@ def main() -> None:
     output_path = Path(args.output)
     lvgl_json_path = Path(args.lvgl_json)
     lv_types_path = Path(args.lv_types)
+    lvgl_version_header_path = (
+        Path(args.lvgl_version_header) if args.lvgl_version_header else None
+    )
 
     api_table_data = load_json(api_table_path, required=["classes"])
     lvgl_data = load_json(lvgl_json_path, required=["functions", "enums", "macros"])
-    lvgl_version = load_lvgl_version(lvgl_data)
+    lvgl_version_header = resolve_lvgl_version_header(lvgl_json_path, lvgl_version_header_path)
+    lvgl_version = load_lvgl_version(lvgl_version_header)
     lv_types_data = load_json(lv_types_path, required=["types"])
 
     filters = parse_api_filters(api_table_data)

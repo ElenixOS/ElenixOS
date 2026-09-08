@@ -1,76 +1,103 @@
 /**
  * @file eos_overlay_layer.c
- * @brief Four-layer overlay system implementation on lv_layer_top()
+ * @brief Fixed LVGL top-layer slot registry implementation
  */
 #include "eos_overlay_layer.h"
 
 /* Includes ---------------------------------------------------*/
+#include <stddef.h>
 #define EOS_LOG_TAG "OverlayLayer"
 #include "eos_log.h"
-#include "eos_mem.h"
 
-/* Static variables -------------------------------------------*/
-static lv_obj_t *_user_top_layer = NULL;
-static lv_obj_t *_snapshot_layer = NULL;
-static lv_obj_t *_header_layer = NULL;
-static lv_obj_t *_overlay_layer = NULL;
+/* Macros and Definitions -------------------------------------*/
+
+/* Variables --------------------------------------------------*/
+static lv_obj_t *_top_root = NULL;
 static bool _initialized = false;
 
-/* Helper: create a full-screen transparent layer container ---*/
-static lv_obj_t *_create_layer(void)
-{
-    lv_obj_t *layer = lv_obj_create(lv_layer_top());
-    lv_obj_remove_style_all(layer);
-    lv_obj_set_size(layer, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_opa(layer, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(layer, 0, 0);
-    lv_obj_set_style_pad_all(layer, 0, 0);
-    lv_obj_set_scrollbar_mode(layer, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_remove_flag(layer, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(layer, LV_OBJ_FLAG_SCROLLABLE);
-    return layer;
-}
+static const eos_top_layer_slot_t _slot_order[] = {
+    EOS_TOP_LAYER_USER_APP,
+    EOS_TOP_LAYER_ACTIVITY_SNAPSHOT,
+    EOS_TOP_LAYER_APP_HEADER,
+    EOS_TOP_LAYER_MSG_LIST,
+    EOS_TOP_LAYER_CONTROL_CENTER,
+    EOS_TOP_LAYER_FLASHLIGHT,
+    EOS_TOP_LAYER_SYSTEM_TOUCH_STATUS,
+    EOS_TOP_LAYER_SYSTEM_TOUCH_MARKER,
+    EOS_TOP_LAYER_SYSTEM_TOUCH_DIAGNOSTIC,
+    EOS_TOP_LAYER_SYSTEM_TOAST,
+    EOS_TOP_LAYER_SYSTEM_CROWN,
+    EOS_TOP_LAYER_SYSTEM_OBJS,
+    EOS_TOP_LAYER_SYSTEM_FPS,
+    EOS_TOP_LAYER_SYSTEM_ESH_CMD,
+    EOS_TOP_LAYER_SYSTEM_ERROR,
+    EOS_TOP_LAYER_MESSAGE_DETAIL,
+    EOS_TOP_LAYER_PERMISSION,
+    EOS_TOP_LAYER_LOCK,
+    EOS_TOP_LAYER_DEBUG_TEST,
+};
+
+static lv_obj_t *_slot_objects[sizeof(_slot_order) / sizeof(_slot_order[0])] = {NULL};
 
 /* Function Implementations -----------------------------------*/
+
+static lv_obj_t *_create_slot(lv_obj_t *parent)
+{
+    lv_obj_t *slot = lv_obj_create(parent);
+    if (!slot)
+        return NULL;
+
+    lv_obj_remove_style_all(slot);
+    lv_obj_set_size(slot, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_opa(slot, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(slot, 0, 0);
+    lv_obj_set_style_pad_all(slot, 0, 0);
+    lv_obj_set_scrollbar_mode(slot, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_remove_flag(slot, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(slot, LV_OBJ_FLAG_SCROLLABLE);
+    return slot;
+}
 
 void eos_overlay_layer_init(void)
 {
     if (_initialized)
         return;
 
-    /* Create from TOP to BOTTOM — each new layer is pushed to the background.
-     * Final order (bottom→top): user_top / snapshot / header / overlay */
+    /* The only direct LVGL top-layer access in ElenixOS. */
+    _top_root = _create_slot(lv_layer_top());
+    if (!_top_root)
+    {
+        EOS_LOG_E("Failed to create top-layer root");
+        return;
+    }
 
-    _overlay_layer = _create_layer(); /* layer 3 — topmost */
-    _header_layer = _create_layer();
-    lv_obj_move_background(_header_layer); /* layer 2 — below overlay */
-
-    _snapshot_layer = _create_layer();
-    lv_obj_move_background(_snapshot_layer); /* layer 1 — below header */
-
-    _user_top_layer = _create_layer();
-    lv_obj_move_background(_user_top_layer); /* layer 0 — absolute bottom */
+    /* Create from lowest to highest. LVGL append order establishes z-order. */
+    for (size_t i = 0; i < sizeof(_slot_order) / sizeof(_slot_order[0]); i++)
+    {
+        _slot_objects[i] = _create_slot(_top_root);
+        if (!_slot_objects[i])
+        {
+            EOS_LOG_E("Failed to create top-layer slot[%d]", (int)_slot_order[i]);
+            return;
+        }
+    }
 
     _initialized = true;
-    EOS_LOG_I("4-layer overlay system initialized on lv_layer_top()");
+    EOS_LOG_I("Fixed top-layer slot graph initialized (%zu slots)", sizeof(_slot_order) / sizeof(_slot_order[0]));
 }
 
-lv_obj_t *eos_overlay_get_user_top_layer(void)
+lv_obj_t *eos_overlay_layer_get(eos_top_layer_slot_t slot)
 {
-    return _user_top_layer;
+    for (size_t i = 0; i < sizeof(_slot_order) / sizeof(_slot_order[0]); i++)
+    {
+        if (_slot_order[i] == slot)
+            return _slot_objects[i];
+    }
+
+    return NULL;
 }
 
-lv_obj_t *eos_overlay_get_snapshot_layer(void)
+bool eos_overlay_layer_is_valid_slot(eos_top_layer_slot_t slot)
 {
-    return _snapshot_layer;
-}
-
-lv_obj_t *eos_overlay_get_header_layer(void)
-{
-    return _header_layer;
-}
-
-lv_obj_t *eos_overlay_get_overlay_layer(void)
-{
-    return _overlay_layer;
+    return eos_overlay_layer_get(slot) != NULL;
 }

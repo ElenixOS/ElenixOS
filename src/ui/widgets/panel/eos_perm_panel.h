@@ -53,7 +53,7 @@ typedef struct
  * @brief Create a permission request panel on the top layer
  * @param cfg Permission panel configuration
  * @return eos_perm_panel_t* Panel structure, NULL on failure
- * @note Panel is created on lv_layer_top() to avoid animation conflicts
+ * @note Panel is created on the fixed permission layer slot
  */
 eos_perm_panel_t *eos_perm_panel_create(const eos_perm_panel_cfg_t *cfg);
 

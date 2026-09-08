@@ -1701,7 +1701,7 @@ static lv_obj_t *_app_list_create_icon_clone(lv_obj_t *focus_icon)
     eos_activity_t *icon_activity = eos_activity_from_widget(focus_icon);
     lv_obj_t *icon_parent = icon_activity ? eos_activity_get_snap_container(icon_activity) : NULL;
     if (!icon_parent)
-        icon_parent = eos_overlay_get_snapshot_layer();
+        icon_parent = eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT);
 
     /* Parent may have been just created; refresh its layout so global coords are valid */
     lv_obj_update_layout(icon_parent);
@@ -1999,7 +1999,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         lv_draw_buf_t *stored = eos_activity_get_snap_buf(to);
         if (stored)
         {
-            app_snapshot = lv_image_create(eos_overlay_get_snapshot_layer());
+            app_snapshot = lv_image_create(eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
             lv_image_set_src(app_snapshot, stored);
             lv_obj_set_size(app_snapshot, stored->header.w, stored->header.h);
             /* Match the real view's position for correct pivot/translate math */

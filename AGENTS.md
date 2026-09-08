@@ -26,6 +26,14 @@ When asked to modify any of the following, you **MUST** first locate and read th
    > "ElenixOS-Docs not found at GitHub or `../ElenixOS-Docs/`. I cannot proceed without the architecture reference. Please provide the documentation or explicitly tell me to continue without it."
 4. Proceed only after reading the relevant sections, or if the user explicitly overrides.
 
+### MUST — Fixed LVGL Top-Layer Contract
+
+- The top-layer contract is defined by `src/ui/widgets/overlay/eos_overlay_layer.h`. Add new top-level UI to a named `eos_top_layer_slot_t`; do not invent an anonymous top-level container.
+- `lv_layer_top()` may only be called by `eos_overlay_layer.c`. Do not call `lv_layer_sys()` for application or system UI; use a named slot instead.
+- Slots are permanent containers created from low to high during initialization. Their enum values define semantic ordering bands, not LVGL child indices.
+- Do not use `lv_obj_move_foreground()`, `lv_obj_move_background()`, or `lv_obj_move_to_index()` to establish or repair ordering between top-layer slots. Overlay focus belongs to `eos_chrome_manager`, while visual z-order belongs to the slot registry.
+- `lv_obj_set_parent()` must not move an object between top-layer slots at runtime. Local ordering inside a self-contained widget is allowed when it is unrelated to global layer management.
+
 ## ESH Runtime Control
 
 ESH is the preferred diagnostic and control plane for automated Native simulator work when the task concerns system state, services, application lifecycle, hardware diagnostics, logs, or the simulated file system. An AI agent may use a real PTY to send registered ESH commands through stdin and inspect the command output and simulator logs.

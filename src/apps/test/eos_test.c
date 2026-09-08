@@ -51,6 +51,7 @@
 #include "eos_activity.h"
 #include "eos_panel.h"
 #include "eos_fault_panel.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_LOG_TAG "Test"
@@ -285,7 +286,6 @@ static void _test_app_debug_global_screen_loaded_cb(lv_event_t *e)
     if (s_test_app_debug.debug_bar && lv_obj_is_valid(s_test_app_debug.debug_bar))
     {
         _test_app_debug_sync_bar_pos();
-        lv_obj_move_foreground(s_test_app_debug.debug_bar);
     }
 }
 
@@ -558,7 +558,7 @@ static void _test_app_debug_create_bar(void)
 {
     _test_app_debug_destroy_bar();
 
-    lv_obj_t *bar = lv_obj_create(lv_layer_top());
+    lv_obj_t *bar = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_DEBUG_TEST));
     s_test_app_debug.debug_bar = bar;
     lv_obj_remove_style_all(bar);
 

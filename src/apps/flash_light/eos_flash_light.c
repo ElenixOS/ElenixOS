@@ -28,6 +28,7 @@
 #include "eos_app_header.h"
 #include "eos_mem.h"
 #include "eos_chrome_manager.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _MASK_OPA LV_OPA_80
@@ -63,11 +64,11 @@ typedef struct
 static _pressing_user_data_t *_flash_light_ud = NULL;
 static void _flash_light_overlay_pull_back(void);
 static void _flash_light_overlay_hide(void);
-static void _flash_light_overlay_on_focus(void);
 static const eos_chrome_overlay_t _flash_light_overlay = {
+    .layer_slot = EOS_TOP_LAYER_FLASHLIGHT,
     .pull_back = _flash_light_overlay_pull_back,
     .hide = _flash_light_overlay_hide,
-    .on_focus = _flash_light_overlay_on_focus,
+    .on_focus = NULL,
 };
 
 /* Function Implementations -----------------------------------*/
@@ -185,15 +186,6 @@ static void _flash_light_overlay_pull_back(void)
 static void _flash_light_overlay_hide(void)
 {
     eos_flash_light_hide();
-}
-
-static void _flash_light_overlay_on_focus(void)
-{
-    lv_obj_t *touch_obj = eos_flash_light_get_touch_obj();
-    if (touch_obj)
-    {
-        lv_obj_move_foreground(touch_obj);
-    }
 }
 
 /**
@@ -421,7 +413,8 @@ void eos_flash_light_show(void)
     _pressing_user_data_t *ud = eos_malloc(sizeof(_pressing_user_data_t));
     EOS_CHECK_PTR_RETURN(ud);
 
-    lv_obj_t *layer_top = lv_layer_top();
+    lv_obj_t *layer_top = eos_overlay_layer_get(EOS_TOP_LAYER_FLASHLIGHT);
+    EOS_CHECK_PTR_RETURN(layer_top);
 
     lv_obj_t *mask = lv_obj_create(layer_top);
     lv_obj_remove_style_all(mask);

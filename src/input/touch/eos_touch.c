@@ -14,6 +14,7 @@
 #include "eos_config.h"
 #include "eos_log.h"
 #include "eos_port_critical.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -171,10 +172,8 @@ bool eos_touch_is_bound(void)
 
 static bool _eos_touch_control_glow_init(void)
 {
-    /* Keep the control affordance in LVGL's system layer.  The synthetic
-     * touch marker remains on lv_layer_top(), so a marker can still be seen
-     * above this non-interactive status decoration. */
-    _eos_touch_control_glow = lv_obj_create(lv_layer_sys());
+    /* Keep the control affordance below the synthetic touch marker. */
+    _eos_touch_control_glow = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_STATUS));
     if (_eos_touch_control_glow == NULL)
     {
         EOS_LOG_E("Failed to create control glow object");
@@ -195,7 +194,6 @@ static bool _eos_touch_control_glow_init(void)
     lv_obj_remove_flag(_eos_touch_control_glow, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(_eos_touch_control_glow, LV_OBJ_FLAG_IGNORE_LAYOUT);
     lv_obj_add_flag(_eos_touch_control_glow, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_background(_eos_touch_control_glow);
     return true;
 }
 
@@ -215,7 +213,7 @@ void eos_touch_init(void)
 
     if (_eos_touch_marker == NULL)
     {
-        _eos_touch_marker = lv_obj_create(lv_layer_top());
+        _eos_touch_marker = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_MARKER));
         lv_obj_remove_style_all(_eos_touch_marker);
         lv_obj_set_size(_eos_touch_marker, EOS_TOUCH_MARKER_SIZE, EOS_TOUCH_MARKER_SIZE);
         lv_obj_set_style_radius(_eos_touch_marker, LV_RADIUS_CIRCLE, 0);
@@ -229,7 +227,7 @@ void eos_touch_init(void)
 
     if (_eos_touch_marker_core == NULL)
     {
-        _eos_touch_marker_core = lv_obj_create(lv_layer_top());
+        _eos_touch_marker_core = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_MARKER));
         lv_obj_remove_style_all(_eos_touch_marker_core);
         lv_obj_set_size(_eos_touch_marker_core, EOS_TOUCH_MARKER_CORE_SIZE, EOS_TOUCH_MARKER_CORE_SIZE);
         lv_obj_set_style_radius(_eos_touch_marker_core, LV_RADIUS_CIRCLE, 0);
@@ -241,7 +239,7 @@ void eos_touch_init(void)
 
     if (_eos_touch_trace_start == NULL)
     {
-        _eos_touch_trace_start = lv_obj_create(lv_layer_top());
+        _eos_touch_trace_start = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_MARKER));
         lv_obj_remove_style_all(_eos_touch_trace_start);
         lv_obj_set_size(_eos_touch_trace_start, EOS_TOUCH_TRACE_START_SIZE, EOS_TOUCH_TRACE_START_SIZE);
         lv_obj_set_style_radius(_eos_touch_trace_start, LV_RADIUS_CIRCLE, 0);
@@ -253,7 +251,7 @@ void eos_touch_init(void)
 
     if (_eos_touch_trace_line == NULL)
     {
-        _eos_touch_trace_line = lv_canvas_create(lv_layer_top());
+        _eos_touch_trace_line = lv_canvas_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_MARKER));
         if (_eos_touch_trace_line == NULL)
         {
             EOS_LOG_E("Failed to create touch trace line");
@@ -306,7 +304,7 @@ void eos_touch_init(void)
     {
         /* The banner and its label belong to the system layer, below the
          * top-layer touch marker and other top-most interaction visuals. */
-        _eos_touch_control_banner = lv_obj_create(lv_layer_sys());
+        _eos_touch_control_banner = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_STATUS));
         lv_obj_remove_style_all(_eos_touch_control_banner);
         lv_obj_set_size(_eos_touch_control_banner, EOS_TOUCH_CONTROL_BANNER_WIDTH, EOS_TOUCH_CONTROL_BANNER_HEIGHT);
         lv_obj_set_pos(_eos_touch_control_banner,
@@ -320,8 +318,6 @@ void eos_touch_init(void)
         lv_obj_set_style_border_opa(_eos_touch_control_banner, LV_OPA_70, 0);
         lv_obj_remove_flag(_eos_touch_control_banner, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(_eos_touch_control_banner, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_move_background(_eos_touch_control_banner);
-
         _eos_touch_control_label = lv_label_create(_eos_touch_control_banner);
         lv_label_set_text(_eos_touch_control_label, "AUTO CONTROL  -  TOUCH TO TAKE OVER");
         lv_obj_set_style_text_color(_eos_touch_control_label, lv_color_hex(0xFFFFFF), 0);
@@ -413,8 +409,6 @@ static void _eos_touch_control_overlay_set(bool visible)
     {
         lv_obj_clear_flag(_eos_touch_control_glow, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(_eos_touch_control_banner, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_move_foreground(_eos_touch_control_glow);
-        lv_obj_move_foreground(_eos_touch_control_banner);
     }
     else
     {
@@ -573,8 +567,6 @@ static void _eos_touch_marker_set(int32_t x, int32_t y)
                    (lv_coord_t)(y - (int32_t)(EOS_TOUCH_MARKER_CORE_SIZE / 2U)));
     lv_obj_clear_flag(_eos_touch_marker, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(_eos_touch_marker_core, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_foreground(_eos_touch_marker);
-    lv_obj_move_foreground(_eos_touch_marker_core);
 }
 
 static void _eos_touch_marker_hide(void)

@@ -45,14 +45,13 @@ static void _control_center_overlay_hide(void);
 static void _control_center_overlay_on_focus(void);
 static bool _control_center_overlay_is_open(void);
 static lv_obj_t *_control_center_overlay_get_scrollable(void);
-static lv_obj_t *_control_center_overlay_get_foreground_obj(void);
 static const eos_chrome_overlay_t _control_center_overlay = {
+    .layer_slot = EOS_TOP_LAYER_CONTROL_CENTER,
     .pull_back = _control_center_overlay_pull_back,
     .hide = _control_center_overlay_hide,
     .on_focus = _control_center_overlay_on_focus,
     .is_open = _control_center_overlay_is_open,
     .get_scrollable = _control_center_overlay_get_scrollable,
-    .get_foreground_obj = _control_center_overlay_get_foreground_obj,
     .name = "control_center",
 };
 /* Function Implementations -----------------------------------*/
@@ -151,10 +150,9 @@ static void _control_center_slider_page_clicked_cb(lv_event_t *e)
 
 static lv_obj_t *_control_center_slider_create(const char *symbol)
 {
-    lv_obj_t *slider_page = lv_obj_create(eos_overlay_get_overlay_layer());
+    lv_obj_t *slider_page = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_CONTROL_CENTER));
     lv_obj_remove_style_all(slider_page);
     lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
-    lv_obj_move_foreground(slider_page);
     lv_obj_set_style_bg_opa(slider_page, LV_OPA_TRANSP, 0);
     lv_obj_set_style_bg_color(slider_page, EOS_COLOR_BLACK, 0);
     lv_obj_add_event_cb(slider_page, _control_center_slider_page_clicked_cb, LV_EVENT_CLICKED, NULL);
@@ -196,7 +194,6 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_label_set_text(label, symbol);
     eos_wdata_set(slider, EOS_WDATA_SLIDER_LABEL, (void *)label, NULL);
     lv_obj_set_style_text_color(label, EOS_COLOR_BLACK, 0);
-    lv_obj_move_foreground(label);
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -100);
 
     lv_obj_update_layout(label);
@@ -469,16 +466,6 @@ static lv_obj_t *_control_center_overlay_get_scrollable(void)
     return NULL;
 }
 
-static lv_obj_t *_control_center_overlay_get_foreground_obj(void)
-{
-    eos_control_center_t *cc = eos_control_center_get_instance();
-    if (cc && cc->swipe_panel && cc->swipe_panel->sw)
-    {
-        return eos_slide_widget_get_touch_obj(cc->swipe_panel->sw);
-    }
-    return NULL;
-}
-
 /* Control center ---------------------------------------------*/
 
 eos_control_center_t *eos_control_center_create(lv_obj_t *parent)
@@ -635,7 +622,7 @@ static void _system_config_update_event_cb(eos_event_t *e)
 
 void eos_control_center_init(void)
 {
-    control_center_instance = eos_control_center_create(eos_overlay_get_overlay_layer());
+    control_center_instance = eos_control_center_create(eos_overlay_layer_get(EOS_TOP_LAYER_CONTROL_CENTER));
     eos_event_subscribe(EOS_EVENT_SYSTEM_CONFIG_UPDATE, _system_config_update_event_cb, NULL);
 }
 

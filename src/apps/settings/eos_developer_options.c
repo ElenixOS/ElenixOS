@@ -16,6 +16,7 @@
 #include "eos_mem.h"
 #include "eos_activity.h"
 #include "eos_service_config.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _TOUCH_X_COLOR lv_color_hex(0x0000FF) /* Blue for X axis */
@@ -90,7 +91,7 @@ static void _objs_label_create(void)
     if (_objs_label)
         return;
 
-    _objs_label = lv_label_create(lv_layer_sys());
+    _objs_label = lv_label_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_OBJS));
     /* White text */
     lv_obj_set_style_text_color(_objs_label, lv_color_white(), 0);
     lv_obj_set_style_text_font(_objs_label, &lv_font_montserrat_14, 0);
@@ -124,7 +125,7 @@ static void _fps_label_create(void)
     if (_fps_label)
         return;
 
-    _fps_label = lv_label_create(lv_layer_sys());
+    _fps_label = lv_label_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_FPS));
     lv_obj_set_style_text_color(_fps_label, lv_color_white(), 0);
     lv_obj_set_style_text_font(_fps_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_bg_opa(_fps_label, LV_OPA_50, 0);
@@ -234,7 +235,7 @@ static void _touch_trail_begin(int32_t x, int32_t y)
     _touch_trail_clear();
 
     _touch_line_style_ensure();
-    _touch_trail_line = lv_line_create(lv_layer_sys());
+    _touch_trail_line = lv_line_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_DIAGNOSTIC));
     lv_obj_add_style(_touch_trail_line, &_touch_line_style, 0);
     lv_obj_remove_flag(_touch_trail_line, LV_OBJ_FLAG_CLICKABLE);
 
@@ -401,7 +402,7 @@ static void _touch_display_enable(void)
     }
 
     /* Create coordinate label container on system layer */
-    _touch_label = lv_obj_create(lv_layer_sys());
+    _touch_label = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_DIAGNOSTIC));
     lv_obj_set_style_bg_opa(_touch_label, LV_OPA_50, 0);
     lv_obj_set_style_bg_color(_touch_label, lv_color_black(), 0);
     lv_obj_set_style_border_width(_touch_label, 0, 0);
@@ -426,7 +427,7 @@ static void _touch_display_enable(void)
     lv_label_set_text(_touch_label_y, "  Y: 0");
 
     /* Create crosshair lines (non-interactive) */
-    _touch_cross_h = lv_obj_create(lv_layer_sys());
+    _touch_cross_h = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_DIAGNOSTIC));
     lv_obj_set_style_bg_color(_touch_cross_h, _TOUCH_Y_COLOR, 0); /* Red = Y axis */
     lv_obj_set_style_bg_opa(_touch_cross_h, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(_touch_cross_h, 0, 0);
@@ -437,7 +438,7 @@ static void _touch_display_enable(void)
     lv_obj_remove_flag(_touch_cross_h, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_remove_flag(_touch_cross_h, LV_OBJ_FLAG_SCROLLABLE);
 
-    _touch_cross_v = lv_obj_create(lv_layer_sys());
+    _touch_cross_v = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOUCH_DIAGNOSTIC));
     lv_obj_set_style_bg_color(_touch_cross_v, _TOUCH_X_COLOR, 0); /* Blue = X axis */
     lv_obj_set_style_bg_opa(_touch_cross_v, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(_touch_cross_v, 0, 0);

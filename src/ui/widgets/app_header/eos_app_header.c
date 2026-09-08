@@ -377,7 +377,7 @@ void eos_app_header_hide(void)
         lv_obj_t *restore_parent = app_header->original_parent;
         if (!restore_parent || !lv_obj_is_valid(restore_parent))
         {
-            restore_parent = eos_overlay_get_header_layer();
+            restore_parent = eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER);
             app_header->original_parent = restore_parent;
         }
 
@@ -422,7 +422,7 @@ void eos_app_header_show(eos_activity_t *a)
         lv_obj_t *restore_parent = app_header->original_parent;
         if (!restore_parent || !lv_obj_is_valid(restore_parent))
         {
-            restore_parent = eos_overlay_get_header_layer();
+            restore_parent = eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER);
             app_header->original_parent = restore_parent;
         }
 
@@ -599,7 +599,7 @@ void eos_app_header_attach_to_view(lv_obj_t *view)
 
     if (!app_header->original_parent || !lv_obj_is_valid(app_header->original_parent))
     {
-        app_header->original_parent = eos_overlay_get_header_layer();
+        app_header->original_parent = eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER);
     }
 
     lv_obj_set_parent(app_header->container, view);
@@ -620,7 +620,7 @@ void eos_app_header_detach_from_view(void)
     lv_obj_t *restore_parent = app_header->original_parent;
     if (!restore_parent || !lv_obj_is_valid(restore_parent))
     {
-        restore_parent = eos_overlay_get_header_layer();
+        restore_parent = eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER);
         app_header->original_parent = restore_parent;
     }
 
@@ -723,7 +723,7 @@ void eos_app_header_init(void)
     EOS_CHECK_PTR_RETURN_FREE(app_header->grad_bg_img, app_header);
 
     // Semi-transparent container
-    app_header->container = lv_obj_create(eos_overlay_get_header_layer());
+    app_header->container = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER));
     app_header->original_parent = lv_obj_get_parent(app_header->container); // Save original parent object
     lv_obj_remove_style_all(app_header->container);
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);

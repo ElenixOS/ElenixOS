@@ -828,7 +828,7 @@ static lv_obj_t *_view_create(lv_obj_t *parent)
 
 static lv_obj_t *_snap_container_create(void)
 {
-    lv_obj_t *container = lv_obj_create(eos_overlay_get_snapshot_layer());
+    lv_obj_t *container = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
     if (!container)
         return NULL;
     lv_obj_remove_style_all(container);
@@ -1103,8 +1103,8 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
         return NULL;
     }
 
-    lv_obj_t *snapshot_obj =
-        lv_image_create(activity->snap_container ? activity->snap_container : eos_overlay_get_snapshot_layer());
+    lv_obj_t *snapshot_obj = lv_image_create(
+        activity->snap_container ? activity->snap_container : eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
     if (!snapshot_obj)
     {
         eos_free(snapshot_node);

@@ -25,6 +25,7 @@
 #include "eos_swipe_panel.h"
 #include "eos_slide_widget.h"
 #include "eos_event.h"
+#include "eos_overlay_layer.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
@@ -586,7 +587,7 @@ void eos_crown_button_report(eos_button_state_t state)
 
 void eos_crown_init(void)
 {
-    scrollbar = lv_bar_create(lv_layer_sys());
+    scrollbar = lv_bar_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_CROWN));
     lv_bar_set_mode(scrollbar, LV_BAR_MODE_RANGE);
     lv_bar_set_range(scrollbar, _SCROLLBAR_HEIGHT, 0);
     lv_obj_align(scrollbar, LV_ALIGN_TOP_RIGHT, -10, _SCROLLBAR_MARGIN_TOP);

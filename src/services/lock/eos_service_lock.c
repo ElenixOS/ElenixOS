@@ -49,7 +49,7 @@ static void _on_display_on_cb(eos_event_t *e)
         return;
     }
 
-    /* Show lock screen security barrier on lv_layer_top() */
+    /* Show lock screen security barrier on the fixed security layer slot. */
     _lock_active = true;
     eos_lock_page_show();
     EOS_LOG_I("Lock screen shown");

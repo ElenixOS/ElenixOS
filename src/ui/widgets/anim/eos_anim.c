@@ -276,7 +276,7 @@ void eos_anim_blocker_show(void)
     if (is_blocker_show)
         return;
 
-    blocker = lv_obj_create(eos_overlay_get_snapshot_layer());
+    blocker = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
     lv_obj_remove_style_all(blocker);
 #if DEBUG_BLOCKER_VISIBLE
     lv_obj_set_style_bg_color(blocker, EOS_COLOR_MINT, 0);
@@ -754,7 +754,7 @@ static bool _snapshot_backend_prepare(eos_anim_t *anim)
 
     eos_activity_t *activity = eos_activity_from_widget(target);
     lv_obj_t *snap_ctr = activity ? eos_activity_get_snap_container(activity) : NULL;
-    lv_obj_t *parent = snap_ctr ? snap_ctr : eos_overlay_get_snapshot_layer();
+    lv_obj_t *parent = snap_ctr ? snap_ctr : eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT);
     lv_obj_t *image = lv_image_create(parent);
     lv_image_set_src(image, buf);
     lv_obj_set_size(image, (lv_coord_t)buf->header.w, (lv_coord_t)buf->header.h);

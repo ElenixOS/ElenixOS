@@ -18,6 +18,7 @@
 #include "eos_basic_widgets.h"
 #include "eos_mem.h"
 #include "eos_event.h"
+#include "eos_interaction_slot.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _HIGHLIGHT_TOUCH_AREA 0
@@ -254,8 +255,11 @@ static void _touch_obj_pressed_cb(lv_event_t *e)
 
     if (sw->move_foreground_on_pressed)
     {
-        lv_obj_move_foreground(sw->target_obj);
-        lv_obj_move_foreground(sw->touch_obj);
+        if (!eos_interaction_slot_focus(sw->target_obj, sw->touch_obj))
+        {
+            lv_obj_move_foreground(sw->target_obj);
+            lv_obj_move_foreground(sw->touch_obj);
+        }
     }
 }
 

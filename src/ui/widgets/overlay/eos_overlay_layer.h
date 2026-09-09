@@ -38,8 +38,14 @@ typedef enum
 
     /** Global interaction UI sits above application content and below system UI. */
     EOS_TOP_LAYER_GLOBAL_BEGIN = 3000,
-    EOS_TOP_LAYER_MSG_LIST,
-    EOS_TOP_LAYER_CONTROL_CENTER,
+    /**
+     * Dynamic peer-interaction slot. Internal child order is managed by
+     * eos_interaction_slot, not by the fixed top-layer registry.
+     */
+    EOS_TOP_LAYER_INTERACTION,
+    /* Compatibility aliases for the former dedicated slots. */
+    EOS_TOP_LAYER_MSG_LIST = EOS_TOP_LAYER_INTERACTION,
+    EOS_TOP_LAYER_CONTROL_CENTER = EOS_TOP_LAYER_INTERACTION,
     EOS_TOP_LAYER_FLASHLIGHT,
     EOS_TOP_LAYER_GLOBAL_END = 3999,
 

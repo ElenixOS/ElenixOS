@@ -16,6 +16,7 @@
 #include "eos_port.h"
 #include "eos_basic_widgets.h"
 #include "eos_mem.h"
+#include "eos_interaction_slot.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define GESTURE_AREA_HEIGHT 50
@@ -250,8 +251,11 @@ void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
     const _direction_config_t *cfg = &_dir_configs[sp->dir];
     eos_slide_widget_move(sp->sw, cfg->target_base, cfg->target_target, SWIPE_ANIM_DURATION);
 
-    lv_obj_move_foreground(sp->swipe_obj);
-    lv_obj_move_foreground(eos_slide_widget_get_touch_obj(sp->sw));
+    if (!eos_interaction_slot_focus(sp->swipe_obj, eos_slide_widget_get_touch_obj(sp->sw)))
+    {
+        lv_obj_move_foreground(sp->swipe_obj);
+        lv_obj_move_foreground(eos_slide_widget_get_touch_obj(sp->sw));
+    }
 }
 
 void eos_swipe_panel_hide(eos_swipe_panel_t *sp)

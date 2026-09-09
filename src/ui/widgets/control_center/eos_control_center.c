@@ -29,6 +29,7 @@
 #include "eos_service_battery.h"
 #include "eos_chrome_manager.h"
 #include "eos_overlay_layer.h"
+#include "eos_interaction_slot.h"
 #include "eos_activity.h"
 #include "eos_widget_data.h"
 
@@ -46,7 +47,7 @@ static void _control_center_overlay_on_focus(void);
 static bool _control_center_overlay_is_open(void);
 static lv_obj_t *_control_center_overlay_get_scrollable(void);
 static const eos_chrome_overlay_t _control_center_overlay = {
-    .layer_slot = EOS_TOP_LAYER_CONTROL_CENTER,
+    .layer_slot = EOS_TOP_LAYER_INTERACTION,
     .pull_back = _control_center_overlay_pull_back,
     .hide = _control_center_overlay_hide,
     .on_focus = _control_center_overlay_on_focus,
@@ -150,7 +151,7 @@ static void _control_center_slider_page_clicked_cb(lv_event_t *e)
 
 static lv_obj_t *_control_center_slider_create(const char *symbol)
 {
-    lv_obj_t *slider_page = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_CONTROL_CENTER));
+    lv_obj_t *slider_page = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_INTERACTION));
     lv_obj_remove_style_all(slider_page);
     lv_obj_set_size(slider_page, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_opa(slider_page, LV_OPA_TRANSP, 0);
@@ -443,6 +444,11 @@ static void _control_center_overlay_hide(void)
 
 static void _control_center_overlay_on_focus(void)
 {
+    eos_control_center_t *cc = eos_control_center_get_instance();
+    if (cc && cc->swipe_panel)
+    {
+        eos_interaction_slot_focus(cc->swipe_panel->swipe_obj, eos_slide_widget_get_touch_obj(cc->swipe_panel->sw));
+    }
     EOS_LOG_D("Control center focused");
 }
 
@@ -622,7 +628,7 @@ static void _system_config_update_event_cb(eos_event_t *e)
 
 void eos_control_center_init(void)
 {
-    control_center_instance = eos_control_center_create(eos_overlay_layer_get(EOS_TOP_LAYER_CONTROL_CENTER));
+    control_center_instance = eos_control_center_create(eos_overlay_layer_get(EOS_TOP_LAYER_INTERACTION));
     eos_event_subscribe(EOS_EVENT_SYSTEM_CONFIG_UPDATE, _system_config_update_event_cb, NULL);
 }
 

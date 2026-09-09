@@ -26,6 +26,7 @@
 #include "eos_widget_data.h"
 #include "eos_chrome_manager.h"
 #include "eos_overlay_layer.h"
+#include "eos_interaction_slot.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBUG_LAYOUT 0
 
@@ -59,7 +60,7 @@ static void _msg_list_overlay_on_focus(void);
 static bool _msg_list_overlay_is_open(void);
 static lv_obj_t *_msg_list_overlay_get_scrollable(void);
 static const eos_chrome_overlay_t _msg_list_overlay = {
-    .layer_slot = EOS_TOP_LAYER_MSG_LIST,
+    .layer_slot = EOS_TOP_LAYER_INTERACTION,
     .pull_back = _msg_list_overlay_pull_back,
     .hide = _msg_list_overlay_hide,
     .on_focus = _msg_list_overlay_on_focus,
@@ -683,6 +684,12 @@ static void _msg_list_overlay_hide(void)
 
 static void _msg_list_overlay_on_focus(void)
 {
+    eos_msg_list_t *msg_list = eos_msg_list_get_instance();
+    if (msg_list && msg_list->swipe_panel)
+    {
+        eos_interaction_slot_focus(msg_list->swipe_panel->swipe_obj,
+                                   eos_slide_widget_get_touch_obj(msg_list->swipe_panel->sw));
+    }
     EOS_LOG_D("Msg list focused");
 }
 
@@ -806,7 +813,7 @@ eos_msg_list_t *eos_msg_list_get_instance(void)
 
 void eos_msg_list_init(void)
 {
-    message_list_instance = eos_msg_list_create(eos_overlay_layer_get(EOS_TOP_LAYER_MSG_LIST));
+    message_list_instance = eos_msg_list_create(eos_overlay_layer_get(EOS_TOP_LAYER_INTERACTION));
 }
 
 const eos_chrome_overlay_t *eos_msg_list_get_overlay_descriptor(void)

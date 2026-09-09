@@ -38,6 +38,21 @@ typedef enum
     EOS_ACTIVITY_TYPE_COUNT
 } eos_activity_type_t;
 
+typedef enum
+{
+    EOS_ACTIVITY_STATE_CREATED = 0,
+    EOS_ACTIVITY_STATE_ACTIVE,
+    EOS_ACTIVITY_STATE_SUSPENDED,
+    EOS_ACTIVITY_STATE_DESTROYED
+} eos_activity_state_t;
+
+typedef enum
+{
+    EOS_ACTIVITY_EXIT_KEEP = 0,
+    EOS_ACTIVITY_EXIT_DESTROY,
+    EOS_ACTIVITY_EXIT_SUSPEND
+} eos_activity_exit_policy_t;
+
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_destroy_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_pause_t)(eos_activity_t *activity);
@@ -498,13 +513,6 @@ eos_activity_t *eos_activity_detach_app_substack(void);
 eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv_draw_buf_t *snap_buf);
 
 /**
- * @brief Set the suspend_on_exit flag on an activity (park instead of destroy after transition)
- * @param activity Activity pointer
- * @param suspend_on_exit Whether to park the activity on exit
- */
-void eos_activity_set_suspend_on_exit(eos_activity_t *activity, bool suspend_on_exit);
-
-/**
  * @brief Check if an activity is suspended (parked in recents registry)
  * @param activity Activity pointer
  * @return true if suspended
@@ -517,6 +525,13 @@ bool eos_activity_is_suspended(eos_activity_t *activity);
  * @param suspended Suspended state
  */
 void eos_activity_set_suspended(eos_activity_t *activity, bool suspended);
+
+/**
+ * @brief Get the lifecycle state of an Activity
+ * @param activity Activity pointer
+ * @return Current Activity state
+ */
+eos_activity_state_t eos_activity_get_state(eos_activity_t *activity);
 
 /**
  * @brief Set the app_substack_next link (next activity toward app root, stack-down direction)

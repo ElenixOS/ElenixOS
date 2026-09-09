@@ -57,8 +57,7 @@ typedef struct
 
     eos_activity_t *from;
     eos_activity_t *to;
-    bool destroy_from;
-    bool suspend_from; /**< Park 'from' activity instead of destroying (recent apps) */
+    eos_activity_exit_policy_t exit_policy;
     bool cleanup_scheduled;
     eos_activity_snapshot_node_t *snapshots;
 } eos_activity_anim_ctx_t;
@@ -71,10 +70,8 @@ struct eos_activity_t
     bool is_app_header_visible;
     bool is_app_header_time_only;
     lv_color_t app_header_time_only_text_color;
-    bool destroy_on_exit;
+    eos_activity_state_t state;
     bool has_started;
-    bool suspend_on_exit; /**< Park sub-stack instead of destroying after transition */
-    bool suspended; /**< Activity is parked in recents registry */
     uint32_t script_generation; /**< Script engine generation that owns this Activity */
     bool needs_reload; /**< Script instance is invalid and must be recreated */
     char *app_id; /**< Stable application ID owned by this Activity */
@@ -218,7 +215,7 @@ static void _activity_run_destroy(eos_activity_t *activity)
     EOS_CHECK_PTR_RETURN(activity);
 
     /* Never destroy a suspended (parked) activity */
-    if (activity->suspended)
+    if (activity->state == EOS_ACTIVITY_STATE_SUSPENDED)
     {
         EOS_LOG_W("Activity destroy skipped (suspended): %p[%s]",
                   (void *)activity,
@@ -226,11 +223,19 @@ static void _activity_run_destroy(eos_activity_t *activity)
         return;
     }
 
-    EOS_LOG_I("Activity destroy begin: activity=%p type=%s destroy_on_exit=%d started=%d view=%p valid=%d "
+    if (activity->state == EOS_ACTIVITY_STATE_DESTROYED)
+    {
+        EOS_LOG_W("Activity destroy skipped (already destroyed): %p[%s]",
+                  (void *)activity,
+                  _activity_type_to_str(activity->type));
+        return;
+    }
+
+    EOS_LOG_I("Activity destroy begin: activity=%p type=%s state=%d started=%d view=%p valid=%d "
               "snapshot_ref=%u header_visible=%d header_time_only=%d user_data=%p",
               (void *)activity,
               _activity_type_to_str(activity->type),
-              activity->destroy_on_exit,
+              activity->state,
               activity->has_started,
               (void *)activity->view,
               (activity->view && lv_obj_is_valid(activity->view)),
@@ -285,6 +290,7 @@ static void _activity_run_destroy(eos_activity_t *activity)
     /* NOTE: root_activity is intentionally NOT cleared here.
        It is managed explicitly by eos_activity_replace_root. */
 
+    activity->state = EOS_ACTIVITY_STATE_DESTROYED;
     eos_free(activity);
 
     EOS_LOG_I("Activity destroy end");
@@ -385,6 +391,10 @@ static void _activity_show(eos_activity_t *activity)
 
 static void _activity_mark_visible(eos_activity_t *activity)
 {
+    if (activity)
+    {
+        activity->state = EOS_ACTIVITY_STATE_ACTIVE;
+    }
     _activity_ctx.visible_activity = activity;
     _activity_ctx.transition_in_progress = false;
     EOS_LOG_I("Activity visible updated: visible=%p[%s] current=%p[%s] trans=%d",
@@ -452,16 +462,16 @@ static void _anim_clean_up_activity_deferred(void *user_data)
         return;
     }
 
-    EOS_LOG_I("Anim cleanup begin: from=%p[%s destroy=%d view=%p valid=%d] to=%p[%s destroy=%d view=%p valid=%d] "
+    EOS_LOG_I("Anim cleanup begin: from=%p[%s state=%d view=%p valid=%d] to=%p[%s state=%d view=%p valid=%d] "
               "snapshots=%p",
               (void *)anim_ctx->from,
               _activity_type_to_str(anim_ctx->from ? anim_ctx->from->type : EOS_ACTIVITY_TYPE_NULL),
-              anim_ctx->from ? anim_ctx->from->destroy_on_exit : false,
+              anim_ctx->from ? anim_ctx->from->state : EOS_ACTIVITY_STATE_DESTROYED,
               anim_ctx->from ? (void *)anim_ctx->from->view : NULL,
               (anim_ctx->from && anim_ctx->from->view) ? lv_obj_is_valid(anim_ctx->from->view) : false,
               (void *)anim_ctx->to,
               _activity_type_to_str(anim_ctx->to ? anim_ctx->to->type : EOS_ACTIVITY_TYPE_NULL),
-              anim_ctx->to ? anim_ctx->to->destroy_on_exit : false,
+              anim_ctx->to ? anim_ctx->to->state : EOS_ACTIVITY_STATE_DESTROYED,
               anim_ctx->to ? (void *)anim_ctx->to->view : NULL,
               (anim_ctx->to && anim_ctx->to->view) ? lv_obj_is_valid(anim_ctx->to->view) : false,
               (void *)anim_ctx->snapshots);
@@ -473,10 +483,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
         snapshot_count++;
         node = node->next;
     }
-    EOS_LOG_E("DEFERRED cleanup: snapshot_count=%d destroy_from=%d suspend_from=%d",
-              snapshot_count,
-              anim_ctx->destroy_from,
-              anim_ctx->suspend_from);
+    EOS_LOG_E("DEFERRED cleanup: snapshot_count=%d exit_policy=%d", snapshot_count, anim_ctx->exit_policy);
     node = anim_ctx->snapshots;
     while (node)
     {
@@ -496,7 +503,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     anim_ctx->snapshots = NULL;
     EOS_LOG_E("DEFERRED cleanup: snapshots freed");
 
-    if (anim_ctx->suspend_from && anim_ctx->from)
+    if (anim_ctx->exit_policy == EOS_ACTIVITY_EXIT_SUSPEND && anim_ctx->from)
     {
         /* Park the from activity: hide view, move to parking lot,
          * mark suspended, do NOT destroy. */
@@ -513,8 +520,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
             }
             lv_obj_set_parent(anim_ctx->from->view, _parking_lot);
         }
-        anim_ctx->from->suspended = true;
-        anim_ctx->from->suspend_on_exit = false;
+        anim_ctx->from->state = EOS_ACTIVITY_STATE_SUSPENDED;
         EOS_LOG_I("Activity parked (suspended): %p[%s]",
                   (void *)anim_ctx->from,
                   _activity_type_to_str(anim_ctx->from->type));
@@ -523,7 +529,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
             eos_app_header_hide();
         }
     }
-    else if (anim_ctx->destroy_from && anim_ctx->from)
+    else if (anim_ctx->exit_policy == EOS_ACTIVITY_EXIT_DESTROY && anim_ctx->from)
     {
         if (!eos_activity_is_app_header_visible(anim_ctx->to))
         {
@@ -586,7 +592,9 @@ static void _anim_clean_up_activity_deferred(void *user_data)
     EOS_LOG_I("Anim cleanup end");
 }
 
-static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning)
+static void _activity_switch_to(eos_activity_t *next_activity,
+                                bool is_returning,
+                                eos_activity_exit_policy_t exit_policy)
 {
     EOS_CHECK_PTR_RETURN(next_activity);
     eos_activity_t *cur_activity = _activity_ctx.current_activity;
@@ -627,7 +635,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
 
     eos_chrome_manager_handle_activity_switch();
 
-    if (cur_activity && cur_activity->lifecycle.on_pause && (!is_returning || cur_activity->suspend_on_exit))
+    if (cur_activity && cur_activity->lifecycle.on_pause && (!is_returning || exit_policy == EOS_ACTIVITY_EXIT_SUSPEND))
     {
         cur_activity->lifecycle.on_pause(cur_activity);
     }
@@ -652,7 +660,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
             {
                 header_need_anim = true;
 
-                if (cur_activity->destroy_on_exit)
+                if (is_returning)
                 {
                     header_reverse_anim = true;
                 }
@@ -679,8 +687,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
         anim_cb = eos_activity_get_anim_route(cur_activity->type, next_activity->type);
         if (!anim_cb)
         {
-            list_anim_available =
-                eos_list_transition_should_animate(cur_activity, next_activity, cur_activity->destroy_on_exit);
+            list_anim_available = eos_list_transition_should_animate(cur_activity, next_activity, is_returning);
         }
     }
 
@@ -702,18 +709,16 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
         {
             anim_ctx->from = cur_activity;
             anim_ctx->to = next_activity;
-            anim_ctx->destroy_from = cur_activity ? cur_activity->destroy_on_exit : false;
-            anim_ctx->suspend_from = cur_activity ? cur_activity->suspend_on_exit : false;
+            anim_ctx->exit_policy = exit_policy;
 
-            EOS_LOG_I("Activity transition start: from=%p[%s destroy=%d suspend=%d] to=%p[%s destroy=%d] anim_cb=%p "
+            EOS_LOG_I("Activity transition start: from=%p[%s exit=%d] to=%p[%s state=%d] anim_cb=%p "
                       "list_anim=%d",
                       (void *)cur_activity,
                       _activity_type_to_str(cur_activity ? cur_activity->type : EOS_ACTIVITY_TYPE_NULL),
-                      cur_activity ? cur_activity->destroy_on_exit : false,
-                      cur_activity ? cur_activity->suspend_on_exit : false,
+                      exit_policy,
                       (void *)next_activity,
                       _activity_type_to_str(next_activity->type),
-                      next_activity->destroy_on_exit,
+                      next_activity->state,
                       (void *)anim_cb,
                       list_anim_available);
 
@@ -734,7 +739,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
             }
             else
             {
-                eos_list_transition_play(anim_ctx->group, cur_activity, next_activity, cur_activity->destroy_on_exit);
+                eos_list_transition_play(anim_ctx->group, cur_activity, next_activity, is_returning);
             }
             _activity_ctx.snapshot_capture_window = false;
             _activity_ctx.active_anim_ctx = NULL;
@@ -752,13 +757,14 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
 
     if (!transition_started)
     {
-        EOS_LOG_I("Activity switch no-transition path: cur=%p[%s destroy=%d] next=%p[%s]",
+        EOS_LOG_I("Activity switch no-transition path: cur=%p[%s state=%d] exit=%d next=%p[%s]",
                   (void *)cur_activity,
                   _activity_type_to_str(cur_activity ? cur_activity->type : EOS_ACTIVITY_TYPE_NULL),
-                  cur_activity ? cur_activity->destroy_on_exit : false,
+                  cur_activity ? cur_activity->state : EOS_ACTIVITY_STATE_DESTROYED,
+                  exit_policy,
                   (void *)next_activity,
                   _activity_type_to_str(next_activity->type));
-        if (cur_activity && cur_activity->destroy_on_exit)
+        if (cur_activity && exit_policy == EOS_ACTIVITY_EXIT_DESTROY)
         {
             if (!eos_activity_is_app_header_visible(next_activity))
             {
@@ -766,7 +772,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
             }
             _activity_run_destroy(cur_activity);
         }
-        else if (cur_activity && cur_activity->suspend_on_exit)
+        else if (cur_activity && exit_policy == EOS_ACTIVITY_EXIT_SUSPEND)
         {
             if (cur_activity->view && lv_obj_is_valid(cur_activity->view))
             {
@@ -780,8 +786,7 @@ static void _activity_switch_to(eos_activity_t *next_activity, bool is_returning
                     lv_obj_set_parent(cur_activity->view, _parking_lot);
                 }
             }
-            cur_activity->suspended = true;
-            cur_activity->suspend_on_exit = false;
+            cur_activity->state = EOS_ACTIVITY_STATE_SUSPENDED;
             EOS_LOG_I("Activity parked without transition: %p[%s]",
                       (void *)cur_activity,
                       _activity_type_to_str(cur_activity->type));
@@ -872,6 +877,10 @@ static void _anim_clean_up_activity(void *user_data)
               _activity_ctx.transition_in_progress);
 
     _activity_ctx.visible_activity = anim_ctx->to;
+    if (anim_ctx->to)
+    {
+        anim_ctx->to->state = EOS_ACTIVITY_STATE_ACTIVE;
+    }
     /* NOTE: transition_in_progress stays TRUE until deferred cleanup completes.
      * Clearing it here would allow a new transition to start before snapshots
      * and old views are cleaned up, causing a race where the new transition's
@@ -1253,6 +1262,7 @@ eos_result_t eos_activity_replace_root(eos_activity_t *new_root)
 
     _activity_ctx.current_activity = new_root;
     _activity_ctx.visible_activity = new_root;
+    new_root->state = EOS_ACTIVITY_STATE_ACTIVE;
 
     // Enter new root (call on_enter) - now eos_view_active() will return correct view
     if (new_root->lifecycle.on_enter)
@@ -1537,6 +1547,7 @@ eos_result_t eos_activity_controller_init(eos_activity_t *root_activity)
         return EOS_FAILED;
     }
     _activity_show(root_activity);
+    root_activity->state = EOS_ACTIVITY_STATE_ACTIVE;
     _activity_ctx.current_activity = root_activity;
     _activity_ctx.visible_activity = root_activity;
     _activity_ctx.transition_in_progress = false;
@@ -1590,7 +1601,7 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     activity->is_app_header_visible = false;
     activity->is_app_header_time_only = false;
     activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
-    activity->destroy_on_exit = false;
+    activity->state = EOS_ACTIVITY_STATE_CREATED;
     activity->has_started = false;
     activity->script_generation = 0;
     activity->needs_reload = false;
@@ -1648,7 +1659,7 @@ eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecyc
     activity->is_app_header_visible = false;
     activity->is_app_header_time_only = false;
     activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
-    activity->destroy_on_exit = false;
+    activity->state = EOS_ACTIVITY_STATE_CREATED;
     activity->has_started = false;
     activity->script_generation = 0;
     activity->needs_reload = false;
@@ -1714,7 +1725,7 @@ void eos_activity_enter(eos_activity_t *activity)
               _activity_type_to_str(activity->type),
               eos_stack_get_size(_activity_ctx.activity_stack));
 
-    _activity_switch_to(activity, false);
+    _activity_switch_to(activity, false, EOS_ACTIVITY_EXIT_KEEP);
 }
 
 eos_result_t eos_activity_back(void)
@@ -1755,6 +1766,7 @@ eos_result_t eos_activity_back(void)
      * animation has finished.  This lets the animation use the live app view
      * while still preserving the complete navigation state for Recent Apps. */
     eos_activity_t *active = _activity_ctx.current_activity;
+    eos_activity_exit_policy_t exit_policy = EOS_ACTIVITY_EXIT_DESTROY;
     if (active && eos_activity_get_app_id(active) && eos_activity_get_app_substack_next(active) == NULL)
     {
         bool app_list_below = false;
@@ -1770,12 +1782,14 @@ eos_result_t eos_activity_back(void)
             /* Registration captures the thumbnail but leaves the live
              * Activity attached for the return animation.  The animation
              * cleanup parks it after the transition completes. */
-            active->suspend_on_exit = true;
             if (eos_recent_apps_register_for_suspend(active) != EOS_OK)
             {
-                active->suspend_on_exit = false;
                 EOS_LOG_W("Application root registration failed; falling back to immediate suspension");
                 app_list_below = false;
+            }
+            else
+            {
+                exit_policy = EOS_ACTIVITY_EXIT_SUSPEND;
             }
         }
 
@@ -1785,7 +1799,7 @@ eos_result_t eos_activity_back(void)
             {
                 eos_activity_t *previous = _activity_ctx.current_activity;
                 if (previous)
-                    _activity_switch_to(previous, false);
+                    _activity_switch_to(previous, false, EOS_ACTIVITY_EXIT_KEEP);
                 return EOS_OK;
             }
             EOS_LOG_W("Application root suspension failed; falling back to page destroy");
@@ -1802,9 +1816,8 @@ eos_result_t eos_activity_back(void)
             return EOS_FAILED;
         }
         // This shouldn't happen, but if current is not root and stack is empty, go to root
-        _activity_ctx.current_activity->destroy_on_exit = true;
-        EOS_LOG_W("Activity back fallback to root: current marked destroy_on_exit");
-        _activity_switch_to(_activity_ctx.root_activity, true);
+        EOS_LOG_W("Activity back fallback to root: current exit policy is destroy");
+        _activity_switch_to(_activity_ctx.root_activity, true, EOS_ACTIVITY_EXIT_DESTROY);
         return EOS_OK;
     }
 
@@ -1812,13 +1825,6 @@ eos_result_t eos_activity_back(void)
     EOS_CHECK_PTR_RETURN_VAL(current, EOS_FAILED);
 
     eos_activity_t *cur_activity = _activity_ctx.current_activity;
-
-    /* A child page is a normal navigation pop.  Only the app-root path above
-     * enters Recent Apps. */
-    if (!cur_activity->suspend_on_exit)
-    {
-        cur_activity->destroy_on_exit = true;
-    }
 
     eos_activity_t *prev = NULL;
     if (eos_stack_get_size(_activity_ctx.activity_stack) == 0)
@@ -1839,7 +1845,7 @@ eos_result_t eos_activity_back(void)
               (void *)prev,
               _activity_type_to_str(prev ? prev->type : EOS_ACTIVITY_TYPE_NULL));
 
-    _activity_switch_to(prev, true);
+    _activity_switch_to(prev, true, exit_policy);
 
     return EOS_OK;
 }
@@ -1905,14 +1911,13 @@ eos_result_t eos_activity_back_to_watchface(void)
         }
     }
 
-    // Mark current activity for destruction
-    current->destroy_on_exit = true;
-    EOS_LOG_I("Back-to-watchface marked current for destroy: current=%p[%s]",
+    // The transition owns the exit policy; do not store it on the Activity.
+    EOS_LOG_I("Back-to-watchface will destroy current: current=%p[%s]",
               (void *)current,
               _activity_type_to_str(current->type));
 
     // Switch to root (will call on_resume)
-    _activity_switch_to(root, true);
+    _activity_switch_to(root, true, EOS_ACTIVITY_EXIT_DESTROY);
     return EOS_OK;
 }
 
@@ -1971,7 +1976,6 @@ eos_result_t eos_activity_reset_to_root(void)
             {
                 preserved_app_list = activity;
                 eos_activity_set_suspended(activity, false);
-                eos_activity_set_suspend_on_exit(activity, false);
                 continue;
             }
 
@@ -1979,7 +1983,6 @@ eos_result_t eos_activity_reset_to_root(void)
              * Clear it before destruction so reset is independent of how the
              * Activity was reached. */
             eos_activity_set_suspended(activity, false);
-            eos_activity_set_suspend_on_exit(activity, false);
             _activity_run_destroy(activity);
         }
     }
@@ -2329,7 +2332,9 @@ eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv
     {
         eos_activity_t *a = ordered[i - 1];
         eos_stack_push(_activity_ctx.activity_stack, a);
-        a->suspended = false;
+        /* A restored sub-stack is active again.  Its next exit policy is
+         * selected by the next navigation operation, not stored on the page. */
+        a->state = EOS_ACTIVITY_STATE_ACTIVE;
         if (a->view && lv_obj_is_valid(a->view))
         {
             /* Move view back from parking lot into the active screen tree */
@@ -2380,12 +2385,12 @@ eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv
     {
         EOS_LOG_I("[REATTACH_SNAP] Storing snapshot on activity=%p: buf=%p", (void *)substack_top, (void *)snap_buf);
         eos_activity_set_snap_buf(substack_top, snap_buf);
-        _activity_switch_to(substack_top, false);
+        _activity_switch_to(substack_top, false, EOS_ACTIVITY_EXIT_KEEP);
     }
     else
     {
         _suppress_next_transition_anim = true;
-        _activity_switch_to(substack_top, false);
+        _activity_switch_to(substack_top, false, EOS_ACTIVITY_EXIT_KEEP);
         _suppress_next_transition_anim = false;
     }
 
@@ -2401,21 +2406,20 @@ eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv
 
 /* Accessors --------------------------------------------------*/
 
-void eos_activity_set_suspend_on_exit(eos_activity_t *activity, bool suspend_on_exit)
-{
-    if (activity)
-        activity->suspend_on_exit = suspend_on_exit;
-}
-
 bool eos_activity_is_suspended(eos_activity_t *activity)
 {
-    return activity ? activity->suspended : false;
+    return activity && activity->state == EOS_ACTIVITY_STATE_SUSPENDED;
 }
 
 void eos_activity_set_suspended(eos_activity_t *activity, bool suspended)
 {
     if (activity)
-        activity->suspended = suspended;
+        activity->state = suspended ? EOS_ACTIVITY_STATE_SUSPENDED : EOS_ACTIVITY_STATE_ACTIVE;
+}
+
+eos_activity_state_t eos_activity_get_state(eos_activity_t *activity)
+{
+    return activity ? activity->state : EOS_ACTIVITY_STATE_DESTROYED;
 }
 
 void eos_activity_set_app_substack_next(eos_activity_t *activity, eos_activity_t *next)

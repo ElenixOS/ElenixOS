@@ -224,11 +224,10 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
 
     if (detach)
     {
-        /* Mark sub-stack for suspend park BEFORE detach */
+        /* Mark the detached sub-stack as owned by Recent Apps BEFORE detach. */
         eos_activity_t *node = stack_top;
         while (node && node != eos_activity_get_app_substack_next(app_root))
         {
-            eos_activity_set_suspend_on_exit(node, true);
             eos_activity_set_suspended(node, true);
             node = eos_activity_get_app_substack_next(node);
         }
@@ -455,7 +454,6 @@ eos_result_t eos_recent_apps_evict(eos_recent_app_entry_t *entry)
 
         /* Clear suspended flag so _activity_run_destroy proceeds */
         eos_activity_set_suspended(node, false);
-        eos_activity_set_suspend_on_exit(node, false);
 
         /* Destroy the activity (calls on_destroy, deletes view, frees memory).
          * For the AppRoot, on_destroy triggers spm_app_stop_by_id(). */
@@ -513,7 +511,6 @@ void eos_recent_apps_on_engine_reset(void)
         {
             eos_activity_t *next = eos_activity_get_app_substack_next(node);
             eos_activity_set_suspended(node, false);
-            eos_activity_set_suspend_on_exit(node, false);
             eos_activity_destroy(node);
             if (node == entry->activity)
                 break;

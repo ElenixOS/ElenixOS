@@ -325,7 +325,7 @@ static void _list_transition_select_state_from_tree(lv_obj_t *root,
     if (lv_obj_check_type(root, &lv_list_class))
     {
         eos_list_transition_state_t *state = _list_transition_get_state(root);
-        if (state && state->button && lv_obj_is_valid(state->button)
+        if (state && state->button && lv_obj_is_valid(state->button) && state->activity == expected_activity
             && _list_transition_is_descendant_of(state->button, state->list) && state->sequence >= *best_sequence)
         {
             *best_sequence = state->sequence;
@@ -476,7 +476,11 @@ static void _list_transition_list_clicked_cb(lv_event_t *e)
         return;
     }
 
-    eos_activity_t *click_activity = eos_activity_get_previous();
+    /* The list owns the transition state.  Do not use previous_activity here:
+     * it may still refer to the app-list or another page after a Recent Apps
+     * reattach, which makes a valid list state appear to belong to a different
+     * Activity. */
+    eos_activity_t *click_activity = eos_activity_from_widget(list);
     if (!click_activity)
     {
         click_activity = eos_activity_get_current();

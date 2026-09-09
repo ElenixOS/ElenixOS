@@ -1110,6 +1110,10 @@
       "object_type": "int"
     },
     {
+      "name": "lv_text_leading_trim_t",
+      "object_type": "int"
+    },
+    {
       "name": "lv_textarea_t",
       "object_type": ""
     },

@@ -99,6 +99,7 @@ struct eos_activity_t
     lv_draw_buf_t *snap_buf; /**< Pre-captured screenshot for resume animation. Set before
                                    _activity_switch_to, consumed and cleared by the
                                    APP_LIST→APP animation callback. */
+    struct eos_activity_t *registry_next; /**< Intrusive link for live-pointer validation */
 };
 
 typedef struct
@@ -133,6 +134,7 @@ static eos_activity_anim_cb_t _anim_callback_routes[EOS_ACTIVITY_TYPE_COUNT][EOS
  * Moving parked views here removes them from the active screen tree
  * so LVGL does not traverse them during rendering. */
 static lv_obj_t *_parking_lot = NULL;
+static eos_activity_t *_live_activity_head = NULL;
 
 /* When true, the next _activity_switch_to() takes the direct no-transition
  * path instead of playing a registered animation route.  Set by
@@ -210,9 +212,53 @@ static bool _controller_initialized(void)
     return _activity_ctx.activity_stack != NULL && _activity_ctx.root_screen != NULL;
 }
 
+static void _activity_register_live(eos_activity_t *activity)
+{
+    if (!activity)
+        return;
+
+    activity->registry_next = _live_activity_head;
+    _live_activity_head = activity;
+}
+
+static bool _activity_unregister_live(eos_activity_t *activity)
+{
+    eos_activity_t **link = &_live_activity_head;
+    while (*link)
+    {
+        if (*link == activity)
+        {
+            *link = activity->registry_next;
+            activity->registry_next = NULL;
+            return true;
+        }
+        link = &(*link)->registry_next;
+    }
+    return false;
+}
+
+bool eos_activity_is_live(eos_activity_t *activity)
+{
+    eos_activity_t *node = _live_activity_head;
+    while (node)
+    {
+        if (node == activity)
+            return true;
+        node = node->registry_next;
+    }
+    return false;
+}
+
 static void _activity_run_destroy(eos_activity_t *activity)
 {
     EOS_CHECK_PTR_RETURN(activity);
+
+    /* Do not dereference a pointer left behind by a previous teardown. */
+    if (!eos_activity_is_live(activity))
+    {
+        EOS_LOG_W("Activity destroy skipped (not live): %p", (void *)activity);
+        return;
+    }
 
     /* Never destroy a suspended (parked) activity */
     if (activity->state == EOS_ACTIVITY_STATE_SUSPENDED)
@@ -230,6 +276,19 @@ static void _activity_run_destroy(eos_activity_t *activity)
                   _activity_type_to_str(activity->type));
         return;
     }
+
+    if (activity->state == EOS_ACTIVITY_STATE_DESTROYING)
+    {
+        EOS_LOG_W("Activity destroy skipped (already destroying): %p[%s]",
+                  (void *)activity,
+                  _activity_type_to_str(activity->type));
+        return;
+    }
+
+    /* Mark before on_destroy: the callback can synchronously stop the owning
+     * script program, which may attempt to sweep this same Activity again. */
+    activity->state = EOS_ACTIVITY_STATE_DESTROYING;
+    _activity_unregister_live(activity);
 
     EOS_LOG_I("Activity destroy begin: activity=%p type=%s state=%d started=%d view=%p valid=%d "
               "snapshot_ref=%u header_visible=%d header_time_only=%d user_data=%p",
@@ -1609,7 +1668,9 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     activity->title.type = _TITLE_TYPE_INVALID;
     activity->title.string = NULL;
     activity->user_data = NULL;
+    activity->registry_next = NULL;
 
+    _activity_register_live(activity);
     return activity;
 }
 
@@ -1667,7 +1728,9 @@ eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecyc
     activity->title.type = _TITLE_TYPE_INVALID;
     activity->title.string = NULL;
     activity->user_data = NULL;
+    activity->registry_next = NULL;
 
+    _activity_register_live(activity);
     return activity;
 }
 

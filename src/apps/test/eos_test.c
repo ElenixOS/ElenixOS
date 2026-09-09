@@ -167,10 +167,20 @@ static void _test_activity_on_resume(eos_activity_t *activity)
     LV_UNUSED(activity);
 }
 
+static void _test_app_debug_on_destroy(eos_activity_t *activity)
+{
+    const char *app_id = eos_activity_get_app_id(activity);
+    if (app_id)
+    {
+        spm_app_stop_by_id(app_id);
+    }
+}
+
 static const eos_activity_lifecycle_t s_test_activity_lifecycle = {.on_enter = _test_activity_on_enter,
                                                                    .on_destroy = _test_activity_on_destroy,
                                                                    .on_pause = _test_activity_on_pause,
                                                                    .on_resume = _test_activity_on_resume};
+static const eos_activity_lifecycle_t s_test_app_debug_lifecycle = {.on_destroy = _test_app_debug_on_destroy};
 
 static void _test_app_debug_clamp_bar_pos(int32_t *x, int32_t *y, int32_t w, int32_t h)
 {
@@ -410,7 +420,7 @@ static eos_result_t _test_app_debug_start_internal(const char *app_id)
     s_test_app_debug.debug_active = true;
 
     // Create new activity for the app
-    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    eos_activity_t *activity = eos_activity_create(&s_test_app_debug_lifecycle);
     if (!activity)
     {
         s_test_app_debug.debug_active = false;
@@ -421,12 +431,12 @@ static eos_result_t _test_app_debug_start_internal(const char *app_id)
     lv_obj_t *view = eos_activity_get_view(activity);
     if (!view)
     {
+        eos_activity_destroy(activity);
         s_test_app_debug.debug_active = false;
         _test_app_debug_clear_current_app_id();
         return EOS_FAILED;
     }
 
-    eos_activity_set_view(activity, view);
     eos_activity_set_title(activity, app_id);
     eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
 
@@ -434,9 +444,23 @@ static eos_result_t _test_app_debug_start_internal(const char *app_id)
     eos_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
     if (ret != EOS_OK)
     {
+        eos_activity_destroy(activity);
         s_test_app_debug.debug_active = false;
         _test_app_debug_clear_current_app_id();
         return ret;
+    }
+
+    /* The debugger-hosted Activity owns the script it launches. Do not let
+     * normal Activity binding associate it with sys.test, otherwise Recent
+     * Apps and the debugger can tear down different owners of one program. */
+    if (eos_activity_set_app_id(activity, app_id) != EOS_OK)
+    {
+        eos_activity_destroy(activity);
+        s_test_app_debug.debug_active = false;
+        _test_app_debug_clear_current_app_id();
+        eos_pkg_free(pkg);
+        eos_free(pkg);
+        return EOS_FAILED;
     }
 
     eos_activity_enter(activity);

@@ -31,41 +31,37 @@
         }                                                                                                   \
     } while (0)
 
-static const char *_sni_type_names[] = {
-    /* Tree-Dependent */
-    "LV_CHART_CURSOR",
-    "LV_CHART_SERIES",
-    "LV_EVENT_CB",
-    "LV_EVENT_DSC",
-    /* Hybrid */
-    "EOS_ACTIVITY",
-    "EOS_VIEW",
-    /* Pure Managed */
-    "LV_TIMER",
-    "LV_STYLE",
-    "LV_ANIM",
-    "LV_FONT",
-    "LV_GROUP",
-    "LV_LAYER",
-    "LV_OBSERVER",
-    "LV_DRAW_BUF",
-    "LV_SUBJECT",
-    "LV_COLOR_FILTER_DSC",
-    /* Value-like Handles (TODO: migrate to __SNI_VALUE) */
-    "INT32",
-    "LV_DISPLAY",
-    "LV_DRAW_ARC_DSC",
-    "LV_DRAW_IMAGE_DSC",
-    "LV_DRAW_LABEL_DSC",
-    "LV_DRAW_LINE_DSC",
-    "LV_DRAW_RECT_DSC",
-    "LV_EVENT",
-    "LV_GRAD_DSC",
-    "LV_IMAGE_DSC",
-    "LV_OBJ_CLASS",
-    "LV_OBJ_TREE_WALK_CB",
-    "LV_STYLE_TRANSITION_DSC",
-    "LV_STYLE_VALUE",
+static const char *_sni_type_names[SNI_MANAGED_RESOURCE_COUNT] = {
+    [SNI_H_LV_CHART_CURSOR - __SNI_HANDLE_RESOURCE_START - 1] = "LV_CHART_CURSOR",
+    [SNI_H_LV_CHART_SERIES - __SNI_HANDLE_RESOURCE_START - 1] = "LV_CHART_SERIES",
+    [SNI_H_LV_EVENT_CB - __SNI_HANDLE_RESOURCE_START - 1] = "LV_EVENT_CB",
+    [SNI_H_LV_EVENT_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_EVENT_DSC",
+    [SNI_H_EOS_ACTIVITY - __SNI_HANDLE_RESOURCE_START - 1] = "EOS_ACTIVITY",
+    [SNI_H_EOS_VIEW - __SNI_HANDLE_RESOURCE_START - 1] = "EOS_VIEW",
+    [SNI_H_LV_TIMER - __SNI_HANDLE_RESOURCE_START - 1] = "LV_TIMER",
+    [SNI_H_LV_STYLE - __SNI_HANDLE_RESOURCE_START - 1] = "LV_STYLE",
+    [SNI_H_LV_ANIM - __SNI_HANDLE_RESOURCE_START - 1] = "LV_ANIM",
+    [SNI_H_LV_FONT - __SNI_HANDLE_RESOURCE_START - 1] = "LV_FONT",
+    [SNI_H_LV_GROUP - __SNI_HANDLE_RESOURCE_START - 1] = "LV_GROUP",
+    [SNI_H_LV_LAYER - __SNI_HANDLE_RESOURCE_START - 1] = "LV_LAYER",
+    [SNI_H_LV_OBSERVER - __SNI_HANDLE_RESOURCE_START - 1] = "LV_OBSERVER",
+    [SNI_H_LV_DRAW_BUF - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_BUF",
+    [SNI_H_LV_SUBJECT - __SNI_HANDLE_RESOURCE_START - 1] = "LV_SUBJECT",
+    [SNI_H_LV_COLOR_FILTER_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_COLOR_FILTER_DSC",
+    [SNI_H_INT32 - __SNI_HANDLE_RESOURCE_START - 1] = "INT32",
+    [SNI_H_LV_DISPLAY - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DISPLAY",
+    [SNI_H_LV_DRAW_ARC_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_ARC_DSC",
+    [SNI_H_LV_DRAW_IMAGE_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_IMAGE_DSC",
+    [SNI_H_LV_DRAW_LABEL_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_LABEL_DSC",
+    [SNI_H_LV_DRAW_LINE_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_LINE_DSC",
+    [SNI_H_LV_DRAW_RECT_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_DRAW_RECT_DSC",
+    [SNI_H_LV_EVENT - __SNI_HANDLE_RESOURCE_START - 1] = "LV_EVENT",
+    [SNI_H_LV_GRAD_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_GRAD_DSC",
+    [SNI_H_LV_IMAGE_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_IMAGE_DSC",
+    [SNI_H_LV_OBJ_CLASS - __SNI_HANDLE_RESOURCE_START - 1] = "LV_OBJ_CLASS",
+    [SNI_H_LV_OBJ_TREE_WALK_CB - __SNI_HANDLE_RESOURCE_START - 1] = "LV_OBJ_TREE_WALK_CB",
+    [SNI_H_LV_STYLE_TRANSITION_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_STYLE_TRANSITION_DSC",
+    [SNI_H_LV_STYLE_VALUE - __SNI_HANDLE_RESOURCE_START - 1] = "LV_STYLE_VALUE",
 };
 
 const char *sni_type_name(sni_type_t type)
@@ -667,6 +663,15 @@ void sni_context_sweep_all(sni_context_t *ctx)
                 {
                     eos_activity_t *act = (eos_activity_t *)node->ptr;
 
+                    /* Activity pointers can outlive their JS wrapper when
+                     * Activity Controller teardown and SPM teardown race.
+                     * Validate by address before reading the Activity. */
+                    if (!eos_activity_is_live(act))
+                    {
+                        EOS_LOG_W("SWEEP: dropping stale Activity pointer %p", (void *)act);
+                        node->ptr = NULL;
+                    }
+
                     /* Only destroy off-stack Activities that were never entered
                      * (has_started == false).  These are JS-created Activities
                      * with NULL lifecycle that exist purely as managed resources.
@@ -682,7 +687,9 @@ void sni_context_sweep_all(sni_context_t *ctx)
                      * the animation-callback path.  Their node->ptr may have
                      * been set to NULL by sni_context_invalidate_resource()
                      * to prevent double-free. */
-                    if (!eos_activity_has_started(act))
+                    else if (!eos_activity_has_started(act)
+                             && eos_activity_get_state(act) != EOS_ACTIVITY_STATE_DESTROYING
+                             && eos_activity_get_state(act) != EOS_ACTIVITY_STATE_DESTROYED)
                     {
                         eos_activity_destroy(act);
                         node->ptr = NULL;

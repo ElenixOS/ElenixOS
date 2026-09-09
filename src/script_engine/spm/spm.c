@@ -381,8 +381,12 @@ eos_result_t spm_terminate_program(script_program_t *prog)
 {
     if (!prog)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
-    if (prog->state == SCRIPT_PROGRAM_STATE_TERMINATED)
+    if (prog->state == SCRIPT_PROGRAM_STATE_STOPPING || prog->state == SCRIPT_PROGRAM_STATE_TERMINATED)
+    {
+        /* Lifecycle callbacks can request termination recursively while the
+         * first teardown is still unwinding. The first caller owns cleanup. */
         return EOS_OK;
+    }
 
     EOS_LOG_I("Terminating program %p type=%d state=%d", (void *)prog, prog->type, prog->state);
     prog->state = SCRIPT_PROGRAM_STATE_STOPPING;

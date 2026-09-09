@@ -43,6 +43,7 @@ typedef enum
     EOS_ACTIVITY_STATE_CREATED = 0,
     EOS_ACTIVITY_STATE_ACTIVE,
     EOS_ACTIVITY_STATE_SUSPENDED,
+    EOS_ACTIVITY_STATE_DESTROYING,
     EOS_ACTIVITY_STATE_DESTROYED
 } eos_activity_state_t;
 
@@ -518,6 +519,14 @@ eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv
  * @return true if suspended
  */
 bool eos_activity_is_suspended(eos_activity_t *activity);
+
+/**
+ * @brief Check whether an Activity pointer is still owned by the controller
+ * @param activity Activity pointer
+ * @return true when the Activity is currently live
+ * @note Pointer-only validation for teardown paths; does not dereference a stale pointer.
+ */
+bool eos_activity_is_live(eos_activity_t *activity);
 
 /**
  * @brief Mark an activity as suspended

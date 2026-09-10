@@ -30,6 +30,7 @@ static bool s_initialized = false;
 static spm_error_t s_last_error = {0};
 static bool s_has_last_error = false;
 static spm_crash_state_t s_crash_state = {0};
+static uint32_t s_next_instance_id = 1;
 
 /* Function Implementations -----------------------------------*/
 static void _lvgl_view_clean(void *view)
@@ -172,7 +173,7 @@ static eos_result_t _error_copy_from_core(script_program_t *prog)
     return EOS_OK;
 }
 
-static void _pkg_clone(script_pkg_t *dst, const script_pkg_t *src)
+static bool _pkg_clone(script_pkg_t *dst, const script_pkg_t *src)
 {
     memset(dst, 0, sizeof(*dst));
     dst->type = src->type;
@@ -184,6 +185,14 @@ static void _pkg_clone(script_pkg_t *dst, const script_pkg_t *src)
     dst->script_str = src->script_str ? eos_strdup(src->script_str) : NULL;
     dst->base_path = src->base_path ? eos_strdup(src->base_path) : NULL;
 
+    if ((src->id && !dst->id) || (src->name && !dst->name) || (src->version && !dst->version)
+        || (src->author && !dst->author) || (src->description && !dst->description)
+        || (src->script_str && !dst->script_str) || (src->base_path && !dst->base_path))
+    {
+        _script_free(dst);
+        return false;
+    }
+
     /* Clone permissions array */
     if (src->permissions && src->permission_count > 0)
     {
@@ -193,14 +202,27 @@ static void _pkg_clone(script_pkg_t *dst, const script_pkg_t *src)
             for (uint8_t i = 0; i < src->permission_count; i++)
             {
                 dst->permissions[i] = src->permissions[i] ? eos_strdup(src->permissions[i]) : NULL;
+                /* Keep the cleanup count current so a later allocation
+                 * failure releases every successfully copied prefix entry. */
+                dst->permission_count = i + 1;
+                if (src->permissions[i] && !dst->permissions[i])
+                {
+                    _script_free(dst);
+                    return false;
+                }
             }
             dst->permissions[src->permission_count] = NULL;
-            dst->permission_count = src->permission_count;
+        }
+        else
+        {
+            _script_free(dst);
+            return false;
         }
     }
 
     dst->min_api_level = src->min_api_level;
     dst->target_api_level = src->target_api_level;
+    return true;
 }
 
 /* SPM Lifecycle ----------------------------------------------*/
@@ -231,6 +253,32 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
         return NULL;
     }
 
+    if (pkg->type == SCRIPT_TYPE_APPLICATION && pkg->id)
+    {
+        script_program_t *existing = spm_get_program_by_id_any_state(pkg->id);
+        if (existing)
+        {
+            EOS_LOG_W("Refusing duplicate application program '%s' (instance=%u state=%d)",
+                      pkg->id,
+                      existing->instance_id,
+                      existing->state);
+            return NULL;
+        }
+
+        /* The normal App entry point suspends the foreground program before
+         * calling SPM.  Keep the invariant at this boundary as well, so a
+         * lower-level caller cannot create two ACTIVE application programs by
+         * bypassing that transaction. */
+        script_program_t *active = spm_get_active_program();
+        if (active && active->type == SCRIPT_TYPE_APPLICATION)
+        {
+            EOS_LOG_W("Refusing application '%s' while program instance=%u is still ACTIVE",
+                      pkg->id,
+                      active->instance_id);
+            return NULL;
+        }
+    }
+
     script_program_t *prog = eos_malloc_zeroed(sizeof(script_program_t));
     if (!prog)
     {
@@ -240,8 +288,16 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
 
     prog->type = pkg->type;
     prog->state = SCRIPT_PROGRAM_STATE_ACTIVE;
+    prog->instance_id = s_next_instance_id++;
+    if (s_next_instance_id == 0)
+        s_next_instance_id = 1;
     prog->realm = jerry_undefined();
-    _pkg_clone(&prog->script, pkg);
+    if (!_pkg_clone(&prog->script, pkg))
+    {
+        EOS_LOG_E("spm_start_program: package clone failed");
+        eos_free(prog);
+        return NULL;
+    }
 
     prog->sni_ctx = sni_context_create();
     if (!prog->sni_ctx)
@@ -254,7 +310,11 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
     prog->sni_ctx->owner = prog;
 
     _program_list_add(prog);
-    EOS_LOG_I("Starting program %p type=%d id=%s", (void *)prog, prog->type, pkg->id ? pkg->id : "unknown");
+    EOS_LOG_I("Starting program %p instance=%u type=%d id=%s",
+              (void *)prog,
+              prog->instance_id,
+              prog->type,
+              pkg->id ? pkg->id : "unknown");
 
     script_engine_set_current_program(prog);
     eos_result_t ret = script_engine_run(pkg);
@@ -347,7 +407,10 @@ eos_result_t spm_suspend_program(script_program_t *prog)
     }
 
     if (prog->sni_ctx)
+    {
+        sni_context_pause_resources(prog->sni_ctx);
         sni_context_set_paused(prog->sni_ctx, true);
+    }
     prog->state = SCRIPT_PROGRAM_STATE_SUSPENDED;
     if (script_engine_get_current_program() == prog)
         script_engine_set_current_program(NULL);
@@ -357,10 +420,22 @@ eos_result_t spm_suspend_program(script_program_t *prog)
 
 eos_result_t spm_resume_program(script_program_t *prog)
 {
+    return spm_resume_program_with_strategies(prog, 0, 0);
+}
+
+eos_result_t spm_resume_program_with_strategies(script_program_t *prog, int timer_strategy, int anim_strategy)
+{
     if (!prog)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
     if (prog->state != SCRIPT_PROGRAM_STATE_SUSPENDED)
         return EOS_ERR_INVALID_STATE;
+
+    script_program_t *active = spm_get_active_program();
+    if (active && active != prog)
+    {
+        EOS_LOG_W("spm_resume_program: program instance=%u is already ACTIVE", active->instance_id);
+        return EOS_ERR_BUSY;
+    }
 
     script_engine_state_t core_state = script_engine_get_state();
     if (core_state != SCRIPT_ENGINE_STATE_IDLE)
@@ -369,10 +444,13 @@ eos_result_t spm_resume_program(script_program_t *prog)
         return EOS_ERR_INVALID_STATE;
     }
 
-    if (prog->sni_ctx)
-        sni_context_set_paused(prog->sni_ctx, false);
     prog->state = SCRIPT_PROGRAM_STATE_ACTIVE;
     script_engine_set_current_program(prog);
+    if (prog->sni_ctx)
+    {
+        sni_context_set_paused(prog->sni_ctx, false);
+        sni_context_resume_resources(prog->sni_ctx, timer_strategy, anim_strategy);
+    }
     EOS_LOG_I("Program %p resumed", (void *)prog);
     return EOS_OK;
 }
@@ -381,24 +459,39 @@ eos_result_t spm_terminate_program(script_program_t *prog)
 {
     if (!prog)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
-    if (prog->state == SCRIPT_PROGRAM_STATE_STOPPING || prog->state == SCRIPT_PROGRAM_STATE_TERMINATED)
-    {
-        /* Lifecycle callbacks can request termination recursively while the
-         * first teardown is still unwinding. The first caller owns cleanup. */
+    if (prog->state == SCRIPT_PROGRAM_STATE_TERMINATED)
         return EOS_OK;
+    if (prog->state == SCRIPT_PROGRAM_STATE_STOPPING)
+    {
+        /* A STOPPING program is still a live identity.  Reporting BUSY keeps
+         * callers from creating a replacement before teardown has finished. */
+        return EOS_ERR_BUSY;
     }
 
-    EOS_LOG_I("Terminating program %p type=%d state=%d", (void *)prog, prog->type, prog->state);
-    prog->state = SCRIPT_PROGRAM_STATE_STOPPING;
-    // Pause the program context to ensure no callbacks are triggered
-    if (prog->sni_ctx)
-        sni_context_set_paused(prog->sni_ctx, true);
-
-    // Clean up LVGL widgets created by this program's JS session
-    if (prog->cleanup_view)
+    script_engine_state_t core_state = script_engine_get_state();
+    bool is_current = script_engine_get_current_program() == prog;
+    if (prog->sni_ctx && sni_cb_is_dispatching_context(prog->sni_ctx))
     {
-        prog->cleanup_view(prog->cleanup_user_data);
-        prog->cleanup_view = NULL;
+        EOS_LOG_W("Program instance=%u termination requested from its callback; returning BUSY", prog->instance_id);
+        return EOS_ERR_BUSY;
+    }
+    if (is_current && core_state == SCRIPT_ENGINE_STATE_RUNNING)
+        return EOS_ERR_BUSY;
+    if (!is_current && core_state != SCRIPT_ENGINE_STATE_IDLE)
+        return EOS_ERR_BUSY;
+
+    EOS_LOG_I("Terminating program %p instance=%u type=%d state=%d",
+              (void *)prog,
+              prog->instance_id,
+              prog->type,
+              prog->state);
+    prog->state = SCRIPT_PROGRAM_STATE_STOPPING;
+    /* Block new callbacks and pause native timers/animations before any
+     * resource or Realm teardown begins. */
+    if (prog->sni_ctx)
+    {
+        sni_context_pause_resources(prog->sni_ctx);
+        sni_context_set_paused(prog->sni_ctx, true);
     }
 
     // -- Teardown Phase 0: JS-Native decouple --
@@ -437,20 +530,37 @@ eos_result_t spm_terminate_program(script_program_t *prog)
         sni_cb_context_cleanup_events(prog->sni_ctx);
     }
 
-    // -- Teardown Phase 3: Stop the JS engine --
-    // Let Core finish its stop/cleanup while the program object is still valid.
-    script_engine_stop();
+    /* The Activity view must remain valid while event descriptors are
+     * removed.  It is safe to clear the remaining child tree now, before the
+     * owning Realm is released. */
+    if (prog->cleanup_view)
+    {
+        prog->cleanup_view(prog->cleanup_user_data);
+        prog->cleanup_view = NULL;
+    }
+
+    /* Core is a singleton execution engine, but Realm ownership is per
+     * program.  Only the program currently executing in Core may use the
+     * global stop path; an inactive/suspended program must release only its
+     * own Realm. */
+    eos_result_t core_ret = is_current ? script_engine_stop() : script_engine_release_program_realm(prog);
+    if (core_ret != EOS_OK)
+    {
+        EOS_LOG_E("Failed to release program %u: %d", prog->instance_id, core_ret);
+        return core_ret;
+    }
     if (prog->sni_ctx)
         prog->sni_ctx->teardown_phase = SNI_TEARDOWN_PHASE_ENGINE_STOPPED;
     // Remove the program from the list first so it can no longer be discovered
     _program_list_remove(prog);
 
-    // Drop the Core's current-program pointer before freeing the program itself.
-    script_engine_set_current_program(NULL);
+    if (is_current)
+        script_engine_set_current_program(NULL);
 
     // Destroy the program resources after Core cleanup has finished.
     prog->state = SCRIPT_PROGRAM_STATE_TERMINATED;
     bool had_error = prog->has_error;
+    uint32_t instance_id = prog->instance_id;
     _program_destroy(prog);
 
     /* If this program was healthy, any persistent error copy is stale */
@@ -460,7 +570,7 @@ eos_result_t spm_terminate_program(script_program_t *prog)
         memset(&s_last_error, 0, sizeof(spm_error_t));
     }
 
-    EOS_LOG_I("Program terminated");
+    EOS_LOG_I("Program instance=%u terminated", instance_id);
     return EOS_OK;
 }
 
@@ -581,8 +691,16 @@ static eos_result_t _spm_console_start(void)
 
     s_console_program->type = SCRIPT_TYPE_CONSOLE;
     s_console_program->state = SCRIPT_PROGRAM_STATE_ACTIVE;
+    s_console_program->instance_id = s_next_instance_id++;
+    if (s_next_instance_id == 0)
+        s_next_instance_id = 1;
     s_console_program->realm = jerry_undefined();
-    _pkg_clone(&s_console_program->script, &s_console_package);
+    if (!_pkg_clone(&s_console_program->script, &s_console_package))
+    {
+        eos_free(s_console_program);
+        s_console_program = NULL;
+        return EOS_FAILED;
+    }
     s_console_program->sni_ctx = sni_context_create();
     if (!s_console_program->sni_ctx)
     {
@@ -709,6 +827,25 @@ script_program_t *spm_get_program_by_id(const char *id)
     return NULL;
 }
 
+script_program_t *spm_get_program_by_instance_id(uint32_t instance_id)
+{
+    if (instance_id == 0)
+        return NULL;
+    script_program_t *prog = s_program_list;
+    while (prog)
+    {
+        if (prog->instance_id == instance_id && prog->state != SCRIPT_PROGRAM_STATE_TERMINATED)
+            return prog;
+        prog = prog->next;
+    }
+    return NULL;
+}
+
+uint32_t spm_program_get_instance_id(const script_program_t *prog)
+{
+    return prog ? prog->instance_id : 0;
+}
+
 const char *spm_get_program_error_info(script_program_t *prog)
 {
     if (!prog || !prog->has_error)
@@ -740,10 +877,11 @@ eos_result_t spm_watchface_start(const script_pkg_t *pkg, void *view)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
     if (s_wf_program)
     {
-        spm_terminate_program(s_wf_program);
+        eos_result_t ret = spm_terminate_program(s_wf_program);
+        if (ret != EOS_OK)
+            return ret;
         s_wf_program = NULL;
     }
-    script_engine_stop();
     s_wf_program = spm_start_program(pkg);
     if (s_wf_program && view)
     {
@@ -757,11 +895,7 @@ eos_result_t spm_watchface_pause(void)
 {
     if (!s_wf_program)
         return EOS_ERR_INVALID_STATE;
-    script_engine_state_t state = script_engine_get_state();
-    if (state == SCRIPT_ENGINE_STATE_RUNNING)
-        script_engine_request_stop();
-    eos_result_t ret = spm_suspend_program(s_wf_program);
-    return ret;
+    return spm_suspend_program(s_wf_program);
 }
 
 eos_result_t spm_watchface_resume(void)
@@ -776,10 +910,11 @@ eos_result_t spm_watchface_destroy(void)
 {
     if (s_wf_program)
     {
-        spm_terminate_program(s_wf_program);
+        eos_result_t ret = spm_terminate_program(s_wf_program);
+        if (ret != EOS_OK)
+            return ret;
         s_wf_program = NULL;
     }
-    script_engine_stop();
     return EOS_OK;
 }
 
@@ -801,12 +936,39 @@ eos_result_t spm_app_run(const script_pkg_t *pkg)
 {
     if (!pkg || !pkg->script_str)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
+    if (pkg->id)
+    {
+        script_program_t *existing = spm_get_program_by_id_any_state(pkg->id);
+        if (existing)
+            return existing->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_ALREADY_EXISTS;
+    }
     return spm_start_program(pkg) ? EOS_OK : EOS_FAILED;
+}
+
+eos_result_t spm_app_restart(const script_pkg_t *pkg)
+{
+    if (!pkg || !pkg->script_str || pkg->type != SCRIPT_TYPE_APPLICATION || !pkg->id)
+        return EOS_ERR_SCRIPT_NULL_PACKAGE;
+
+    script_program_t *existing = spm_get_program_by_id_any_state(pkg->id);
+    if (existing)
+    {
+        if (existing->type != SCRIPT_TYPE_APPLICATION)
+            return EOS_ERR_INVALID_STATE;
+        if (existing->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+            return existing->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_INVALID_STATE;
+        eos_result_t ret = spm_terminate_program(existing);
+        if (ret != EOS_OK)
+            return ret;
+    }
+    return spm_app_run(pkg);
 }
 
 eos_result_t spm_app_stop(void)
 {
-    script_program_t *prog = spm_get_program_by_type(SCRIPT_TYPE_APPLICATION);
+    script_program_t *prog = spm_get_active_program();
+    if (prog && prog->type != SCRIPT_TYPE_APPLICATION)
+        prog = NULL;
     if (!prog)
         return EOS_OK;
     eos_result_t ret = spm_terminate_program(prog);
@@ -821,26 +983,20 @@ eos_result_t spm_app_suspend(void)
     return spm_suspend_program(prog);
 }
 
-eos_result_t spm_app_resume(const char *app_id)
+eos_result_t spm_app_stop_by_instance_id(uint32_t instance_id)
 {
-    if (!app_id)
-        return EOS_ERR_SCRIPT_NULL_PACKAGE;
-    script_program_t *prog = spm_get_program_by_id_any_state(app_id);
+    script_program_t *prog = spm_get_program_by_instance_id(instance_id);
     if (!prog || prog->type != SCRIPT_TYPE_APPLICATION)
-        return EOS_ERR_INVALID_STATE;
-    if (prog->state != SCRIPT_PROGRAM_STATE_SUSPENDED)
-        return EOS_ERR_INVALID_STATE;
-    return spm_resume_program(prog);
+        return EOS_OK;
+    return spm_terminate_program(prog);
 }
 
-eos_result_t spm_app_stop_by_id(const char *app_id)
+void spm_program_set_view_cleanup(script_program_t *prog, void *view)
 {
-    if (!app_id)
-        return EOS_ERR_SCRIPT_NULL_PACKAGE;
-    script_program_t *prog = spm_get_program_by_id_any_state(app_id);
-    if (!prog || prog->type != SCRIPT_TYPE_APPLICATION)
-        return EOS_OK; /* Already gone or never existed */
-    return spm_terminate_program(prog);
+    if (!prog)
+        return;
+    prog->cleanup_view = view ? _lvgl_view_clean : NULL;
+    prog->cleanup_user_data = view;
 }
 
 script_program_t *spm_get_program_by_id_any_state(const char *id)
@@ -935,6 +1091,11 @@ void spm_schedule_crash_notification(void)
 void spm_handle_engine_reset(void)
 {
     EOS_LOG_W("SPM: emergency reset — destroying all programs");
+
+    /* A fatal longjmp may bypass the normal callback epilogue.  Clear the
+     * dispatch guards before destroying their owner contexts so a new
+     * generation cannot inherit stale timer/animation identity. */
+    sni_cb_reset_dispatching_state();
 
     /* Pause LVGL timer dispatch to prevent any pending callbacks from
      * firing during or after the engine reset. Callers re-enable timers

@@ -280,8 +280,9 @@ int esh_builtin_cmd_recent(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     for (entry = eos_recent_apps_get_head(); entry; entry = eos_recent_apps_get_next(entry))
     {
         if (esh_printf(ctx,
-                       "%s name=%s last=%" PRIu32 " mem=%" PRIu32 " bytes depth=%" PRIu32 "\r\n",
+                       "%s instance=%" PRIu32 " name=%s last=%" PRIu32 " mem=%" PRIu32 " bytes depth=%" PRIu32 "\r\n",
                        entry->app_id,
+                       entry->program_instance_id,
                        entry->app_name,
                        entry->last_used_tick,
                        entry->est_mem_bytes,
@@ -329,48 +330,18 @@ int esh_builtin_cmd_app(esh_cmd_ctx_t *ctx, int argc, char *argv[])
             return (int)esh_printf(ctx, "app: not running: %s\r\n", argv[2]);
         }
         return (int)esh_printf(ctx,
-                               "%s state=%s type=%d name=%s version=%s\r\n",
+                               "%s state=%s type=%d instance=%" PRIu32 " name=%s version=%s\r\n",
                                argv[2],
                                _program_state_name(program->state),
                                program->type,
+                               spm_program_get_instance_id(program),
                                program->script.name ? program->script.name : "",
                                program->script.version ? program->script.version : "");
     }
 
     if (strcmp(argv[1], "restart") == 0)
     {
-        /* eos_app_launch_immediately() intentionally treats an already
-         * foreground app as a no-op. ESH restart must have stronger
-         * semantics: stop the existing SPM program, clear its view and run
-         * a fresh instance on the same AppRoot. */
-        eos_activity_t *current = eos_activity_get_current();
-        eos_activity_t *app_root = current ? eos_activity_get_app_root(current) : NULL;
-        const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
-        if (app_root)
-        {
-            current_app_id = eos_activity_get_app_id(app_root);
-            current = app_root;
-        }
-        if (current && current_app_id && strcmp(current_app_id, argv[2]) == 0
-            && eos_activity_get_type(current) == EOS_ACTIVITY_TYPE_APP)
-        {
-            result = eos_app_restart_in_place(argv[2], current);
-        }
-        else
-        {
-            /* A non-foreground app may still be parked in Recent Apps.
-             * Remove that suspended instance first; otherwise launch would
-             * resume its old Realm and would not be a real restart. */
-            result = spm_app_stop_by_id(argv[2]);
-            if (result == EOS_OK)
-            {
-                eos_recent_app_entry_t *recent = eos_recent_apps_find(argv[2]);
-                if (recent)
-                    result = eos_recent_apps_evict(recent);
-            }
-            if (result == EOS_OK)
-                result = eos_app_launch_immediately(argv[2]);
-        }
+        result = eos_app_restart_by_id(argv[2]);
     }
     else if (strcmp(argv[1], "start") == 0)
     {
@@ -378,23 +349,7 @@ int esh_builtin_cmd_app(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     }
     else if (strcmp(argv[1], "stop") == 0)
     {
-        result = spm_app_stop_by_id(argv[2]);
-        if (result == EOS_OK)
-        {
-            eos_recent_app_entry_t *recent = eos_recent_apps_find(argv[2]);
-            if (recent)
-            {
-                eos_recent_apps_evict(recent);
-            }
-
-            eos_activity_t *current = eos_activity_get_current();
-            const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
-            if (current_app_id && strcmp(current_app_id, argv[2]) == 0)
-            {
-                eos_activity_set_needs_reload(current, true);
-                result = eos_activity_reset_to_root();
-            }
-        }
+        result = eos_app_terminate_by_id(argv[2]);
     }
     else
     {

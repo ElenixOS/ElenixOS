@@ -50,6 +50,7 @@ typedef struct eos_recent_app_entry
     struct eos_recent_app_entry *prev; /**< LRU: less recently used */
 
     char app_id[64]; /**< Script package ID, stable key */
+    uint32_t program_instance_id; /**< SPM program lifetime represented by this entry */
     char app_name[64]; /**< Display name for the recents page UI */
     eos_activity_t *activity; /**< AppRoot activity (parked, kept alive) */
     eos_activity_t *saved_stack_top; /**< Sub-stack top at suspend time */

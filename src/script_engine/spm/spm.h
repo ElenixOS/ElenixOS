@@ -75,18 +75,23 @@ typedef struct
 } spm_crash_state_t;
 
 /**
- * @brief Script program - the central managed entity
+ * @brief Script program - the central managed entity and App execution instance
  *
  * Each running or suspended script program is represented by one
- * script_program_t node in SPM's program_list doubly-linked list.
+ * script_program_t node in SPM's program_list doubly-linked list.  For an
+ * APPLICATION, this node is the complete execution instance: its app ID,
+ * Realm, SNI context, native resources and Activity ownership all belong to
+ * the same lifetime identified by instance_id.  A second non-terminated
+ * program with the same package ID is never allowed.
  */
-typedef struct script_program
+struct script_program
 {
     struct script_program *next;
     struct script_program *prev;
 
     script_pkg_type_t type;
     script_program_state_t state;
+    uint32_t instance_id; /**< Monotonic identity for this program lifetime */
     sni_context_t *sni_ctx;
     script_pkg_t script;
     jerry_value_t realm;
@@ -96,7 +101,7 @@ typedef struct script_program
 
     void (*cleanup_view)(void *user_data);
     void *cleanup_user_data;
-} script_program_t;
+};
 
 /* Public function prototypes ---------------------------------*/
 
@@ -136,17 +141,18 @@ void spm_handle_engine_reset(void);
 script_program_t *spm_start_program(const script_pkg_t *pkg);
 
 /**
- * @brief Suspend a script program (WatchFace only)
+ * @brief Suspend a script program
  * @param prog Program handle
  * @return EOS_OK on success
  *
- * Preconditions: prog->type == SCRIPT_TYPE_WATCHFACE, prog->state == ACTIVE, Core == IDLE
+ * Preconditions: prog is a WatchFace or APPLICATION, prog->state == ACTIVE,
+ * Core == IDLE
  * Operations: save realm to prog, pause SNI callbacks, prog->state = SUSPENDED
  */
 eos_result_t spm_suspend_program(script_program_t *prog);
 
 /**
- * @brief Resume a script program (WatchFace only)
+ * @brief Resume a script program
  * @param prog Program handle
  * @return EOS_OK on success
  *
@@ -156,13 +162,18 @@ eos_result_t spm_suspend_program(script_program_t *prog);
 eos_result_t spm_resume_program(script_program_t *prog);
 
 /**
- * @brief Terminate a script program (async safe)
+ * @brief Resume a program and apply explicit timer/animation policies
+ */
+eos_result_t spm_resume_program_with_strategies(script_program_t *prog, int timer_strategy, int anim_strategy);
+
+/**
+ * @brief Synchronously terminate a script program
  * @param prog Program handle
  * @return EOS_OK on success
  *
- * Terminal entry point:
- *   - ACTIVE -> STOPPING (async wait for Core stop) -> TERMINATED
- *   - SUSPENDED -> STOPPING (direct cleanup) -> TERMINATED
+ * The call returns only after the program has been removed from SPM and all
+ * program-owned resources have been released, or returns EOS_ERR_BUSY when a
+ * callback or engine transition still owns it.
  */
 eos_result_t spm_terminate_program(script_program_t *prog);
 
@@ -243,6 +254,16 @@ script_program_t *spm_get_program_by_type(script_pkg_type_t type);
 script_program_t *spm_get_program_by_id(const char *id);
 
 /**
+ * @brief Get a program by its unique lifetime identity
+ */
+script_program_t *spm_get_program_by_instance_id(uint32_t instance_id);
+
+/**
+ * @brief Get the unique lifetime identity of a program
+ */
+uint32_t spm_program_get_instance_id(const script_program_t *prog);
+
+/**
  * @brief Get error info from a program
  * @param prog Program handle
  * @return Error string (lifetime bound to prog)
@@ -310,6 +331,12 @@ bool spm_watchface_has_context(void);
 /** @name Simplified Application APIs */
 /**@{*/
 eos_result_t spm_app_run(const script_pkg_t *pkg);
+/**
+ * @brief Terminate the currently active APPLICATION program
+ * @note This legacy convenience API never selects an arbitrary suspended
+ *       program.  Use spm_app_stop_by_instance_id() when evicting a specific
+ *       suspended program.
+ */
 eos_result_t spm_app_stop(void);
 
 /**
@@ -321,20 +348,19 @@ eos_result_t spm_app_stop(void);
 eos_result_t spm_app_suspend(void);
 
 /**
- * @brief Resume a suspended APPLICATION program by id
- * @param app_id Application package ID
- * @return EOS_OK on success
- * @note Restores program to ACTIVE state and unpauses SNI context.
+ * @brief Fully terminate an APPLICATION program by its lifetime identity
  */
-eos_result_t spm_app_resume(const char *app_id);
+eos_result_t spm_app_stop_by_instance_id(uint32_t instance_id);
 
 /**
- * @brief Fully terminate an APPLICATION program by id (for eviction)
- * @param app_id Application package ID
- * @return EOS_OK on success (including if program not found)
- * @note Performs full 6-phase teardown including realm destruction.
+ * @brief Restart the single APPLICATION program identified by app_id
  */
-eos_result_t spm_app_stop_by_id(const char *app_id);
+eos_result_t spm_app_restart(const script_pkg_t *pkg);
+
+/**
+ * @brief Associate a program-owned Activity view with its teardown
+ */
+void spm_program_set_view_cleanup(script_program_t *prog, void *view);
 
 /**
  * @brief Find a program by script ID in any non-terminated state

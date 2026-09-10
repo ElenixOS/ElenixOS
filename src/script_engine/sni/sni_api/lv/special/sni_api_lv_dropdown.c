@@ -6,6 +6,7 @@
 #include "sni_api_lv_special.h"
 
 /* Includes ---------------------------------------------------*/
+#include "eos_mem.h"
 #include "lvgl.h"
 #include "sni_api_export.h"
 #include "sni_type_bridge.h"
@@ -37,9 +38,12 @@ jerry_value_t sni_api_lv_dropdown_set_symbol(const jerry_call_info_t *call_info_
             return sni_api_throw_error("Invalid argument type");
         }
         arg_symbol = sni_tb_js2c_string(args_p[0]);
+        if (!arg_symbol)
+            return sni_api_throw_error("Out of memory");
     }
 
     lv_dropdown_set_symbol(self_obj, arg_symbol);
+    eos_free((void *)arg_symbol);
     return jerry_undefined();
 }
 

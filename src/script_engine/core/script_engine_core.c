@@ -208,24 +208,23 @@ static void _cleanup_module_task(_module_task_t *task)
     eos_free(task);
 }
 
+static void _pkg_free_fields(script_pkg_t *p);
+
 static void _pkg_free(script_pkg_t *p)
 {
-    if (!p)
-        return;
-    if (p->base_path)
-    {
-        eos_free((void *)p->base_path);
-        p->base_path = NULL;
-    }
-    if (p->script_str)
-    {
-        eos_free((void *)p->script_str);
-        p->script_str = NULL;
-    }
+    _pkg_free_fields(p);
 }
 
-static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
+static bool _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
 {
+    if (!dst || !src)
+        return false;
+
+    /* Core keeps one transient package copy for the program currently using
+     * its execution window.  A different program may start while an older
+     * program is suspended; release the old copy before replacing it instead
+     * of losing all of its owned strings to memset(). */
+    _pkg_free_fields(dst);
     memset(dst, 0, sizeof(*dst));
     dst->type = src->type;
     dst->id = src->id ? eos_strdup(src->id) : NULL;
@@ -236,6 +235,14 @@ static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
     dst->script_str = src->script_str ? eos_strdup(src->script_str) : NULL;
     dst->base_path = src->base_path ? eos_strdup(src->base_path) : NULL;
 
+    if ((src->id && !dst->id) || (src->name && !dst->name) || (src->version && !dst->version)
+        || (src->author && !dst->author) || (src->description && !dst->description)
+        || (src->script_str && !dst->script_str) || (src->base_path && !dst->base_path))
+    {
+        _pkg_free_fields(dst);
+        return false;
+    }
+
     /* Clone permissions array */
     if (src->permissions && src->permission_count > 0)
     {
@@ -245,14 +252,25 @@ static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
             for (uint8_t i = 0; i < src->permission_count; i++)
             {
                 dst->permissions[i] = src->permissions[i] ? eos_strdup(src->permissions[i]) : NULL;
+                if (src->permissions[i] && !dst->permissions[i])
+                {
+                    _pkg_free_fields(dst);
+                    return false;
+                }
             }
             dst->permissions[src->permission_count] = NULL;
             dst->permission_count = src->permission_count;
+        }
+        else
+        {
+            _pkg_free_fields(dst);
+            return false;
         }
     }
 
     dst->min_api_level = src->min_api_level;
     dst->target_api_level = src->target_api_level;
+    return true;
 }
 
 static void _pkg_free_fields(script_pkg_t *p)
@@ -368,6 +386,21 @@ static void _realm_release_program(script_program_t *prog)
         jerry_value_free(prog->realm);
         prog->realm = jerry_undefined();
     }
+}
+
+eos_result_t script_engine_release_program_realm(script_program_t *program)
+{
+    if (!program)
+        return EOS_ERR_INVALID_ARG;
+    if (!engine_rt.initialized || engine_rt.state != SCRIPT_ENGINE_STATE_IDLE)
+        return EOS_ERR_BUSY;
+    if (engine_rt.current_program == program)
+        return EOS_ERR_BUSY;
+
+    /* Do not call the global stop path here.  The target may be suspended
+     * while another program owns Core's current execution window. */
+    _realm_release_program(program);
+    return EOS_OK;
 }
 
 static void _realm_restore_and_cleanup(void)
@@ -1560,7 +1593,11 @@ eos_result_t script_engine_run(const script_pkg_t *script_package)
      * pending module queue. */
     _module_cache_clear();
 
-    _pkg_clone_into(&engine_rt.owned_script, script_package);
+    if (!_pkg_clone_into(&engine_rt.owned_script, script_package))
+    {
+        _set_error_info("Out of memory while copying script package");
+        return EOS_ERR_MEM;
+    }
     script_program_t *prog = _get_prog();
 
     /* Fatal error recovery point (setjmp for jerry_port_fatal longjmp) -*/
@@ -1901,6 +1938,17 @@ eos_result_t script_engine_reload_current_script(void)
     const script_pkg_t *p = _get_pkg();
     if (!p || !p->id || !p->base_path)
         return EOS_ERR_SCRIPT_NOT_RUNNING;
+
+    /* Application restart belongs to SPM so the program identity, Activity
+     * and Recent Apps state are updated together.  Keep this legacy Core
+     * helper for non-application scripts only. */
+    if (p->type == SCRIPT_TYPE_APPLICATION)
+        return EOS_ERR_INVALID_STATE;
+
+    script_pkg_type_t package_type = p->type;
+    char base_path_buf[EOS_FS_PATH_MAX];
+    snprintf(base_path_buf, sizeof(base_path_buf), "%s", p->base_path);
+
     script_engine_state_t state = engine_rt.state;
     if (state != SCRIPT_ENGINE_STATE_UNINITIALIZED)
     {
@@ -1910,20 +1958,26 @@ eos_result_t script_engine_reload_current_script(void)
     }
 
     script_pkg_t pkg = {0};
-    pkg.type = p->type;
+    pkg.type = package_type;
     const char *mf =
         (pkg.type == SCRIPT_TYPE_APPLICATION) ? EOS_APP_MANIFEST_FILE_NAME : EOS_WATCHFACE_MANIFEST_FILE_NAME;
     const char *ef =
         (pkg.type == SCRIPT_TYPE_APPLICATION) ? EOS_APP_SCRIPT_ENTRY_FILE_NAME : EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME;
-    char base_path_buf[EOS_FS_PATH_MAX];
-    snprintf(base_path_buf, sizeof(base_path_buf), "%s", p->base_path);
     char manifest_path[EOS_FS_PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), "%s%s", base_path_buf, mf);
     if (script_engine_get_manifest(manifest_path, &pkg) != EOS_OK)
+    {
+        eos_pkg_free(&pkg);
         return EOS_FAILED;
+    }
     char script_path[EOS_FS_PATH_MAX];
     snprintf(script_path, sizeof(script_path), "%s%s", base_path_buf, ef);
     pkg.base_path = eos_strdup(base_path_buf);
+    if (!pkg.base_path)
+    {
+        eos_pkg_free(&pkg);
+        return EOS_ERR_MEM;
+    }
     if (!eos_storage_is_file(script_path))
     {
         eos_pkg_free(&pkg);

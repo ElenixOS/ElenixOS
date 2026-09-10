@@ -61,9 +61,11 @@ struct eos_slide_widget_t
     lv_coord_t gesture_start_y;
     _slide_gesture_axis_t gesture_axis;
     eos_slide_widget_state_t origin_settle_state;
+    struct eos_slide_widget_t *registry_next;
 };
 
 /* Variables --------------------------------------------------*/
+static eos_slide_widget_t *s_live_widgets;
 static lv_event_code_t _event_reached_threshold = LV_EVENT_LAST;
 static lv_event_code_t _event_reverted = LV_EVENT_LAST;
 static lv_event_code_t _event_moving = LV_EVENT_LAST;
@@ -75,6 +77,9 @@ static lv_event_code_t _event_closed = LV_EVENT_LAST;
 static void _sync_touch_obj_position(eos_slide_widget_t *sw, lv_coord_t target_pos);
 static eos_slide_widget_state_t _get_resting_state(const eos_slide_widget_t *sw);
 static bool _gesture_matches_direction(eos_slide_widget_t *sw, lv_coord_t dx, lv_coord_t dy);
+static bool _slide_widget_is_live(const eos_slide_widget_t *sw);
+static void _slide_widget_register(eos_slide_widget_t *sw);
+static void _slide_widget_unregister(eos_slide_widget_t *sw);
 
 /* Function Implementations -----------------------------------*/
 
@@ -203,6 +208,45 @@ static bool _gesture_matches_direction(eos_slide_widget_t *sw, lv_coord_t dx, lv
         sw->gesture_axis = matches ? _SLIDE_GESTURE_MATCHED : _SLIDE_GESTURE_REJECTED;
     }
     return sw->gesture_axis != _SLIDE_GESTURE_REJECTED;
+}
+
+/* Lifetime helpers -------------------------------------------*/
+
+static bool _slide_widget_is_live(const eos_slide_widget_t *sw)
+{
+    const eos_slide_widget_t *cur = s_live_widgets;
+    while (cur)
+    {
+        if (cur == sw)
+            return true;
+        cur = cur->registry_next;
+    }
+
+    return false;
+}
+
+static void _slide_widget_register(eos_slide_widget_t *sw)
+{
+    if (!sw)
+        return;
+
+    sw->registry_next = s_live_widgets;
+    s_live_widgets = sw;
+}
+
+static void _slide_widget_unregister(eos_slide_widget_t *sw)
+{
+    eos_slide_widget_t **cursor = &s_live_widgets;
+    while (*cursor)
+    {
+        if (*cursor == sw)
+        {
+            *cursor = sw->registry_next;
+            sw->registry_next = NULL;
+            return;
+        }
+        cursor = &(*cursor)->registry_next;
+    }
 }
 
 static lv_coord_t _damped_slide_pos(const eos_slide_widget_t *sw, lv_coord_t pos)
@@ -754,7 +798,8 @@ void eos_slide_widget_sync_touch_obj(eos_slide_widget_t *sw)
 static void _slide_widget_delete_cb(lv_event_t *e)
 {
     eos_slide_widget_t *sw = (eos_slide_widget_t *)lv_event_get_user_data(e);
-    EOS_CHECK_PTR_RETURN(sw);
+    if (!_slide_widget_is_live(sw))
+        return;
 
     /* The animation variable is the slide-widget itself, not the LVGL
      * target object.  Deleting the target therefore does not cancel the
@@ -771,12 +816,17 @@ static void _slide_widget_delete_cb(lv_event_t *e)
     }
 
     sw->target_obj = NULL;
+    _slide_widget_unregister(sw);
     eos_free(sw);
 }
 
 void eos_slide_widget_delete(eos_slide_widget_t *sw)
 {
-    EOS_CHECK_PTR_RETURN(sw);
+    if (!_slide_widget_is_live(sw))
+    {
+        EOS_LOG_W("Ignoring delete for an already destroyed slide widget %p", sw);
+        return;
+    }
     EOS_LOG_I("Manually destroying slide widget %p", sw);
 
     /* Cancel callbacks which still hold sw as their animation variable or
@@ -805,6 +855,7 @@ void eos_slide_widget_delete(eos_slide_widget_t *sw)
     }
 
     eos_anim_blocker_hide();
+    _slide_widget_unregister(sw);
     eos_free(sw);
 }
 
@@ -824,7 +875,8 @@ static void _slide_widget_init_common(eos_slide_widget_t *sw,
         _initialized = true;
     }
 
-    EOS_CHECK_PTR_RETURN(sw && touch_obj && target_obj);
+    if (!sw || !touch_obj || !target_obj)
+        return;
 
     sw->dir = dir;
     sw->state = EOS_SLIDE_WIDGET_STATE_IDLE;
@@ -838,6 +890,7 @@ static void _slide_widget_init_common(eos_slide_widget_t *sw,
     sw->drag_factor = 256;
     sw->touch_obj = touch_obj;
     sw->sync_touch_obj = false;
+    _slide_widget_register(sw);
 
     if (lv_obj_has_class(lv_obj_get_parent(target_obj), &lv_list_class))
     {
@@ -870,7 +923,11 @@ eos_slide_widget_t *eos_slide_widget_create_with_touch(lv_obj_t *touch_obj,
                                                        eos_threshold_t threshold)
 {
     eos_slide_widget_t *sw = eos_malloc_zeroed(sizeof(eos_slide_widget_t));
-    EOS_CHECK_PTR_RETURN_VAL(sw && touch_obj && target_obj, NULL);
+    if (!sw || !touch_obj || !target_obj)
+    {
+        eos_free(sw);
+        return NULL;
+    }
 
     lv_obj_t *parent = lv_obj_get_parent(touch_obj);
     if (parent)
@@ -896,7 +953,11 @@ eos_slide_widget_t *eos_slide_widget_create(lv_obj_t *parent,
                                             eos_threshold_t threshold)
 {
     eos_slide_widget_t *sw = eos_malloc_zeroed(sizeof(eos_slide_widget_t));
-    EOS_CHECK_PTR_RETURN_VAL(sw && parent && target_obj, NULL);
+    if (!sw || !parent || !target_obj)
+    {
+        eos_free(sw);
+        return NULL;
+    }
 
     lv_obj_t *t = lv_obj_create(parent);
     lv_obj_remove_style_all(t);

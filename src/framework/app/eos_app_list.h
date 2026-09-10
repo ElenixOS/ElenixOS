@@ -45,6 +45,12 @@ extern const char *eos_sys_app_icon_list[EOS_SYS_APP_LAST];
  * @return eos_result_t Launch result
  */
 eos_result_t eos_app_launch_immediately(const char *app_id);
+
+/** @brief Terminate the unique program and close its App UI without Recent Apps */
+eos_result_t eos_app_terminate_by_id(const char *app_id);
+
+/** @brief Restart the unique program through the normal App lifecycle */
+eos_result_t eos_app_restart_by_id(const char *app_id);
 /**
  * @brief Enter app list
  * @return eos_activity_t* App list activity object
@@ -63,6 +69,13 @@ const char *eos_app_list_get_app_id(eos_activity_t *activity);
  * @return System app ID, or NULL when the current activity is not a system app
  */
 const char *eos_app_list_get_running_system_id(void);
+
+/**
+ * @brief Check whether an ID belongs to a built-in system application
+ * @param app_id Application ID
+ * @return true for a built-in system application
+ */
+bool eos_app_list_is_system_app(const char *app_id);
 
 /**
  * @brief Restart an app in-place on its existing activity (no navigation, no animation)

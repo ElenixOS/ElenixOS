@@ -132,6 +132,14 @@ eos_result_t script_engine_run(const script_pkg_t *script_package);
 eos_result_t script_engine_prepare_program_realm(script_program_t *program);
 
 /**
+ * @brief Release only the target program's Realm while Core is idle
+ *
+ * This is the per-program teardown primitive. It must not stop or mutate a
+ * different program currently owned by Core.
+ */
+eos_result_t script_engine_release_program_realm(script_program_t *program);
+
+/**
  * @brief Set/clear the SPM program that Core is working for
  * @param prog Program pointer (SPM-owned, not freed by Core), NULL to clear
  */

@@ -179,6 +179,7 @@ static void _transition_anim_ready_cb(lv_anim_t *a);
 static void _transition_anim_start(_transition_anim_ctx_t *ctx, uint32_t duration, uint32_t delay);
 static int32_t _app_list_find_sys_app(const char *app_id);
 static eos_result_t _app_list_build_manifest(const char *app_id, script_pkg_t *pkg);
+static eos_result_t _app_list_load_full_pkg(const char *app_id, script_pkg_t *pkg);
 static eos_result_t _app_list_launch_script_app(const char *app_id);
 static bool _app_list_is_loading_activity(eos_activity_t *activity);
 static void _app_list_restart_cb(lv_event_t *e);
@@ -247,75 +248,29 @@ struct _transition_anim_ctx_t
 
 static void _app_on_pause(eos_activity_t *a)
 {
-    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    if (!ctx || !ctx->app_id)
-        return;
-
-    /* Only AppRoot handles SPM suspend. Resolve the program by the Activity's
-     * stable ID instead of relying on SPM's global current-program pointer;
-     * the watchface or another app may still be current at this callback. */
-    if (eos_activity_get_type(a) == EOS_ACTIVITY_TYPE_APP)
-    {
-        script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
-        if (prog && prog->state == SCRIPT_PROGRAM_STATE_ACTIVE)
-        {
-            /* Suspend the SPM program (pauses sni_ctx, preserves realm). */
-            eos_result_t ret = spm_suspend_program(prog);
-            if (ret != EOS_OK)
-                EOS_LOG_W("spm_suspend_program failed for '%s': %d", ctx->app_id, ret);
-        }
-    }
+    /* Recent Apps owns the suspend transaction.  Activity callbacks describe
+     * UI visibility only, so a transition cannot suspend an unrelated SPM
+     * program as a side effect. */
+    LV_UNUSED(a);
 }
 
 static void _app_on_resume(eos_activity_t *a)
 {
-    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    if (!ctx || !ctx->app_id)
-        return;
-
-    /* Only AppRoot handles SPM resume and resource strategies.
-     * Sub-activities share the realm; their on_resume fires via the
-     * lifecycle callback if set from JS. */
-    if (eos_activity_get_type(a) == EOS_ACTIVITY_TYPE_APP)
-    {
-        eos_result_t ret = spm_app_resume(ctx->app_id);
-        if (ret != EOS_OK)
-        {
-            EOS_LOG_W("spm_app_resume failed for '%s': %d", ctx->app_id, ret);
-        }
-
-#if EOS_RECENT_APPS_ENABLE
-        /* Timer/animation strategies are applied by eos_recent_apps_resume()
-         * via sni_context_resume_resources() on the program's sni_ctx.
-         * We also apply them here for the case where resume happens
-         * without going through the recents flow. */
-        script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
-        if (prog && prog->sni_ctx && prog->state != SCRIPT_PROGRAM_STATE_TERMINATED
-            && prog->state != SCRIPT_PROGRAM_STATE_STOPPING)
-        {
-#if defined(EOS_RECENT_APPS_TIMER_STRATEGY) && defined(EOS_RECENT_APPS_ANIM_STRATEGY)
-            uint32_t timer_strat = (uint32_t)EOS_RECENT_APPS_TIMER_STRATEGY;
-            uint32_t anim_strat = (uint32_t)EOS_RECENT_APPS_ANIM_STRATEGY;
-            sni_context_resume_resources(prog->sni_ctx, (int)timer_strat, (int)anim_strat);
-#endif
-        }
-#endif /* EOS_RECENT_APPS_ENABLE */
-    }
+    /* Recent Apps resumes SPM after the parked Activity has been validated
+     * and reattached, applying the configured resource strategies exactly
+     * once. */
+    LV_UNUSED(a);
 }
 
 static void _app_on_destroy(eos_activity_t *a)
 {
     app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    /* Stop the app script by ID (safe when multiple app programs exist) */
-    if (ctx && ctx->app_id)
-    {
-        spm_app_stop_by_id(ctx->app_id);
-    }
-    else
-    {
-        /* Fallback: stop any running app program */
-        spm_app_stop();
-    }
+    /* Stop the exact program lifetime represented by this Activity. */
+    uint32_t instance_id = eos_activity_get_script_instance_id(a);
+    if (instance_id)
+        spm_app_stop_by_instance_id(instance_id);
+    else if (ctx && ctx->app_id)
+        EOS_LOG_W("App Activity '%s' has no program instance; skipping ID-only teardown", ctx->app_id);
 
     if (ctx)
     {
@@ -789,6 +744,16 @@ static void _app_list_do_launch_script(app_launch_ctx_t *ctx)
         _app_handle_script_run_result(a, ctx, ret);
         return;
     }
+    script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
+    if (!prog)
+    {
+        EOS_LOG_E("SPM started '%s' but no program identity was published", ctx->app_id);
+        _app_handle_script_run_result(a, ctx, EOS_FAILED);
+        return;
+    }
+    eos_activity_set_script_instance_id(a, spm_program_get_instance_id(prog));
+    eos_activity_set_script_generation(a, script_engine_get_gen());
+    spm_program_set_view_cleanup(prog, eos_activity_get_view(a));
     eos_activity_set_needs_reload(a, false);
     EOS_LOG_I("[APP_LOAD] engine complete for '%s' in %" PRIu32 "ms", ctx->app_id, eos_tick_get() - eval_start_ms);
 
@@ -845,6 +810,19 @@ static void _app_list_do_launch_script(app_launch_ctx_t *ctx)
  */
 static void _app_handle_script_run_result(eos_activity_t *a, app_launch_ctx_t *ctx, eos_result_t ret)
 {
+    /* A failed initial run never publishes a valid SPM instance-to-Activity
+     * binding.  Remove any partially built UI before the error panel or a
+     * later retry uses the same Activity view; successful program teardown is
+     * still owned by SPM through its registered cleanup callback. */
+    if (a)
+    {
+        eos_activity_set_script_instance_id(a, 0);
+        eos_activity_set_needs_reload(a, true);
+        lv_obj_t *view = eos_activity_get_view(a);
+        if (view && lv_obj_is_valid(view))
+            lv_obj_clean(view);
+    }
+
     eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
     if (ret == EOS_ERR_TIMEOUT)
     {
@@ -944,6 +922,11 @@ static int32_t _app_list_find_sys_app(const char *app_id)
     return -1;
 }
 
+bool eos_app_list_is_system_app(const char *app_id)
+{
+    return _app_list_find_sys_app(app_id) >= 0;
+}
+
 /**
  * @brief Read manifest only (fast, small file) — used in Phase A for app name
  */
@@ -964,6 +947,35 @@ static eos_result_t _app_list_build_manifest(const char *app_id, script_pkg_t *p
         return EOS_FAILED;
     }
 
+    return EOS_OK;
+}
+
+static eos_result_t _app_list_load_full_pkg(const char *app_id, script_pkg_t *pkg)
+{
+    if (!(app_id && pkg))
+        return EOS_ERR_INVALID_ARG;
+
+    memset(pkg, 0, sizeof(*pkg));
+    if (_app_list_build_manifest(app_id, pkg) != EOS_OK)
+        return EOS_FAILED;
+
+    char base_path[EOS_FS_PATH_MAX];
+    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
+    pkg->base_path = eos_strdup(base_path);
+    if (!pkg->base_path)
+    {
+        eos_pkg_free(pkg);
+        return EOS_FAILED;
+    }
+
+    char script_path[EOS_FS_PATH_MAX];
+    snprintf(script_path, sizeof(script_path), "%s" EOS_APP_SCRIPT_ENTRY_FILE_NAME, base_path);
+    pkg->script_str = eos_storage_read_file(script_path);
+    if (!pkg->script_str)
+    {
+        eos_pkg_free(pkg);
+        return EOS_FAILED;
+    }
     return EOS_OK;
 }
 
@@ -1103,6 +1115,16 @@ eos_result_t eos_app_restart_in_place(const char *app_id, eos_activity_t *activi
 {
     EOS_CHECK_PTR_RETURN_VAL(activity, EOS_FAILED);
 
+    /* Restart is a transaction over both the program and its Activity root.
+     * A transition still owns the old view/snapshots, so allowing teardown to
+     * start here would let its completion callback observe a new Realm or a
+     * destroyed view.  Callers must retry after the controller is quiescent. */
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot restart '%s' during an Activity transition", app_id ? app_id : "unknown");
+        return EOS_ERR_BUSY;
+    }
+
     /* An application may have pushed input/settings pages above its AppRoot.
      * Restarting those pages in place would pass a non-app launch context to
      * the script loader. Always restart the owning AppRoot instead. */
@@ -1110,25 +1132,28 @@ eos_result_t eos_app_restart_in_place(const char *app_id, eos_activity_t *activi
     if (app_root)
         activity = app_root;
 
+    if (eos_activity_get_current() != activity)
+    {
+        eos_result_t reset_ret = eos_activity_reset_app_to_root(activity);
+        if (reset_ret != EOS_OK)
+        {
+            EOS_LOG_W("Cannot restart '%s': failed to reset child Activity stack (%d)",
+                      app_id ? app_id : "unknown",
+                      reset_ret);
+            return reset_ret;
+        }
+    }
+
     app_launch_ctx_t *ctx = (app_launch_ctx_t *)eos_activity_get_user_data(activity);
     if (!ctx || !ctx->app_id || !ctx->pkg.script_str || (app_id && strcmp(app_id, ctx->app_id) != 0))
     {
+        if (ctx && ctx->app_id && !ctx->pkg.script_str)
+            EOS_LOG_W("Restart in-place rejected while '%s' is still loading", ctx->app_id);
         EOS_LOG_E("Restart in-place failed: invalid launch context");
         return EOS_FAILED;
     }
 
     EOS_LOG_I("Restarting app in-place: %s", ctx->app_id);
-
-    /* Stop the old program before removing its widgets. This is required for
-     * an explicit restart of a healthy app as well as for a fault-panel
-     * restart; otherwise the old event/timer resources remain registered and
-     * spm_app_run() creates a second program for the same app ID. */
-    eos_result_t stop_ret = spm_app_stop_by_id(ctx->app_id);
-    if (stop_ret != EOS_OK)
-    {
-        EOS_LOG_E("Failed to stop app before restart: %s (%d)", ctx->app_id, stop_ret);
-        return stop_ret;
-    }
 
     /* Clear fault panel reference BEFORE cleaning view.
      * lv_obj_clean will delete the panel's container widget, which triggers
@@ -1136,27 +1161,189 @@ eos_result_t eos_app_restart_in_place(const char *app_id, eos_activity_t *activi
      * We must clear the activity's pointer first to avoid a dangling reference. */
     eos_activity_set_fault_panel(activity, NULL);
 
-    /* Clean all old widgets from the view (including fault panel UI).
-     * After an engine crash, the view still holds orphaned LVGL objects
-     * from the crashed script — their JS callbacks are inert (engine gen
-     * change), but the widgets themselves need to be removed so the
-     * restarted script gets a clean slate. */
-    lv_obj_t *view = eos_activity_get_view(activity);
-    if (view && lv_obj_is_valid(view))
-    {
-        lv_obj_clean(view);
-    }
-
-    /* Re-run the app script on the same activity. Keep Activity metadata in
-     * sync with the new program so a later app start/resume cannot mistake
-     * this instance for a stale one. */
-    eos_result_t run_ret = spm_app_run(&ctx->pkg);
+    /* SPM owns the complete old-instance teardown. The new instance is
+     * created only after the old Realm, SNI context and native resources have
+     * been released. */
+    eos_result_t run_ret = spm_app_restart(&ctx->pkg);
     if (run_ret == EOS_OK)
     {
+        script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
+        if (!prog)
+        {
+            eos_activity_set_script_instance_id(activity, 0);
+            eos_activity_set_needs_reload(activity, true);
+            return EOS_FAILED;
+        }
+        spm_program_set_view_cleanup(prog, eos_activity_get_view(activity));
+        eos_activity_set_script_instance_id(activity, spm_program_get_instance_id(prog));
         eos_activity_set_script_generation(activity, script_engine_get_gen());
         eos_activity_set_needs_reload(activity, false);
     }
+    else if (!spm_get_program_by_id_any_state(ctx->app_id))
+    {
+        /* The old instance was already torn down, but the replacement failed
+         * to start.  Keep the Activity visibly invalid so a later launch must
+         * create a fresh program instead of treating this view as resumable. */
+        eos_activity_set_script_instance_id(activity, 0);
+        eos_activity_set_needs_reload(activity, true);
+    }
     return run_ret;
+}
+
+eos_result_t eos_app_terminate_by_id(const char *app_id)
+{
+    eos_activity_t *current;
+    const char *current_id;
+    script_program_t *prog;
+    eos_recent_app_entry_t *recent;
+
+    if (!(app_id && app_id[0]))
+        return EOS_ERR_INVALID_ARG;
+
+    /* Do not partially terminate a suspended entry or an Activity that is
+     * still participating in a transition.  The transition owns its view,
+     * snapshots and completion callback until it has fully cleaned up. */
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot terminate '%s' during an Activity transition", app_id);
+        return EOS_ERR_BUSY;
+    }
+
+    /* A foreground App still owns a live Activity view.  Let Activity
+     * Controller perform the close transition first; the root Activity's
+     * exact-instance on_destroy callback tears down SPM after snapshots and
+     * animation bookkeeping no longer reference the view.  Stopping SPM
+     * first leaves Activity callbacks holding a view whose Realm/resources
+     * have already disappeared. */
+    current = eos_activity_get_current();
+    current_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current && current_id && strcmp(current_id, app_id) == 0)
+        return eos_activity_close_current_app();
+
+    recent = eos_recent_apps_find(app_id);
+    prog = spm_get_program_by_id_any_state(app_id);
+    if (prog)
+    {
+        eos_result_t ret = spm_app_stop_by_instance_id(spm_program_get_instance_id(prog));
+        if (ret != EOS_OK)
+            return ret;
+    }
+
+    if (recent)
+    {
+        if (recent->program_instance_id && spm_get_program_by_instance_id(recent->program_instance_id))
+        {
+            EOS_LOG_E("Recent entry '%s' still owns a live program after terminate", app_id);
+            return EOS_ERR_BUSY;
+        }
+        return eos_recent_apps_evict(recent);
+    }
+
+    return EOS_OK;
+}
+
+eos_result_t eos_app_restart_by_id(const char *app_id)
+{
+    eos_activity_t *current;
+    const char *current_id;
+
+    if (!(app_id && app_id[0]))
+        return EOS_ERR_INVALID_ARG;
+
+    /* Check before loading a package or stopping a Recent Apps program.  A
+     * restart must be all-or-nothing with respect to Activity transitions;
+     * otherwise the stop/evict half can succeed and the launch half can be
+     * rejected by eos_app_launch_immediately(). */
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot restart '%s' during an Activity transition", app_id);
+        return EOS_ERR_BUSY;
+    }
+
+    current = eos_activity_get_current();
+    current_id = current ? eos_activity_get_app_id(current) : NULL;
+    /* Script loading is a lifecycle transaction of the foreground Activity.
+     * A restart of another App must not stop/evict its old instance before we
+     * know that the new launch can be accepted. */
+    if (current && _app_list_is_loading_activity(current))
+    {
+        EOS_LOG_W("Cannot restart '%s' while application '%s' is still loading",
+                  app_id,
+                  current_id ? current_id : "unknown");
+        return EOS_ERR_BUSY;
+    }
+
+    if (current_id && strcmp(current_id, app_id) == 0)
+    {
+        eos_activity_t *root = eos_activity_get_app_root(current);
+        app_launch_ctx_t *ctx = root ? eos_activity_get_user_data(root) : NULL;
+        if (ctx && ctx->magic == _APP_LAUNCH_CTX_MAGIC && ctx->app_id)
+            return eos_app_restart_in_place(app_id, root);
+
+        /* AppDebugger-launched Apps have no launcher context.  They still use
+         * the same SPM restart transaction; only package loading is different. */
+        script_pkg_t pkg;
+        eos_result_t ret = _app_list_load_full_pkg(app_id, &pkg);
+        if (ret != EOS_OK)
+            return ret;
+        eos_activity_set_fault_panel(root, NULL);
+        ret = spm_app_restart(&pkg);
+        if (ret == EOS_OK)
+        {
+            script_program_t *new_prog = spm_get_program_by_id_any_state(app_id);
+            if (!new_prog)
+            {
+                ret = EOS_FAILED;
+                eos_activity_set_script_instance_id(root, 0);
+                eos_activity_set_needs_reload(root, true);
+            }
+            else
+            {
+                spm_program_set_view_cleanup(new_prog, eos_activity_get_view(root));
+                eos_activity_set_script_instance_id(root, spm_program_get_instance_id(new_prog));
+                eos_activity_set_script_generation(root, script_engine_get_gen());
+                eos_activity_set_needs_reload(root, false);
+            }
+        }
+        else if (!spm_get_program_by_id_any_state(app_id))
+        {
+            eos_activity_set_script_instance_id(root, 0);
+            eos_activity_set_needs_reload(root, true);
+        }
+        eos_pkg_free(&pkg);
+        return ret;
+    }
+
+    eos_recent_app_entry_t *recent = eos_recent_apps_find(app_id);
+    if (recent)
+    {
+        script_pkg_t pkg;
+        eos_result_t ret = _app_list_load_full_pkg(app_id, &pkg);
+        if (ret != EOS_OK)
+            return ret;
+
+        if (recent->program_instance_id)
+        {
+            ret = spm_app_stop_by_instance_id(recent->program_instance_id);
+            if (ret != EOS_OK)
+            {
+                eos_pkg_free(&pkg);
+                return ret;
+            }
+        }
+        ret = eos_recent_apps_evict(recent);
+        eos_pkg_free(&pkg);
+        if (ret != EOS_OK)
+            return ret;
+        return eos_app_launch_immediately(app_id);
+    }
+
+    /* A live program with no foreground Activity or Recent entry is a broken
+     * lifecycle invariant.  Do not hide it by starting another instance. */
+    if (spm_get_program_by_id_any_state(app_id))
+        return EOS_ERR_INVALID_STATE;
+
+    return eos_app_launch_immediately(app_id);
 }
 
 /**
@@ -1229,15 +1416,31 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
 
     if (current_app_id && strcmp(current_app_id, app_id) == 0)
     {
+        /* Native/system Apps do not have an SPM program.  Their Activity is
+         * nevertheless the authoritative foreground instance, so launching
+         * the same App again is an idempotent request rather than a stale
+         * script-Activity error. */
+        if (sys_app_index >= 0)
+        {
+            EOS_LOG_I("System App '%s' is already the foreground app", app_id);
+            return EOS_OK;
+        }
+
         script_program_t *current_program = spm_get_program_by_id_any_state(app_id);
         bool current_instance_valid =
-            eos_activity_get_script_generation(cur) == script_engine_get_gen() && !eos_activity_needs_reload(cur);
+            current_program && current_program->state == SCRIPT_PROGRAM_STATE_ACTIVE
+            && (!eos_activity_get_script_instance_id(cur)
+                || eos_activity_get_script_instance_id(cur) == spm_program_get_instance_id(current_program));
 
-        if (current_program || current_instance_valid)
+        if (current_instance_valid && eos_activity_get_script_generation(cur) == script_engine_get_gen()
+            && !eos_activity_needs_reload(cur))
         {
             EOS_LOG_I("App '%s' is already the foreground app", app_id);
             return EOS_OK;
         }
+
+        if (current_program && current_program->state == SCRIPT_PROGRAM_STATE_STOPPING)
+            return EOS_ERR_BUSY;
 
         EOS_LOG_W("App '%s' has a stale Activity without a live script program; resetting navigation", app_id);
         if (eos_activity_reset_to_root() != EOS_OK)
@@ -1348,6 +1551,16 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
                 _app_list_running_system_id[0] = '\0';
         }
         return resume_ret;
+    }
+
+    script_program_t *existing_program = spm_get_program_by_id_any_state(app_id);
+    if (existing_program)
+    {
+        EOS_LOG_W("App '%s' already has program instance=%u state=%d without a resumable Recent entry",
+                  app_id,
+                  spm_program_get_instance_id(existing_program),
+                  existing_program->state);
+        return existing_program->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_ALREADY_EXISTS;
     }
 
     /* A fresh app launch also moves the complete current app instance to

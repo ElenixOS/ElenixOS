@@ -54,7 +54,7 @@ static void _scrollable_obj_scrolled_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
-static void _clear_scrollable_obj_async_cb(void *user_data);
+static void _pending_rebind_target_delete_cb(lv_event_t *e);
 static void _activity_view_switched_cb(eos_event_t *e);
 static void _activity_view_switched_async_cb(void *user_data);
 static void _apply_pending_rebind_async_cb(void *user_data);
@@ -191,17 +191,16 @@ static void _clear_scrollable_obj(void)
 static void _clear_scrollable_obj_cb(lv_event_t *e)
 {
     lv_obj_t *target = lv_event_get_target(e);
-    lv_async_call(_clear_scrollable_obj_async_cb, target);
-}
 
-static void _clear_scrollable_obj_async_cb(void *user_data)
-{
-    lv_obj_t *target = (lv_obj_t *)user_data;
-    /* Old scrollable object for deferred cleanup */
-    if (target != scrollable_obj && target != scrollable_root)
-        return;
-
-    _clear_scrollable_obj();
+    /* LVGL sends DELETE before the object memory is released.  Invalidate
+     * the cached pointers synchronously so later input callbacks never call
+     * lv_obj_is_valid() on an object which has already gone away. */
+    if (target == scrollable_obj || target == scrollable_root)
+    {
+        scrollable_obj = NULL;
+        scrollable_root = NULL;
+        _scrollbar_hide_now();
+    }
 }
 
 static void _scrollbar_set_focused(void)
@@ -365,19 +364,26 @@ static void _scrollable_obj_scroll_end_cb(lv_event_t *e)
 
 static void _activity_view_switched_cb(eos_event_t *e)
 {
-    lv_obj_t *view = (lv_obj_t *)eos_event_get_param(e);
-    lv_async_call(_activity_view_switched_async_cb, view);
+    LV_UNUSED(e);
+    /* Resolve the active view when the async callback runs.  Passing an
+     * Activity-owned LVGL pointer across a frame boundary lets a fast
+     * close/restart free it before the callback executes. */
+    lv_async_call(_activity_view_switched_async_cb, NULL);
 }
 
 static void _activity_view_switched_async_cb(void *user_data)
 {
-    lv_obj_t *view = (lv_obj_t *)user_data;
-    eos_crown_encoder_set_target_view(view);
+    LV_UNUSED(user_data);
+    eos_crown_encoder_set_target_view(eos_view_active());
 }
 
 static void _slide_widget_state_changed_cb(lv_event_t *e)
 {
-    lv_async_call(_slide_widget_state_changed_async_cb, lv_event_get_param(e));
+    /* The slide widget owns the event parameter and frees itself from the
+     * target object's DELETE callback.  Process the state while the event is
+     * still in flight, then let the crown's object-owned pending rebind
+     * guard handle any later target deletion. */
+    _slide_widget_state_changed_async_cb(lv_event_get_param(e));
 }
 
 static void _slide_widget_state_changed_async_cb(void *user_data)
@@ -419,6 +425,9 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     pending_rebind_scheduled = false;
     pending_rebind_target = NULL;
 
+    if (target && lv_obj_is_valid(target))
+        lv_obj_remove_event_cb(target, _pending_rebind_target_delete_cb);
+
     if (is_view)
     {
         _set_target_view_immediate(target);
@@ -427,6 +436,20 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     {
         _set_target_obj_immediate(target);
     }
+}
+
+static void _pending_rebind_target_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *target = lv_event_get_target(e);
+    if (target != pending_rebind_target)
+        return;
+
+    /* This callback runs before LVGL releases target.  Cancel the matching
+     * async timer while the pointer is still only an identity token; the
+     * async callback must not dereference a freed LVGL object. */
+    lv_async_call_cancel(_apply_pending_rebind_async_cb, NULL);
+    pending_rebind_target = NULL;
+    pending_rebind_scheduled = false;
 }
 
 static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor)
@@ -559,28 +582,68 @@ static void _set_target_view_immediate(lv_obj_t *view)
 
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
+    bool target_changed = pending_rebind_target != obj;
+    if (target_changed && pending_rebind_target && lv_obj_is_valid(pending_rebind_target))
+        lv_obj_remove_event_cb(pending_rebind_target, _pending_rebind_target_delete_cb);
+
     pending_rebind_target = obj;
     pending_rebind_is_view = false;
     if (pending_rebind_scheduled)
     {
+        if (target_changed && obj && lv_obj_is_valid(obj))
+            lv_obj_add_event_cb(obj, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
         return;
     }
 
+    if (obj && !lv_obj_is_valid(obj))
+    {
+        pending_rebind_target = NULL;
+        return;
+    }
+
+    if (obj)
+        lv_obj_add_event_cb(obj, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
     pending_rebind_scheduled = true;
-    lv_async_call(_apply_pending_rebind_async_cb, NULL);
+    if (lv_async_call(_apply_pending_rebind_async_cb, NULL) != LV_RESULT_OK)
+    {
+        if (obj && lv_obj_is_valid(obj))
+            lv_obj_remove_event_cb(obj, _pending_rebind_target_delete_cb);
+        pending_rebind_target = NULL;
+        pending_rebind_scheduled = false;
+    }
 }
 
 void eos_crown_encoder_set_target_view(lv_obj_t *view)
 {
+    bool target_changed = pending_rebind_target != view;
+    if (target_changed && pending_rebind_target && lv_obj_is_valid(pending_rebind_target))
+        lv_obj_remove_event_cb(pending_rebind_target, _pending_rebind_target_delete_cb);
+
     pending_rebind_target = view;
     pending_rebind_is_view = true;
     if (pending_rebind_scheduled)
     {
+        if (target_changed && view && lv_obj_is_valid(view))
+            lv_obj_add_event_cb(view, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
         return;
     }
 
+    if (view && !lv_obj_is_valid(view))
+    {
+        pending_rebind_target = NULL;
+        return;
+    }
+
+    if (view)
+        lv_obj_add_event_cb(view, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
     pending_rebind_scheduled = true;
-    lv_async_call(_apply_pending_rebind_async_cb, NULL);
+    if (lv_async_call(_apply_pending_rebind_async_cb, NULL) != LV_RESULT_OK)
+    {
+        if (view && lv_obj_is_valid(view))
+            lv_obj_remove_event_cb(view, _pending_rebind_target_delete_cb);
+        pending_rebind_target = NULL;
+        pending_rebind_scheduled = false;
+    }
 }
 
 void eos_crown_encoder_activate_current_overlay_scrollable(void)

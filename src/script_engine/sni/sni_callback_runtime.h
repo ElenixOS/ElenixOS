@@ -212,6 +212,17 @@ bool sni_cb_is_dispatching_timer(lv_timer_t *t);
  */
 bool sni_cb_is_dispatching_anim(struct sni_anim_callback_ctx *ctx);
 
+/** @brief Check whether a program context is inside an active JS callback */
+bool sni_cb_is_dispatching_context(sni_context_t *ctx);
+
+/**
+ * @brief Clear callback dispatch guards after a fatal engine recovery
+ *
+ * A fatal JerryScript longjmp can bypass the normal callback epilogue.  The
+ * guard state must not survive into a new engine generation.
+ */
+void sni_cb_reset_dispatching_state(void);
+
 /* Suspend/Resume Strategies ----------------------------------*/
 
 /**

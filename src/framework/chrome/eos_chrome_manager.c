@@ -274,7 +274,11 @@ void eos_chrome_manager_handle_crown_long_press(void)
      * so it appears in the recents list when the page opens. */
     if (current && eos_recent_apps_is_suspendable(current))
     {
-        eos_recent_apps_suspend_current();
+        if (eos_recent_apps_suspend_current() != EOS_OK)
+        {
+            EOS_LOG_W("Cannot open Recent Apps: current app could not be suspended");
+            return;
+        }
     }
     eos_recent_apps_page_enter();
 }

@@ -351,6 +351,22 @@ void eos_activity_enter(eos_activity_t *activity);
 eos_result_t eos_activity_back(void);
 
 /**
+ * @brief Close the current App stack without registering it in Recent Apps
+ * @return EOS_OK on success
+ */
+eos_result_t eos_activity_close_current_app(void);
+
+/**
+ * @brief Destroy an application's child Activities before an in-place restart
+ * @param app_root The APP-type root Activity to keep
+ * @return eos_result_t EOS_OK success, EOS_ERR_BUSY while navigation is not quiescent,
+ *         or an error when the stack does not contain this app's child pages
+ * @note This is a synchronous lifecycle operation used by the app restart path.
+ *       It leaves the AppRoot on the stack and does not invoke its resume callback.
+ */
+eos_result_t eos_activity_reset_app_to_root(eos_activity_t *app_root);
+
+/**
  * @brief Return directly to root Activity and clear all stacked Activities
  * @return eos_result_t EOS_OK success, EOS_FAILED failed
  * @note This function destroys all Activities in the stack and returns to the root Activity.
@@ -431,6 +447,16 @@ void eos_activity_set_script_generation(eos_activity_t *activity, uint32_t gener
  * @return Engine generation, or 0 for an unbound/native Activity
  */
 uint32_t eos_activity_get_script_generation(eos_activity_t *activity);
+
+/**
+ * @brief Bind a script Activity to an SPM program lifetime
+ */
+void eos_activity_set_script_instance_id(eos_activity_t *activity, uint32_t instance_id);
+
+/**
+ * @brief Get the SPM program lifetime bound to an Activity
+ */
+uint32_t eos_activity_get_script_instance_id(eos_activity_t *activity);
 
 /**
  * @brief Mark an Activity as requiring a fresh script instance
@@ -566,7 +592,8 @@ void eos_activity_set_app_root(eos_activity_t *activity, eos_activity_t *app_roo
 /**
  * @brief Get the app_root reference
  * @param activity Activity pointer
- * @return eos_activity_t* The app root, or NULL
+ * @return eos_activity_t* The app root (the activity itself when it is the
+ *         root), or NULL when the activity is not app-owned
  */
 eos_activity_t *eos_activity_get_app_root(eos_activity_t *activity);
 

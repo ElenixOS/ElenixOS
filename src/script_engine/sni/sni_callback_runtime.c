@@ -29,6 +29,7 @@
  */
 static lv_timer_t *s_dispatching_timer = NULL;
 static sni_anim_callback_ctx_t *s_dispatching_anim_ctx = NULL;
+static sni_context_t *s_dispatching_ctx = NULL;
 
 bool sni_cb_is_dispatching_timer(lv_timer_t *t)
 {
@@ -38,6 +39,18 @@ bool sni_cb_is_dispatching_timer(lv_timer_t *t)
 bool sni_cb_is_dispatching_anim(sni_anim_callback_ctx_t *ctx)
 {
     return s_dispatching_anim_ctx != NULL && s_dispatching_anim_ctx == ctx;
+}
+
+bool sni_cb_is_dispatching_context(sni_context_t *ctx)
+{
+    return ctx != NULL && s_dispatching_ctx == ctx;
+}
+
+void sni_cb_reset_dispatching_state(void)
+{
+    s_dispatching_timer = NULL;
+    s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 }
 
 static inline void sni_cb_safe_jerry_value_free(sni_context_t *owner_ctx, jerry_value_t *value)
@@ -111,6 +124,7 @@ typedef struct sni_event_callback_ctx
 {
     lv_obj_t *owner;
     lv_event_dsc_t *dsc;
+    lv_event_code_t filter; /**< JS-visible filter; native descriptor also listens for DELETE */
     jerry_value_t js_cb;
     jerry_value_t js_user_data;
     sni_context_t *owner_ctx;
@@ -200,6 +214,7 @@ static void sni_cb_event_free_ctx(sni_event_callback_ctx_t *ctx)
 static void sni_cb_event_dispatch(lv_event_t *e)
 {
     sni_event_callback_ctx_t *ctx = (sni_event_callback_ctx_t *)lv_event_get_user_data(e);
+    lv_event_code_t event_code;
     script_program_t *owner_program;
     script_program_t *previous_program;
     jerry_value_t previous_realm;
@@ -212,9 +227,24 @@ static void sni_cb_event_dispatch(lv_event_t *e)
         return;
     }
 
-    if (lv_event_get_code(e) == LV_EVENT_DELETE)
+    event_code = lv_event_get_code(e);
+
+    /* Every SNI event descriptor is registered for LV_EVENT_ALL so that its
+     * owner can invalidate the descriptor context when LVGL destroys the
+     * object.  A filtered LVGL descriptor never receives DELETE, which used
+     * to leave a raw owner pointer dangling until SPM teardown called
+     * lv_obj_is_valid() on it.  lv_obj_is_valid() is not a safe dangling
+     * pointer test: it immediately dereferences obj->parent. */
+    if (event_code == LV_EVENT_DELETE)
     {
+        ctx->owner = NULL;
+        ctx->dsc = NULL;
         sni_cb_event_free_ctx(ctx);
+        return;
+    }
+
+    if ((ctx->filter & ~LV_EVENT_PREPROCESS) != LV_EVENT_ALL && (ctx->filter & ~LV_EVENT_PREPROCESS) != event_code)
+    {
         return;
     }
 
@@ -296,15 +326,27 @@ static void sni_cb_event_dispatch(lv_event_t *e)
 
 void sni_cb_event_cleanup_descriptor(lv_event_dsc_t *dsc)
 {
+    sni_event_callback_ctx_t *ctx;
+
     if (!dsc)
     {
         return;
     }
 
-    sni_event_callback_ctx_t *ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
+    ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
     if (!ctx)
     {
         return;
+    }
+
+    /* A descriptor handle may be collected while its LVGL owner is still
+     * alive.  Remove the native descriptor before freeing its user_data
+     * context; otherwise a later LVGL event would call into freed memory. */
+    if (ctx->alive && ctx->owner && ctx->dsc == dsc)
+    {
+        lv_obj_remove_event_dsc(ctx->owner, dsc);
+        ctx->owner = NULL;
+        ctx->dsc = NULL;
     }
 
     sni_cb_event_free_ctx(ctx);
@@ -372,8 +414,10 @@ static void sni_cb_timer_dispatch(lv_timer_t *t)
     /* Guard: prevent sni_context_sweep_all from deleting this timer
      * while we are inside its callback (would corrupt LVGL internals). */
     s_dispatching_timer = t;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->js_cb, jerry_undefined(), args, 1);
     s_dispatching_timer = NULL;
+    s_dispatching_ctx = NULL;
 
     /* If a fatal recovery happened inside spm_call, the engine was
      * reset (jerry_init), SNI context and callback ctx were freed,
@@ -428,6 +472,7 @@ bool sni_cb_event_add(lv_obj_t *obj,
     }
 
     ctx->owner = obj;
+    ctx->filter = filter;
     ctx->js_cb = jerry_value_copy(js_cb);
     ctx->js_user_data = jerry_value_copy(js_user_data);
     ctx->owner_ctx = sni_cb_get_context();
@@ -442,7 +487,11 @@ bool sni_cb_event_add(lv_obj_t *obj,
     ctx->alive = true;
     ctx->engine_gen = script_engine_get_gen();
 
-    lv_event_dsc_t *dsc = lv_obj_add_event_cb(obj, sni_cb_event_dispatch, filter, ctx);
+    /* Listen for DELETE regardless of the JS filter.  The dispatch function
+     * applies the JS filter after handling DELETE, preserving the public API
+     * while making the native owner lifetime explicit. */
+    lv_event_dsc_t *dsc =
+        lv_obj_add_event_cb(obj, sni_cb_event_dispatch, LV_EVENT_ALL | (filter & LV_EVENT_PREPROCESS), ctx);
     if (!dsc)
     {
         jerry_value_free(ctx->js_cb);
@@ -464,13 +513,24 @@ bool sni_cb_event_add(lv_obj_t *obj,
 
 bool sni_cb_event_remove_dsc(lv_obj_t *obj, lv_event_dsc_t *dsc)
 {
+    sni_event_callback_ctx_t *ctx;
+
     if (!obj || !dsc)
     {
         return false;
     }
 
-    sni_cb_event_cleanup_descriptor(dsc);
+    ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
     bool removed = lv_obj_remove_event_dsc(obj, dsc);
+    if (removed)
+    {
+        if (ctx && ctx->alive)
+        {
+            ctx->owner = NULL;
+            ctx->dsc = NULL;
+            sni_cb_event_free_ctx(ctx);
+        }
+    }
     return removed;
 }
 
@@ -502,6 +562,7 @@ bool sni_cb_event_remove_by_js_cb(lv_obj_t *obj, jerry_value_t js_cb)
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
         ctx->dsc = NULL;
+        ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
         removed_any = true;
         ctx = next;
@@ -544,6 +605,7 @@ uint32_t sni_cb_event_remove_by_js_cb_user_data(lv_obj_t *obj, jerry_value_t js_
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
         ctx->dsc = NULL;
+        ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
         removed++;
         ctx = next;
@@ -718,8 +780,10 @@ static void sni_cb_anim_call_void_slot(sni_anim_callback_ctx_t *ctx, sni_anim_cb
     /* Guard: prevent sni_context_sweep_all from deleting this anim ctx
      * while we are inside its callback (would cause use-after-free). */
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->cb_slots[slot], jerry_undefined(), args, 1);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -767,9 +831,11 @@ static void sni_cb_anim_custom_exec_dispatch(lv_anim_t *var, int32_t value)
     jerry_value_t args[2] = {js_anim, js_value};
 
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret =
         spm_call(ctx->owner_ctx->owner, ctx->cb_slots[SNI_ANIM_CB_SLOT_CUSTOM_EXEC], jerry_undefined(), args, 2);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -853,8 +919,10 @@ static int32_t sni_cb_anim_call_int_slot(sni_anim_callback_ctx_t *ctx, sni_anim_
     jerry_value_t args[1] = {js_anim};
 
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->cb_slots[slot], jerry_undefined(), args, 1);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -937,16 +1005,13 @@ void sni_cb_context_cleanup_events(sni_context_t *ctx)
 
         if (event_ctx->dsc && event_ctx->owner)
         {
-            /* Only remove the event descriptor if the owner object is still
-             * in LVGL's widget tree.  If the object has already been freed
-             * (e.g. by a deferred cleanup timer or off-stack activity
-             * destruction), its spec_attr→event_list is garbage and calling
-             * lv_obj_remove_event_dsc would EXC_BAD_ACCESS. */
-            if (lv_obj_is_valid(event_ctx->owner))
-            {
-                lv_obj_remove_event_dsc(event_ctx->owner, event_ctx->dsc);
-            }
+            /* The descriptor listens for LV_EVENT_DELETE and clears owner
+             * before LVGL frees the object.  Do not call lv_obj_is_valid()
+             * here: it dereferences the raw pointer and therefore cannot
+             * validate an object that has already been freed. */
+            lv_obj_remove_event_dsc(event_ctx->owner, event_ctx->dsc);
             event_ctx->dsc = NULL;
+            event_ctx->owner = NULL;
         }
 
         sni_cb_safe_jerry_value_free(ctx, &event_ctx->js_cb);
@@ -1248,12 +1313,14 @@ void sni_cb_anim_resume_with_strategy(sni_anim_callback_ctx_t *ctx, sni_anim_res
                 uint32_t saved_gen = script_engine_get_gen();
                 jerry_value_t js_anim = sni_tb_c2js((void **)&ctx, SNI_H_LV_ANIM);
                 s_dispatching_anim_ctx = ctx;
+                s_dispatching_ctx = ctx->owner_ctx;
                 spm_call(ctx->owner_ctx->owner,
                          ctx->cb_slots[SNI_ANIM_CB_SLOT_COMPLETED],
                          jerry_undefined(),
                          &js_anim,
                          1);
                 s_dispatching_anim_ctx = NULL;
+                s_dispatching_ctx = NULL;
                 if (!sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
                 {
                     jerry_value_free(js_anim);

@@ -853,6 +853,17 @@ jerry_value_t sni_api_eos_activity_destroy(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Invalid activity argument");
     }
 
+    /* AppRoot destruction is an App lifecycle operation, not a generic
+     * Activity operation.  Calling it from the program's own JS callback
+     * would enter on_destroy while SPM is dispatching the callback; the
+     * resulting stop request cannot complete synchronously and would leave a
+     * live program without its root Activity.  Use activity.back() for normal
+     * navigation, or the host App lifecycle API for close/terminate. */
+    if (eos_activity_get_app_id(activity) && eos_activity_get_app_root(activity) == activity)
+    {
+        return sni_api_throw_error("Cannot destroy AppRoot directly; use activity.back()");
+    }
+
     /* Remove both managed-resource entries before native teardown. The
      * Activity's lifecycle callback may synchronously stop the SPM program;
      * leaving either node linked until after eos_activity_destroy() lets the

@@ -19,6 +19,7 @@
 #include "sni_callback_runtime.h"
 #include "sni_api_lv_special.h"
 #include "eos_log.h"
+#include "eos_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define LV_API_NAME "lv"
 /* Variables --------------------------------------------------*/
@@ -13036,8 +13037,11 @@ jerry_value_t sni_api_lv_obj_calculate_style_text_align(const jerry_call_info_t 
     }
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[1]);
+    if (!arg_txt)
+        return sni_api_throw_error("Out of memory");
 
     lv_text_align_t result = lv_obj_calculate_style_text_align(self_obj, arg_part, arg_txt);
+    eos_free((void *)arg_txt);
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
@@ -16202,8 +16206,11 @@ jerry_value_t sni_api_lv_obj_add_subject_set_string_event(const jerry_call_info_
     }
     const char *arg_value;
     arg_value = sni_tb_js2c_string(args_p[2]);
+    if (!arg_value)
+        return sni_api_throw_error("Out of memory");
 
     lv_obj_add_subject_set_string_event(self_obj, arg_subject, arg_trigger, arg_value);
+    eos_free((void *)arg_value);
     return jerry_undefined();
 }
 
@@ -18704,8 +18711,11 @@ jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
     }
     const char *arg_text;
     arg_text = sni_tb_js2c_string(args_p[0]);
+    if (!arg_text)
+        return sni_api_throw_error("Out of memory");
 
     lv_label_set_text(self_obj, arg_text);
+    eos_free((void *)arg_text);
     return jerry_undefined();
 }
 
@@ -19138,8 +19148,11 @@ jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
     }
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[1]);
+    if (!arg_txt)
+        return sni_api_throw_error("Out of memory");
 
     lv_label_ins_text(self_obj, arg_pos, arg_txt);
+    eos_free((void *)arg_txt);
     return jerry_undefined();
 }
 
@@ -19391,8 +19404,11 @@ jerry_value_t sni_api_prop_set_label_text(const jerry_call_info_t *call_info_p,
     }
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+        return sni_api_throw_error("Out of memory");
 
     lv_label_set_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
     return jerry_undefined();
 }
 
@@ -24817,8 +24833,11 @@ jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
     }
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_txt)
+        return sni_api_throw_error("Out of memory");
 
     lv_checkbox_set_text(self_obj, arg_txt);
+    eos_free((void *)arg_txt);
     return jerry_undefined();
 }
 
@@ -24894,8 +24913,11 @@ jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_
     }
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+        return sni_api_throw_error("Out of memory");
 
     lv_checkbox_set_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
     return jerry_undefined();
 }
 
@@ -24952,8 +24974,11 @@ jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
     }
     const char *arg_text;
     arg_text = sni_tb_js2c_string(args_p[0]);
+    if (!arg_text)
+        return sni_api_throw_error("Out of memory");
 
     lv_dropdown_set_text(self_obj, arg_text);
+    eos_free((void *)arg_text);
     return jerry_undefined();
 }
 
@@ -24982,8 +25007,11 @@ jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info
     }
     const char *arg_options;
     arg_options = sni_tb_js2c_string(args_p[0]);
+    if (!arg_options)
+        return sni_api_throw_error("Out of memory");
 
     lv_dropdown_set_options(self_obj, arg_options);
+    eos_free((void *)arg_options);
     return jerry_undefined();
 }
 
@@ -25012,8 +25040,13 @@ jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *ca
     }
     const char *arg_options;
     arg_options = sni_tb_js2c_string(args_p[0]);
+    if (!arg_options)
+        return sni_api_throw_error("Out of memory");
 
-    lv_dropdown_set_options_static(self_obj, arg_options);
+    /* JS strings are temporary bridge buffers; the static LVGL API would
+     * retain a dangling pointer. Use the copying setter instead. */
+    lv_dropdown_set_options(self_obj, arg_options);
+    eos_free((void *)arg_options);
     return jerry_undefined();
 }
 
@@ -25042,15 +25075,19 @@ jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_
     }
     const char *arg_option;
     arg_option = sni_tb_js2c_string(args_p[0]);
+    if (!arg_option)
+        return sni_api_throw_error("Out of memory");
 
     if (!jerry_value_is_number(args_p[1]))
     {
+        eos_free((void *)arg_option);
         return sni_api_throw_error("Invalid argument type");
     }
     uint32_t arg_pos;
     arg_pos = sni_tb_js2c_uint32(args_p[1]);
 
     lv_dropdown_add_option(self_obj, arg_option, arg_pos);
+    eos_free((void *)arg_option);
     return jerry_undefined();
 }
 
@@ -25305,18 +25342,22 @@ jerry_value_t sni_api_lv_dropdown_get_selected_str(const jerry_call_info_t *call
     {
         return sni_api_throw_error("Invalid argument type");
     }
-    char *arg_buf;
-    arg_buf = sni_tb_js2c_string(args_p[0]);
-
     if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
     uint32_t arg_buf_size;
     arg_buf_size = sni_tb_js2c_uint32(args_p[1]);
+    if (arg_buf_size == 0)
+        return jerry_string_sz("");
 
+    char *arg_buf = eos_malloc(arg_buf_size);
+    if (!arg_buf)
+        return sni_api_throw_error("Out of memory");
     lv_dropdown_get_selected_str(self_obj, arg_buf, arg_buf_size);
-    return jerry_undefined();
+    jerry_value_t result = jerry_string_sz(arg_buf);
+    eos_free(arg_buf);
+    return result;
 }
 
 jerry_value_t sni_api_lv_dropdown_get_option_index(const jerry_call_info_t *call_info_p,
@@ -25344,8 +25385,11 @@ jerry_value_t sni_api_lv_dropdown_get_option_index(const jerry_call_info_t *call
     }
     const char *arg_option;
     arg_option = sni_tb_js2c_string(args_p[0]);
+    if (!arg_option)
+        return sni_api_throw_error("Out of memory");
 
     int32_t result = lv_dropdown_get_option_index(self_obj, arg_option);
+    eos_free((void *)arg_option);
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
@@ -25615,8 +25659,11 @@ jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_in
     }
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+        return sni_api_throw_error("Out of memory");
 
     lv_dropdown_set_options(self_obj, prop_value);
+    eos_free((void *)prop_value);
     return jerry_undefined();
 }
 
@@ -25645,8 +25692,11 @@ jerry_value_t sni_api_prop_set_dropdown_options_static(const jerry_call_info_t *
     }
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+        return sni_api_throw_error("Out of memory");
 
-    lv_dropdown_set_options_static(self_obj, prop_value);
+    lv_dropdown_set_options(self_obj, prop_value);
+    eos_free((void *)prop_value);
     return jerry_undefined();
 }
 
@@ -25831,8 +25881,11 @@ jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_
     }
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+        return sni_api_throw_error("Out of memory");
 
     lv_dropdown_set_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
     return jerry_undefined();
 }
 

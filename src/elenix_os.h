@@ -13,6 +13,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include "eos_config.h"
 #include "eos_core.h"
+#include "eos_dump.h"
 #if EOS_USE_VIRTUAL_DISPLAY
 #include "eos_virtual_display.h"
 #endif /* EOS_USE_VIRTUAL_DISPLAY */

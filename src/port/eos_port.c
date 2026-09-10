@@ -47,3 +47,18 @@ EOS_WEAK size_t eos_port_get_free_mem(void)
 {
     return 0;
 }
+
+EOS_WEAK void eos_port_dump_capture(eos_dump_context_t *context)
+{
+    if (!context)
+    {
+        return;
+    }
+
+#if defined(__GNUC__) || defined(__clang__)
+    context->pc = (uintptr_t)__builtin_return_address(0);
+    context->sp = (uintptr_t)__builtin_frame_address(0);
+    context->lr = context->pc;
+    context->fp = context->sp;
+#endif
+}

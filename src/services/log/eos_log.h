@@ -16,6 +16,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdarg.h>
 #include "eos_config.h"
+#include "eos_dump.h"
 #include "eos_error.h"
 
 /* Public macros ----------------------------------------------*/
@@ -121,14 +122,15 @@ extern "C" {
 
 /* Assertion Macros -------------------------------------------*/
 #if EOS_USE_ASSERT
-#define EOS_ASSERT(expr)                              \
-    do                                                \
-    {                                                 \
-        if (!(expr))                                  \
-        {                                             \
-            EOS_LOG_E("Assertion failed: %s", #expr); \
-            EOS_ASSERT_HANDLER                        \
-        }                                             \
+#define EOS_ASSERT(expr)                                \
+    do                                                  \
+    {                                                   \
+        if (!(expr))                                    \
+        {                                               \
+            EOS_LOG_E("Assertion failed: %s", #expr);   \
+            eos_dump_assert(__FILE__, __LINE__, #expr); \
+            EOS_ASSERT_HANDLER                          \
+        }                                               \
     } while (0)
 #else
 #define EOS_ASSERT(expr) ((void)0)

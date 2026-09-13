@@ -25,6 +25,9 @@ struct esh_cmd_ctx;
 /* Macros and Definitions -------------------------------------*/
 #define ESH_YMODEM_PACKET_MAX_SIZE 1029U
 
+/** Maximum directory nesting supported by a batch transfer. */
+#define ESH_YMODEM_MAX_DIR_DEPTH 8U
+
 /* Public typedefs --------------------------------------------*/
 /**
  * @brief YMODEM transfer state
@@ -38,10 +41,32 @@ typedef enum
     ESH_YMODEM_SEND_WAIT_DATA_ACK,
     ESH_YMODEM_SEND_WAIT_EOT_NAK,
     ESH_YMODEM_SEND_WAIT_EOT_ACK,
+    ESH_YMODEM_SEND_WAIT_END_HEADER_ACK,
     ESH_YMODEM_RECEIVE_WAIT_HEADER,
     ESH_YMODEM_RECEIVE_DATA,
     ESH_YMODEM_RECEIVE_WAIT_EOT
 } esh_ymodem_state_t;
+
+/**
+ * @brief Last YMODEM transfer counters retained for idle diagnostics.
+ *
+ * These counters are never emitted on the protocol path. They are read only
+ * by the idle `ymodemstats` command after a transfer has returned to ESH.
+ */
+typedef struct
+{
+    uint32_t transfer_start_tick;
+    uint32_t transfer_elapsed_ms;
+    uint32_t received_data_blocks;
+    uint32_t received_bytes;
+    uint32_t crc_error_count;
+    uint32_t block_number_error_count;
+    uint32_t nak_count;
+    uint32_t duplicate_block_count;
+    uint32_t unexpected_block_count;
+    uint32_t timeout_count;
+    uint32_t last_bad_block;
+} esh_ymodem_stats_t;
 
 /**
  * @brief YMODEM state owned by an ESH instance
@@ -51,6 +76,12 @@ typedef struct
     esh_ymodem_state_t state;
     eos_file_t file;
     bool file_open;
+    bool batch_mode;
+    bool send_end_pending;
+    bool send_has_file;
+    bool receive_target_is_dir;
+    bool receive_file_active;
+    bool receive_any_file;
     uint8_t packet[ESH_YMODEM_PACKET_MAX_SIZE];
     size_t packet_length;
     size_t packet_expected;
@@ -60,12 +91,21 @@ typedef struct
     uint32_t last_activity_tick;
     uint8_t retry_count;
     char path[EOS_FS_PATH_MAX];
+    char send_root[EOS_FS_PATH_MAX];
+    char send_file_path[EOS_FS_PATH_MAX];
+    char send_file_name[EOS_FS_PATH_MAX];
+    char receive_final_path[EOS_FS_PATH_MAX];
+    char receive_temp_path[EOS_FS_PATH_MAX];
+    esh_ymodem_stats_t stats;
+    eos_dir_t send_dirs[ESH_YMODEM_MAX_DIR_DEPTH];
+    char send_dir_paths[ESH_YMODEM_MAX_DIR_DEPTH][EOS_FS_PATH_MAX];
+    uint8_t send_dir_depth;
 } esh_ymodem_t;
 
 /* Public function prototypes ---------------------------------*/
 
 /**
- * @brief Start a YMODEM file send
+ * @brief Start a YMODEM file or directory send
  * @param ctx ESH command context
  * @param path Resolved file path
  * @return EOS_OK when the transfer is started
@@ -73,7 +113,7 @@ typedef struct
 eos_result_t esh_ymodem_start_send(struct esh_cmd_ctx *ctx, const char *path);
 
 /**
- * @brief Start a YMODEM file receive
+ * @brief Start a YMODEM file or directory receive
  * @param ctx ESH command context
  * @param path Resolved destination path
  * @return EOS_OK when the transfer is started

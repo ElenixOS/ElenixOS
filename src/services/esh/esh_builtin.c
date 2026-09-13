@@ -24,6 +24,7 @@
 /* Function Prototypes ----------------------------------------*/
 static bool _esh_resolve_path(const esh_t *esh, const char *path, char *resolved, size_t resolved_size);
 static bool _esh_format_bytes(uint64_t bytes, char *buffer, size_t buffer_size);
+static bool _esh_format_uint64(uint64_t value, char *buffer, size_t buffer_size);
 static bool _esh_append_path_component(char *path,
                                        size_t path_size,
                                        size_t *path_length,
@@ -45,6 +46,8 @@ static bool _esh_format_bytes(uint64_t bytes, char *buffer, size_t buffer_size)
     size_t unit_index = 0U;
     uint64_t whole;
     uint64_t fraction;
+    char whole_text[32];
+    char bytes_text[32];
     int written;
 
     if (!buffer || buffer_size == 0U)
@@ -59,22 +62,61 @@ static bool _esh_format_bytes(uint64_t bytes, char *buffer, size_t buffer_size)
 
     if (unit_index == 0U)
     {
-        written = snprintf(buffer, buffer_size, "%" PRIu64 " bytes", bytes);
+        if (!_esh_format_uint64(bytes, bytes_text, sizeof(bytes_text)))
+        {
+            return false;
+        }
+        written = snprintf(buffer, buffer_size, "%s bytes", bytes_text);
     }
     else
     {
         whole = bytes / unit_sizes[unit_index];
         fraction = (uint64_t)(((double)(bytes % unit_sizes[unit_index]) * 100.0) / (double)unit_sizes[unit_index]);
+        if (!_esh_format_uint64(whole, whole_text, sizeof(whole_text))
+            || !_esh_format_uint64(bytes, bytes_text, sizeof(bytes_text)))
+        {
+            return false;
+        }
         written = snprintf(buffer,
                            buffer_size,
-                           "%" PRIu64 ".%02" PRIu64 " %s (%" PRIu64 " bytes)",
-                           whole,
-                           fraction,
+                           "%s.%02u %s (%s bytes)",
+                           whole_text,
+                           (unsigned int)fraction,
                            units[unit_index],
-                           bytes);
+                           bytes_text);
     }
 
     return written >= 0 && (size_t)written < buffer_size;
+}
+
+static bool _esh_format_uint64(uint64_t value, char *buffer, size_t buffer_size)
+{
+    char reversed[32];
+    size_t length = 0U;
+    size_t index;
+
+    if (!buffer || buffer_size == 0U)
+    {
+        return false;
+    }
+
+    do
+    {
+        reversed[length++] = (char)('0' + (value % 10U));
+        value /= 10U;
+    } while (value != 0U && length < sizeof(reversed));
+
+    if (length + 1U > buffer_size)
+    {
+        return false;
+    }
+
+    for (index = 0U; index < length; index++)
+    {
+        buffer[index] = reversed[length - index - 1U];
+    }
+    buffer[length] = '\0';
+    return true;
 }
 
 bool esh_builtin_format_bytes(uint64_t bytes, char *buffer, size_t buffer_size)
@@ -1054,12 +1096,14 @@ static int _esh_cmd_exit(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     _(mem, esh_builtin_cmd_mem, "show memory and runtime heaps")                   \
     _(stack, esh_builtin_cmd_stack, "show stack diagnostics")                      \
     _(crashlog, esh_builtin_cmd_crashlog, "show last script crash")                \
+    _(ymodemstats, esh_builtin_cmd_ymodemstats, "show last YMODEM transfer counters") \
     _(sensor, esh_builtin_cmd_sensor, "diagnose sensors")                          \
     _(battery, esh_builtin_cmd_battery, "show battery diagnostics")                \
     _(power, esh_builtin_cmd_power, "show power diagnostics")                      \
     _(display, esh_builtin_cmd_display, "show display diagnostics")                \
     _(touchdiag, esh_builtin_cmd_touch, "diagnose touch input")                    \
     _(ui, esh_builtin_cmd_ui, "inject touch input through the LVGL pointer indev") \
+    _(button, esh_builtin_cmd_button, "inject Crown or side button input")         \
     _(time, esh_builtin_cmd_time, "show system time")                              \
     _(vibrator, esh_builtin_cmd_vibrator, "test the vibrator")                     \
     _(audio, esh_builtin_cmd_audio, "diagnose audio devices")                      \

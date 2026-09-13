@@ -303,3 +303,38 @@ int esh_builtin_cmd_crashlog(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 
     return esh_printf(ctx, "error: %s\r\n", state->error_info);
 }
+
+int esh_builtin_cmd_ymodemstats(esh_cmd_ctx_t *ctx, int argc, char *argv[])
+{
+    const esh_ymodem_stats_t *stats;
+
+    (void)argv;
+    if (!ctx || !ctx->esh || argc != 1)
+    {
+        return (int)esh_printf(ctx, "ymodemstats: usage: ymodemstats\r\n");
+    }
+
+    stats = &ctx->esh->ymodem.stats;
+    if (esh_printf(ctx,
+                   "ymodem: elapsed_ms=%lu data_blocks=%lu bytes=%lu\r\n",
+                   (unsigned long)stats->transfer_elapsed_ms,
+                   (unsigned long)stats->received_data_blocks,
+                   (unsigned long)stats->received_bytes) != EOS_OK)
+    {
+        return EOS_ERR_IO;
+    }
+    if (esh_printf(ctx,
+                   "ymodem: crc_errors=%lu block_errors=%lu naks=%lu duplicates=%lu\r\n",
+                   (unsigned long)stats->crc_error_count,
+                   (unsigned long)stats->block_number_error_count,
+                   (unsigned long)stats->nak_count,
+                   (unsigned long)stats->duplicate_block_count) != EOS_OK)
+    {
+        return EOS_ERR_IO;
+    }
+    return (int)esh_printf(ctx,
+                           "ymodem: unexpected=%lu timeouts=%lu last_bad_block=%lu\r\n",
+                           (unsigned long)stats->unexpected_block_count,
+                           (unsigned long)stats->timeout_count,
+                           (unsigned long)stats->last_bad_block);
+}

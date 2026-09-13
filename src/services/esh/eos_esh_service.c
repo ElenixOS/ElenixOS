@@ -9,10 +9,11 @@
 #include <stdbool.h>
 #include "eos_dispatcher.h"
 #include "eos_port_critical.h"
+#include "esh_log_bridge.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define EOS_ESH_SERVICE_INPUT_QUEUE_SIZE (256U)
-#define EOS_ESH_SERVICE_DISPATCH_BUDGET (64U)
+#define EOS_ESH_SERVICE_INPUT_QUEUE_SIZE (32768U)
+#define EOS_ESH_SERVICE_DISPATCH_BUDGET (4096U)
 
 /* Variables --------------------------------------------------*/
 static esh_t s_esh;
@@ -114,6 +115,11 @@ eos_result_t eos_esh_service_init(const esh_frontend_t *frontend)
     result = esh_claim(&s_esh, frontend, ESH_CLAIM_TAKEOVER, &s_owner);
     if (result == EOS_OK)
     {
+        result = esh_log_bridge_attach(&s_esh);
+        if (result != EOS_OK)
+        {
+            return result;
+        }
         s_initialized = true;
     }
     return result;

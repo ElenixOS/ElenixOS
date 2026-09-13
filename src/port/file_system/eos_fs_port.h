@@ -214,6 +214,15 @@ eos_result_t eos_fs_mv(const char *old_path, const char *new_path);
  */
 eos_result_t eos_fs_sync(eos_file_t file);
 
+/**
+ * @brief Query filesystem capacity and free space.
+ * @param path Filesystem path used to select the volume
+ * @param total_bytes Output total capacity in bytes
+ * @param free_bytes Output currently available bytes
+ * @return Operation result
+ */
+eos_result_t eos_fs_get_space(const char *path, uint64_t *total_bytes, uint64_t *free_bytes);
+
 #ifdef __cplusplus
 }
 #endif

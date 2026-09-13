@@ -18,7 +18,7 @@
 #include "script_engine_core.h"
 #include "spm.h"
 #include "eos_dispatcher.h"
-#include "lvgl/src/misc/lv_timer_private.h"
+#include "src/misc/lv_timer_private.h"
 
 /* Macros and Definitions -------------------------------------*/
 

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lvgl.h"
-#include "lvgl/src/misc/lv_ll.h"
+#include "src/misc/lv_ll.h"
 #include "eos_image.h"
 #include "eos_widget_data.h"
 #include "eos_theme.h"

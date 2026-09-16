@@ -40,6 +40,18 @@ void eos_touch_init(void);
 bool eos_touch_bind_indev(lv_indev_t *indev);
 
 /**
+ * @brief Bind an LVGL pointer indev whose read callback already reads EOS.
+ *
+ * Use this variant when the platform callback calls eos_touch_read() itself.
+ * The callback is wrapped for broker arbitration, but it is not invoked a
+ * second time as a physical-input source.
+ *
+ * @param indev LVGL pointer input device owned by the platform.
+ * @return true when the device was bound, otherwise false.
+ */
+bool eos_touch_bind_broker_indev(lv_indev_t *indev);
+
+/**
  * @brief Check whether the unified touch stream is bound to an LVGL indev.
  * @return true when a valid binding is active, otherwise false.
  */

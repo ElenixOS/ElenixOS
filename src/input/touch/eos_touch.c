@@ -128,10 +128,9 @@ static void _eos_touch_bound_indev_delete_cb(lv_event_t *event)
     }
 }
 
-bool eos_touch_bind_indev(lv_indev_t *indev)
+static bool _eos_touch_bind_indev_internal(lv_indev_t *indev,
+                                           lv_indev_read_cb_t platform_read_cb)
 {
-    lv_indev_read_cb_t read_cb;
-
     if ((indev == NULL) || (lv_indev_get_type(indev) != LV_INDEV_TYPE_POINTER))
     {
         EOS_LOG_E("Touch input bind failed: platform must provide a pointer LVGL indev");
@@ -149,6 +148,24 @@ bool eos_touch_bind_indev(lv_indev_t *indev)
         return false;
     }
 
+    _eos_touch_platform_read_cb = platform_read_cb;
+    _eos_touch_bound_indev = indev;
+    lv_indev_set_read_cb(indev, _eos_touch_bound_read_cb);
+    lv_indev_add_event_cb(indev, _eos_touch_bound_indev_delete_cb, LV_EVENT_DELETE, indev);
+    EOS_LOG_I("Touch input bound to LVGL pointer indev; ui command is available");
+    return true;
+}
+
+bool eos_touch_bind_indev(lv_indev_t *indev)
+{
+    lv_indev_read_cb_t read_cb;
+
+    if ((indev == NULL) || (lv_indev_get_type(indev) != LV_INDEV_TYPE_POINTER))
+    {
+        EOS_LOG_E("Touch input bind failed: platform must provide a pointer LVGL indev");
+        return false;
+    }
+
     read_cb = lv_indev_get_read_cb(indev);
     if (read_cb == NULL)
     {
@@ -156,12 +173,12 @@ bool eos_touch_bind_indev(lv_indev_t *indev)
         return false;
     }
 
-    _eos_touch_platform_read_cb = read_cb;
-    _eos_touch_bound_indev = indev;
-    lv_indev_set_read_cb(indev, _eos_touch_bound_read_cb);
-    lv_indev_add_event_cb(indev, _eos_touch_bound_indev_delete_cb, LV_EVENT_DELETE, indev);
-    EOS_LOG_I("Touch input bound to LVGL pointer indev; ui command is available");
-    return true;
+    return _eos_touch_bind_indev_internal(indev, read_cb);
+}
+
+bool eos_touch_bind_broker_indev(lv_indev_t *indev)
+{
+    return _eos_touch_bind_indev_internal(indev, NULL);
 }
 
 bool eos_touch_is_bound(void)

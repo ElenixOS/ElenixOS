@@ -159,8 +159,12 @@ static lv_obj_t *_control_center_slider_create(const char *symbol)
     lv_obj_add_event_cb(slider_page, _control_center_slider_page_clicked_cb, LV_EVENT_CLICKED, NULL);
 
     eos_anim_t *a = eos_anim_fade_create(slider_page, LV_OPA_TRANSP, LV_OPA_80, 300, false);
-    eos_anim_fade_set_layered(a, false);
-    eos_anim_start(a);
+    if (a)
+    {
+        eos_anim_fade_set_layered(a, false);
+        if (!eos_anim_start(a))
+            eos_anim_del(a);
+    }
 
     lv_obj_t *slider_mask = lv_obj_create(slider_page);
     lv_obj_remove_style_all(slider_mask);

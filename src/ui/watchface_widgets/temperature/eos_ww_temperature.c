@@ -18,8 +18,8 @@
 
 static void _temperature_update(eos_ww_status_t *s, const eos_sensor_raw_data_t *data)
 {
-    int32_t temp = data->data.temp.temp; /* hundredths of °C */
-    eos_ww_status_set_value(s, "%d.%dC", (int)(temp / 100), (int)((temp % 100) / 10));
+    int32_t temp = data->data.temp.temp; /* milli-degrees Celsius */
+    eos_ww_status_set_value(s, "%d.%dC", (int)(temp / 1000), (int)((temp % 1000) / 100));
 }
 
 lv_obj_t *eos_ww_temperature_create(lv_obj_t *parent)

@@ -140,8 +140,16 @@ static test_recording_page_ctx_t s_test_recording_page = {0};
 static lv_coord_t s_debug_bar_global_x = 0;
 static lv_coord_t s_debug_bar_global_y = 0;
 static bool s_debug_bar_global_pos_valid = false;
-static const char *s_test_audio_primary_path = "fs/music.mp3";
-static const char *s_test_audio_fallback_path = "/music.mp3";
+/* The current embedded audio service registers the PCM WAV decoder only.
+ * Keep the test page aligned with the files users can actually play instead
+ * of selecting the historical MP3 path and failing before the sink opens. */
+static const char *const s_test_audio_paths[] = {
+    "fs/music.wav",
+    "/music.wav",
+    "fs/1.wav",
+    "/1.wav",
+    "1.wav",
+};
 
 #define TEST_APP_DEBUG_BAR_W 220
 #define TEST_APP_DEBUG_BAR_H 64
@@ -1180,17 +1188,17 @@ static void _test_panel_list(lv_event_t *e)
 
 static const char *_test_audio_resolve_path(void)
 {
-    if (eos_storage_is_file(s_test_audio_primary_path))
+    for (uint32_t i = 0U;
+         i < sizeof(s_test_audio_paths) / sizeof(s_test_audio_paths[0]);
+         i++)
     {
-        return s_test_audio_primary_path;
+        if (eos_storage_is_file(s_test_audio_paths[i]))
+        {
+            return s_test_audio_paths[i];
+        }
     }
 
-    if (eos_storage_is_file(s_test_audio_fallback_path))
-    {
-        return s_test_audio_fallback_path;
-    }
-
-    return s_test_audio_primary_path;
+    return s_test_audio_paths[0];
 }
 
 static void _test_audio_sync_ui(void)
@@ -1383,7 +1391,7 @@ static void _test_audio_page(lv_event_t *e)
     eos_label_set_font_size(title, EOS_FONT_SIZE_LARGE);
 
     lv_obj_t *hint = lv_label_create(list);
-    lv_label_set_text(hint, "Play/Pause/Stop fs/music.mp3");
+    lv_label_set_text(hint, "Play/Pause/Stop a PCM WAV file");
     lv_obj_set_style_text_color(hint, lv_color_hex(0xA0A0A0), LV_PART_MAIN);
 
     s_test_audio_page.play_btn = lv_button_create(list);
@@ -1765,7 +1773,7 @@ static void _sensor_update_table(_sensor_test_data_t *data)
                                             i + 1,
                                             _SENSOR_VAL_COL,
                                             "%.2f C",
-                                            raw_data.data.temp.temp / 100.0f);
+                                            raw_data.data.temp.temp / 1000.0f);
                 break;
 
             case EOS_SENSOR_TYPE_BARO:
@@ -1774,6 +1782,14 @@ static void _sensor_update_table(_sensor_test_data_t *data)
                                             _SENSOR_VAL_COL,
                                             "%.2f hPa",
                                             raw_data.data.baro.pressure / 100.0f);
+                break;
+
+            case EOS_SENSOR_TYPE_HUMIDITY:
+                lv_table_set_cell_value_fmt(data->table,
+                                            i + 1,
+                                            _SENSOR_VAL_COL,
+                                            "%.3f %%RH",
+                                            raw_data.data.humidity.humidity / 1000.0f);
                 break;
 
             case EOS_SENSOR_TYPE_LIGHT:

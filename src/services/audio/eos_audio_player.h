@@ -43,6 +43,7 @@ struct eos_audio_player_t
     eos_audio_player_state_t state;
     eos_audio_decoder_dsc_t dsc;
     bool decoder_open;
+    bool source_eof;
     struct eos_audio_feed *feed;
     uint8_t volume;
     bool muted;

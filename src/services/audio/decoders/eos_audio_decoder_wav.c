@@ -105,10 +105,18 @@ static eos_result_t _wav_probe(const void *src, eos_audio_src_type_t src_type, e
         if (memcmp(chunk_id, "fmt ", 4) == 0)
         {
             wav_fmt_chunk_t fmt;
-            if (eos_fs_read(f, &fmt, sizeof(fmt)) != sizeof(fmt))
+            if (chunk_size < sizeof(fmt) ||
+                eos_fs_read(f, &fmt, sizeof(fmt)) != sizeof(fmt))
                 break;
 
-            if (fmt.audio_format != 1)
+            /* The player is a PCM sink.  Reject compressed/non-conforming
+             * chunks here instead of allowing a later byte/sample division
+             * to reinterpret the stream and create audible corruption. */
+            if (fmt.audio_format != 1 || fmt.num_channels == 0U ||
+                fmt.bits_per_sample == 0U || (fmt.bits_per_sample % 8U) != 0U ||
+                fmt.sample_rate == 0U ||
+                fmt.block_align != (uint16_t)(fmt.num_channels * (fmt.bits_per_sample / 8U)) ||
+                fmt.byte_rate != fmt.sample_rate * fmt.block_align)
             {
                 eos_fs_close(f);
                 return EOS_FAILED;
@@ -119,7 +127,11 @@ static eos_result_t _wav_probe(const void *src, eos_audio_src_type_t src_type, e
             format->bits_per_sample = (uint8_t)fmt.bits_per_sample;
             found_fmt = true;
         }
-        offset += chunk_size;
+        /* RIFF chunks are word aligned; the pad byte is not part of the
+         * chunk payload. */
+        if (chunk_size > UINT32_MAX - offset - 8U)
+            break;
+        offset += chunk_size + (chunk_size & 1U);
     }
 
     eos_fs_close(f);
@@ -166,7 +178,9 @@ static eos_result_t _wav_open(eos_audio_decoder_dsc_t *dsc)
 
         if (memcmp(chunk_id, "fmt ", 4) != 0 && memcmp(chunk_id, "data", 4) != 0)
         {
-            offset += 8 + chunk_size;
+            if (chunk_size > UINT32_MAX - offset - 8U)
+                break;
+            offset += 8U + chunk_size + (chunk_size & 1U);
             continue;
         }
 
@@ -177,7 +191,7 @@ static eos_result_t _wav_open(eos_audio_decoder_dsc_t *dsc)
             break;
         }
 
-        offset += 8 + chunk_size;
+        offset += 8U + chunk_size + (chunk_size & 1U);
     }
 
     if (wd->data_offset == 0)
@@ -189,6 +203,14 @@ static eos_result_t _wav_open(eos_audio_decoder_dsc_t *dsc)
 
     wd->bytes_per_sample = (dsc->format.bits_per_sample / 8) * dsc->format.channels;
     wd->read_pos = 0;
+
+    if (wd->bytes_per_sample == 0U ||
+        (wd->data_size % wd->bytes_per_sample) != 0U)
+    {
+        eos_fs_close(wd->file);
+        eos_free(wd);
+        return EOS_ERR_FILE_ERROR;
+    }
 
     if (wd->data_size > 0 && wd->bytes_per_sample > 0)
     {
@@ -221,8 +243,17 @@ static eos_result_t _wav_read(eos_audio_decoder_dsc_t *dsc, void *buf, uint32_t 
     uint32_t remaining = wd->data_size - wd->read_pos;
     uint32_t to_read = (buf_size < remaining) ? buf_size : remaining;
 
+    if (wd->bytes_per_sample == 0U)
+        return EOS_ERR_FILE_ERROR;
+    to_read -= to_read % wd->bytes_per_sample;
+    if (to_read == 0U)
+    {
+        *bytes_read = 0U;
+        return EOS_OK;
+    }
+
     int ret = eos_fs_read(wd->file, buf, to_read);
-    if (ret < 0)
+    if (ret < 0 || (uint32_t)ret != to_read)
         return EOS_ERR_FILE_ERROR;
 
     wd->read_pos += (uint32_t)ret;

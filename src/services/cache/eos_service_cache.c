@@ -53,20 +53,12 @@ static void *eos_buf_align(void *buf, lv_color_format_t color_format)
     return buf_u8;
 }
 
-static uint32_t eos_width_to_stride(uint32_t w, lv_color_format_t color_format)
-{
-    uint32_t width_byte;
-    width_byte = w * lv_color_format_get_bpp(color_format);
-    width_byte = (width_byte + 7) >> 3;
-    return width_byte;
-}
-
 void eos_service_cache_init(void)
 {
 #if EOS_CACHE_ENABLE
-    if (lv_image_cache_is_enabled())
-        return;
-
+    /* lv_init() creates the image cache with LV_CACHE_DEF_SIZE before EOS
+     * starts.  Do not treat that default cache as the platform policy: resize
+     * it here so EOS_CACHE_SIZE is actually applied on every port. */
     lv_image_cache_resize(EOS_CACHE_SIZE, false);
     lv_image_header_cache_resize(EOS_CACHE_HEADER_COUNT, false);
 
@@ -74,14 +66,13 @@ void eos_service_cache_init(void)
     {
         lv_draw_buf_handlers_t *handlers = &LV_GLOBAL_DEFAULT()->image_cache_draw_buf_handlers;
 
-        lv_draw_buf_handlers_init(handlers,
-                                  dedicated_buf_malloc,
-                                  dedicated_buf_free,
-                                  NULL, /* buf_copy */
-                                  eos_buf_align,
-                                  NULL, /* invalidate_cache */
-                                  NULL, /* flush_cache */
-                                  eos_width_to_stride);
+        /* Keep the renderer-provided stride/copy/clear/cache callbacks.  The
+         * image cache only needs to replace where its pixel storage lives.
+         * Reinitializing the full handler would discard VG-Lite's required
+         * stride alignment. */
+        handlers->buf_malloc_cb = dedicated_buf_malloc;
+        handlers->buf_free_cb = dedicated_buf_free;
+        handlers->align_pointer_cb = eos_buf_align;
     }
 #endif /* EOS_CACHE_USE_DEDICATED_MEM */
 #endif /* EOS_CACHE_ENABLE */

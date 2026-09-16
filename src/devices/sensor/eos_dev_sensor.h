@@ -40,6 +40,7 @@ typedef enum
     EOS_SENSOR_TYPE_BARO, /**< Barometer */
     EOS_SENSOR_TYPE_CAP, /**< Capacitance Sensor */
     EOS_SENSOR_TYPE_STEP, /**< Step Counter */
+    EOS_SENSOR_TYPE_HUMIDITY, /**< Relative humidity */
     EOS_SENSOR_TYPE_MAX
 } eos_sensor_type_t;
 
@@ -48,9 +49,10 @@ typedef enum
  */
 typedef struct
 {
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    /* SI acceleration in milli-m/s^2.  9807 ~= 1 g. */
+    int32_t x;
+    int32_t y;
+    int32_t z;
 } eos_sensor_data_acce_t;
 
 /**
@@ -58,9 +60,10 @@ typedef struct
  */
 typedef struct
 {
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    /* Angular rate in milli-degrees per second. */
+    int32_t x;
+    int32_t y;
+    int32_t z;
 } eos_sensor_data_gyro_t;
 
 /**
@@ -68,9 +71,10 @@ typedef struct
  */
 typedef struct
 {
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    /* Magnetic field in nano-tesla.  1,000 nT = 1 microtesla. */
+    int32_t x;
+    int32_t y;
+    int32_t z;
 } eos_sensor_data_mag_t;
 
 /**
@@ -78,6 +82,7 @@ typedef struct
  */
 typedef struct
 {
+    /* Temperature in milli-degrees Celsius. */
     int32_t temp;
 } eos_sensor_data_temp_t;
 
@@ -86,8 +91,20 @@ typedef struct
  */
 typedef struct
 {
+    /* Absolute pressure in pascals. */
     int32_t pressure;
+    /* Temperature from the barometer's internal channel in milli-degrees C. */
+    int32_t temperature;
 } eos_sensor_data_baro_t;
+
+/**
+ * @brief Relative humidity data
+ */
+typedef struct
+{
+    /* Relative humidity in milli-percent RH.  50000 = 50.000 %RH. */
+    int32_t humidity;
+} eos_sensor_data_humidity_t;
 
 /**
  * @brief Light sensor data
@@ -164,6 +181,7 @@ typedef union
     eos_sensor_data_mag_t mag;
     eos_sensor_data_temp_t temp;
     eos_sensor_data_baro_t baro;
+    eos_sensor_data_humidity_t humidity;
     eos_sensor_data_light_t light;
     eos_sensor_data_proximity_t proximity;
     eos_sensor_data_hr_t hr;

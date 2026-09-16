@@ -16,8 +16,7 @@
 
 /* Macros and Definitions -------------------------------------*/
 
-#define FEED_TIMER_PERIOD_MS 30
-#define PRE_FILL_BUFFERS 8
+#define FEED_TIMER_PERIOD_MS 10
 
 /* Variables --------------------------------------------------*/
 
@@ -27,6 +26,9 @@ static void _player_stop_internal(eos_audio_player_t *p);
 
 static bool _player_fill_one_buffer(eos_audio_player_t *p)
 {
+    if (p->source_eof)
+        return false;
+
     eos_dev_speaker_t *spk = eos_dev_speaker_get_instance();
     if (spk == NULL || spk->ops == NULL)
         return false;
@@ -36,23 +38,33 @@ static bool _player_fill_one_buffer(eos_audio_player_t *p)
     if (spk->ops->borrow == NULL || spk->ops->borrow(&buf, &cap) != 0)
         return false;
 
-    if (p->muted)
-    {
-        memset(buf, 0, cap);
-        spk->ops->enqueue(buf, cap);
-        return true;
-    }
-
     uint32_t bytes_read = 0;
     eos_result_t res = eos_audio_decoder_read(&p->dsc, buf, cap, &bytes_read);
 
-    if (res == EOS_OK && bytes_read == 0 && p->dsc.format.total_samples > 0
-        && p->dsc.current_sample < p->dsc.format.total_samples)
+    if (res != EOS_OK || bytes_read == 0)
     {
-        p->dsc.current_sample = p->dsc.format.total_samples;
+        p->source_eof = true;
+        bytes_read = 0;
+    }
+    else if (p->muted)
+    {
+        /* Consume the source while muted so position and natural completion
+         * continue to advance.  The sink receives silence, not stale data. */
+        memset(buf, 0, bytes_read);
     }
 
-    spk->ops->enqueue(buf, bytes_read);
+    if (spk->ops->enqueue(buf, bytes_read) != 0)
+        return false;
+
+    if (res == EOS_OK && p->dsc.format.total_samples > 0
+        && p->dsc.current_sample >= p->dsc.format.total_samples)
+    {
+        p->source_eof = true;
+    }
+    if (p->source_eof && spk->ops->set_eof)
+    {
+        spk->ops->set_eof();
+    }
     return (res == EOS_OK && bytes_read > 0);
 }
 
@@ -66,8 +78,12 @@ static void _feed_cb(void *user_data)
     {
     }
 
-    if (p->dsc.current_sample >= p->dsc.format.total_samples && p->dsc.format.total_samples > 0)
+    if (p->source_eof)
     {
+        eos_dev_speaker_t *spk = eos_dev_speaker_get_instance();
+        if (spk && spk->ops && spk->ops->is_drained && !spk->ops->is_drained())
+            return;
+
         EOS_LOG_I("Playback complete");
         _player_stop_internal(p);
         if (p->done_cb)
@@ -98,6 +114,7 @@ static void _player_stop_internal(eos_audio_player_t *p)
     }
 
     p->state = EOS_AUDIO_IDLE;
+    p->source_eof = false;
 }
 
 static void _player_start_feed(eos_audio_player_t *p)
@@ -117,6 +134,7 @@ void eos_audio_player_init(eos_audio_player_t *p)
     p->state = EOS_AUDIO_IDLE;
     p->volume = 50;
     p->muted = false;
+    p->source_eof = false;
     EOS_LOG_I("Audio player initialized");
 }
 
@@ -181,28 +199,17 @@ eos_result_t eos_audio_player_play(eos_audio_player_t *p, const void *src, eos_a
         spk->ops->set_volume(p->volume);
     }
 
-    int filled = 0;
-    for (int i = 0; i < PRE_FILL_BUFFERS; i++)
-    {
-        if (_player_fill_one_buffer(p))
-            filled++;
-        else
-            break;
-    }
-
-    if (filled == 0 && p->dsc.format.total_samples == 0)
-    {
-        EOS_LOG_E("Cannot play: source has no samples and unknown duration");
-        if (spk->ops->stop)
-            spk->ops->stop();
-        eos_audio_decoder_close(&p->dsc);
-        p->decoder_open = false;
-        p->state = EOS_AUDIO_IDLE;
-        return EOS_ERR_DEV_ERROR;
-    }
-
+    /* Do not read audio data synchronously here.  The platform feed task
+     * owns file I/O and decoder reads, keeping LVGL's caller responsive. */
     p->state = EOS_AUDIO_PLAYING;
+    p->source_eof = false;
     _player_start_feed(p);
+
+    if (!p->feed)
+    {
+        _player_stop_internal(p);
+        return EOS_ERR_MEM;
+    }
 
     EOS_LOG_I("Playing: %s", (const char *)src);
 
@@ -248,18 +255,13 @@ eos_result_t eos_audio_player_resume(eos_audio_player_t *p)
     if (p->state != EOS_AUDIO_PAUSED)
         return EOS_ERR_INVALID_STATE;
 
-    for (int i = 0; i < PRE_FILL_BUFFERS; i++)
-    {
-        if (!_player_fill_one_buffer(p))
-            break;
-    }
-
     eos_dev_speaker_t *spk = eos_dev_speaker_get_instance();
     if (spk && spk->ops && spk->ops->resume)
     {
         spk->ops->resume();
     }
     p->state = EOS_AUDIO_PLAYING;
+    p->source_eof = false;
     eos_audio_feed_resume(p->feed);
     return EOS_OK;
 }
@@ -336,6 +338,7 @@ eos_result_t eos_audio_player_seek(eos_audio_player_t *p, uint32_t sample)
         }
     }
     p->dsc.current_sample = sample;
+    p->source_eof = false;
 
     eos_dev_speaker_t *spk = eos_dev_speaker_get_instance();
     if (spk && spk->ops)
@@ -352,15 +355,6 @@ eos_result_t eos_audio_player_seek(eos_audio_player_t *p, uint32_t sample)
         if (spk->ops->set_volume)
         {
             spk->ops->set_volume(p->volume);
-        }
-    }
-
-    if (prev_state != EOS_AUDIO_IDLE)
-    {
-        for (int i = 0; i < PRE_FILL_BUFFERS; i++)
-        {
-            if (!_player_fill_one_buffer(p))
-                break;
         }
     }
 
@@ -385,6 +379,18 @@ uint32_t eos_audio_player_get_position(eos_audio_player_t *p)
 {
     if (p == NULL || !p->decoder_open)
         return 0;
+
+    /* Decoder position is the producer cursor and can run ahead while the
+     * ring is being filled.  Prefer the sink's consumed-frame cursor for UI
+     * progress and seeking feedback. */
+    eos_dev_speaker_t *spk = eos_dev_speaker_get_instance();
+    if (spk && spk->ops && spk->ops->get_played_samples)
+    {
+        uint32_t played = spk->ops->get_played_samples();
+        if (p->dsc.format.total_samples > 0 && played > p->dsc.format.total_samples)
+            played = p->dsc.format.total_samples;
+        return played;
+    }
     return p->dsc.current_sample;
 }
 

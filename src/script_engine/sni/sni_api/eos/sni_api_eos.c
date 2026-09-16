@@ -1296,19 +1296,22 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
     switch ((eos_sensor_type_t)type)
     {
         case EOS_SENSOR_TYPE_ACCE:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.acce.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.acce.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.acce.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.acce.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.acce.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.acce.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "m/s2");
             break;
         case EOS_SENSOR_TYPE_GYRO:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.gyro.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.gyro.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.gyro.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.gyro.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.gyro.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.gyro.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "deg/s");
             break;
         case EOS_SENSOR_TYPE_MAG:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.mag.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.mag.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.mag.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.mag.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.mag.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.mag.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "uT");
             break;
         case EOS_SENSOR_TYPE_HR:
             script_engine_set_prop_number(obj, "heart_rate", (double)raw.data.hr.heart_rate);
@@ -1320,10 +1323,17 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
             script_engine_set_prop_number(obj, "lux", (double)raw.data.light.lux);
             break;
         case EOS_SENSOR_TYPE_TEMP:
-            script_engine_set_prop_number(obj, "temp", (double)raw.data.temp.temp);
+            script_engine_set_prop_number(obj, "temp", (double)raw.data.temp.temp / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "degC");
             break;
         case EOS_SENSOR_TYPE_BARO:
             script_engine_set_prop_number(obj, "pressure", (double)raw.data.baro.pressure);
+            script_engine_set_prop_number(obj, "temperature", (double)raw.data.baro.temperature / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "Pa");
+            break;
+        case EOS_SENSOR_TYPE_HUMIDITY:
+            script_engine_set_prop_number(obj, "humidity", (double)raw.data.humidity.humidity / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "%RH");
             break;
         case EOS_SENSOR_TYPE_STEP:
             script_engine_set_prop_number(obj, "steps", (double)raw.data.step.steps);
@@ -1612,6 +1622,7 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "SENSOR_LIGHT", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_LIGHT},
     {.name = "SENSOR_TEMP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_TEMP},
     {.name = "SENSOR_BARO", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_BARO},
+    {.name = "SENSOR_HUMIDITY", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_HUMIDITY},
     {.name = "SENSOR_STEP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_STEP},
     {.name = "SENSOR_PROXIMITY", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_PROXIMITY},
     {.name = "SENSOR_ECG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_ECG},

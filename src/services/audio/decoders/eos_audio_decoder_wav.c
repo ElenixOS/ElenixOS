@@ -105,18 +105,16 @@ static eos_result_t _wav_probe(const void *src, eos_audio_src_type_t src_type, e
         if (memcmp(chunk_id, "fmt ", 4) == 0)
         {
             wav_fmt_chunk_t fmt;
-            if (chunk_size < sizeof(fmt) ||
-                eos_fs_read(f, &fmt, sizeof(fmt)) != sizeof(fmt))
+            if (chunk_size < sizeof(fmt) || eos_fs_read(f, &fmt, sizeof(fmt)) != sizeof(fmt))
                 break;
 
             /* The player is a PCM sink.  Reject compressed/non-conforming
              * chunks here instead of allowing a later byte/sample division
              * to reinterpret the stream and create audible corruption. */
-            if (fmt.audio_format != 1 || fmt.num_channels == 0U ||
-                fmt.bits_per_sample == 0U || (fmt.bits_per_sample % 8U) != 0U ||
-                fmt.sample_rate == 0U ||
-                fmt.block_align != (uint16_t)(fmt.num_channels * (fmt.bits_per_sample / 8U)) ||
-                fmt.byte_rate != fmt.sample_rate * fmt.block_align)
+            if (fmt.audio_format != 1 || fmt.num_channels == 0U || fmt.bits_per_sample == 0U
+                || (fmt.bits_per_sample % 8U) != 0U || fmt.sample_rate == 0U
+                || fmt.block_align != (uint16_t)(fmt.num_channels * (fmt.bits_per_sample / 8U))
+                || fmt.byte_rate != fmt.sample_rate * fmt.block_align)
             {
                 eos_fs_close(f);
                 return EOS_FAILED;
@@ -204,8 +202,7 @@ static eos_result_t _wav_open(eos_audio_decoder_dsc_t *dsc)
     wd->bytes_per_sample = (dsc->format.bits_per_sample / 8) * dsc->format.channels;
     wd->read_pos = 0;
 
-    if (wd->bytes_per_sample == 0U ||
-        (wd->data_size % wd->bytes_per_sample) != 0U)
+    if (wd->bytes_per_sample == 0U || (wd->data_size % wd->bytes_per_sample) != 0U)
     {
         eos_fs_close(wd->file);
         eos_free(wd);

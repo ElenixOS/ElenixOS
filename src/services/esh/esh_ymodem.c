@@ -166,8 +166,7 @@ static eos_result_t _esh_ymodem_finish(esh_t *esh, bool success, bool send_cance
 
     if (esh->ymodem.stats.transfer_start_tick != 0U)
     {
-        esh->ymodem.stats.transfer_elapsed_ms =
-            eos_tick_get() - esh->ymodem.stats.transfer_start_tick;
+        esh->ymodem.stats.transfer_elapsed_ms = eos_tick_get() - esh->ymodem.stats.transfer_start_tick;
     }
 
     if (send_cancel)
@@ -628,9 +627,7 @@ static eos_result_t _esh_ymodem_process_packet(esh_t *esh)
 
         if (write_size > 0U)
         {
-            ssize_t written = eos_storage_file_write(esh->ymodem.file,
-                                                      &esh->ymodem.packet[3],
-                                                      write_size);
+            ssize_t written = eos_storage_file_write(esh->ymodem.file, &esh->ymodem.packet[3], write_size);
             if (written != (ssize_t)write_size)
             {
                 return _esh_ymodem_finish(esh, false, true);
@@ -658,9 +655,9 @@ static eos_result_t _esh_ymodem_process_packet(esh_t *esh)
 
 static eos_result_t _esh_ymodem_process_byte(esh_t *esh, uint8_t byte)
 {
-    bool receiving_packet = (esh->ymodem.state == ESH_YMODEM_RECEIVE_WAIT_HEADER
-                             || esh->ymodem.state == ESH_YMODEM_RECEIVE_DATA)
-                            && esh->ymodem.packet_length != 0U;
+    bool receiving_packet =
+        (esh->ymodem.state == ESH_YMODEM_RECEIVE_WAIT_HEADER || esh->ymodem.state == ESH_YMODEM_RECEIVE_DATA)
+        && esh->ymodem.packet_length != 0U;
 
     if (byte == _ESH_YMODEM_CAN && !receiving_packet)
     {
@@ -990,17 +987,17 @@ eos_result_t esh_ymodem_input(struct esh *esh, const uint8_t *data, size_t lengt
         return EOS_ERR_INVALID_ARG;
     }
 
-	for (index = 0U; index < length && esh->input_mode == ESH_INPUT_YMODEM; index++)
-	{
-		/* Ctrl-C is an ESH escape only between packets.  Inside a YMODEM
+    for (index = 0U; index < length && esh->input_mode == ESH_INPUT_YMODEM; index++)
+    {
+        /* Ctrl-C is an ESH escape only between packets.  Inside a YMODEM
 		 * frame every byte, including 0x03, belongs to the payload or CRC;
 		 * treating it as an escape aborts valid binary files before the first
 		 * data block can be validated.  Standard YMODEM cancellation remains
 		 * CAN CAN, which is handled by _esh_ymodem_process_byte at packet idle. */
-		bool receiving_packet = (esh->ymodem.state == ESH_YMODEM_RECEIVE_WAIT_HEADER
-		                         || esh->ymodem.state == ESH_YMODEM_RECEIVE_DATA)
-		                        && esh->ymodem.packet_length != 0U;
-		if (data[index] == _ESH_CTRL_C && !receiving_packet)
+        bool receiving_packet =
+            (esh->ymodem.state == ESH_YMODEM_RECEIVE_WAIT_HEADER || esh->ymodem.state == ESH_YMODEM_RECEIVE_DATA)
+            && esh->ymodem.packet_length != 0U;
+        if (data[index] == _ESH_CTRL_C && !receiving_packet)
         {
             esh_ymodem_abort(esh);
             break;

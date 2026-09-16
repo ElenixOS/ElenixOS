@@ -56,8 +56,7 @@ static bool _player_fill_one_buffer(eos_audio_player_t *p)
     if (spk->ops->enqueue(buf, bytes_read) != 0)
         return false;
 
-    if (res == EOS_OK && p->dsc.format.total_samples > 0
-        && p->dsc.current_sample >= p->dsc.format.total_samples)
+    if (res == EOS_OK && p->dsc.format.total_samples > 0 && p->dsc.current_sample >= p->dsc.format.total_samples)
     {
         p->source_eof = true;
     }

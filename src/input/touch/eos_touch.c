@@ -128,8 +128,7 @@ static void _eos_touch_bound_indev_delete_cb(lv_event_t *event)
     }
 }
 
-static bool _eos_touch_bind_indev_internal(lv_indev_t *indev,
-                                           lv_indev_read_cb_t platform_read_cb)
+static bool _eos_touch_bind_indev_internal(lv_indev_t *indev, lv_indev_read_cb_t platform_read_cb)
 {
     if ((indev == NULL) || (lv_indev_get_type(indev) != LV_INDEV_TYPE_POINTER))
     {

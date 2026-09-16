@@ -1188,9 +1188,7 @@ static void _test_panel_list(lv_event_t *e)
 
 static const char *_test_audio_resolve_path(void)
 {
-    for (uint32_t i = 0U;
-         i < sizeof(s_test_audio_paths) / sizeof(s_test_audio_paths[0]);
-         i++)
+    for (uint32_t i = 0U; i < sizeof(s_test_audio_paths) / sizeof(s_test_audio_paths[0]); i++)
     {
         if (eos_storage_is_file(s_test_audio_paths[i]))
         {

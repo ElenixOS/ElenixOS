@@ -48,8 +48,8 @@ static void _esh_log_listener(eos_log_level_t level, const char *buf, size_t len
      * asynchronous logs while the protocol owns the frontend; the transfer
      * itself retains its CRC/ACK/NAK/error handling and reports text only
      * after returning to command mode. */
-    if (esh && esh == s_esh && esh->owner_active && esh->input_mode != ESH_INPUT_YMODEM
-        && buf && len > 0U && esh_interleaved_begin(esh) == EOS_OK)
+    if (esh && esh == s_esh && esh->owner_active && esh->input_mode != ESH_INPUT_YMODEM && buf && len > 0U
+        && esh_interleaved_begin(esh) == EOS_OK)
     {
         esh_write_active(esh, "[", 1U);
         esh_write_active(esh, level_name, strlen(level_name));

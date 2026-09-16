@@ -319,7 +319,8 @@ int esh_builtin_cmd_ymodemstats(esh_cmd_ctx_t *ctx, int argc, char *argv[])
                    "ymodem: elapsed_ms=%lu data_blocks=%lu bytes=%lu\r\n",
                    (unsigned long)stats->transfer_elapsed_ms,
                    (unsigned long)stats->received_data_blocks,
-                   (unsigned long)stats->received_bytes) != EOS_OK)
+                   (unsigned long)stats->received_bytes)
+        != EOS_OK)
     {
         return EOS_ERR_IO;
     }
@@ -328,7 +329,8 @@ int esh_builtin_cmd_ymodemstats(esh_cmd_ctx_t *ctx, int argc, char *argv[])
                    (unsigned long)stats->crc_error_count,
                    (unsigned long)stats->block_number_error_count,
                    (unsigned long)stats->nak_count,
-                   (unsigned long)stats->duplicate_block_count) != EOS_OK)
+                   (unsigned long)stats->duplicate_block_count)
+        != EOS_OK)
     {
         return EOS_ERR_IO;
     }

@@ -712,7 +712,7 @@ eos_result_t eos_storage_get_space(const char *path, eos_storage_space_t *space)
         return EOS_OK;
     }
 #else
-	return eos_fs_get_space(path, &space->total_bytes, &space->free_bytes);
+    return eos_fs_get_space(path, &space->total_bytes, &space->free_bytes);
 #endif
 }
 

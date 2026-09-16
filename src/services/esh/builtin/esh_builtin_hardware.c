@@ -111,19 +111,30 @@ static int _print_sensor_data(esh_cmd_ctx_t *ctx, const eos_sensor_raw_data_t *d
     switch (data->type)
     {
         case EOS_SENSOR_TYPE_ACCE:
-            return (int)esh_printf(ctx, "x=%" PRId32 " milli-m/s2 y=%" PRId32 " milli-m/s2 z=%" PRId32 " milli-m/s2\r\n",
-                                   data->data.acce.x, data->data.acce.y, data->data.acce.z);
+            return (int)esh_printf(ctx,
+                                   "x=%" PRId32 " milli-m/s2 y=%" PRId32 " milli-m/s2 z=%" PRId32 " milli-m/s2\r\n",
+                                   data->data.acce.x,
+                                   data->data.acce.y,
+                                   data->data.acce.z);
         case EOS_SENSOR_TYPE_GYRO:
-            return (int)esh_printf(ctx, "x=%" PRId32 " milli-deg/s y=%" PRId32 " milli-deg/s z=%" PRId32 " milli-deg/s\r\n",
-                                   data->data.gyro.x, data->data.gyro.y, data->data.gyro.z);
+            return (int)esh_printf(ctx,
+                                   "x=%" PRId32 " milli-deg/s y=%" PRId32 " milli-deg/s z=%" PRId32 " milli-deg/s\r\n",
+                                   data->data.gyro.x,
+                                   data->data.gyro.y,
+                                   data->data.gyro.z);
         case EOS_SENSOR_TYPE_MAG:
-            return (int)esh_printf(ctx, "x=%" PRId32 " nT y=%" PRId32 " nT z=%" PRId32 " nT\r\n",
-                                   data->data.mag.x, data->data.mag.y, data->data.mag.z);
+            return (int)esh_printf(ctx,
+                                   "x=%" PRId32 " nT y=%" PRId32 " nT z=%" PRId32 " nT\r\n",
+                                   data->data.mag.x,
+                                   data->data.mag.y,
+                                   data->data.mag.z);
         case EOS_SENSOR_TYPE_TEMP:
             return (int)esh_printf(ctx, "temp=%" PRId32 " milli-degC\r\n", data->data.temp.temp);
         case EOS_SENSOR_TYPE_BARO:
-            return (int)esh_printf(ctx, "pressure=%" PRId32 " Pa temp=%" PRId32 " milli-degC\r\n",
-                                   data->data.baro.pressure, data->data.baro.temperature);
+            return (int)esh_printf(ctx,
+                                   "pressure=%" PRId32 " Pa temp=%" PRId32 " milli-degC\r\n",
+                                   data->data.baro.pressure,
+                                   data->data.baro.temperature);
         case EOS_SENSOR_TYPE_HUMIDITY:
             return (int)esh_printf(ctx, "humidity=%" PRId32 " milli-%%RH\r\n", data->data.humidity.humidity);
         case EOS_SENSOR_TYPE_LIGHT:

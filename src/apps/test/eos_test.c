@@ -633,11 +633,10 @@ static void _test_app_debugger(void)
 
     eos_activity_set_view(activity, view);
     eos_activity_set_title(activity, "App Debugger");
-    /* The debugger list is a tool/list Activity, not an App execution root.
-     * APP would make Activity Controller inherit the currently running app's
-     * identity and could make debugger navigation look like a second page of
-     * that app. */
-    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP_LIST);
+    /* The debugger is a tool/list Activity, not the system App List and not
+     * an App execution root.  Keep it out of both the App List animation
+     * routes and app-owned Activity binding. */
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP_DEBUGGER);
 
     lv_obj_t *scr = view;
     lv_obj_add_event_cb(scr, _test_app_debug_list_delete_cb, LV_EVENT_DELETE, NULL);

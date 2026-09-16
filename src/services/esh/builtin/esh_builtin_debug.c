@@ -213,6 +213,7 @@ static const char *_activity_type_name(eos_activity_type_t type)
         [EOS_ACTIVITY_TYPE_WATCHFACE_LIST] = "watchface-list",
         [EOS_ACTIVITY_TYPE_LOCK_SCREEN] = "lock-screen",
         [EOS_ACTIVITY_TYPE_RECENT_APPS] = "recent-apps",
+        [EOS_ACTIVITY_TYPE_APP_DEBUGGER] = "app-debugger",
     };
 
     return type < EOS_ACTIVITY_TYPE_COUNT && names[type] ? names[type] : "unknown";

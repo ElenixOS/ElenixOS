@@ -35,6 +35,8 @@ typedef enum
     EOS_ACTIVITY_TYPE_WATCHFACE_LIST,
     EOS_ACTIVITY_TYPE_LOCK_SCREEN,
     EOS_ACTIVITY_TYPE_RECENT_APPS,
+    /** @brief Native App Debugger tool page, not the system App List. */
+    EOS_ACTIVITY_TYPE_APP_DEBUGGER,
     EOS_ACTIVITY_TYPE_COUNT
 } eos_activity_type_t;
 

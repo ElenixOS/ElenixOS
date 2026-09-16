@@ -198,6 +198,8 @@ static const char *_activity_type_to_str(eos_activity_type_t type)
             return "LOCK_SCREEN";
         case EOS_ACTIVITY_TYPE_RECENT_APPS:
             return "RECENT_APPS";
+        case EOS_ACTIVITY_TYPE_APP_DEBUGGER:
+            return "APP_DEBUGGER";
         default:
             return "UNKNOWN";
     }

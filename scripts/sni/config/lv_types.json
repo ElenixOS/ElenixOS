@@ -1197,6 +1197,238 @@
     {
       "name": "lv_yuv_plane_t",
       "object_type": "undefined"
+    },
+    {
+      "name": "_lv_str_symbol_id_t",
+      "object_type": "int"
+    },
+    {
+      "name": "_lv_opacity_level_t",
+      "object_type": "int"
+    },
+    {
+      "name": "_lv_style_id_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_indev_gesture_type_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_arclabel_dir_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_arclabel_text_align_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_arclabel_overflow_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_barcode_encoding_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_barcode_update_mode_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_qrcode_update_mode_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_slider_orientation_t",
+      "object_type": "int"
+    },
+    {
+      "name": "lv_switch_orientation_t",
+      "object_type": "int"
+    },
+    {
+      "name": "_lvimage_flags_t",
+      "object_type": "int"
+    },
+    {
+      "name": "_lv_anim_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_anim_timeline_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_color_filter_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_draw_buf_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_font_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_font_class_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_font_info_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_grad_stop_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_layout_callbacks_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_image_colorkey_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_layer_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_draw_letter_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_draw_image_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_draw_blur_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_subject_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_draw_mask_rect_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_binfont_font_src_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_binfont_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_builtin_font_src_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_tiny_ttf_font_src_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_fragment_t",
+      "object_type": ""
+    },
+    {
+      "name": "_lv_fragment_class_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_span_coords_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_gltf_environment_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_gltf_ibl_sampler_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_freetype_font_src_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_disp_rot_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_delete_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_font_class_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_font_info_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_font_manager_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_arclabel_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_spinner_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_3dtexture_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_gltf_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_gltf_model_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_gltf_model_node_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_subject_increment_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_vector_path_ctx_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_draw_vector_dsc_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_opengles_window_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_opengles_window_texture_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_tree_class_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_tree_node_t",
+      "object_type": ""
+    },
+    {
+      "name": "lv_font_fmt_txt_glyph_loader_t",
+      "object_type": ""
     }
   ],
   "alias_fallbacks": {

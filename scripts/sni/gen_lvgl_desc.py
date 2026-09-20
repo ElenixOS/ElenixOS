@@ -40,6 +40,7 @@ HEADER_TEXT = """/**
 #include "sni_callback_runtime.h"
 #include "sni_api_lv_special.h"
 #include "eos_log.h"
+#include "eos_mem.h"
 /* Macros and Definitions -------------------------------------*/
 #define LV_API_NAME "lv"
 /* Variables --------------------------------------------------*/
@@ -182,6 +183,8 @@ class ApiFunction:
     return_bridge: TypeBridge
     args: List[FuncArg]
     lifecycle_class: str = ""
+    native_call_name: Optional[str] = None
+    output_string: Optional[Tuple[str, str, str]] = None
 
 
 @dataclass
@@ -348,6 +351,19 @@ def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str
             if not isinstance(value, list):
                 raise SystemExit(f"[Error] api-table field scan.{group}.{key} must be an array")
             result[group][key] = [str(item).strip() for item in value if str(item).strip()]
+    return result
+
+
+def parse_function_overrides(api_table: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    overrides = api_table.get("function_overrides", {})
+    if not isinstance(overrides, dict):
+        raise SystemExit("[Error] api-table field function_overrides must be an object")
+
+    result: Dict[str, Dict[str, Any]] = {}
+    for name, value in overrides.items():
+        if not isinstance(value, dict):
+            raise SystemExit(f"[Error] function_overrides.{name} must be an object")
+        result[str(name)] = value
     return result
 
 
@@ -1027,6 +1043,7 @@ def build_api_function(
     context: str,
     function_blacklist: Optional[List[str]] = None,
     lifecycle_map: Optional[Dict[str, str]] = None,
+    function_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
     is_constructor: bool = False,
 ) -> ApiFunction:
     name = str(item.get("name", "")).strip()
@@ -1037,6 +1054,26 @@ def build_api_function(
         raise SkipFunctionError(name, f"function matched scan.function.blacklist: {name}")
 
     manual_signature = should_skip_manual_signature_bridges(name, context)
+    override = (function_overrides or {}).get(name, {})
+    native_call_name = str(override.get("call", name))
+    string_ownership = override.get("string_ownership")
+    if string_ownership is not None and string_ownership not in {"copy"}:
+        raise SystemExit(f"[Error] unsupported string_ownership for {name}: {string_ownership}")
+    if string_ownership == "copy" and native_call_name == name:
+        raise SystemExit(f"[Error] copy ownership override for {name} must name a copying native call")
+    output_string_override = override.get("output_string")
+    output_string: Optional[Tuple[str, str, str]] = None
+    if output_string_override is not None:
+        if not isinstance(output_string_override, dict):
+            raise SystemExit(f"[Error] function_overrides.{name}.output_string must be an object")
+        buffer_arg = str(output_string_override.get("buffer_arg", "")).strip()
+        size_arg = str(output_string_override.get("size_arg", "")).strip()
+        js_buffer_arg = str(output_string_override.get("js_buffer_arg", "placeholder")).strip()
+        if not buffer_arg or not size_arg or js_buffer_arg != "placeholder":
+            raise SystemExit(
+                f"[Error] function_overrides.{name}.output_string requires buffer_arg, size_arg, and placeholder js_buffer_arg"
+            )
+        output_string = (buffer_arg, size_arg, js_buffer_arg)
     ret_type = normalize_c_type(item.get("type"))
 
     # Pre-bridge lifecycle check: reject unsafe return types before build_bridge_from_type
@@ -1095,7 +1132,26 @@ def build_api_function(
             )
         args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
 
-    return ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args, lifecycle_class=ret_lifecycle_class)
+    if output_string is not None:
+        arg_by_name = {arg.name: arg for arg in args}
+        buffer_arg = arg_by_name.get(output_string[0])
+        size_arg = arg_by_name.get(output_string[1])
+        if not buffer_arg or normalize_type_key(buffer_arg.c_type) != "char*":
+            raise SystemExit(f"[Error] output string buffer for {name} must be a mutable char * argument")
+        if not size_arg or normalize_type_key(size_arg.c_type) not in {"uint32_t", "size_t"}:
+            raise SystemExit(f"[Error] output string size for {name} must be uint32_t or size_t")
+        if normalize_type_key(ret_type) != "void":
+            raise SystemExit(f"[Error] output string function {name} must return void")
+
+    return ApiFunction(
+        name=name,
+        return_type=ret_type,
+        return_bridge=ret_bridge,
+        args=args,
+        lifecycle_class=ret_lifecycle_class,
+        native_call_name=native_call_name,
+        output_string=output_string,
+    )
 
 
 def fmt_var_decl(c_type: str, var_name: str) -> str:
@@ -1184,6 +1240,10 @@ def render_arg_conversion(
         lines.append(f"    {c_var_name} = {arg.bridge.js2c_expr}({arg_expr});")
     elif arg.bridge.js2c_mode == "string_fn" and arg.bridge.js2c_expr:
         lines.append(f"    {c_var_name} = {arg.bridge.js2c_expr}({arg_expr});")
+        lines.append(f"    if (!{c_var_name})")
+        lines.append("    {")
+        lines.append('        return sni_api_throw_error("Out of memory");')
+        lines.append("    }")
     elif arg.bridge.js2c_mode == "bridge" and arg.bridge.sni_type:
         lines.append(f"    if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{c_var_name}))")
         lines.append("    {")
@@ -1192,7 +1252,10 @@ def render_arg_conversion(
     else:
         lines.append('    return sni_api_throw_error("Unsupported argument conversion");')
 
-    return ArgRenderResult(call_expr=c_var_name, post_lines=[])
+    post_lines = []
+    if arg.bridge.js2c_mode == "string_fn":
+        post_lines.append(f"    eos_free((void *){c_var_name});")
+    return ArgRenderResult(call_expr=c_var_name, post_lines=post_lines)
 
 
 def render_return_conversion(lines: List[str], func: ApiFunction, result_var: str) -> None:
@@ -1237,6 +1300,7 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     lines.append("")
 
     call_args: List[str] = []
+    post_call_lines: List[str] = []
     for idx, arg in enumerate(ctor_func.args):
         c_var = f"arg_{arg.name}"
         # Use sni_tb_js2c_parent() for SNI_H_LV_OBJ parent args so that
@@ -1257,6 +1321,7 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
         else:
             render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, allow_null=True)
             call_args.append(render_result.call_expr)
+            post_call_lines.extend(render_result.post_lines)
         lines.append("")
 
     call_text = ", ".join(call_args)
@@ -1266,6 +1331,8 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
         return "\n".join(lines)
 
     lines.append(f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {ctor_func.name}({call_text});" if call_text else f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {ctor_func.name}();")
+    if post_call_lines:
+        lines.extend(post_call_lines)
     lines.append(f"    if (!sni_tb_c2js_set_object(&native_obj, {ctor_func.return_bridge.sni_type}, call_info_p->this_value))")
     lines.append("    {")
     lines.append('        return sni_api_throw_error("Failed to bind native object");')
@@ -1303,7 +1370,67 @@ def get_special_property_getter_wrapper_name(cls: ApiClass, prop: ApiProperty, f
     return SPECIAL_PROPERTY_GETTER_WRAPPERS.get((cls.name, prop.name, func.name))
 
 
+def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
+    if not func.args or func.output_string is None:
+        raise SystemExit(f"[Error] output string method {func.name} is missing metadata")
+
+    buffer_name, size_name, _ = func.output_string
+    arg_by_name = {arg.name: (index, arg) for index, arg in enumerate(func.args)}
+    if buffer_name not in arg_by_name or size_name not in arg_by_name:
+        raise SystemExit(f"[Error] output string metadata for {func.name} references an unknown argument")
+
+    buffer_index, _ = arg_by_name[buffer_name]
+    size_index, _ = arg_by_name[size_name]
+    js_buffer_index = buffer_index - 1
+    js_size_index = size_index - 1
+    if buffer_index == 0 or size_index == 0 or js_buffer_index < 0 or js_size_index < 0:
+        raise SystemExit(f"[Error] output string metadata for {func.name} cannot target the this argument")
+
+    wrapper_name = f"sni_api_{func.name}"
+    lines: List[str] = []
+    func_prefix = f"jerry_value_t {wrapper_name}("
+    func_indent = " " * len(func_prefix)
+    lines.append(f"{func_prefix}const jerry_call_info_t *call_info_p,")
+    lines.append(f"{func_indent}const jerry_value_t args_p[],")
+    lines.append(f"{func_indent}const jerry_length_t args_count)")
+    lines.append("{")
+    lines.append(f"    if (args_count != {len(func.args) - 1})")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument count");')
+    lines.append("    }")
+    lines.append("")
+
+    this_arg = func.args[0]
+    self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    lines.append("")
+    lines.append(f"    if (!jerry_value_is_string(args_p[{js_buffer_index}]))")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument type");')
+    lines.append("    }")
+    lines.append(f"    if (!jerry_value_is_number(args_p[{js_size_index}]))")
+    lines.append("    {")
+    lines.append('        return sni_api_throw_error("Invalid argument type");')
+    lines.append("    }")
+    lines.append("    uint32_t output_size;")
+    lines.append(f"    output_size = sni_tb_js2c_uint32(args_p[{js_size_index}]);")
+    lines.append("    if (output_size == 0U)")
+    lines.append("        return jerry_string_sz(\"\");")
+    lines.append("    char *output_buf = eos_malloc(output_size);")
+    lines.append("    if (!output_buf)")
+    lines.append("        return sni_api_throw_error(\"Out of memory\");")
+    lines.append("")
+    lines.append(f"    {func.name}({self_render.call_expr}, output_buf, output_size);")
+    lines.append("    jerry_value_t result = jerry_string_sz(output_buf);")
+    lines.append("    eos_free(output_buf);")
+    lines.append("    return result;")
+    lines.append("}")
+    return "\n".join(lines)
+
+
 def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
+    if func.output_string is not None:
+        return render_output_string_method_wrapper(cls, func)
+
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
 
@@ -1339,15 +1466,16 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
         lines.append("")
 
     call_text = ", ".join(call_args)
+    native_call_name = func.native_call_name or func.name
     if func.return_bridge.c2js_mode == "void":
-        lines.append(f"    {func.name}({call_text});")
+        lines.append(f"    {native_call_name}({call_text});")
         if post_call_lines:
             lines.extend(post_call_lines)
         lines.append("    return jerry_undefined();")
         lines.append("}")
         return "\n".join(lines)
 
-    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {func.name}({call_text});")
+    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}({call_text});")
     if func.lifecycle_class == "sub_resource" and _is_create_method_for_sub_resource(func.name):
         lines.append(f"    sni_tb_link_sub_resource(self_obj, result, {func.return_bridge.sni_type});")
     if post_call_lines:
@@ -1358,6 +1486,9 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
 
 
 def render_static_wrapper(func: ApiFunction) -> str:
+    if func.output_string is not None:
+        raise SystemExit(f"[Error] output string static wrapper is not supported: {func.name}")
+
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
 
@@ -1386,15 +1517,16 @@ def render_static_wrapper(func: ApiFunction) -> str:
         lines.append("")
 
     call_text = ", ".join(call_args)
+    native_call_name = func.native_call_name or func.name
     if func.return_bridge.c2js_mode == "void":
-        lines.append(f"    {func.name}({call_text});" if call_text else f"    {func.name}();")
+        lines.append(f"    {native_call_name}({call_text});" if call_text else f"    {native_call_name}();")
         if post_call_lines:
             lines.extend(post_call_lines)
         lines.append("    return jerry_undefined();")
         lines.append("}")
         return "\n".join(lines)
 
-    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {func.name}({call_text});" if call_text else f"    {fmt_var_decl(func.return_type, 'result')} = {func.name}();")
+    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}({call_text});" if call_text else f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}();")
     if post_call_lines:
         lines.extend(post_call_lines)
     render_return_conversion(lines, func, "result")
@@ -1462,7 +1594,8 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("")
     value_render = render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
     lines.append("")
-    lines.append(f"    {func.name}({self_render.call_expr}, {value_render.call_expr});")
+    native_call_name = func.native_call_name or func.name
+    lines.append(f"    {native_call_name}({self_render.call_expr}, {value_render.call_expr});")
     if value_render.post_lines:
         lines.extend(value_render.post_lines)
     lines.append("    return jerry_undefined();")
@@ -2219,6 +2352,7 @@ def main() -> None:
     lv_types_data = load_json(lv_types_path, required=["types"])
 
     filters = parse_api_filters(api_table_data)
+    function_overrides = parse_function_overrides(api_table_data)
     classes_dict = parse_api_classes(api_table_data)
     classes = topo_sort_classes(classes_dict)
     lv_type_entries = load_type_entries(lv_types_data)
@@ -2254,6 +2388,7 @@ def main() -> None:
                     f"classes.{cls.name}.constructor",
                     func_blacklist,
                     lifecycle_map=lifecycle_map,
+                    function_overrides=function_overrides,
                     is_constructor=True,
                 )
             except SkipFunctionError as exc:
@@ -2276,6 +2411,7 @@ def main() -> None:
                             f"classes.{cls.name}.methods",
                             func_blacklist,
                             lifecycle_map=lifecycle_map,
+                            function_overrides=function_overrides,
                         )
                     except SkipFunctionError as exc:
                         handle_skip_exception(exc, func_blacklist)
@@ -2309,6 +2445,7 @@ def main() -> None:
                         f"classes.{cls.name}.static_methods",
                         func_blacklist,
                         lifecycle_map=lifecycle_map,
+                        function_overrides=function_overrides,
                     )
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)
@@ -2338,6 +2475,7 @@ def main() -> None:
                         f"classes.{cls.name}.property_getter.{prop.name}",
                         func_blacklist,
                         lifecycle_map=lifecycle_map,
+                        function_overrides=function_overrides,
                     )
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)
@@ -2365,6 +2503,7 @@ def main() -> None:
                         f"classes.{cls.name}.property_setter.{prop.name}",
                         func_blacklist,
                         lifecycle_map=lifecycle_map,
+                        function_overrides=function_overrides,
                     )
                 except SkipFunctionError as exc:
                     handle_skip_exception(exc, func_blacklist)

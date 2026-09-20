@@ -218,60 +218,6 @@ const sni_val_obj_t lv_color_prop = {
     .props = lv_color_props,
 };
 
-const sni_val_prop_t lv_grad_color_props[] = {
-    {
-        .name = "blue",
-        .type = SNI_T_UINT8,
-        .offset = offsetof(lv_color_t, blue),
-        .bit_width = 0,
-    },
-    {
-        .name = "green",
-        .type = SNI_T_UINT8,
-        .offset = offsetof(lv_color_t, green),
-        .bit_width = 0,
-    },
-    {
-        .name = "red",
-        .type = SNI_T_UINT8,
-        .offset = offsetof(lv_color_t, red),
-        .bit_width = 0,
-    },
-};
-
-const sni_val_obj_t lv_grad_color_prop = {
-    .type = SNI_V_LV_GRAD_COLOR,
-    .prop_count = 3,
-    .props = lv_grad_color_props,
-};
-
-const sni_val_prop_t lv_gradient_stop_props[] = {
-    {
-        .name = "color",
-        .type = SNI_V_LV_COLOR,
-        .offset = offsetof(lv_gradient_stop_t, color),
-        .bit_width = 0,
-    },
-    {
-        .name = "opa",
-        .type = SNI_T_UINT8,
-        .offset = offsetof(lv_gradient_stop_t, opa),
-        .bit_width = 0,
-    },
-    {
-        .name = "frac",
-        .type = SNI_T_UINT8,
-        .offset = offsetof(lv_gradient_stop_t, frac),
-        .bit_width = 0,
-    },
-};
-
-const sni_val_obj_t lv_gradient_stop_prop = {
-    .type = SNI_V_LV_GRADIENT_STOP,
-    .prop_count = 3,
-    .props = lv_gradient_stop_props,
-};
-
 const sni_val_prop_t lv_point_precise_props[] = {
     {
         .name = "x",
@@ -345,8 +291,6 @@ const sni_val_obj_t *sni_lv_types[] = {
     &lv_color32_prop,
     &lv_color_hsv_prop,
     &lv_color_prop,
-    &lv_grad_color_prop,
-    &lv_gradient_stop_prop,
     &lv_point_precise_prop,
     &lv_point_prop,
     &lv_sqrt_res_prop,

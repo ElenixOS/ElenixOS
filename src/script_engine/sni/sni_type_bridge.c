@@ -396,7 +396,7 @@ static void sni_resource_node_free_cb(void *native_p, struct jerry_object_native
 
 /* Type bridge functions --------------------------------------*/
 
-const char *sni_tb_js2c_string(jerry_value_t js_val)
+char *sni_tb_js2c_string(jerry_value_t js_val)
 {
     if (!jerry_value_is_string(js_val))
     {

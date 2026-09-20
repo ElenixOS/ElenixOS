@@ -1,4 +1,17 @@
 {
+  "function_overrides": {
+    "lv_dropdown_get_selected_str": {
+      "output_string": {
+        "buffer_arg": "buf",
+        "size_arg": "buf_size",
+        "js_buffer_arg": "placeholder"
+      }
+    },
+    "lv_dropdown_set_options_static": {
+      "call": "lv_dropdown_set_options",
+      "string_ownership": "copy"
+    }
+  },
   "classes": {
     "obj": {
       "c_type": "lv_obj_t",

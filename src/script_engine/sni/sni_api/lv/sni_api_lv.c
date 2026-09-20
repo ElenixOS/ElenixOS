@@ -13038,7 +13038,9 @@ jerry_value_t sni_api_lv_obj_calculate_style_text_align(const jerry_call_info_t 
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[1]);
     if (!arg_txt)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_text_align_t result = lv_obj_calculate_style_text_align(self_obj, arg_part, arg_txt);
     eos_free((void *)arg_txt);
@@ -16207,7 +16209,9 @@ jerry_value_t sni_api_lv_obj_add_subject_set_string_event(const jerry_call_info_
     const char *arg_value;
     arg_value = sni_tb_js2c_string(args_p[2]);
     if (!arg_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_obj_add_subject_set_string_event(self_obj, arg_subject, arg_trigger, arg_value);
     eos_free((void *)arg_value);
@@ -18712,7 +18716,9 @@ jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
     const char *arg_text;
     arg_text = sni_tb_js2c_string(args_p[0]);
     if (!arg_text)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_label_set_text(self_obj, arg_text);
     eos_free((void *)arg_text);
@@ -19149,7 +19155,9 @@ jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[1]);
     if (!arg_txt)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_label_ins_text(self_obj, arg_pos, arg_txt);
     eos_free((void *)arg_txt);
@@ -19405,7 +19413,9 @@ jerry_value_t sni_api_prop_set_label_text(const jerry_call_info_t *call_info_p,
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
     if (!prop_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_label_set_text(self_obj, prop_value);
     eos_free((void *)prop_value);
@@ -24834,7 +24844,9 @@ jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
     const char *arg_txt;
     arg_txt = sni_tb_js2c_string(args_p[0]);
     if (!arg_txt)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_checkbox_set_text(self_obj, arg_txt);
     eos_free((void *)arg_txt);
@@ -24914,7 +24926,9 @@ jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
     if (!prop_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_checkbox_set_text(self_obj, prop_value);
     eos_free((void *)prop_value);
@@ -24975,7 +24989,9 @@ jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
     const char *arg_text;
     arg_text = sni_tb_js2c_string(args_p[0]);
     if (!arg_text)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_dropdown_set_text(self_obj, arg_text);
     eos_free((void *)arg_text);
@@ -25008,7 +25024,9 @@ jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info
     const char *arg_options;
     arg_options = sni_tb_js2c_string(args_p[0]);
     if (!arg_options)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_dropdown_set_options(self_obj, arg_options);
     eos_free((void *)arg_options);
@@ -25041,10 +25059,10 @@ jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *ca
     const char *arg_options;
     arg_options = sni_tb_js2c_string(args_p[0]);
     if (!arg_options)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
-    /* JS strings are temporary bridge buffers; the static LVGL API would
-     * retain a dangling pointer. Use the copying setter instead. */
     lv_dropdown_set_options(self_obj, arg_options);
     eos_free((void *)arg_options);
     return jerry_undefined();
@@ -25076,11 +25094,12 @@ jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_
     const char *arg_option;
     arg_option = sni_tb_js2c_string(args_p[0]);
     if (!arg_option)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     if (!jerry_value_is_number(args_p[1]))
     {
-        eos_free((void *)arg_option);
         return sni_api_throw_error("Invalid argument type");
     }
     uint32_t arg_pos;
@@ -25346,17 +25365,17 @@ jerry_value_t sni_api_lv_dropdown_get_selected_str(const jerry_call_info_t *call
     {
         return sni_api_throw_error("Invalid argument type");
     }
-    uint32_t arg_buf_size;
-    arg_buf_size = sni_tb_js2c_uint32(args_p[1]);
-    if (arg_buf_size == 0)
+    uint32_t output_size;
+    output_size = sni_tb_js2c_uint32(args_p[1]);
+    if (output_size == 0U)
         return jerry_string_sz("");
-
-    char *arg_buf = eos_malloc(arg_buf_size);
-    if (!arg_buf)
+    char *output_buf = eos_malloc(output_size);
+    if (!output_buf)
         return sni_api_throw_error("Out of memory");
-    lv_dropdown_get_selected_str(self_obj, arg_buf, arg_buf_size);
-    jerry_value_t result = jerry_string_sz(arg_buf);
-    eos_free(arg_buf);
+
+    lv_dropdown_get_selected_str(self_obj, output_buf, output_size);
+    jerry_value_t result = jerry_string_sz(output_buf);
+    eos_free(output_buf);
     return result;
 }
 
@@ -25386,7 +25405,9 @@ jerry_value_t sni_api_lv_dropdown_get_option_index(const jerry_call_info_t *call
     const char *arg_option;
     arg_option = sni_tb_js2c_string(args_p[0]);
     if (!arg_option)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     int32_t result = lv_dropdown_get_option_index(self_obj, arg_option);
     eos_free((void *)arg_option);
@@ -25660,7 +25681,9 @@ jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_in
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
     if (!prop_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_dropdown_set_options(self_obj, prop_value);
     eos_free((void *)prop_value);
@@ -25693,7 +25716,9 @@ jerry_value_t sni_api_prop_set_dropdown_options_static(const jerry_call_info_t *
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
     if (!prop_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_dropdown_set_options(self_obj, prop_value);
     eos_free((void *)prop_value);
@@ -25882,7 +25907,9 @@ jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_
     const char *prop_value;
     prop_value = sni_tb_js2c_string(args_p[0]);
     if (!prop_value)
+    {
         return sni_api_throw_error("Out of memory");
+    }
 
     lv_dropdown_set_text(self_obj, prop_value);
     eos_free((void *)prop_value);
@@ -29295,39 +29322,39 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "OBJ_CLASS_GROUP_DEF_TRUE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "OBJ_CLASS_THEME_INHERITABLE_FALSE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "OBJ_CLASS_THEME_INHERITABLE_TRUE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "OBJ_FLAG_ADV_HITTEST", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_ADV_HITTEST},
-    {.name = "OBJ_FLAG_CHECKABLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_CHECKABLE},
-    {.name = "OBJ_FLAG_CLICKABLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_CLICKABLE},
-    {.name = "OBJ_FLAG_CLICK_FOCUSABLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_CLICK_FOCUSABLE},
-    {.name = "OBJ_FLAG_EVENT_BUBBLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_EVENT_BUBBLE},
-    {.name = "OBJ_FLAG_EVENT_TRICKLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_EVENT_TRICKLE},
-    {.name = "OBJ_FLAG_FLEX_IN_NEW_TRACK", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_FLEX_IN_NEW_TRACK},
-    {.name = "OBJ_FLAG_FLOATING", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_FLOATING},
-    {.name = "OBJ_FLAG_GESTURE_BUBBLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_GESTURE_BUBBLE},
-    {.name = "OBJ_FLAG_HIDDEN", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_HIDDEN},
-    {.name = "OBJ_FLAG_IGNORE_LAYOUT", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_IGNORE_LAYOUT},
-    {.name = "OBJ_FLAG_LAYOUT_1", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_LAYOUT_1},
-    {.name = "OBJ_FLAG_LAYOUT_2", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_LAYOUT_2},
-    {.name = "OBJ_FLAG_OVERFLOW_VISIBLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_OVERFLOW_VISIBLE},
-    {.name = "OBJ_FLAG_PRESS_LOCK", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_PRESS_LOCK},
-    {.name = "OBJ_FLAG_SCROLLABLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLLABLE},
-    {.name = "OBJ_FLAG_SCROLL_CHAIN", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_CHAIN},
-    {.name = "OBJ_FLAG_SCROLL_CHAIN_HOR", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_CHAIN_HOR},
-    {.name = "OBJ_FLAG_SCROLL_CHAIN_VER", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_CHAIN_VER},
-    {.name = "OBJ_FLAG_SCROLL_ELASTIC", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_ELASTIC},
-    {.name = "OBJ_FLAG_SCROLL_MOMENTUM", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_MOMENTUM},
-    {.name = "OBJ_FLAG_SCROLL_ONE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_ONE},
-    {.name = "OBJ_FLAG_SCROLL_ON_FOCUS", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_ON_FOCUS},
-    {.name = "OBJ_FLAG_SCROLL_WITH_ARROW", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SCROLL_WITH_ARROW},
-    {.name = "OBJ_FLAG_SEND_DRAW_TASK_EVENTS", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS},
-    {.name = "OBJ_FLAG_SNAPPABLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_SNAPPABLE},
-    {.name = "OBJ_FLAG_STATE_TRICKLE", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_STATE_TRICKLE},
-    {.name = "OBJ_FLAG_USER_1", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_USER_1},
-    {.name = "OBJ_FLAG_USER_2", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_USER_2},
-    {.name = "OBJ_FLAG_USER_3", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_USER_3},
-    {.name = "OBJ_FLAG_USER_4", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_USER_4},
-    {.name = "OBJ_FLAG_WIDGET_1", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_WIDGET_1},
-    {.name = "OBJ_FLAG_WIDGET_2", .type = SNI_CONST_INT, .value.i = LV_OBJ_FLAG_WIDGET_2},
+    {.name = "OBJ_FLAG_ADV_HITTEST", .type = SNI_CONST_INT, .value.i = 65536},
+    {.name = "OBJ_FLAG_CHECKABLE", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "OBJ_FLAG_CLICKABLE", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "OBJ_FLAG_CLICK_FOCUSABLE", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "OBJ_FLAG_EVENT_BUBBLE", .type = SNI_CONST_INT, .value.i = 16384},
+    {.name = "OBJ_FLAG_EVENT_TRICKLE", .type = SNI_CONST_INT, .value.i = 2097152},
+    {.name = "OBJ_FLAG_FLEX_IN_NEW_TRACK", .type = SNI_CONST_INT, .value.i = 8388608},
+    {.name = "OBJ_FLAG_FLOATING", .type = SNI_CONST_INT, .value.i = 262144},
+    {.name = "OBJ_FLAG_GESTURE_BUBBLE", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "OBJ_FLAG_HIDDEN", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "OBJ_FLAG_IGNORE_LAYOUT", .type = SNI_CONST_INT, .value.i = 131072},
+    {.name = "OBJ_FLAG_LAYOUT_1", .type = SNI_CONST_INT, .value.i = 8388608},
+    {.name = "OBJ_FLAG_LAYOUT_2", .type = SNI_CONST_INT, .value.i = 16777216},
+    {.name = "OBJ_FLAG_OVERFLOW_VISIBLE", .type = SNI_CONST_INT, .value.i = 1048576},
+    {.name = "OBJ_FLAG_PRESS_LOCK", .type = SNI_CONST_INT, .value.i = 8192},
+    {.name = "OBJ_FLAG_SCROLLABLE", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "OBJ_FLAG_SCROLL_CHAIN", .type = SNI_CONST_INT, .value.i = 768},
+    {.name = "OBJ_FLAG_SCROLL_CHAIN_HOR", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "OBJ_FLAG_SCROLL_CHAIN_VER", .type = SNI_CONST_INT, .value.i = 512},
+    {.name = "OBJ_FLAG_SCROLL_ELASTIC", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "OBJ_FLAG_SCROLL_MOMENTUM", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "OBJ_FLAG_SCROLL_ONE", .type = SNI_CONST_INT, .value.i = 128},
+    {.name = "OBJ_FLAG_SCROLL_ON_FOCUS", .type = SNI_CONST_INT, .value.i = 1024},
+    {.name = "OBJ_FLAG_SCROLL_WITH_ARROW", .type = SNI_CONST_INT, .value.i = 2048},
+    {.name = "OBJ_FLAG_SEND_DRAW_TASK_EVENTS", .type = SNI_CONST_INT, .value.i = 524288},
+    {.name = "OBJ_FLAG_SNAPPABLE", .type = SNI_CONST_INT, .value.i = 4096},
+    {.name = "OBJ_FLAG_STATE_TRICKLE", .type = SNI_CONST_INT, .value.i = 4194304},
+    {.name = "OBJ_FLAG_USER_1", .type = SNI_CONST_INT, .value.i = 134217728},
+    {.name = "OBJ_FLAG_USER_2", .type = SNI_CONST_INT, .value.i = 268435456},
+    {.name = "OBJ_FLAG_USER_3", .type = SNI_CONST_INT, .value.i = 536870912},
+    {.name = "OBJ_FLAG_USER_4", .type = SNI_CONST_INT, .value.i = 1073741824},
+    {.name = "OBJ_FLAG_WIDGET_1", .type = SNI_CONST_INT, .value.i = 33554432},
+    {.name = "OBJ_FLAG_WIDGET_2", .type = SNI_CONST_INT, .value.i = 67108864},
     {.name = "OBJ_POINT_TRANSFORM_FLAG_INVERSE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "OBJ_POINT_TRANSFORM_FLAG_INVERSE_RECURSIVE", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "OBJ_POINT_TRANSFORM_FLAG_NONE", .type = SNI_CONST_INT, .value.i = 0},

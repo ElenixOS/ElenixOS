@@ -39,7 +39,7 @@ extern "C" {
  * @return const char* C string pointer
  * @note Caller must use `eos_free` to free the returned string memory
  */
-const char *sni_tb_js2c_string(jerry_value_t js_val);
+char *sni_tb_js2c_string(jerry_value_t js_val);
 
 /**
  * @brief Convert JerryScript value to C value or value object

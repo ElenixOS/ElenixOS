@@ -1,6 +1,6 @@
 /**
  * @file eos_ww_barometer.c
- * @brief Watchface barometer indicator (hPa)
+ * @brief Watchface barometer indicator (Pa)
  */
 
 #include "eos_ww_barometer.h"
@@ -18,7 +18,7 @@
 static void _barometer_update(eos_ww_status_t *s, const eos_sensor_raw_data_t *data)
 {
     int32_t pressure = data->data.baro.pressure; /* Pa */
-    eos_ww_status_set_value(s, "%d hPa", (int)(pressure / 100));
+    eos_ww_status_set_value(s, "%d Pa", (int)pressure);
 }
 
 lv_obj_t *eos_ww_barometer_create(lv_obj_t *parent)

@@ -1774,11 +1774,7 @@ static void _sensor_update_table(_sensor_test_data_t *data)
                 break;
 
             case EOS_SENSOR_TYPE_BARO:
-                lv_table_set_cell_value_fmt(data->table,
-                                            i + 1,
-                                            _SENSOR_VAL_COL,
-                                            "%.2f hPa",
-                                            raw_data.data.baro.pressure / 100.0f);
+                lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL, "%d Pa", raw_data.data.baro.pressure);
                 break;
 
             case EOS_SENSOR_TYPE_HUMIDITY:

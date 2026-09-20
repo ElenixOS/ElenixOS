@@ -41,13 +41,27 @@ static eos_sensor_mode_t _current_mode = EOS_SENSOR_MODE_NORMAL;
 static eos_sensor_service_instance_t _instances[EOS_SENSOR_TYPE_MAX] = {0};
 static bool _service_initialized = false;
 
+typedef struct _sensor_demand_t
+{
+    eos_sensor_demand_id_t id;
+    eos_sensor_type_t type;
+    uint32_t period_ms;
+    struct _sensor_demand_t *next;
+} _sensor_demand_t;
+
+static _sensor_demand_t *_demands = NULL;
+static eos_sensor_demand_id_t _next_demand_id = 1U;
+static eos_sensor_demand_id_t _legacy_demand_ids[EOS_SENSOR_TYPE_MAX] = {0};
+
 /** Nesting depth of eos_sensor_notify broadcast; >0 means inside broadcast */
 static int _broadcast_depth = 0;
 
 /* Function Implementations -----------------------------------*/
 
 /* Forward declarations */
-static uint32_t _recalc_min_interval(eos_sensor_service_instance_t *inst);
+static eos_result_t _sensor_recompute_period(eos_sensor_service_instance_t *inst);
+static _sensor_demand_t *_find_demand(eos_sensor_demand_id_t demand_id);
+static uint32_t _get_min_demand_period(eos_sensor_type_t type);
 
 /**
  * @brief Free all subscribers marked for deletion on a given instance.
@@ -111,8 +125,9 @@ static void _on_pm_state_change(eos_event_t *e)
     _current_mode = new_mode;
 
     /*
-     * On SLEEP entry: disable all actively-sampling sensors.
-     * On wake-up (SLEEP → NORMAL): re-enable sensors that have subscribers.
+     * On SLEEP entry: disable all actively-sampling sensors while retaining
+     * their demand records. On wake-up, recompute from every demand, not only
+     * ordinary subscribers: one-shot HR/Compass requests are also owners.
      */
     if (!new_policy->allow_enable && old_policy->allow_enable)
     {
@@ -126,70 +141,31 @@ static void _on_pm_state_change(eos_event_t *e)
                 {
                     inst->device->ops->disable(inst->device);
                 }
-                EOS_LOG_I("SLEEP: disabled sensor type=%d (subscribers=%u)", i, inst->subscriber_count);
+                inst->is_enabled = false;
+                EOS_LOG_I("SLEEP: disabled sensor type=%d", i);
             }
         }
     }
     else if (new_policy->allow_enable && !old_policy->allow_enable)
     {
-        /* Waking from SLEEP — re-enable sensors with subscribers */
+        /* Waking from SLEEP — re-enable sensors with active demands */
         for (uint32_t i = EOS_SENSOR_TYPE_UNKNOWN + 1; i < EOS_SENSOR_TYPE_MAX; i++)
         {
             eos_sensor_service_instance_t *inst = &_instances[i];
-            if (inst->subscriber_count > 0 && !inst->is_enabled && inst->device && inst->device->ops)
+            if (_get_min_demand_period((eos_sensor_type_t)i) > 0U)
             {
-                if (inst->device->ops->enable)
-                {
-                    inst->device->ops->enable(inst->device);
-                }
-                inst->is_enabled = true;
-                /* Re-apply the sample rate */
-                if (inst->device->ops->set_sample_rate && inst->sample_period_ms > 0)
-                {
-                    uint32_t hz = 1000 / inst->sample_period_ms;
-                    if (hz == 0)
-                        hz = 1;
-                    inst->device->ops->set_sample_rate(inst->device, hz);
-                }
-                EOS_LOG_I("WAKE: re-enabled sensor type=%d (subscribers=%u, period=%ums)",
-                          i,
-                          inst->subscriber_count,
-                          inst->sample_period_ms);
+                (void)_sensor_recompute_period(inst);
+                EOS_LOG_I("WAKE: re-enabled sensor type=%d (period=%ums)", i, inst->sample_period_ms);
             }
         }
     }
-    else if (new_policy->min_interval_ms > old_policy->min_interval_ms)
+    else
     {
-        /*
-         * Downgrade (e.g. NORMAL → LOW_POWER): re-clamp all active sensors.
-         * Sensors with period < min_interval_ms get bumped up to the floor.
-         */
+        /* Recompute all active demands when the policy floor changes. */
         for (uint32_t i = EOS_SENSOR_TYPE_UNKNOWN + 1; i < EOS_SENSOR_TYPE_MAX; i++)
         {
             eos_sensor_service_instance_t *inst = &_instances[i];
-            if (inst->is_active && inst->sample_period_ms < new_policy->min_interval_ms)
-            {
-                eos_sensor_set_sample_period((eos_sensor_type_t)i, new_policy->min_interval_ms);
-            }
-        }
-    }
-    else if (new_policy->min_interval_ms < old_policy->min_interval_ms)
-    {
-        /*
-         * Upgrade (e.g. LOW_POWER → NORMAL): recalculate from subscriber
-         * intervals now that the floor is lower.
-         */
-        for (uint32_t i = EOS_SENSOR_TYPE_UNKNOWN + 1; i < EOS_SENSOR_TYPE_MAX; i++)
-        {
-            eos_sensor_service_instance_t *inst = &_instances[i];
-            if (inst->subscriber_count > 0)
-            {
-                uint32_t recalc = _recalc_min_interval(inst);
-                if (recalc > 0)
-                {
-                    eos_sensor_set_sample_period((eos_sensor_type_t)i, recalc);
-                }
-            }
+            (void)_sensor_recompute_period(inst);
         }
     }
 }
@@ -199,15 +175,29 @@ eos_result_t eos_service_sensor_init(void)
     if (_service_initialized)
         return EOS_ERR_ALREADY_INITIALIZED;
 
+    _demands = NULL;
+    memset(_legacy_demand_ids, 0, sizeof(_legacy_demand_ids));
+    _next_demand_id = 1U;
+
     for (uint32_t i = EOS_SENSOR_TYPE_UNKNOWN + 1; i < EOS_SENSOR_TYPE_MAX; i++)
     {
         _instances[i].type = (eos_sensor_type_t)i;
         _instances[i].device = eos_dev_sensor_get_default((eos_sensor_type_t)i);
         _instances[i].fifo = eos_fifo_create(EOS_SENSOR_FIFO_CAPACITY * sizeof(eos_sensor_raw_data_t));
+        if (!_instances[i].fifo)
+        {
+            for (uint32_t j = EOS_SENSOR_TYPE_UNKNOWN + 1; j < i; j++)
+            {
+                eos_fifo_destroy(_instances[j].fifo);
+                _instances[j].fifo = NULL;
+            }
+            return EOS_ERR_MEM;
+        }
         _instances[i].sample_period_ms = 0;
         _instances[i].last_sample_time = 0;
         _instances[i].is_active = false;
         _instances[i].is_enabled = false;
+        _instances[i].has_sample = false;
         _instances[i].subscriber_count = 0;
         _instances[i].subscribers = NULL;
         memset(&_instances[i].latest_data, 0, sizeof(eos_sensor_raw_data_t));
@@ -233,10 +223,17 @@ eos_result_t eos_sensor_read(eos_sensor_type_t type, eos_sensor_raw_data_t *data
         return EOS_ERR_INVALID_ARG;
 
     eos_sensor_service_instance_t *inst = &_instances[type];
-    if (!inst->fifo || eos_fifo_is_empty(inst->fifo))
+    if (!inst->fifo)
         return EOS_ERR_NOT_FOUND;
 
+    eos_critical_ctx_t ctx = eos_critical_enter();
+    if (eos_fifo_is_empty(inst->fifo))
+    {
+        eos_critical_leave(ctx);
+        return EOS_ERR_NOT_FOUND;
+    }
     uint16_t read = eos_fifo_read(inst->fifo, data, sizeof(eos_sensor_raw_data_t));
+    eos_critical_leave(ctx);
     return (read == sizeof(eos_sensor_raw_data_t)) ? EOS_OK : EOS_ERR_NOT_FOUND;
 }
 
@@ -249,29 +246,97 @@ eos_result_t eos_sensor_read_latest(eos_sensor_type_t type, eos_sensor_raw_data_
         return EOS_ERR_INVALID_ARG;
 
     eos_sensor_service_instance_t *inst = &_instances[type];
+    eos_critical_ctx_t ctx = eos_critical_enter();
+    if (!inst->has_sample)
+    {
+        eos_critical_leave(ctx);
+        return EOS_ERR_NOT_FOUND;
+    }
     memcpy(data, &inst->latest_data, sizeof(eos_sensor_raw_data_t));
+    eos_critical_leave(ctx);
     return EOS_OK;
 }
 
-/**
- * @brief Recalculate the minimum sample interval from all active subscribers
- */
-static uint32_t _recalc_min_interval(eos_sensor_service_instance_t *inst)
+static _sensor_demand_t *_find_demand(eos_sensor_demand_id_t demand_id)
 {
-    uint32_t min_interval = 0;
-    sensor_subscriber_t *sub = inst->subscribers;
-    while (sub)
+    _sensor_demand_t *demand = _demands;
+
+    while (demand)
     {
-        if (!sub->marked_for_delete && sub->min_interval_ms > 0)
-        {
-            if (min_interval == 0 || sub->min_interval_ms < min_interval)
-            {
-                min_interval = sub->min_interval_ms;
-            }
-        }
-        sub = sub->next;
+        if (demand->id == demand_id)
+            return demand;
+        demand = demand->next;
     }
-    return min_interval;
+    return NULL;
+}
+
+static uint32_t _get_min_demand_period(eos_sensor_type_t type)
+{
+    uint32_t min_period = 0U;
+    _sensor_demand_t *demand = _demands;
+
+    while (demand)
+    {
+        if (demand->type == type && (min_period == 0U || demand->period_ms < min_period))
+            min_period = demand->period_ms;
+        demand = demand->next;
+    }
+    return min_period;
+}
+
+static eos_result_t _sensor_recompute_period(eos_sensor_service_instance_t *inst)
+{
+    uint32_t requested_period;
+    uint32_t effective_period;
+    uint32_t old_period;
+    bool was_enabled;
+    eos_sensor_policy_t *policy;
+
+    if (!inst)
+        return EOS_ERR_INVALID_ARG;
+
+    requested_period = _get_min_demand_period(inst->type);
+    old_period = inst->sample_period_ms;
+    was_enabled = inst->is_enabled;
+    policy = &_policies[_current_mode];
+
+    if (requested_period == 0U)
+    {
+        inst->sample_period_ms = 0U;
+        inst->is_active = false;
+        if (inst->is_enabled && inst->device && inst->device->ops && inst->device->ops->disable)
+            inst->device->ops->disable(inst->device);
+        inst->is_enabled = false;
+        return EOS_OK;
+    }
+
+    if (!inst->device || !inst->device->ops)
+        return EOS_ERR_DEV_NOT_FOUND;
+    if (eos_dev_sensor_get_state(inst->device) == DEV_STATE_ERROR)
+        return EOS_ERR_DEV_ERROR;
+    if (!policy->allow_enable)
+        return EOS_ERR_INVALID_STATE;
+
+    effective_period = requested_period;
+    if (policy->min_interval_ms > 0U && effective_period < policy->min_interval_ms)
+        effective_period = policy->min_interval_ms;
+
+    inst->sample_period_ms = effective_period;
+    inst->is_active = true;
+
+    if (!inst->is_enabled && inst->device->ops->enable)
+        inst->device->ops->enable(inst->device);
+    inst->is_enabled = true;
+
+    if ((old_period != effective_period || !was_enabled) && inst->device->ops->set_sample_rate)
+    {
+        uint32_t hz = 1000U / effective_period;
+        if (hz == 0U)
+            hz = 1U;
+        inst->device->ops->set_sample_rate(inst->device, hz);
+    }
+
+    return EOS_OK;
 }
 
 /**
@@ -331,16 +396,22 @@ eos_result_t eos_sensor_subscribe(eos_sensor_type_t type,
     node->cb = cb;
     node->user_data = user_data;
     node->min_interval_ms = min_interval_ms;
+    node->demand_id = EOS_SENSOR_DEMAND_INVALID;
     node->next = inst->subscribers;
     node->marked_for_delete = false;
     inst->subscribers = node;
     inst->subscriber_count++;
 
-    /* Recalculate the minimum interval across all subscribers */
-    uint32_t new_min = _recalc_min_interval(inst);
-    if (new_min > 0 && (inst->sample_period_ms == 0 || new_min < inst->sample_period_ms))
+    if (min_interval_ms > 0U)
     {
-        eos_sensor_set_sample_period(type, new_min);
+        eos_result_t demand_result = eos_sensor_demand_acquire(type, min_interval_ms, &node->demand_id);
+        if (demand_result != EOS_OK)
+        {
+            inst->subscribers = node->next;
+            inst->subscriber_count--;
+            eos_free(node);
+            return demand_result;
+        }
     }
 
     EOS_LOG_I("subscribe: type=%d, min_interval=%ums, subscribers=%u, period=%ums",
@@ -376,12 +447,14 @@ eos_result_t eos_sensor_unsubscribe(eos_sensor_type_t type, eos_sensor_data_cb_t
      */
     sensor_subscriber_t *sub = inst->subscribers;
     bool found = false;
+    eos_sensor_demand_id_t demand_id = EOS_SENSOR_DEMAND_INVALID;
 
     while (sub)
     {
         if (!sub->marked_for_delete && sub->cb == cb && sub->user_data == user_data)
         {
             found = true;
+            demand_id = sub->demand_id;
 
             if (_broadcast_depth > 0)
             {
@@ -427,99 +500,133 @@ eos_result_t eos_sensor_unsubscribe(eos_sensor_type_t type, eos_sensor_data_cb_t
         inst->subscriber_count--;
     }
 
-    /* Recalculate min interval from remaining subscribers */
-    if (inst->subscriber_count == 0)
-    {
-        /* No subscribers left — disable sensor */
-        eos_sensor_set_sample_period(type, 0);
-        EOS_LOG_I("unsubscribe: type=%d, last subscriber removed, sensor disabled", type);
-    }
-    else
-    {
-        uint32_t new_min = _recalc_min_interval(inst);
-        if (new_min > 0 && new_min != inst->sample_period_ms)
-        {
-            /* Adjust rate — slow down if the fastest subscriber left */
-            eos_sensor_set_sample_period(type, new_min);
-        }
-        EOS_LOG_I("unsubscribe: type=%d, subscribers=%u, period recalculated=%ums",
-                  type,
-                  inst->subscriber_count,
-                  new_min);
-    }
+    if (demand_id != EOS_SENSOR_DEMAND_INVALID)
+        (void)eos_sensor_demand_release(demand_id);
+
+    EOS_LOG_I("unsubscribe: type=%d, subscribers=%u, period=%ums",
+              type,
+              inst->subscriber_count,
+              inst->sample_period_ms);
 
     return EOS_OK;
 }
 
-eos_result_t eos_sensor_set_sample_period(eos_sensor_type_t type, uint32_t period_ms)
+static void _unlink_demand(_sensor_demand_t *target)
 {
+    _sensor_demand_t **link = &_demands;
+
+    while (*link)
+    {
+        if (*link == target)
+        {
+            *link = target->next;
+            return;
+        }
+        link = &(*link)->next;
+    }
+}
+
+static eos_result_t _update_demand(eos_sensor_demand_id_t demand_id, uint32_t period_ms)
+{
+    _sensor_demand_t *demand = _find_demand(demand_id);
+    eos_sensor_service_instance_t *inst;
+    eos_result_t result;
+    uint32_t old_period;
+
+    if (!demand || period_ms == 0U)
+        return EOS_ERR_INVALID_ARG;
+
+    inst = &_instances[demand->type];
+    old_period = demand->period_ms;
+    demand->period_ms = period_ms;
+    result = _sensor_recompute_period(inst);
+    if (result != EOS_OK)
+    {
+        demand->period_ms = old_period;
+        (void)_sensor_recompute_period(inst);
+        return result;
+    }
+    return EOS_OK;
+}
+
+eos_result_t eos_sensor_demand_acquire(eos_sensor_type_t type, uint32_t period_ms, eos_sensor_demand_id_t *demand_id)
+{
+    _sensor_demand_t *demand;
+    eos_result_t result;
+
     if (!_service_initialized)
         return EOS_ERR_NOT_INITIALIZED;
+    if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_TYPE_MAX || period_ms == 0U || !demand_id)
+        return EOS_ERR_INVALID_ARG;
 
+    demand = eos_malloc_zeroed(sizeof(*demand));
+    if (!demand)
+        return EOS_ERR_MEM;
+
+    demand->id = _next_demand_id++;
+    if (demand->id == EOS_SENSOR_DEMAND_INVALID)
+        demand->id = _next_demand_id++;
+    demand->type = type;
+    demand->period_ms = period_ms;
+    demand->next = _demands;
+    _demands = demand;
+
+    result = _sensor_recompute_period(&_instances[type]);
+    if (result != EOS_OK)
+    {
+        _unlink_demand(demand);
+        eos_free(demand);
+        return result;
+    }
+
+    *demand_id = demand->id;
+    return EOS_OK;
+}
+
+eos_result_t eos_sensor_demand_release(eos_sensor_demand_id_t demand_id)
+{
+    _sensor_demand_t *demand;
+    eos_sensor_type_t type;
+
+    if (!_service_initialized)
+        return EOS_ERR_NOT_INITIALIZED;
+    if (demand_id == EOS_SENSOR_DEMAND_INVALID)
+        return EOS_ERR_INVALID_ARG;
+
+    demand = _find_demand(demand_id);
+    if (!demand)
+        return EOS_ERR_NOT_FOUND;
+
+    type = demand->type;
+    _unlink_demand(demand);
+    eos_free(demand);
+    return _sensor_recompute_period(&_instances[type]);
+}
+
+eos_result_t eos_sensor_set_sample_period(eos_sensor_type_t type, uint32_t period_ms)
+{
+    eos_sensor_demand_id_t *legacy_id;
+    eos_result_t result;
+
+    if (!_service_initialized)
+        return EOS_ERR_NOT_INITIALIZED;
     if (type <= EOS_SENSOR_TYPE_UNKNOWN || type >= EOS_SENSOR_TYPE_MAX)
         return EOS_ERR_INVALID_ARG;
 
-    eos_sensor_service_instance_t *inst = &_instances[type];
-    uint32_t old_period_ms = inst->sample_period_ms;
-    bool was_enabled = inst->is_enabled;
-
-    /* Mode policy clamp */
-    eos_sensor_policy_t *policy = &_policies[_current_mode];
-    if (period_ms > 0)
+    legacy_id = &_legacy_demand_ids[type];
+    if (period_ms == 0U)
     {
-        if (!policy->allow_enable)
-        {
-            EOS_LOG_W("set_sample_period: type=%d rejected — sensors disabled in mode %d", type, _current_mode);
-            return EOS_ERR_INVALID_STATE;
-        }
-        if (policy->min_interval_ms > 0 && period_ms < policy->min_interval_ms)
-        {
-            EOS_LOG_I("set_sample_period: type=%d clamped %ums → %ums (mode=%d policy floor)",
-                      type,
-                      period_ms,
-                      policy->min_interval_ms,
-                      _current_mode);
-            period_ms = policy->min_interval_ms;
-        }
+        if (*legacy_id == EOS_SENSOR_DEMAND_INVALID)
+            return EOS_OK;
+        result = eos_sensor_demand_release(*legacy_id);
+        *legacy_id = EOS_SENSOR_DEMAND_INVALID;
+        return result;
     }
 
-    inst->sample_period_ms = period_ms;
-    inst->is_active = (period_ms > 0);
+    if (*legacy_id == EOS_SENSOR_DEMAND_INVALID)
+        return eos_sensor_demand_acquire(type, period_ms, legacy_id);
 
-    if (inst->device && inst->device->ops)
-    {
-        if (period_ms > 0)
-        {
-            /* Guard: only call enable on state transition */
-            if (!inst->is_enabled && inst->device->ops->enable)
-            {
-                inst->device->ops->enable(inst->device);
-                EOS_LOG_I("set_sample_period: type=%d, ENABLING device at %ums period", type, period_ms);
-            }
-            inst->is_enabled = true;
-
-            /* Do not reprogram the device when the effective period is unchanged. */
-            if ((old_period_ms != period_ms || !was_enabled) && inst->device->ops->set_sample_rate)
-            {
-                uint32_t hz = 1000 / period_ms;
-                if (hz == 0)
-                    hz = 1;
-                inst->device->ops->set_sample_rate(inst->device, hz);
-            }
-        }
-        else
-        {
-            /* Guard: only call disable on state transition */
-            if (inst->is_enabled && inst->device->ops->disable)
-            {
-                inst->device->ops->disable(inst->device);
-                EOS_LOG_I("set_sample_period: type=%d, DISABLING device", type);
-            }
-            inst->is_enabled = false;
-        }
-    }
-
-    return EOS_OK;
+    return _update_demand(*legacy_id, period_ms);
 }
 
 uint32_t eos_sensor_get_sample_period(eos_sensor_type_t type)
@@ -531,6 +638,14 @@ uint32_t eos_sensor_get_sample_period(eos_sensor_type_t type)
         return 0;
 
     return _instances[type].sample_period_ms;
+}
+
+eos_result_t eos_sensor_cancel(eos_sensor_request_id_t request_id)
+{
+    eos_result_t result = eos_sensor_heart_rate_cancel(request_id);
+    if (result == EOS_OK)
+        return EOS_OK;
+    return eos_sensor_compass_cancel(request_id);
 }
 
 void eos_sensor_notify(eos_sensor_type_t type, const eos_sensor_data_t *data, uint32_t timestamp)
@@ -564,6 +679,7 @@ void eos_sensor_notify(eos_sensor_type_t type, const eos_sensor_data_t *data, ui
     /* Use atomic write to prevent torn entries */
     eos_fifo_write_atomic(inst->fifo, &raw_data, sizeof(eos_sensor_raw_data_t));
     memcpy(&inst->latest_data, &raw_data, sizeof(eos_sensor_raw_data_t));
+    inst->has_sample = true;
     eos_critical_leave(ctx);
 
     /*
@@ -637,38 +753,13 @@ eos_result_t eos_sensor_set_mode_policy(eos_sensor_mode_t mode, const eos_sensor
     _policies[mode] = new_policy;
     eos_critical_leave(ctx);
 
-    /*
-     * If the policy for the current mode changed, re-apply the clamp.
-     */
+    /* Recompute every active demand against the new policy. */
     if (mode == _current_mode)
     {
         for (uint32_t i = EOS_SENSOR_TYPE_UNKNOWN + 1; i < EOS_SENSOR_TYPE_MAX; i++)
         {
             eos_sensor_service_instance_t *inst = &_instances[i];
-            if (inst->is_active)
-            {
-                if (!new_policy.allow_enable)
-                {
-                    /* New policy forbids enable — disable sensor */
-                    if (inst->is_enabled && inst->device && inst->device->ops && inst->device->ops->disable)
-                    {
-                        inst->device->ops->disable(inst->device);
-                        inst->is_enabled = false;
-                    }
-                }
-                else if (inst->sample_period_ms < new_policy.min_interval_ms)
-                {
-                    /* New floor is higher — clamp period */
-                    inst->sample_period_ms = new_policy.min_interval_ms;
-                    uint32_t hz = 1000 / new_policy.min_interval_ms;
-                    if (hz == 0)
-                        hz = 1;
-                    if (inst->device && inst->device->ops && inst->device->ops->set_sample_rate)
-                    {
-                        inst->device->ops->set_sample_rate(inst->device, hz);
-                    }
-                }
-            }
+            (void)_sensor_recompute_period(inst);
         }
     }
 

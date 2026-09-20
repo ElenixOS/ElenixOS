@@ -22,6 +22,8 @@ extern "C" {
 #include "eos_log.h"
 #include "eos_error.h"
 #include "eos_device.h"
+#include "eos_dev_sensor.h"
+#include "eos_service_sensor.h"
 /* Public macros ----------------------------------------------*/
 
 /* Public typedefs --------------------------------------------*/

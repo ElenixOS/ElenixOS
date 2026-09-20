@@ -6,48 +6,72 @@
 #include "eos_ww_compass.h"
 
 /* Includes ---------------------------------------------------*/
-#include <math.h>
 #include "eos_ww_common.h"
 #include "eos_mem.h"
 #include "eos_font.h"
 #include "eos_service_sensor.h"
+#include "eos_sensor_compass.h"
 #define EOS_LOG_TAG "Compass"
 #include "eos_log.h"
 /* Macros and Definitions -------------------------------------*/
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 /* Variables --------------------------------------------------*/
 typedef struct
 {
     lv_obj_t *needle;
+    eos_sensor_request_id_t request_id;
 } _compass_t;
 
 /* Function Implementations -----------------------------------*/
 
-static void _compass_sensor_cb(eos_sensor_type_t type, const eos_sensor_raw_data_t *data, void *user_data)
+static void _compass_start(_compass_t *compass);
+
+static void _compass_callback(eos_sensor_request_id_t request_id,
+                              eos_sensor_compass_state_t state,
+                              const eos_sensor_compass_result_t *result,
+                              void *user_data)
 {
-    _compass_t *c = user_data;
-    (void)type;
-    if (!c || !c->needle)
+    _compass_t *compass = user_data;
+    if (!compass || compass->request_id != request_id)
     {
         return;
     }
 
-    /* Magnetic north heading from the magnetometer X/Y plane */
-    double heading = atan2((double)data->data.mag.y, (double)data->data.mag.x) * 180.0 / M_PI;
-    lv_obj_set_style_transform_rotation(c->needle, (int32_t)(-heading * 10), 0);
+    if (state == EOS_SENSOR_COMPASS_STATE_SUCCESS && result && compass->needle)
+        lv_obj_set_style_transform_rotation(compass->needle, -(int32_t)(result->heading_mdeg / 100), 0);
+
+    if (state == EOS_SENSOR_COMPASS_STATE_SUCCESS || state == EOS_SENSOR_COMPASS_STATE_TIMEOUT
+        || state == EOS_SENSOR_COMPASS_STATE_ERROR)
+    {
+        compass->request_id = EOS_SENSOR_REQUEST_INVALID;
+        _compass_start(compass);
+    }
 }
 
 static void _compass_delete_cb(lv_event_t *e)
 {
-    _compass_t *c = lv_event_get_user_data(e);
-    if (!c)
+    _compass_t *compass = lv_event_get_user_data(e);
+    if (!compass)
     {
         return;
     }
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_MAG, _compass_sensor_cb, c);
-    eos_free(c);
+    compass->needle = NULL;
+    if (compass->request_id != EOS_SENSOR_REQUEST_INVALID)
+    {
+        eos_sensor_request_id_t request_id = compass->request_id;
+        compass->request_id = EOS_SENSOR_REQUEST_INVALID;
+        (void)eos_sensor_cancel(request_id);
+    }
+    eos_free(compass);
+}
+
+static void _compass_start(_compass_t *compass)
+{
+    eos_sensor_request_id_t request_id;
+
+    if (!compass || !compass->needle)
+        return;
+    if (eos_sensor_compass_start(_compass_callback, compass, 5000U, &request_id) == EOS_OK)
+        compass->request_id = request_id;
 }
 
 lv_obj_t *eos_ww_compass_create(lv_obj_t *parent, lv_coord_t size, uint32_t needle_color)
@@ -90,9 +114,10 @@ lv_obj_t *eos_ww_compass_create(lv_obj_t *parent, lv_coord_t size, uint32_t need
     eos_ww_make_static(needle);
 
     c->needle = needle;
+    c->request_id = EOS_SENSOR_REQUEST_INVALID;
 
     lv_obj_add_event_cb(container, _compass_delete_cb, LV_EVENT_DELETE, c);
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_MAG, _compass_sensor_cb, c, 100);
+    _compass_start(c);
 
     return container;
 }

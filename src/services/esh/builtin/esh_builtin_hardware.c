@@ -66,6 +66,7 @@ static const char *_sensor_type_name(eos_sensor_type_t type)
         [EOS_SENSOR_TYPE_CAP] = "cap",
         [EOS_SENSOR_TYPE_STEP] = "step",
         [EOS_SENSOR_TYPE_HUMIDITY] = "humidity",
+        [EOS_SENSOR_TYPE_PPG] = "ppg",
     };
 
     return type < EOS_SENSOR_TYPE_MAX && names[type] ? names[type] : "unknown";
@@ -151,6 +152,9 @@ static int _print_sensor_data(esh_cmd_ctx_t *ctx, const eos_sensor_raw_data_t *d
             return (int)esh_printf(ctx, "cap=%" PRIu16 "\r\n", data->data.cap.cap);
         case EOS_SENSOR_TYPE_STEP:
             return (int)esh_printf(ctx, "steps=%" PRIu32 "\r\n", data->data.step.steps);
+        case EOS_SENSOR_TYPE_PPG:
+            return (int)
+                esh_printf(ctx, "red=%" PRIu32 " adc ir=%" PRIu32 " adc\r\n", data->data.ppg.red, data->data.ppg.ir);
         default:
             return (int)esh_printf(ctx, "data unavailable\r\n");
     }

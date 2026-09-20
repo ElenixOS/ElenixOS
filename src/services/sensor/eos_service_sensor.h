@@ -17,12 +17,21 @@ extern "C" {
 #include "eos_dev_sensor.h"
 #include "eos_fifo.h"
 #include "eos_event.h"
+#include "eos_sensor_heart_rate.h"
+#include "eos_sensor_compass.h"
 
 /* Public macros ----------------------------------------------*/
 
 #define EOS_SENSOR_FIFO_CAPACITY 64
 
+#define EOS_SENSOR_DEMAND_INVALID (0U)
+
 /* Public typedefs --------------------------------------------*/
+
+/**
+ * @brief Identifier for one Sensor Service sampling demand
+ */
+typedef uint32_t eos_sensor_demand_id_t;
 
 /**
  * @brief Sensor data callback function
@@ -66,6 +75,7 @@ typedef struct _sensor_subscriber_t
     eos_sensor_data_cb_t cb;
     void *user_data;
     uint32_t min_interval_ms;
+    eos_sensor_demand_id_t demand_id;
     struct _sensor_subscriber_t *next;
     bool marked_for_delete; /**< Deferred deletion flag for safe broadcast */
 } sensor_subscriber_t;
@@ -84,6 +94,7 @@ typedef struct
     uint32_t last_sample_time;
     bool is_active;
     bool is_enabled; /**< Whether the hardware device is currently enabled */
+    bool has_sample; /**< Whether latest_data contains a real sample */
     sensor_subscriber_t *subscribers; /**< Linked list of active subscribers */
 } eos_sensor_service_instance_t;
 
@@ -96,18 +107,21 @@ typedef struct
 eos_result_t eos_service_sensor_init(void);
 
 /**
- * @brief Read sensor data from FIFO (Pull mode)
- * @param type Sensor type
- * @param data Pointer to store sensor data
- * @return eos_result_t Operation result
+ * @brief Read one queued standardized sample from the FIFO (pull mode)
+ * @param type Sensor type; the matching union member in @p data is valid
+ * @param data Output sample using the canonical units in eos_dev_sensor.h
+ * @return EOS_OK when a sample was dequeued; EOS_ERR_NOT_FOUND when the FIFO
+ *         is empty; validation/device errors use the existing eos_result_t
+ *         values
  */
 eos_result_t eos_sensor_read(eos_sensor_type_t type, eos_sensor_raw_data_t *data);
 
 /**
- * @brief Read latest sensor data
- * @param type Sensor type
- * @param data Pointer to store sensor data
- * @return eos_result_t Operation result
+ * @brief Read the most recently published standardized sample
+ * @param type Sensor type; the matching union member in @p data is valid
+ * @param data Output sample using the canonical units in eos_dev_sensor.h
+ * @return EOS_OK when a real sample exists; EOS_ERR_NOT_FOUND before the
+ *         first sample; an all-zero published sample is still EOS_OK
  */
 eos_result_t eos_sensor_read_latest(eos_sensor_type_t type, eos_sensor_raw_data_t *data);
 
@@ -134,25 +148,55 @@ eos_result_t eos_sensor_subscribe(eos_sensor_type_t type,
 eos_result_t eos_sensor_unsubscribe(eos_sensor_type_t type, eos_sensor_data_cb_t cb, void *user_data);
 
 /**
- * @brief Set sensor sample period
+ * @brief Request a sensor output period
  * @param type Sensor type
- * @param period_ms Sample period in milliseconds
+ * @param period_ms Requested output period in milliseconds; zero disables the
+ *        service-owned sampling request.  The value is not a promise of an
+ *        exact hardware cadence and does not change the sample's units.
  * @return eos_result_t Operation result
  */
 eos_result_t eos_sensor_set_sample_period(eos_sensor_type_t type, uint32_t period_ms);
 
 /**
- * @brief Get sensor sample period
+ * @brief Acquire an independent sampling demand
  * @param type Sensor type
- * @return uint32_t Sample period in milliseconds
+ * @param period_ms Requested minimum period in milliseconds
+ * @param demand_id Output demand identifier
+ * @return eos_result_t Operation result
+ * @note The effective hardware period is arbitrated with all other active
+ *       demands and the current power policy.
+ */
+eos_result_t eos_sensor_demand_acquire(eos_sensor_type_t type, uint32_t period_ms, eos_sensor_demand_id_t *demand_id);
+
+/**
+ * @brief Release one sampling demand
+ * @param demand_id Demand identifier returned by eos_sensor_demand_acquire
+ * @return eos_result_t Operation result
+ */
+eos_result_t eos_sensor_demand_release(eos_sensor_demand_id_t demand_id);
+
+/**
+ * @brief Get the effective requested output period
+ * @param type Sensor type
+ * @return uint32_t Effective period in milliseconds, not a timestamp or a
+ *         guaranteed hardware ODR
  */
 uint32_t eos_sensor_get_sample_period(eos_sensor_type_t type);
 
 /**
- * @brief Notify sensor data (called by driver)
+ * @brief Cancel a pending type-specific sensor operation
+ * @param request_id Asynchronous sensor request identifier
+ * @return eos_result_t Operation result
+ */
+eos_result_t eos_sensor_cancel(eos_sensor_request_id_t request_id);
+
+/**
+ * @brief Publish one standardized sample from a platform/driver
  * @param type Sensor type
- * @param data Sensor data
- * @param timestamp Data timestamp
+ * @param data Sensor data in the canonical units documented by
+ *        eos_dev_sensor.h; this function copies the value
+ * @param timestamp Monotonic milliseconds since platform boot, captured when
+ *        the platform obtained the sample
  */
 void eos_sensor_notify(eos_sensor_type_t type, const eos_sensor_data_t *data, uint32_t timestamp);
 

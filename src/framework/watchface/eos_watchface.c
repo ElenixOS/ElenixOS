@@ -209,15 +209,21 @@ eos_result_t _eos_watchface_list_refresh()
     return EOS_OK;
 }
 
-eos_result_t eos_watchface_install(const char *eapk_path)
+eos_result_t eos_watchface_install(const char *pkg_path)
 {
-    EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
+    EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
     // Get package header
     eos_pkg_header_t header;
-    if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
+    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
     {
-        EOS_LOG_E("Read header failed: %s", eapk_path);
+        EOS_LOG_E("Read header failed: %s", pkg_path);
         return EOS_FAILED;
+    }
+    script_pkg_type_t package_type;
+    if (eos_pkg_get_type(&header, &package_type) != EOS_OK || package_type != SCRIPT_TYPE_WATCHFACE)
+    {
+        EOS_LOG_E("Package is not a watchface: %s", pkg_path);
+        return EOS_ERR_VALUE_MISMATCH;
     }
     if (!eos_storage_is_valid_filename(header.pkg_id))
     {
@@ -260,7 +266,7 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     }
     // Install watchface
     script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;
-    eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
+    eos_result_t ret = eos_pkg_mgr_unpack(pkg_path, path, type);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("Watchface unpack failed. Code: %d", ret);

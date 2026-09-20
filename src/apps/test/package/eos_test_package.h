@@ -21,7 +21,7 @@ extern "C" {
  * @brief Start package installation test
  *
  * Creates a new activity with input field and install button for installing
- * .eapk (application) and .ewpk (watchface) packages.
+ * .epk packages. The package type is read from the EPK Header.
  */
 void eos_test_package_start(void);
 

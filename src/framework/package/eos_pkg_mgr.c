@@ -15,10 +15,22 @@
 #include "eos_service_storage.h"
 #include "eos_mem.h"
 /* Macros and Definitions -------------------------------------*/
-#define EOS_PKG_HEADER_LENGTH EOS_PKG_TABLE_OFFSET
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
+
+static bool _is_epk_path(const char *pkg_path)
+{
+    size_t len;
+
+    if (!pkg_path)
+    {
+        return false;
+    }
+
+    len = strlen(pkg_path);
+    return len >= 4U && strcmp(pkg_path + len - 4U, ".epk") == 0;
+}
 
 void eos_pkg_free(script_pkg_t *pkg)
 {
@@ -61,6 +73,30 @@ void eos_pkg_free(script_pkg_t *pkg)
     pkg->target_api_level = 0;
 }
 
+eos_result_t eos_pkg_get_type(const eos_pkg_header_t *header, script_pkg_type_t *pkg_type)
+{
+    if (!header || !pkg_type)
+    {
+        return EOS_ERR_VAR_NULL;
+    }
+
+    if (memcmp(header->magic, EOS_PKG_APP_MAGIC, sizeof(header->magic)) == 0)
+    {
+        *pkg_type = SCRIPT_TYPE_APPLICATION;
+        return EOS_OK;
+    }
+
+    if (memcmp(header->magic, EOS_PKG_WATCHFACE_MAGIC, sizeof(header->magic)) == 0)
+    {
+        *pkg_type = SCRIPT_TYPE_WATCHFACE;
+        return EOS_OK;
+    }
+
+    *pkg_type = SCRIPT_TYPE_UNKNOWN;
+    EOS_LOG_E("Unsupported package type in header");
+    return EOS_ERR_FILE_ERROR;
+}
+
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
 {
     // Validate input parameters
@@ -68,6 +104,12 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     {
         EOS_LOG_E("Invalid parameters: pkg_path=%p, header=%p", pkg_path, header);
         return EOS_ERR_VAR_NULL;
+    }
+
+    if (!_is_epk_path(pkg_path))
+    {
+        EOS_LOG_E("Unsupported package extension: %s", pkg_path);
+        return EOS_ERR_FILE_ERROR;
     }
 
     // Check if it's a regular file
@@ -162,17 +204,98 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
         return EOS_ERR_FILE_ERROR;
     }
     eos_storage_file_close(fp);
-    EOS_LOG_D("\n"
-              "=============================\n"
-              "Magic: %s | Pkg Name: %s | Pkg Version: %s\n"
-              "File Count: %d | Table Offset: %d\n"
-              "=============================",
-              header->magic,
-              header->pkg_name,
-              header->pkg_version,
-              header->file_count,
-              EOS_PKG_HEADER_LENGTH);
+
+    script_pkg_type_t pkg_type;
+    if (eos_pkg_get_type(header, &pkg_type) != EOS_OK)
+    {
+        return EOS_ERR_FILE_ERROR;
+    }
+
     return EOS_OK;
+}
+
+eos_result_t eos_pkg_install(const char *pkg_path)
+{
+    if (!pkg_path)
+    {
+        return EOS_ERR_VAR_NULL;
+    }
+
+    eos_pkg_header_t header;
+    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
+    {
+        EOS_LOG_E("Failed to read package header: %s", pkg_path);
+        return EOS_FAILED;
+    }
+
+    script_pkg_type_t pkg_type;
+    if (eos_pkg_get_type(&header, &pkg_type) != EOS_OK)
+    {
+        EOS_LOG_E("Unsupported package type: %s", pkg_path);
+        return EOS_ERR_FILE_ERROR;
+    }
+
+    char target_path[EOS_FS_PATH_MAX];
+    const char *type_name;
+    switch (pkg_type)
+    {
+        case SCRIPT_TYPE_APPLICATION:
+            type_name = "Application";
+            snprintf(target_path, sizeof(target_path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
+            break;
+        case SCRIPT_TYPE_WATCHFACE:
+            type_name = "Watch Face";
+            snprintf(target_path, sizeof(target_path), EOS_WATCHFACE_INSTALLED_DIR "%s", header.pkg_id);
+            break;
+        default:
+            EOS_LOG_E("Unsupported package type: %d", pkg_type);
+            return EOS_ERR_VALUE_MISMATCH;
+    }
+
+    EOS_LOG_I("[EPK] Installing package\n"
+              "  Path: %s\n"
+              "  Type: %s (%.*s)\n"
+              "  Name: %s\n"
+              "  ID: %s\n"
+              "  Version: %s\n"
+              "  API: min=%u target=%u\n"
+              "  Files: %u\n"
+              "  Install path: %s",
+              pkg_path,
+              type_name,
+              (int)sizeof(header.magic),
+              header.magic,
+              header.pkg_name,
+              header.pkg_id,
+              header.pkg_version,
+              (unsigned int)header.min_api_level,
+              (unsigned int)header.target_api_level,
+              (unsigned int)header.file_count,
+              target_path);
+
+    eos_result_t result;
+    switch (pkg_type)
+    {
+        case SCRIPT_TYPE_APPLICATION:
+            result = eos_app_install(pkg_path);
+            break;
+        case SCRIPT_TYPE_WATCHFACE:
+            result = eos_watchface_install(pkg_path);
+            break;
+        default:
+            result = EOS_ERR_VALUE_MISMATCH;
+            break;
+    }
+
+    if (result == EOS_OK)
+    {
+        EOS_LOG_I("[EPK] Installation complete: %s", header.pkg_id);
+    }
+    else
+    {
+        EOS_LOG_E("[EPK] Installation failed: id=%s code=%d", header.pkg_id, result);
+    }
+    return result;
 }
 
 eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, const script_pkg_type_t pkg_type)
@@ -194,20 +317,11 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         return EOS_FAILED;
     }
 
-    // Validate magic number
-    script_pkg_type_t unpack_type = SCRIPT_TYPE_UNKNOWN;
-    if (memcmp(header.magic, EOS_PKG_APP_MAGIC, 4) == 0)
-    {
-        unpack_type = SCRIPT_TYPE_APPLICATION;
-    }
-    else if (memcmp(header.magic, EOS_PKG_WATCHFACE_MAGIC, 4) == 0)
-    {
-        unpack_type = SCRIPT_TYPE_WATCHFACE;
-    }
-    else
+    // Resolve and validate the package type from the Header.
+    script_pkg_type_t unpack_type;
+    if (eos_pkg_get_type(&header, &unpack_type) != EOS_OK)
     {
         eos_storage_file_close(fp);
-        EOS_LOG_E("Invalid magic number");
         return EOS_ERR_FILE_ERROR;
     }
 

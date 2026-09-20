@@ -89,10 +89,10 @@ bool eos_app_list_contains(const char *app_id);
 const char *eos_app_list_get_existing_id(const char *id);
 /**
  * @brief Install app
- * @param eapk_path eapk package path
+ * @param pkg_path EPK package path
  * @return eos_result_t Installation result
  */
-eos_result_t eos_app_install(const char *eapk_path);
+eos_result_t eos_app_install(const char *pkg_path);
 /**
  * @brief Uninstall app
  * @param app_id App id

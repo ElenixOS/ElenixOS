@@ -64,6 +64,7 @@ static eos_result_t _eos_app_order_remove(const char *app_id);
 // App delete callbacks
 static void _app_delete_cb(lv_event_t *e);
 static void _app_delete_eos_cb(eos_event_t *e);
+static void _app_log_manifest(const char *app_path);
 
 // Application order list
 static cJSON *app_order_json = NULL;
@@ -450,15 +451,62 @@ eos_result_t _eos_app_list_refresh()
     return installed_ret;
 }
 
-eos_result_t eos_app_install(const char *eapk_path)
+static void _app_log_manifest(const char *app_path)
 {
-    EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
+    char manifest_path[EOS_FS_PATH_MAX];
+    script_pkg_t manifest = {0};
+
+    if (!app_path)
+    {
+        return;
+    }
+
+    snprintf(manifest_path, sizeof(manifest_path), "%s/%s", app_path, EOS_APP_MANIFEST_FILE_NAME);
+    manifest.type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, &manifest) != EOS_OK)
+    {
+        EOS_LOG_W("[EPK] Application manifest could not be read: %s", manifest_path);
+        eos_pkg_free(&manifest);
+        return;
+    }
+
+    EOS_LOG_I("[EPK] Application manifest\n"
+              "  Author: %s\n"
+              "  Description: %s",
+              manifest.author ? manifest.author : "(none)",
+              manifest.description ? manifest.description : "(none)");
+
+    if (manifest.permission_count == 0U)
+    {
+        EOS_LOG_I("  Permissions: none");
+    }
+    else
+    {
+        EOS_LOG_I("  Permissions (%u):", (unsigned int)manifest.permission_count);
+        for (uint8_t index = 0U; index < manifest.permission_count; index++)
+        {
+            EOS_LOG_I("    - %s", manifest.permissions[index]);
+        }
+    }
+
+    eos_pkg_free(&manifest);
+}
+
+eos_result_t eos_app_install(const char *pkg_path)
+{
+    EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
     // Get package header
     eos_pkg_header_t header;
-    if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
+    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
     {
-        EOS_LOG_E("Read header failed: %s", eapk_path);
+        EOS_LOG_E("Read header failed: %s", pkg_path);
         return EOS_FAILED;
+    }
+    script_pkg_type_t package_type;
+    if (eos_pkg_get_type(&header, &package_type) != EOS_OK || package_type != SCRIPT_TYPE_APPLICATION)
+    {
+        EOS_LOG_E("Package is not an application: %s", pkg_path);
+        return EOS_ERR_VALUE_MISMATCH;
     }
     if (!eos_storage_is_valid_filename(header.pkg_id))
     {
@@ -478,7 +526,6 @@ eos_result_t eos_app_install(const char *eapk_path)
     snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
     char data_path[EOS_FS_PATH_MAX];
     snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header.pkg_id);
-    EOS_LOG_D("APP_PATH: %s", path);
     // Check if app exists
     if (eos_storage_is_dir(path))
     {
@@ -488,7 +535,7 @@ eos_result_t eos_app_install(const char *eapk_path)
     // Create app directory
     if (eos_storage_mkdir_if_not_exist(path) == EOS_OK)
     {
-        EOS_LOG_I("Created dir: %s\n", path);
+        EOS_LOG_D("Created application directory: %s", path);
     }
     else
     {
@@ -496,7 +543,7 @@ eos_result_t eos_app_install(const char *eapk_path)
     }
     // Install application
     script_pkg_type_t type = SCRIPT_TYPE_APPLICATION;
-    eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
+    eos_result_t ret = eos_pkg_mgr_unpack(pkg_path, path, type);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("App unpack failed. Code: %d", ret);
@@ -504,12 +551,11 @@ eos_result_t eos_app_install(const char *eapk_path)
         return EOS_FAILED;
     }
     eos_storage_mkdir_if_not_exist(data_path);
+    _app_log_manifest(path);
     // Add to order list
     _eos_app_order_add(header.pkg_id);
     _eos_app_list_refresh();
-    EOS_LOG_D("App installed successfully: %s", header.pkg_name);
     const char *app_id = eos_app_list_get_existing_id(header.pkg_id);
-    EOS_LOG_D("app_id=%s\npkg_id=%s", app_id, header.pkg_id);
     eos_event_post(EOS_EVENT_APP_INSTALLED, (void *)app_id, NULL);
     return EOS_OK;
 }

@@ -7,8 +7,7 @@
 #if EOS_ENABLE_TEST_APP
 
 #include "eos_test_package.h"
-#include "eos_app.h"
-#include "eos_watchface.h"
+#include "eos_pkg_mgr.h"
 #include "eos_log.h"
 #include "eos_activity.h"
 #include "eos_basic_widgets.h"
@@ -39,20 +38,12 @@ static _package_context_t _ctx = {0};
  * Helper functions
  * ============================================ */
 
-static bool _is_eapk_file(const char *path)
+static bool _is_epk_file(const char *path)
 {
     size_t len = strlen(path);
     if (len < 5)
         return false;
-    return strcmp(path + len - 5, ".eapk") == 0;
-}
-
-static bool _is_ewpk_file(const char *path)
-{
-    size_t len = strlen(path);
-    if (len < 5)
-        return false;
-    return strcmp(path + len - 5, ".ewpk") == 0;
+    return strcmp(path + len - 4, ".epk") == 0;
 }
 
 /* ============================================
@@ -98,15 +89,10 @@ static void _install_btn_cb(lv_event_t *e)
     EOS_LOG_I("Full package path: %s", full_path);
 
     eos_result_t ret;
-    if (_is_eapk_file(full_path))
+    if (_is_epk_file(full_path))
     {
-        EOS_LOG_I("Installing application: %s", full_path);
-        ret = eos_app_install(full_path);
-    }
-    else if (_is_ewpk_file(full_path))
-    {
-        EOS_LOG_I("Installing watchface: %s", full_path);
-        ret = eos_watchface_install(full_path);
+        EOS_LOG_I("Installing EPK package: %s", full_path);
+        ret = eos_pkg_install(full_path);
     }
     else
     {
@@ -187,7 +173,7 @@ void eos_test_package_start(void)
     /* Create input field */
     _ctx.input_field = lv_textarea_create(_ctx.container);
     lv_textarea_set_one_line(_ctx.input_field, true);
-    lv_textarea_set_placeholder_text(_ctx.input_field, "my_app.eapk");
+    lv_textarea_set_placeholder_text(_ctx.input_field, "my_package.epk");
     lv_obj_set_width(_ctx.input_field, lv_pct(85));
     lv_textarea_set_max_length(_ctx.input_field, MAX_PATH_LEN);
     lv_obj_set_style_bg_color(_ctx.input_field, lv_color_black(), 0);
@@ -214,7 +200,7 @@ void eos_test_package_start(void)
     /* Create hint label */
     lv_obj_t *hint_label = lv_label_create(_ctx.container);
     lv_label_set_text(hint_label,
-                      "Supported: .eapk (app), .ewpk (watchface)\nPath auto-prefixed with '" EOS_SYS_ROOT_DIR "'");
+                      "Supported: .epk (application or watchface)\nPath auto-prefixed with '" EOS_SYS_ROOT_DIR "'");
     lv_obj_set_style_text_color(hint_label, lv_color_hex(0x808080), 0);
 
     /* Enter activity */

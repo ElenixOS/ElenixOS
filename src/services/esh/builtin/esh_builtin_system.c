@@ -469,6 +469,7 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 {
     eos_pkg_header_t header;
     eos_result_t result;
+    script_pkg_type_t package_type;
     uint32_t count;
     uint32_t index;
 
@@ -497,12 +498,29 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
         {
             return (int)esh_printf(ctx, "pkg: cannot read package: %s\r\n", argv[2]);
         }
+        if (eos_pkg_get_type(&header, &package_type) != EOS_OK)
+        {
+            return (int)esh_printf(ctx, "pkg: unsupported package type: %s\r\n", argv[2]);
+        }
+        const char *type_name = NULL;
+        if (package_type == SCRIPT_TYPE_APPLICATION)
+        {
+            type_name = "application";
+        }
+        else if (package_type == SCRIPT_TYPE_WATCHFACE)
+        {
+            type_name = "watchface";
+        }
+        else
+        {
+            return (int)esh_printf(ctx, "pkg: unsupported package type: %s\r\n", argv[2]);
+        }
         return (int)esh_printf(ctx,
                                "id=%s name=%s version=%s type=%s api=%" PRIu16 "..%" PRIu16 " files=%" PRIu32 "\r\n",
                                header.pkg_id,
                                header.pkg_name,
                                header.pkg_version,
-                               memcmp(header.magic, EOS_PKG_WATCHFACE_MAGIC, 4U) == 0 ? "watchface" : "application",
+                               type_name,
                                header.min_api_level,
                                header.target_api_level,
                                header.file_count);
@@ -510,7 +528,7 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 
     if (argc == 3 && strcmp(argv[1], "install") == 0)
     {
-        result = eos_app_install(argv[2]);
+        result = eos_pkg_install(argv[2]);
     }
     else if (argc == 3 && strcmp(argv[1], "uninstall") == 0)
     {

@@ -1114,7 +1114,7 @@ static int _esh_cmd_exit(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     ESH_BUILTIN_JS_COMMAND(_)                                                         \
     _(config, esh_builtin_cmd_config, "inspect system configuration")                 \
     _(state, esh_builtin_cmd_state, "inspect system state")                           \
-    _(pkg, esh_builtin_cmd_pkg, "manage application packages")                        \
+    _(pkg, esh_builtin_cmd_pkg, "manage EPK packages")                                \
     _(find, esh_builtin_cmd_find, "find files recursively")                           \
     _(grep, esh_builtin_cmd_grep, "search text in a file")                            \
     _(head, esh_builtin_cmd_head, "show the beginning of a file")                     \

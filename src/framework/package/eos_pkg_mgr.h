@@ -82,7 +82,22 @@ void eos_pkg_free(script_pkg_t *pkg);
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header);
 
 /**
- * @brief Unpack EAPK/EWPK files (e.g., app.eapk, watchface.ewpk)
+ * @brief Resolve the package type stored in the header magic
+ * @param header Package header structure pointer
+ * @param pkg_type Output package type
+ * @return eos_result_t Execution result
+ */
+eos_result_t eos_pkg_get_type(const eos_pkg_header_t *header, script_pkg_type_t *pkg_type);
+
+/**
+ * @brief Install an EPK package and dispatch by its header type
+ * @param pkg_path Package file path
+ * @return eos_result_t Installation result
+ */
+eos_result_t eos_pkg_install(const char *pkg_path);
+
+/**
+ * @brief Unpack an EPK file (for example, app.epk or watchface.epk)
  * @param pkg_path Package file path
  * @param output_path Output directory
  * @param pkg_type Package type (SCRIPT_TYPE_APPLICATION/SCRIPT_TYPE_WATCHFACE)

@@ -87,10 +87,10 @@ const char *eos_watchface_list_get_id(size_t index);
 bool eos_watchface_list_contains(const char *watchface_id);
 /**
  * @brief Install watchface
- * @param eapk_path eapk package path
+ * @param pkg_path EPK package path
  * @return eos_result_t Installation result
  */
-eos_result_t eos_watchface_install(const char *eapk_path);
+eos_result_t eos_watchface_install(const char *pkg_path);
 /**
  * @brief Uninstall watchface
  * @param watchface_id Watchface id

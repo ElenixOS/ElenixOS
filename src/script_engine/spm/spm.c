@@ -1121,6 +1121,7 @@ void spm_handle_engine_reset(void)
              * on the corrupted JerryScript heap.  We unregister event
              * descriptors first so EVENT_DELETE is a no-op. */
             sni_cb_context_cleanup_events(prog->sni_ctx);
+            sni_cb_sensor_request_neutralize_context(prog->sni_ctx);
 
             /* Null out LVGL timer/animation callbacks and user_data so they
              * become harmless zombies.  Do NOT delete timers or free callback

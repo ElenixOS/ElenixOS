@@ -17,6 +17,7 @@ extern "C" {
 #include "lvgl.h"
 #include "sni_types.h"
 #include "sni_context.h"
+#include "eos_service_sensor.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -199,6 +200,78 @@ lv_anim_t *sni_cb_anim_get_lv_anim(sni_anim_callback_ctx_t *ctx);
 sni_context_t *sni_cb_get_context(void);
 
 void sni_cb_context_cleanup_events(sni_context_t *ctx);
+
+/**
+ * @brief Register an asynchronous type-specific Sensor API callback
+ * @param ctx Owning SNI context
+ * @param request_id Initial request identifier
+ * @param kind Sensor operation kind (0 = heart rate, 1 = compass)
+ * @param js_cb JavaScript callback
+ * @param out_ctx Returned native callback context
+ * @return true if registration succeeded
+ */
+bool sni_cb_sensor_request_register(sni_context_t *ctx,
+                                    eos_sensor_request_id_t request_id,
+                                    uint8_t kind,
+                                    jerry_value_t js_cb,
+                                    void **out_ctx);
+
+/**
+ * @brief Bind the native request identifier to a Sensor API callback
+ * @param callback_ctx Callback context returned by register
+ * @param request_id Native request identifier
+ */
+void sni_cb_sensor_request_bind(void *callback_ctx, eos_sensor_request_id_t request_id);
+
+/**
+ * @brief Release a Sensor API callback context
+ * @param callback_ctx Callback context returned by register
+ */
+void sni_cb_sensor_request_release(void *callback_ctx);
+
+/**
+ * @brief Cancel a request owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param request_id Request identifier
+ * @return true if the request was owned and cancelled
+ */
+bool sni_cb_sensor_request_cancel(sni_context_t *ctx, eos_sensor_request_id_t request_id);
+
+/**
+ * @brief Dispatch a heart-rate operation callback into JavaScript
+ * @param request_id Native request identifier
+ * @param state Heart-rate operation state
+ * @param result Heart-rate result, or NULL
+ * @param user_data Registered callback context
+ */
+void sni_cb_sensor_heart_rate_dispatch(eos_sensor_request_id_t request_id,
+                                       eos_sensor_heart_rate_state_t state,
+                                       const eos_sensor_heart_rate_result_t *result,
+                                       void *user_data);
+
+/**
+ * @brief Dispatch a compass operation callback into JavaScript
+ * @param request_id Native request identifier
+ * @param state Compass operation state
+ * @param result Compass result, or NULL
+ * @param user_data Registered callback context
+ */
+void sni_cb_sensor_compass_dispatch(eos_sensor_request_id_t request_id,
+                                    eos_sensor_compass_state_t state,
+                                    const eos_sensor_compass_result_t *result,
+                                    void *user_data);
+
+/**
+ * @brief Cancel and release all Sensor API callbacks owned by a context
+ * @param ctx Owning SNI context
+ */
+void sni_cb_sensor_request_cleanup_context(sni_context_t *ctx);
+
+/**
+ * @brief Neutralize Sensor API callbacks during engine recovery
+ * @param ctx Owning SNI context
+ */
+void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx);
 
 /**
  * @brief Check if the given timer is currently dispatching (in-callback).

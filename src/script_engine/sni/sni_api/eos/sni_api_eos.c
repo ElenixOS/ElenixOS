@@ -7,6 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_context.h"
+#include "sni_callback_runtime.h"
 #include "sni_api_export.h"
 #include "eos_log.h"
 #include "eos_mem.h"
@@ -35,6 +37,33 @@
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
 /* Variables --------------------------------------------------*/
 static jerry_value_t eos_api_obj;
+
+static bool _sni_api_eos_number_to_u32(jerry_value_t value, uint32_t *out)
+{
+    double number;
+
+    if (!out || !jerry_value_is_number(value))
+        return false;
+
+    number = jerry_value_as_number(value);
+    if (!isfinite(number) || number < 0.0 || number > (double)UINT32_MAX || floor(number) != number)
+        return false;
+
+    *out = (uint32_t)number;
+    return true;
+}
+
+static bool _sni_api_eos_number_to_sensor_type(jerry_value_t value, eos_sensor_type_t *out)
+{
+    uint32_t type;
+
+    if (!out || !_sni_api_eos_number_to_u32(value, &type) || type <= (uint32_t)EOS_SENSOR_TYPE_UNKNOWN
+        || type >= (uint32_t)EOS_SENSOR_TYPE_MAX)
+        return false;
+
+    *out = (eos_sensor_type_t)type;
+    return true;
+}
 
 typedef enum
 {
@@ -1262,29 +1291,39 @@ jerry_value_t sni_api_eos_console_debug(const jerry_call_info_t *call_info_p,
     return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_DEBUG);
 }
 
+/**
+ * @brief Expose one canonical Sensor sample to JavaScript
+ *
+ * The native service stores fixed-point values documented in
+ * eos_dev_sensor.h.  This binding performs only the fixed, platform-neutral
+ * language conversion below:
+ *
+ *   ACCE/GYRO/TEMP/BARO.temperature/HUMIDITY: milli-unit / 1000
+ *   MAG: nT / 1000 -> uT
+ *   BARO.pressure, LIGHT, PROXIMITY, HR, SPO2, STEP: unchanged
+ *   PPG: red/ir ADC counts unchanged, unit="adc"
+ *   ECG/CAP: source counts unchanged; no physical conversion is defined
+ *
+ * A missing latest sample is returned as JavaScript null, preserving the
+ * existing binding convention.  A real zero-valued sample is still an object.
+ */
 jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     eos_sensor_raw_data_t raw;
     eos_result_t result;
     jerry_value_t obj;
 
     (void)call_info_p;
 
-    if (args_count != 1 || !jerry_value_is_number(args_p[0]))
+    if (args_count != 1 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type))
     {
         return sni_api_throw_error("Usage: sensor.readLatest(type)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
-    {
-        return sni_api_throw_error("Invalid sensor type");
-    }
-
-    result = eos_sensor_read_latest((eos_sensor_type_t)type, &raw);
+    result = eos_sensor_read_latest(type, &raw);
     if (result != EOS_OK)
     {
         return jerry_null();
@@ -1347,6 +1386,11 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
         case EOS_SENSOR_TYPE_CAP:
             script_engine_set_prop_number(obj, "cap", (double)raw.data.cap.cap);
             break;
+        case EOS_SENSOR_TYPE_PPG:
+            script_engine_set_prop_number(obj, "red", (double)raw.data.ppg.red);
+            script_engine_set_prop_number(obj, "ir", (double)raw.data.ppg.ir);
+            script_engine_set_prop_string(obj, "unit", "adc");
+            break;
         default:
             jerry_value_free(obj);
             return jerry_null();
@@ -1359,25 +1403,19 @@ jerry_value_t sni_api_eos_sensor_set_sample_period(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     uint32_t period_ms;
     eos_result_t result;
 
     (void)call_info_p;
 
-    if (args_count != 2 || !jerry_value_is_number(args_p[0]) || !jerry_value_is_number(args_p[1]))
+    if (args_count != 2 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type)
+        || !_sni_api_eos_number_to_u32(args_p[1], &period_ms))
     {
         return sni_api_throw_error("Usage: sensor.setSamplePeriod(type, period_ms)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
-    {
-        return sni_api_throw_error("Invalid sensor type");
-    }
-
-    period_ms = (uint32_t)jerry_value_as_number(args_p[1]);
-    result = eos_sensor_set_sample_period((eos_sensor_type_t)type, period_ms);
+    result = eos_sensor_set_sample_period(type, period_ms);
 
     return jerry_boolean(result == EOS_OK);
 }
@@ -1386,24 +1424,96 @@ jerry_value_t sni_api_eos_sensor_get_sample_period(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     uint32_t period_ms;
 
     (void)call_info_p;
 
-    if (args_count != 1 || !jerry_value_is_number(args_p[0]))
+    if (args_count != 1 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type))
     {
         return sni_api_throw_error("Usage: sensor.getSamplePeriod(type)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
+    period_ms = eos_sensor_get_sample_period(type);
+    return jerry_number((double)period_ms);
+}
+
+static jerry_value_t _sni_api_eos_sensor_request_start(const jerry_value_t args_p[],
+                                                       jerry_length_t args_count,
+                                                       uint8_t kind)
+{
+    sni_context_t *context;
+    void *callback_context = NULL;
+    uint32_t timeout_ms = 0U;
+    eos_sensor_request_id_t request_id = EOS_SENSOR_REQUEST_INVALID;
+    eos_result_t result;
+
+    if ((args_count != 1U && args_count != 2U) || !jerry_value_is_function(args_p[0]))
+        return sni_api_throw_error("Usage: sensor operation(callback, timeout_ms?)");
+
+    if (args_count == 2U)
     {
-        return sni_api_throw_error("Invalid sensor type");
+        if (!_sni_api_eos_number_to_u32(args_p[1], &timeout_ms))
+            return sni_api_throw_error("Invalid timeout");
     }
 
-    period_ms = eos_sensor_get_sample_period((eos_sensor_type_t)type);
-    return jerry_number((double)period_ms);
+    context = sni_cb_get_context();
+    if (!context)
+        return sni_api_throw_error("No current script context");
+    if (!sni_cb_sensor_request_register(context, EOS_SENSOR_REQUEST_INVALID, kind, args_p[0], &callback_context))
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    if (kind == 0U)
+    {
+        result =
+            eos_sensor_heart_rate_start(sni_cb_sensor_heart_rate_dispatch, callback_context, timeout_ms, &request_id);
+    }
+    else
+    {
+        result = eos_sensor_compass_start(sni_cb_sensor_compass_dispatch, callback_context, timeout_ms, &request_id);
+    }
+    if (result != EOS_OK)
+    {
+        sni_cb_sensor_request_release(callback_context);
+        return jerry_null();
+    }
+
+    sni_cb_sensor_request_bind(callback_context, request_id);
+    return jerry_number((double)request_id);
+}
+
+jerry_value_t sni_api_eos_sensor_heart_rate(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)call_info_p;
+    return _sni_api_eos_sensor_request_start(args_p, args_count, 0U);
+}
+
+jerry_value_t sni_api_eos_sensor_compass(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    (void)call_info_p;
+    return _sni_api_eos_sensor_request_start(args_p, args_count, 1U);
+}
+
+jerry_value_t sni_api_eos_sensor_cancel(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
+{
+    sni_context_t *context;
+    uint32_t request_number;
+
+    (void)call_info_p;
+    if (args_count != 1U || !jerry_value_is_number(args_p[0]))
+        return sni_api_throw_error("Usage: sensor.cancel(request_id)");
+    if (!_sni_api_eos_number_to_u32(args_p[0], &request_number) || request_number == 0U)
+        return sni_api_throw_error("Invalid request id");
+    context = sni_cb_get_context();
+    return jerry_boolean(context && sni_cb_sensor_request_cancel(context, (eos_sensor_request_id_t)request_number));
 }
 
 const sni_method_desc_t eos_class_static_methods_view[] = {
@@ -1563,6 +1673,9 @@ const sni_method_desc_t eos_class_static_methods_sensor[] = {
     {.name = "readLatest", .handler = sni_api_eos_sensor_read_latest},
     {.name = "setSamplePeriod", .handler = sni_api_eos_sensor_set_sample_period},
     {.name = "getSamplePeriod", .handler = sni_api_eos_sensor_get_sample_period},
+    {.name = "heartRate", .handler = sni_api_eos_sensor_heart_rate},
+    {.name = "compass", .handler = sni_api_eos_sensor_compass},
+    {.name = "cancel", .handler = sni_api_eos_sensor_cancel},
     {.name = NULL, .handler = NULL},
 };
 
@@ -1627,6 +1740,7 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "SENSOR_PROXIMITY", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_PROXIMITY},
     {.name = "SENSOR_ECG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_ECG},
     {.name = "SENSOR_CAP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_CAP},
+    {.name = "SENSOR_PPG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_PPG},
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 

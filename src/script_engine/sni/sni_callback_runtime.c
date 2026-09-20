@@ -133,6 +133,20 @@ typedef struct sni_event_callback_ctx
     struct sni_event_callback_ctx *next;
 } sni_event_callback_ctx_t;
 
+typedef struct sni_sensor_request_callback_ctx
+{
+    eos_sensor_request_id_t request_id;
+    uint8_t kind;
+    jerry_value_t js_cb;
+    sni_context_t *owner_ctx;
+    uint32_t engine_gen;
+    bool alive;
+    uint32_t dispatch_depth;
+    bool free_pending;
+    bool release_pending;
+    struct sni_sensor_request_callback_ctx *next;
+} sni_sensor_request_callback_ctx_t;
+
 /* Function Implementations -----------------------------------*/
 
 static sni_event_callback_ctx_t **sni_cb_event_list_ptr(sni_context_t *ctx)
@@ -1019,6 +1033,344 @@ void sni_cb_context_cleanup_events(sni_context_t *ctx)
 
         eos_free(event_ctx);
         event_ctx = next;
+    }
+}
+
+/* Sensor API Callback Implementation -------------------------*/
+
+static sni_sensor_request_callback_ctx_t **_sni_sensor_request_list_ptr(sni_context_t *ctx)
+{
+    return (sni_sensor_request_callback_ctx_t **)&ctx->sensor_request_ctx_list;
+}
+
+static void _sni_sensor_request_unlink(sni_sensor_request_callback_ctx_t *ctx)
+{
+    if (!ctx || !ctx->owner_ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t **pp = _sni_sensor_request_list_ptr(ctx->owner_ctx);
+    while (*pp)
+    {
+        if (*pp == ctx)
+        {
+            *pp = ctx->next;
+            break;
+        }
+        pp = &(*pp)->next;
+    }
+}
+
+static const char *_sni_sensor_heart_rate_state_name(eos_sensor_heart_rate_state_t state)
+{
+    switch (state)
+    {
+        case EOS_SENSOR_HEART_RATE_STATE_WAITING:
+            return "waiting";
+        case EOS_SENSOR_HEART_RATE_STATE_UNSTABLE:
+            return "unstable";
+        case EOS_SENSOR_HEART_RATE_STATE_NO_CONTACT:
+            return "no_contact";
+        case EOS_SENSOR_HEART_RATE_STATE_NO_DATA:
+            return "no_data";
+        case EOS_SENSOR_HEART_RATE_STATE_SUCCESS:
+            return "success";
+        case EOS_SENSOR_HEART_RATE_STATE_TIMEOUT:
+            return "timeout";
+        case EOS_SENSOR_HEART_RATE_STATE_UNAVAILABLE:
+            return "unavailable";
+        case EOS_SENSOR_HEART_RATE_STATE_ERROR:
+            return "error";
+        case EOS_SENSOR_HEART_RATE_STATE_CANCELLED:
+            return "cancelled";
+        default:
+            return "error";
+    }
+}
+
+static const char *_sni_sensor_compass_state_name(eos_sensor_compass_state_t state)
+{
+    switch (state)
+    {
+        case EOS_SENSOR_COMPASS_STATE_WAITING:
+            return "waiting";
+        case EOS_SENSOR_COMPASS_STATE_UNSTABLE:
+            return "unstable";
+        case EOS_SENSOR_COMPASS_STATE_NO_DATA:
+            return "no_data";
+        case EOS_SENSOR_COMPASS_STATE_SUCCESS:
+            return "success";
+        case EOS_SENSOR_COMPASS_STATE_TIMEOUT:
+            return "timeout";
+        case EOS_SENSOR_COMPASS_STATE_UNAVAILABLE:
+            return "unavailable";
+        case EOS_SENSOR_COMPASS_STATE_ERROR:
+            return "error";
+        case EOS_SENSOR_COMPASS_STATE_CANCELLED:
+            return "cancelled";
+        default:
+            return "error";
+    }
+}
+
+static bool _sni_sensor_request_is_terminal(uint8_t kind, int state)
+{
+    if (kind == 0U)
+    {
+        eos_sensor_heart_rate_state_t heart_rate_state = (eos_sensor_heart_rate_state_t)state;
+        return heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_SUCCESS
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_TIMEOUT
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_UNAVAILABLE
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_ERROR
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_CANCELLED;
+    }
+
+    eos_sensor_compass_state_t compass_state = (eos_sensor_compass_state_t)state;
+    return compass_state == EOS_SENSOR_COMPASS_STATE_SUCCESS || compass_state == EOS_SENSOR_COMPASS_STATE_TIMEOUT
+           || compass_state == EOS_SENSOR_COMPASS_STATE_UNAVAILABLE || compass_state == EOS_SENSOR_COMPASS_STATE_ERROR
+           || compass_state == EOS_SENSOR_COMPASS_STATE_CANCELLED;
+}
+
+static void _sni_sensor_request_free(sni_sensor_request_callback_ctx_t *ctx, bool release_js)
+{
+    if (!ctx)
+        return;
+
+    if (ctx->dispatch_depth > 0U)
+    {
+        ctx->free_pending = true;
+        ctx->release_pending = ctx->release_pending || release_js;
+        if (ctx->alive)
+        {
+            ctx->alive = false;
+            _sni_sensor_request_unlink(ctx);
+        }
+        return;
+    }
+
+    if (ctx->alive)
+    {
+        ctx->alive = false;
+        _sni_sensor_request_unlink(ctx);
+    }
+    if (release_js)
+        sni_cb_safe_jerry_value_free(ctx->owner_ctx, &ctx->js_cb);
+    else
+        ctx->js_cb = jerry_undefined();
+    eos_free(ctx);
+}
+
+static void _sni_sensor_request_dispatch_leave(sni_sensor_request_callback_ctx_t *ctx)
+{
+    bool release_js;
+
+    if (!ctx || ctx->dispatch_depth == 0U)
+        return;
+
+    ctx->dispatch_depth--;
+    if (ctx->dispatch_depth != 0U || !ctx->free_pending)
+        return;
+
+    release_js = ctx->release_pending;
+    ctx->free_pending = false;
+    ctx->release_pending = false;
+    _sni_sensor_request_free(ctx, release_js);
+}
+
+static void _sni_sensor_request_dispatch(sni_sensor_request_callback_ctx_t *ctx,
+                                         eos_sensor_request_id_t request_id,
+                                         uint8_t kind,
+                                         int state,
+                                         const eos_sensor_heart_rate_result_t *heart_rate,
+                                         const eos_sensor_compass_result_t *compass)
+{
+    script_program_t *owner_program;
+    script_program_t *previous_program;
+    jerry_value_t previous_realm;
+    jerry_value_t event_obj;
+    jerry_value_t ret;
+    uint32_t saved_gen;
+
+    if (!ctx || !ctx->alive || ctx->request_id != request_id || ctx->kind != kind)
+        return;
+    if (ctx->engine_gen != script_engine_get_gen())
+        return;
+    if (!ctx->owner_ctx || !ctx->owner_ctx->owner)
+        return;
+
+    owner_program = ctx->owner_ctx->owner;
+    if (sni_context_is_paused(ctx->owner_ctx) || owner_program->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+        return;
+
+    previous_program = script_engine_get_current_program();
+    if (previous_program != owner_program)
+        script_engine_set_current_program(owner_program);
+
+    previous_realm = jerry_set_realm(owner_program->realm);
+    if (jerry_value_is_exception(previous_realm))
+    {
+        jerry_value_free(previous_realm);
+        if (previous_program != owner_program)
+            script_engine_set_current_program(previous_program);
+        return;
+    }
+
+    ctx->dispatch_depth++;
+
+    event_obj = jerry_object();
+    script_engine_set_prop_number(event_obj, "requestId", (double)request_id);
+    if (kind == 0U)
+        script_engine_set_prop_string(event_obj,
+                                      "status",
+                                      _sni_sensor_heart_rate_state_name((eos_sensor_heart_rate_state_t)state));
+    else
+        script_engine_set_prop_string(event_obj,
+                                      "status",
+                                      _sni_sensor_compass_state_name((eos_sensor_compass_state_t)state));
+
+    if (heart_rate && state == EOS_SENSOR_HEART_RATE_STATE_SUCCESS)
+    {
+        script_engine_set_prop_number(event_obj, "bpm", (double)heart_rate->bpm);
+        script_engine_set_prop_number(event_obj, "timestamp", (double)heart_rate->timestamp);
+    }
+    if (compass && state == EOS_SENSOR_COMPASS_STATE_SUCCESS)
+    {
+        script_engine_set_prop_number(event_obj, "heading", (double)compass->heading_mdeg / 1000.0);
+        script_engine_set_prop_string(event_obj, "unit", "deg");
+        script_engine_set_prop_number(event_obj, "field_strength", (double)compass->field_strength_nt / 1000.0);
+        script_engine_set_prop_string(event_obj, "field_unit", "uT");
+        script_engine_set_prop_number(event_obj, "timestamp", (double)compass->timestamp);
+    }
+
+    jerry_value_t args[1] = {event_obj};
+    saved_gen = script_engine_get_gen();
+    s_dispatching_ctx = ctx->owner_ctx;
+    ret = spm_call(owner_program, ctx->js_cb, jerry_undefined(), args, 1);
+    s_dispatching_ctx = NULL;
+    if (saved_gen != script_engine_get_gen())
+    {
+        return;
+    }
+
+    (void)jerry_set_realm(previous_realm);
+    if (previous_program != owner_program)
+    {
+        if (previous_program && previous_program->state == SCRIPT_PROGRAM_STATE_ACTIVE)
+            script_engine_set_current_program(previous_program);
+        else
+            script_engine_set_current_program(NULL);
+    }
+
+    if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
+        EOS_LOG_E("Sensor API callback encountered an error");
+    jerry_value_free(ret);
+    jerry_value_free(event_obj);
+
+    if (_sni_sensor_request_is_terminal(kind, state))
+        _sni_sensor_request_free(ctx, true);
+    _sni_sensor_request_dispatch_leave(ctx);
+}
+
+void sni_cb_sensor_heart_rate_dispatch(eos_sensor_request_id_t request_id,
+                                       eos_sensor_heart_rate_state_t state,
+                                       const eos_sensor_heart_rate_result_t *result,
+                                       void *user_data)
+{
+    _sni_sensor_request_dispatch((sni_sensor_request_callback_ctx_t *)user_data, request_id, 0U, state, result, NULL);
+}
+
+void sni_cb_sensor_compass_dispatch(eos_sensor_request_id_t request_id,
+                                    eos_sensor_compass_state_t state,
+                                    const eos_sensor_compass_result_t *result,
+                                    void *user_data)
+{
+    _sni_sensor_request_dispatch((sni_sensor_request_callback_ctx_t *)user_data, request_id, 1U, state, NULL, result);
+}
+
+bool sni_cb_sensor_request_register(sni_context_t *ctx,
+                                    eos_sensor_request_id_t request_id,
+                                    uint8_t kind,
+                                    jerry_value_t js_cb,
+                                    void **out_ctx)
+{
+    if (!ctx || kind > 1U || !jerry_value_is_function(js_cb) || !out_ctx)
+        return false;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = eos_malloc_zeroed(sizeof(*callback_ctx));
+    if (!callback_ctx)
+        return false;
+
+    callback_ctx->request_id = request_id;
+    callback_ctx->kind = kind;
+    callback_ctx->js_cb = jerry_value_copy(js_cb);
+    callback_ctx->owner_ctx = ctx;
+    callback_ctx->engine_gen = script_engine_get_gen();
+    callback_ctx->alive = true;
+    callback_ctx->next = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = callback_ctx;
+    *out_ctx = callback_ctx;
+    return true;
+}
+
+void sni_cb_sensor_request_bind(void *callback_ctx, eos_sensor_request_id_t request_id)
+{
+    sni_sensor_request_callback_ctx_t *ctx = callback_ctx;
+    if (!ctx || !ctx->alive || request_id == EOS_SENSOR_REQUEST_INVALID)
+        return;
+    ctx->request_id = request_id;
+}
+
+void sni_cb_sensor_request_release(void *callback_ctx)
+{
+    _sni_sensor_request_free((sni_sensor_request_callback_ctx_t *)callback_ctx, true);
+}
+
+bool sni_cb_sensor_request_cancel(sni_context_t *ctx, eos_sensor_request_id_t request_id)
+{
+    sni_sensor_request_callback_ctx_t *callback_ctx;
+
+    if (!ctx || request_id == EOS_SENSOR_REQUEST_INVALID)
+        return false;
+    callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    while (callback_ctx)
+    {
+        if (callback_ctx->alive && callback_ctx->request_id == request_id)
+            return eos_sensor_cancel(request_id) == EOS_OK;
+        callback_ctx = callback_ctx->next;
+    }
+    return false;
+}
+
+void sni_cb_sensor_request_cleanup_context(sni_context_t *ctx)
+{
+    if (!ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = NULL;
+    while (callback_ctx)
+    {
+        sni_sensor_request_callback_ctx_t *next = callback_ctx->next;
+        callback_ctx->alive = false;
+        (void)eos_sensor_cancel(callback_ctx->request_id);
+        _sni_sensor_request_free(callback_ctx, true);
+        callback_ctx = next;
+    }
+}
+
+void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx)
+{
+    if (!ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = NULL;
+    while (callback_ctx)
+    {
+        sni_sensor_request_callback_ctx_t *next = callback_ctx->next;
+        callback_ctx->alive = false;
+        (void)eos_sensor_cancel(callback_ctx->request_id);
+        _sni_sensor_request_free(callback_ctx, false);
+        callback_ctx = next;
     }
 }
 

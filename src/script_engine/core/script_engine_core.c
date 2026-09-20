@@ -653,7 +653,6 @@ static void _extract_error_location_from_exception(jerry_value_t exception_value
 
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
-    EOS_LOG_E("===================================");
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_value_t final_str_val = value;
     char stack_buf[SCRIPT_ERROR_STACK_BUF_SIZE];

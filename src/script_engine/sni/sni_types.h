@@ -304,6 +304,7 @@ typedef struct sni_context
     sni_managed_resource_node_t *resource_heads[SNI_MANAGED_RESOURCE_COUNT];
     int resource_counts[SNI_MANAGED_RESOURCE_COUNT];
     void *event_ctx_list;
+    void *sensor_request_ctx_list;
     struct script_program *owner;
     bool paused;
     sni_teardown_phase_t teardown_phase; /**< Current phase during Realm destruction */

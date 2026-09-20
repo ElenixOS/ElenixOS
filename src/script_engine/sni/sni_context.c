@@ -511,6 +511,10 @@ void sni_context_sweep_js_refs(sni_context_t *ctx)
 
     EOS_LOG_I("SWEEP-JS: ctx=%p releasing JS callback references", (void *)ctx);
 
+    /* Sensor API callbacks hold JS functions outside the managed LVGL
+     * resource lists. Cancel them before releasing Realm references. */
+    sni_cb_sensor_request_cleanup_context(ctx);
+
     _SWEEP_HEAP_LOG("sweep-js start");
 
     for (int i = 0; i < SNI_MANAGED_RESOURCE_COUNT; i++)

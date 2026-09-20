@@ -14,8 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "eos_core.h"
-#include "eos_app.h"
-#include "eos_watchface.h"
+#include "eos_port.h"
 #include "script_engine_core.h"
 /* Public macros ----------------------------------------------*/
 #define EOS_PKG_APP_MAGIC "EAPK"
@@ -52,7 +51,15 @@ typedef struct
 } eos_pkg_header_t;
 
 /**
- * @brief This structure is not used, but eos_pkg_mgr_unpack parses according to this structure
+ * @brief Open EPK package context
+ *
+ * The context owns the package file handle and the single parsed Header
+ * used by the rest of the package installation flow.
+ */
+typedef struct eos_pkg eos_pkg_t;
+
+/**
+ * @brief This structure is not used, but eos_pkg_unpack parses according to this structure
  * This structure is used to define the information structure of a single file/directory
  ***********************************
     typedef struct
@@ -82,6 +89,34 @@ void eos_pkg_free(script_pkg_t *pkg);
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header);
 
 /**
+ * @brief Open an EPK package and parse its Header once
+ * @param pkg_path EPK package path
+ * @param package Output package context
+ * @return eos_result_t Execution result
+ */
+eos_result_t eos_pkg_open(const char *pkg_path, eos_pkg_t **package);
+
+/**
+ * @brief Close an EPK package context
+ * @param package Package context
+ */
+void eos_pkg_close(eos_pkg_t *package);
+
+/**
+ * @brief Get the parsed Header owned by a package context
+ * @param package Package context
+ * @return const eos_pkg_header_t* Parsed Header, or NULL
+ */
+const eos_pkg_header_t *eos_pkg_get_header(const eos_pkg_t *package);
+
+/**
+ * @brief Get the validated Package Type owned by a package context
+ * @param package Package context
+ * @return script_pkg_type_t Package Type, or SCRIPT_TYPE_UNKNOWN
+ */
+script_pkg_type_t eos_pkg_get_package_type(const eos_pkg_t *package);
+
+/**
  * @brief Resolve the package type stored in the header magic
  * @param header Package header structure pointer
  * @param pkg_type Output package type
@@ -90,20 +125,12 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
 eos_result_t eos_pkg_get_type(const eos_pkg_header_t *header, script_pkg_type_t *pkg_type);
 
 /**
- * @brief Install an EPK package and dispatch by its header type
- * @param pkg_path Package file path
- * @return eos_result_t Installation result
- */
-eos_result_t eos_pkg_install(const char *pkg_path);
-
-/**
- * @brief Unpack an EPK file (for example, app.epk or watchface.epk)
- * @param pkg_path Package file path
+ * @brief Unpack an opened EPK package
+ * @param package Open package context
  * @param output_path Output directory
- * @param pkg_type Package type (SCRIPT_TYPE_APPLICATION/SCRIPT_TYPE_WATCHFACE)
  * @return eos_result_t Execution result
  */
-eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, const script_pkg_type_t pkg_type);
+eos_result_t eos_pkg_unpack(eos_pkg_t *package, const char *output_path);
 #ifdef __cplusplus
 }
 #endif

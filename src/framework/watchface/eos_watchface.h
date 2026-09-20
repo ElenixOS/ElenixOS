@@ -29,6 +29,8 @@ extern "C" {
 #define EOS_WATCHFACE_ID_LEN_MAX 256 /*< Watchface ID maximum length */
 /* Public typedefs --------------------------------------------*/
 
+struct eos_pkg;
+
 /**
  * @brief Watchface type enumeration
  */
@@ -91,6 +93,13 @@ bool eos_watchface_list_contains(const char *watchface_id);
  * @return eos_result_t Installation result
  */
 eos_result_t eos_watchface_install(const char *pkg_path);
+
+/**
+ * @brief Install an already opened Watch Face package
+ * @param package Open EPK package context
+ * @return eos_result_t Installation result
+ */
+eos_result_t eos_watchface_install_package(struct eos_pkg *package);
 /**
  * @brief Uninstall watchface
  * @param watchface_id Watchface id

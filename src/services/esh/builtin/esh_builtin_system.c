@@ -15,6 +15,7 @@
 #include "eos_activity.h"
 #include "eos_config.h"
 #include "eos_pkg_mgr.h"
+#include "eos_pkg_installer.h"
 #include "eos_recent_apps.h"
 #include "eos_service_config.h"
 #include "eos_service_state.h"
@@ -467,9 +468,7 @@ int esh_builtin_cmd_state(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 
 int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 {
-    eos_pkg_header_t header;
     eos_result_t result;
-    script_pkg_type_t package_type;
     uint32_t count;
     uint32_t index;
 
@@ -493,15 +492,15 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
 
     if (argc == 3 && strcmp(argv[1], "info") == 0)
     {
-        result = eos_pkg_read_header(argv[2], &header);
+        eos_pkg_t *package = NULL;
+        result = eos_pkg_open(argv[2], &package);
         if (result != EOS_OK)
         {
             return (int)esh_printf(ctx, "pkg: cannot read package: %s\r\n", argv[2]);
         }
-        if (eos_pkg_get_type(&header, &package_type) != EOS_OK)
-        {
-            return (int)esh_printf(ctx, "pkg: unsupported package type: %s\r\n", argv[2]);
-        }
+
+        const eos_pkg_header_t *header = eos_pkg_get_header(package);
+        script_pkg_type_t package_type = eos_pkg_get_package_type(package);
         const char *type_name = NULL;
         if (package_type == SCRIPT_TYPE_APPLICATION)
         {
@@ -513,17 +512,22 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
         }
         else
         {
+            eos_pkg_close(package);
             return (int)esh_printf(ctx, "pkg: unsupported package type: %s\r\n", argv[2]);
         }
-        return (int)esh_printf(ctx,
-                               "id=%s name=%s version=%s type=%s api=%" PRIu16 "..%" PRIu16 " files=%" PRIu32 "\r\n",
-                               header.pkg_id,
-                               header.pkg_name,
-                               header.pkg_version,
-                               type_name,
-                               header.min_api_level,
-                               header.target_api_level,
-                               header.file_count);
+
+        int output_result =
+            (int)esh_printf(ctx,
+                            "id=%s name=%s version=%s type=%s api=%" PRIu16 "..%" PRIu16 " files=%" PRIu32 "\r\n",
+                            header->pkg_id,
+                            header->pkg_name,
+                            header->pkg_version,
+                            type_name,
+                            header->min_api_level,
+                            header->target_api_level,
+                            header->file_count);
+        eos_pkg_close(package);
+        return output_result;
     }
 
     if (argc == 3 && strcmp(argv[1], "install") == 0)

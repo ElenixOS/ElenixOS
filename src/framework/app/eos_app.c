@@ -495,37 +495,48 @@ static void _app_log_manifest(const char *app_path)
 eos_result_t eos_app_install(const char *pkg_path)
 {
     EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
-    // Get package header
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
+
+    eos_pkg_t *package = NULL;
+    eos_result_t result = eos_pkg_open(pkg_path, &package);
+    if (result != EOS_OK)
     {
         EOS_LOG_E("Read header failed: %s", pkg_path);
-        return EOS_FAILED;
+        return result;
     }
-    script_pkg_type_t package_type;
-    if (eos_pkg_get_type(&header, &package_type) != EOS_OK || package_type != SCRIPT_TYPE_APPLICATION)
+
+    result = eos_app_install_package(package);
+    eos_pkg_close(package);
+    return result;
+}
+
+eos_result_t eos_app_install_package(struct eos_pkg *package)
+{
+    EOS_CHECK_PTR_RETURN_VAL(package, EOS_ERR_VAR_NULL);
+
+    const eos_pkg_header_t *header = eos_pkg_get_header(package);
+    if (!header || eos_pkg_get_package_type(package) != SCRIPT_TYPE_APPLICATION)
     {
-        EOS_LOG_E("Package is not an application: %s", pkg_path);
+        EOS_LOG_E("Package is not an application");
         return EOS_ERR_VALUE_MISMATCH;
     }
-    if (!eos_storage_is_valid_filename(header.pkg_id))
+    if (!eos_storage_is_valid_filename(header->pkg_id))
     {
         EOS_LOG_E("Invalid package id");
         return EOS_FAILED;
     }
-    if (header.min_api_level > ELENIX_OS_API_LEVEL)
+    if (header->min_api_level > ELENIX_OS_API_LEVEL)
     {
         EOS_LOG_E("App '%s' requires API level %d, OS supports %d",
-                  header.pkg_id,
-                  header.min_api_level,
+                  header->pkg_id,
+                  header->min_api_level,
                   ELENIX_OS_API_LEVEL);
         return EOS_ERR_SDK_VERSION;
     }
     // Concatenate path
     char path[EOS_FS_PATH_MAX];
-    snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
+    snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", header->pkg_id);
     char data_path[EOS_FS_PATH_MAX];
-    snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header.pkg_id);
+    snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header->pkg_id);
     // Check if app exists
     if (eos_storage_is_dir(path))
     {
@@ -542,8 +553,7 @@ eos_result_t eos_app_install(const char *pkg_path)
         EOS_LOG_E("Failed mkdir: %s\n", path);
     }
     // Install application
-    script_pkg_type_t type = SCRIPT_TYPE_APPLICATION;
-    eos_result_t ret = eos_pkg_mgr_unpack(pkg_path, path, type);
+    eos_result_t ret = eos_pkg_unpack(package, path);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("App unpack failed. Code: %d", ret);
@@ -553,9 +563,9 @@ eos_result_t eos_app_install(const char *pkg_path)
     eos_storage_mkdir_if_not_exist(data_path);
     _app_log_manifest(path);
     // Add to order list
-    _eos_app_order_add(header.pkg_id);
+    _eos_app_order_add(header->pkg_id);
     _eos_app_list_refresh();
-    const char *app_id = eos_app_list_get_existing_id(header.pkg_id);
+    const char *app_id = eos_app_list_get_existing_id(header->pkg_id);
     eos_event_post(EOS_EVENT_APP_INSTALLED, (void *)app_id, NULL);
     return EOS_OK;
 }

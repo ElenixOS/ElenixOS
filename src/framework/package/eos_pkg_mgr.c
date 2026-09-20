@@ -32,6 +32,14 @@ static bool _is_epk_path(const char *pkg_path)
     return len >= 4U && strcmp(pkg_path + len - 4U, ".epk") == 0;
 }
 
+struct eos_pkg
+{
+    eos_file_t file;
+    eos_pkg_header_t header;
+    script_pkg_type_t type;
+    uint32_t file_size;
+};
+
 void eos_pkg_free(script_pkg_t *pkg)
 {
     EOS_CHECK_PTR_RETURN(pkg);
@@ -97,43 +105,18 @@ eos_result_t eos_pkg_get_type(const eos_pkg_header_t *header, script_pkg_type_t 
     return EOS_ERR_FILE_ERROR;
 }
 
-eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
+static eos_result_t _read_header_from_file(eos_file_t fp, eos_pkg_header_t *header)
 {
-    // Validate input parameters
-    if (!pkg_path || !header)
+    if (fp == EOS_FILE_INVALID || !header)
     {
-        EOS_LOG_E("Invalid parameters: pkg_path=%p, header=%p", pkg_path, header);
         return EOS_ERR_VAR_NULL;
     }
 
-    if (!_is_epk_path(pkg_path))
-    {
-        EOS_LOG_E("Unsupported package extension: %s", pkg_path);
-        return EOS_ERR_FILE_ERROR;
-    }
-
-    // Check if it's a regular file
-    if (!eos_storage_is_file(pkg_path))
-    {
-        EOS_LOG_E("Path is not a file: %s", pkg_path);
-        return EOS_ERR_FILE_ERROR;
-    }
-
-    // Open package file
-    eos_file_t fp = eos_storage_file_open_read(pkg_path);
-    if (fp == EOS_FILE_INVALID)
-    {
-        EOS_LOG_E("Failed to open package file: %s", pkg_path);
-        return EOS_ERR_FILE_ERROR;
-    }
-
-    // Initialize header with zeros
     memset(header, 0, sizeof(eos_pkg_header_t));
 
     // Read magic number
     if (eos_storage_file_seek(fp, EOS_PKG_MAGIC_OFFSET) != EOS_OK || eos_storage_file_read(fp, header->magic, 4) != 4)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read magic number");
         return EOS_ERR_FILE_ERROR;
     }
@@ -142,7 +125,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_NAME_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, header->pkg_name, EOS_PKG_NAME_LEN_MAX) != EOS_PKG_NAME_LEN_MAX)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read package name");
         return EOS_ERR_FILE_ERROR;
     }
@@ -152,7 +134,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_ID_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, header->pkg_id, EOS_PKG_ID_LEN_MAX) != EOS_PKG_ID_LEN_MAX)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read package id");
         return EOS_ERR_FILE_ERROR;
     }
@@ -162,7 +143,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_VERSION_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, header->pkg_version, EOS_PKG_VERSION_LEN_MAX) != EOS_PKG_VERSION_LEN_MAX)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read package version");
         return EOS_ERR_FILE_ERROR;
     }
@@ -172,7 +152,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_MIN_API_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, &header->min_api_level, sizeof(uint16_t)) != sizeof(uint16_t))
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read min_api_level");
         return EOS_ERR_FILE_ERROR;
     }
@@ -181,7 +160,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_TARGET_API_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, &header->target_api_level, sizeof(uint16_t)) != sizeof(uint16_t))
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read target_api_level");
         return EOS_ERR_FILE_ERROR;
     }
@@ -190,7 +168,6 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_FILE_COUNT_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, &header->file_count, sizeof(uint32_t)) != sizeof(uint32_t))
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read file count");
         return EOS_ERR_FILE_ERROR;
     }
@@ -199,153 +176,141 @@ eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
     if (eos_storage_file_seek(fp, EOS_PKG_RESERVED_OFFSET) != EOS_OK
         || eos_storage_file_read(fp, &header->reserved, sizeof(uint32_t)) != sizeof(uint32_t))
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to read reserved field");
-        return EOS_ERR_FILE_ERROR;
-    }
-    eos_storage_file_close(fp);
-
-    script_pkg_type_t pkg_type;
-    if (eos_pkg_get_type(header, &pkg_type) != EOS_OK)
-    {
         return EOS_ERR_FILE_ERROR;
     }
 
     return EOS_OK;
 }
 
-eos_result_t eos_pkg_install(const char *pkg_path)
+eos_result_t eos_pkg_open(const char *pkg_path, eos_pkg_t **package)
 {
-    if (!pkg_path)
+    if (!pkg_path || !package)
+    {
+        EOS_LOG_E("Invalid package open parameters");
+        return EOS_ERR_VAR_NULL;
+    }
+
+    *package = NULL;
+    if (!_is_epk_path(pkg_path))
+    {
+        EOS_LOG_E("Unsupported package extension: %s", pkg_path);
+        return EOS_ERR_FILE_ERROR;
+    }
+
+    if (!eos_storage_is_file(pkg_path))
+    {
+        EOS_LOG_E("Path is not a file: %s", pkg_path);
+        return EOS_ERR_FILE_ERROR;
+    }
+
+    eos_pkg_t *opened_package = eos_malloc(sizeof(eos_pkg_t));
+    if (!opened_package)
+    {
+        EOS_LOG_E("Failed to allocate package context");
+        return EOS_ERR_MEM;
+    }
+    memset(opened_package, 0, sizeof(*opened_package));
+
+    opened_package->file = eos_storage_file_open_read(pkg_path);
+    if (opened_package->file == EOS_FILE_INVALID)
+    {
+        eos_free(opened_package);
+        EOS_LOG_E("Failed to open package file: %s", pkg_path);
+        return EOS_ERR_FILE_ERROR;
+    }
+
+    eos_result_t result = _read_header_from_file(opened_package->file, &opened_package->header);
+    if (result != EOS_OK)
+    {
+        eos_pkg_close(opened_package);
+        return result;
+    }
+
+    result = eos_pkg_get_type(&opened_package->header, &opened_package->type);
+    if (result != EOS_OK)
+    {
+        eos_pkg_close(opened_package);
+        return result;
+    }
+
+    if (eos_storage_file_size(opened_package->file, &opened_package->file_size) != EOS_OK
+        || opened_package->file_size < EOS_PKG_TABLE_OFFSET)
+    {
+        eos_pkg_close(opened_package);
+        EOS_LOG_E("Invalid EPK file size");
+        return EOS_ERR_FILE_ERROR;
+    }
+
+    *package = opened_package;
+    return EOS_OK;
+}
+
+void eos_pkg_close(eos_pkg_t *package)
+{
+    if (!package)
+    {
+        return;
+    }
+
+    if (package->file != EOS_FILE_INVALID)
+    {
+        eos_storage_file_close(package->file);
+        package->file = EOS_FILE_INVALID;
+    }
+    eos_free(package);
+}
+
+const eos_pkg_header_t *eos_pkg_get_header(const eos_pkg_t *package)
+{
+    return package ? &package->header : NULL;
+}
+
+script_pkg_type_t eos_pkg_get_package_type(const eos_pkg_t *package)
+{
+    return package ? package->type : SCRIPT_TYPE_UNKNOWN;
+}
+
+eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header)
+{
+    if (!pkg_path || !header)
+    {
+        EOS_LOG_E("Invalid parameters: pkg_path=%p, header=%p", pkg_path, header);
+        return EOS_ERR_VAR_NULL;
+    }
+
+    eos_pkg_t *package = NULL;
+    eos_result_t result = eos_pkg_open(pkg_path, &package);
+    if (result != EOS_OK)
+    {
+        return result;
+    }
+
+    *header = *eos_pkg_get_header(package);
+    eos_pkg_close(package);
+    return EOS_OK;
+}
+
+eos_result_t eos_pkg_unpack(eos_pkg_t *package, const char *output_path)
+{
+    if (!package || !output_path)
     {
         return EOS_ERR_VAR_NULL;
     }
 
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
-    {
-        EOS_LOG_E("Failed to read package header: %s", pkg_path);
-        return EOS_FAILED;
-    }
-
-    script_pkg_type_t pkg_type;
-    if (eos_pkg_get_type(&header, &pkg_type) != EOS_OK)
-    {
-        EOS_LOG_E("Unsupported package type: %s", pkg_path);
-        return EOS_ERR_FILE_ERROR;
-    }
-
-    char target_path[EOS_FS_PATH_MAX];
-    const char *type_name;
-    switch (pkg_type)
-    {
-        case SCRIPT_TYPE_APPLICATION:
-            type_name = "Application";
-            snprintf(target_path, sizeof(target_path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
-            break;
-        case SCRIPT_TYPE_WATCHFACE:
-            type_name = "Watch Face";
-            snprintf(target_path, sizeof(target_path), EOS_WATCHFACE_INSTALLED_DIR "%s", header.pkg_id);
-            break;
-        default:
-            EOS_LOG_E("Unsupported package type: %d", pkg_type);
-            return EOS_ERR_VALUE_MISMATCH;
-    }
-
-    EOS_LOG_I("[EPK] Installing package\n"
-              "  Path: %s\n"
-              "  Type: %s (%.*s)\n"
-              "  Name: %s\n"
-              "  ID: %s\n"
-              "  Version: %s\n"
-              "  API: min=%u target=%u\n"
-              "  Files: %u\n"
-              "  Install path: %s",
-              pkg_path,
-              type_name,
-              (int)sizeof(header.magic),
-              header.magic,
-              header.pkg_name,
-              header.pkg_id,
-              header.pkg_version,
-              (unsigned int)header.min_api_level,
-              (unsigned int)header.target_api_level,
-              (unsigned int)header.file_count,
-              target_path);
-
-    eos_result_t result;
-    switch (pkg_type)
-    {
-        case SCRIPT_TYPE_APPLICATION:
-            result = eos_app_install(pkg_path);
-            break;
-        case SCRIPT_TYPE_WATCHFACE:
-            result = eos_watchface_install(pkg_path);
-            break;
-        default:
-            result = EOS_ERR_VALUE_MISMATCH;
-            break;
-    }
-
-    if (result == EOS_OK)
-    {
-        EOS_LOG_I("[EPK] Installation complete: %s", header.pkg_id);
-    }
-    else
-    {
-        EOS_LOG_E("[EPK] Installation failed: id=%s code=%d", header.pkg_id, result);
-    }
-    return result;
-}
-
-eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, const script_pkg_type_t pkg_type)
-{
-    // Open package file
-    eos_file_t fp = eos_storage_file_open_read(pkg_path);
+    eos_file_t fp = package->file;
+    const eos_pkg_header_t *header = &package->header;
     if (fp == EOS_FILE_INVALID)
     {
-        EOS_LOG_E("Failed to open package file");
+        EOS_LOG_E("Invalid package context");
         return EOS_ERR_FILE_ERROR;
     }
 
-    // Read package header
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
-    {
-        EOS_LOG_E("Failed to read header");
-        eos_storage_file_close(fp);
-        return EOS_FAILED;
-    }
-
-    // Resolve and validate the package type from the Header.
-    script_pkg_type_t unpack_type;
-    if (eos_pkg_get_type(&header, &unpack_type) != EOS_OK)
-    {
-        eos_storage_file_close(fp);
-        return EOS_ERR_FILE_ERROR;
-    }
-
-    // Check if package type matches
-    if (unpack_type != pkg_type)
-    {
-        eos_storage_file_close(fp);
-        EOS_LOG_E("Package type mismatch: expected %d, got %d", pkg_type, unpack_type);
-        return EOS_ERR_VALUE_MISMATCH;
-    }
-
-    // Get file size
-    uint32_t file_size = 0;
-    if (eos_storage_file_size(fp, &file_size) != EOS_OK)
-    {
-        eos_storage_file_close(fp);
-        EOS_LOG_E("Failed to get file size");
-        return EOS_ERR_FILE_ERROR;
-    }
+    uint32_t file_size = package->file_size;
 
     // Seek to the file table position (immediately after the file header)
     if (eos_storage_file_seek(fp, EOS_PKG_TABLE_OFFSET) != EOS_OK)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to seek to file table at offset %u", EOS_PKG_TABLE_OFFSET);
         return EOS_ERR_FILE_ERROR;
     }
@@ -353,7 +318,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     // Create output directory
     if (eos_storage_mkdir_recursive(output_path) != EOS_OK)
     {
-        eos_storage_file_close(fp);
         EOS_LOG_E("Failed to create output directory");
         return EOS_ERR_FILE_ERROR;
     }
@@ -362,22 +326,20 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
     uint32_t table_pos = EOS_PKG_TABLE_OFFSET;
 
     // Process each file entry
-    for (uint32_t i = 0; i < header.file_count; i++)
+    for (uint32_t i = 0; i < header->file_count; i++)
     {
         // Read the file name length
         uint32_t name_len;
         if (eos_storage_file_read(fp, &name_len, sizeof(uint32_t)) != sizeof(uint32_t))
         {
-            eos_storage_file_close(fp);
             EOS_LOG_E("Failed to read name length for entry %u", i);
             return EOS_ERR_FILE_ERROR;
         }
         table_pos += sizeof(uint32_t);
 
         // Validate the file name length
-        if (name_len > EOS_FS_PATH_MAX)
+        if (name_len >= EOS_FS_PATH_MAX)
         {
-            eos_storage_file_close(fp);
             EOS_LOG_E("Name length %u too long for entry %u", name_len, i);
             return EOS_ERR_FILE_ERROR;
         }
@@ -386,7 +348,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         char name[EOS_FS_PATH_MAX];
         if (eos_storage_file_read(fp, name, name_len) != (int)name_len)
         {
-            eos_storage_file_close(fp);
             EOS_LOG_E("Failed to read name for entry %u", i);
             return EOS_ERR_FILE_ERROR;
         }
@@ -399,7 +360,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             || eos_storage_file_read(fp, &offset, sizeof(uint32_t)) != sizeof(uint32_t)
             || eos_storage_file_read(fp, &size, sizeof(uint32_t)) != sizeof(uint32_t))
         {
-            eos_storage_file_close(fp);
             EOS_LOG_E("Failed to read entry fields for %s", name);
             return EOS_ERR_FILE_ERROR;
         }
@@ -417,7 +377,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // Create the directory
             if (eos_storage_mkdir_recursive(full_path) != EOS_OK)
             {
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Failed to create directory: %s", full_path);
                 return EOS_ERR_FILE_ERROR;
             }
@@ -428,15 +387,13 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // Validate the file offset and size
             if (offset < EOS_PKG_TABLE_OFFSET || offset >= file_size)
             {
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Invalid file offset: %u for %s", offset, name);
                 return EOS_ERR_FILE_ERROR;
             }
 
-            if (offset + size > file_size)
+            if (size > file_size - offset)
             {
-                eos_storage_file_close(fp);
-                EOS_LOG_E("File size overflow: %u+%u=%u for %s", offset, size, offset + size, name);
+                EOS_LOG_E("File size overflow: %u+%u for %s", offset, size, name);
                 return EOS_ERR_FILE_ERROR;
             }
 
@@ -447,7 +404,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 *last_slash = '\0';
                 if (eos_storage_mkdir_recursive(full_path) != EOS_OK)
                 {
-                    eos_storage_file_close(fp);
                     EOS_LOG_E("Failed to create parent directory: %s", full_path);
                     return EOS_ERR_FILE_ERROR;
                 }
@@ -458,7 +414,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             eos_file_t out_fp = eos_storage_file_open_write(full_path);
             if (out_fp == EOS_FILE_INVALID)
             {
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Failed to create file: %s", full_path);
                 return EOS_ERR_FILE_ERROR;
             }
@@ -467,7 +422,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             if (eos_storage_file_seek(fp, offset) != EOS_OK)
             {
                 eos_storage_file_close(out_fp);
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Failed to seek to file data for %s", name);
                 return EOS_ERR_FILE_ERROR;
             }
@@ -482,14 +436,12 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
                 if (r <= 0)
                 {
                     eos_storage_file_close(out_fp);
-                    eos_storage_file_close(fp);
                     EOS_LOG_E("Failed to read file data for %s", name);
                     return EOS_ERR_FILE_ERROR;
                 }
                 if (eos_storage_file_write(out_fp, buffer, r) != r)
                 {
                     eos_storage_file_close(out_fp);
-                    eos_storage_file_close(fp);
                     EOS_LOG_E("Failed to write file data for %s", name);
                     return EOS_ERR_FILE_ERROR;
                 }
@@ -502,7 +454,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
             // Restore the file table position for the next entry before reading the next file name
             if (eos_storage_file_seek(fp, next_entry_pos) != EOS_OK)
             {
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Failed to restore table position after extracting %s", name);
                 return EOS_ERR_FILE_ERROR;
             }
@@ -512,7 +463,6 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         {
             if (eos_storage_file_seek(fp, next_entry_pos) != EOS_OK)
             {
-                eos_storage_file_close(fp);
                 EOS_LOG_E("Failed to seek to next table entry after creating dir %s", full_path);
                 return EOS_ERR_FILE_ERROR;
             }
@@ -521,6 +471,5 @@ eos_result_t eos_pkg_mgr_unpack(const char *pkg_path, const char *output_path, c
         table_pos = next_entry_pos;
     }
 
-    eos_storage_file_close(fp);
     return EOS_OK;
 }

@@ -8,6 +8,7 @@
 
 #include "eos_test_package.h"
 #include "eos_pkg_mgr.h"
+#include "eos_pkg_installer.h"
 #include "eos_log.h"
 #include "eos_activity.h"
 #include "eos_basic_widgets.h"

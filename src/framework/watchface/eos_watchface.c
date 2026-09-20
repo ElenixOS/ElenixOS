@@ -212,42 +212,53 @@ eos_result_t _eos_watchface_list_refresh()
 eos_result_t eos_watchface_install(const char *pkg_path)
 {
     EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
-    // Get package header
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(pkg_path, &header) != EOS_OK)
+
+    eos_pkg_t *package = NULL;
+    eos_result_t result = eos_pkg_open(pkg_path, &package);
+    if (result != EOS_OK)
     {
         EOS_LOG_E("Read header failed: %s", pkg_path);
-        return EOS_FAILED;
+        return result;
     }
-    script_pkg_type_t package_type;
-    if (eos_pkg_get_type(&header, &package_type) != EOS_OK || package_type != SCRIPT_TYPE_WATCHFACE)
+
+    result = eos_watchface_install_package(package);
+    eos_pkg_close(package);
+    return result;
+}
+
+eos_result_t eos_watchface_install_package(struct eos_pkg *package)
+{
+    EOS_CHECK_PTR_RETURN_VAL(package, EOS_ERR_VAR_NULL);
+
+    const eos_pkg_header_t *header = eos_pkg_get_header(package);
+    if (!header || eos_pkg_get_package_type(package) != SCRIPT_TYPE_WATCHFACE)
     {
-        EOS_LOG_E("Package is not a watchface: %s", pkg_path);
+        EOS_LOG_E("Package is not a watchface");
         return EOS_ERR_VALUE_MISMATCH;
     }
-    if (!eos_storage_is_valid_filename(header.pkg_id))
+    if (!eos_storage_is_valid_filename(header->pkg_id))
     {
         EOS_LOG_E("Invalid package id");
         return EOS_FAILED;
     }
-    if (strcmp(header.pkg_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    if (strcmp(header->pkg_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
     {
         EOS_LOG_E("Builtin fallback watchface cannot be installed over");
         return EOS_FAILED;
     }
-    if (header.min_api_level > ELENIX_OS_API_LEVEL)
+    if (header->min_api_level > ELENIX_OS_API_LEVEL)
     {
         EOS_LOG_E("Watchface '%s' requires API level %d, OS supports %d",
-                  header.pkg_id,
-                  header.min_api_level,
+                  header->pkg_id,
+                  header->min_api_level,
                   ELENIX_OS_API_LEVEL);
         return EOS_ERR_SDK_VERSION;
     }
     // Construct path
     char path[EOS_FS_PATH_MAX];
-    snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", header.pkg_id);
+    snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", header->pkg_id);
     char data_path[EOS_FS_PATH_MAX];
-    snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", header.pkg_id);
+    snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", header->pkg_id);
     EOS_LOG_D("WATCHFACE_PATH: %s", path);
     // Check if application exists
     if (eos_storage_is_dir(path))
@@ -265,8 +276,7 @@ eos_result_t eos_watchface_install(const char *pkg_path)
         return EOS_ERR_FILE_ERROR;
     }
     // Install watchface
-    script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;
-    eos_result_t ret = eos_pkg_mgr_unpack(pkg_path, path, type);
+    eos_result_t ret = eos_pkg_unpack(package, path);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("Watchface unpack failed. Code: %d", ret);
@@ -275,7 +285,7 @@ eos_result_t eos_watchface_install(const char *pkg_path)
     }
     eos_storage_mkdir_if_not_exist(data_path);
     _eos_watchface_list_refresh();
-    EOS_LOG_D("Watchface installed successfully: %s", header.pkg_name);
+    EOS_LOG_D("Watchface installed successfully: %s", header->pkg_name);
     return EOS_OK;
 }
 

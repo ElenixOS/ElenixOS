@@ -37,6 +37,7 @@ eos_result_t eos_pkg_install(const char *pkg_path)
 
     const eos_pkg_header_t *header = eos_pkg_get_header(package);
     script_pkg_type_t package_type = eos_pkg_get_package_type(package);
+    eos_pkg_manifest_info_t manifest_info = {0};
     char target_path[EOS_FS_PATH_MAX];
     const char *type_name;
 
@@ -44,16 +45,29 @@ eos_result_t eos_pkg_install(const char *pkg_path)
     {
         case SCRIPT_TYPE_APPLICATION:
             type_name = "Application";
-            snprintf(target_path, sizeof(target_path), EOS_APP_INSTALLED_DIR "%s", header->pkg_id);
             break;
         case SCRIPT_TYPE_WATCHFACE:
             type_name = "Watch Face";
-            snprintf(target_path, sizeof(target_path), EOS_WATCHFACE_INSTALLED_DIR "%s", header->pkg_id);
             break;
         default:
             eos_pkg_close(package);
             EOS_LOG_E("Unsupported Package Type in EPK Header: %d", package_type);
             return EOS_ERR_VALUE_MISMATCH;
+    }
+    result = eos_pkg_read_manifest_info(package, &manifest_info);
+    if (result != EOS_OK)
+    {
+        eos_pkg_close(package);
+        EOS_LOG_E("Invalid EPKG manifest: %s", pkg_path);
+        return result;
+    }
+    if (package_type == SCRIPT_TYPE_APPLICATION)
+    {
+        snprintf(target_path, sizeof(target_path), EOS_APP_INSTALLED_DIR "%s", manifest_info.id);
+    }
+    else
+    {
+        snprintf(target_path, sizeof(target_path), EOS_WATCHFACE_INSTALLED_DIR "%s", manifest_info.id);
     }
 
     EOS_LOG_I("[EPK] Installing package\n"
@@ -68,11 +82,11 @@ eos_result_t eos_pkg_install(const char *pkg_path)
               pkg_path,
               type_name,
               header->magic,
-              header->pkg_name,
-              header->pkg_id,
-              header->pkg_version,
-              (unsigned int)header->min_api_level,
-              (unsigned int)header->target_api_level,
+              manifest_info.name,
+              manifest_info.id,
+              manifest_info.version,
+              (unsigned int)manifest_info.min_api_level,
+              (unsigned int)manifest_info.target_api_level,
               (unsigned int)header->file_count,
               target_path);
 
@@ -87,13 +101,14 @@ eos_result_t eos_pkg_install(const char *pkg_path)
 
     if (result == EOS_OK)
     {
-        EOS_LOG_I("[EPK] Installation complete: %s", header->pkg_id);
+        EOS_LOG_I("[EPK] Installation complete: %s", manifest_info.id);
     }
     else
     {
-        EOS_LOG_E("[EPK] Installation failed: id=%s code=%d", header->pkg_id, result);
+        EOS_LOG_E("[EPK] Installation failed: id=%s code=%d", manifest_info.id, result);
     }
 
+    eos_pkg_manifest_info_free(&manifest_info);
     eos_pkg_close(package);
     return result;
 }

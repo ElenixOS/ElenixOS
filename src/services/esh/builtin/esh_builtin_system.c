@@ -493,6 +493,8 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     if (argc == 3 && strcmp(argv[1], "info") == 0)
     {
         eos_pkg_t *package = NULL;
+        eos_pkg_preview_t preview = {0};
+        eos_pkg_manifest_info_t manifest_info = {0};
         result = eos_pkg_open(argv[2], &package);
         if (result != EOS_OK)
         {
@@ -515,19 +517,52 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
             eos_pkg_close(package);
             return (int)esh_printf(ctx, "pkg: unsupported package type: %s\r\n", argv[2]);
         }
+        result = eos_pkg_read_preview(package, &preview);
+        if (result == EOS_OK)
+        {
+            result = eos_pkg_read_manifest_info(package, &manifest_info);
+        }
+        if (result != EOS_OK)
+        {
+            eos_pkg_preview_free(&preview);
+            eos_pkg_manifest_info_free(&manifest_info);
+            eos_pkg_close(package);
+            return (int)esh_printf(ctx, "pkg: invalid preview: %s\r\n", argv[2]);
+        }
 
-        int output_result =
-            (int)esh_printf(ctx,
-                            "id=%s name=%s version=%s type=%s api=%" PRIu16 "..%" PRIu16 " files=%" PRIu32 "\r\n",
-                            header->pkg_id,
-                            header->pkg_name,
-                            header->pkg_version,
-                            type_name,
-                            header->min_api_level,
-                            header->target_api_level,
-                            header->file_count);
+        int output_result = (int)esh_printf(ctx,
+                                            "id=%s name=%s version=%s type=%s api=%" PRIu16 "..%" PRIu16
+                                            " files=%" PRIu32 " manifest=%" PRIu32 " icon=%" PRIu32 "\r\n",
+                                            manifest_info.id,
+                                            manifest_info.name,
+                                            manifest_info.version,
+                                            type_name,
+                                            manifest_info.min_api_level,
+                                            manifest_info.target_api_level,
+                                            header->file_count,
+                                            preview.manifest_size,
+                                            preview.icon_size);
+        eos_pkg_preview_free(&preview);
+        eos_pkg_manifest_info_free(&manifest_info);
         eos_pkg_close(package);
         return output_result;
+    }
+
+    if (argc == 3 && strcmp(argv[1], "validate") == 0)
+    {
+        eos_pkg_t *package = NULL;
+        result = eos_pkg_open(argv[2], &package);
+        if (result != EOS_OK)
+        {
+            return (int)esh_printf(ctx, "pkg: invalid package: %s\r\n", argv[2]);
+        }
+        result = eos_pkg_validate(package);
+        eos_pkg_close(package);
+        if (result != EOS_OK)
+        {
+            return (int)esh_printf(ctx, "pkg: validation failed: %s\r\n", argv[2]);
+        }
+        return (int)esh_printf(ctx, "pkg: valid EPKG v1\r\n");
     }
 
     if (argc == 3 && strcmp(argv[1], "install") == 0)
@@ -540,7 +575,8 @@ int esh_builtin_cmd_pkg(esh_cmd_ctx_t *ctx, int argc, char *argv[])
     }
     else
     {
-        return (int)esh_printf(ctx, "pkg: usage: pkg list|info <file>|install <file>|uninstall <id>\r\n");
+        return (int)esh_printf(ctx,
+                               "pkg: usage: pkg list|info <file>|validate <file>|install <file>|uninstall <id>\r\n");
     }
 
     return result == EOS_OK ? EOS_OK : (int)esh_printf(ctx, "pkg: operation failed\r\n");

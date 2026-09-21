@@ -85,7 +85,7 @@ const char *eos_app_list_get_id(size_t index);
 bool eos_app_list_contains(const char *app_id);
 /**
  * @brief Get existing ID from app list that matches input string (avoid duplicate memory allocation)
- * @param id Original ID to find (e.g., header.pkg_id)
+ * @param id Original ID to find (the ID declared by manifest.json)
  * @return Existing string pointer in the list (lifecycle managed by the list), returns NULL if not found
  */
 const char *eos_app_list_get_existing_id(const char *id);

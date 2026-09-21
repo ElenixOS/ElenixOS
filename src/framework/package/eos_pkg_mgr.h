@@ -1,6 +1,6 @@
 /**
  * @file eos_pkg_mgr.h
- * @brief Package manager
+ * @brief EPKG v1 package format and package manager
  */
 
 #ifndef EOS_PKG_MGR_H
@@ -11,126 +11,127 @@ extern "C" {
 #endif
 
 /* Includes ---------------------------------------------------*/
-#include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include "eos_core.h"
 #include "eos_port.h"
 #include "script_engine_core.h"
-/* Public macros ----------------------------------------------*/
-#define EOS_PKG_APP_MAGIC "EAPK"
-#define EOS_PKG_WATCHFACE_MAGIC "EWPK"
-#define EOS_PKG_READ_BLOCK 512 /*< Block size for data reading */
-#define EOS_PKG_NAME_LEN_MAX 256 /*< Last byte is forced to "\0", maximum name length 255 bytes */
-#define EOS_PKG_ID_LEN_MAX 256 /*< Last byte is forced to "\0", maximum name length 255 bytes */
-#define EOS_PKG_VERSION_LEN_MAX 256 /*< Last byte is forced to "\0", maximum name length 255 bytes */
 
-#define EOS_PKG_MAGIC_OFFSET 0
-#define EOS_PKG_NAME_OFFSET EOS_PKG_MAGIC_OFFSET + 4
-#define EOS_PKG_ID_OFFSET EOS_PKG_NAME_OFFSET + EOS_PKG_NAME_LEN_MAX
-#define EOS_PKG_VERSION_OFFSET EOS_PKG_ID_OFFSET + EOS_PKG_ID_LEN_MAX
-#define EOS_PKG_MIN_API_OFFSET EOS_PKG_VERSION_OFFSET + EOS_PKG_VERSION_LEN_MAX
-#define EOS_PKG_TARGET_API_OFFSET EOS_PKG_MIN_API_OFFSET + 2
-#define EOS_PKG_FILE_COUNT_OFFSET EOS_PKG_TARGET_API_OFFSET + 2
-#define EOS_PKG_RESERVED_OFFSET EOS_PKG_FILE_COUNT_OFFSET + 4
-#define EOS_PKG_TABLE_OFFSET EOS_PKG_RESERVED_OFFSET + 4
+/* Public macros ----------------------------------------------*/
+#define EOS_PKG_MAGIC "EPKG"
+#define EOS_PKG_FPM_MAGIC "FPMA"
+#define EOS_PKG_HEADER_SIZE 60U
+#define EOS_PKG_FPM_SIZE 32U
+#define EOS_PKG_FORMAT_VERSION 1U
+#define EOS_PKG_FPM_VERSION 1U
+#define EOS_PKG_READ_BLOCK 512U
+#define EOS_PKG_ENTRY_FIXED_SIZE 28U
+#define EOS_PKG_MAX_FILE_COUNT 1024U
+#define EOS_PKG_MAX_PREVIEW_FILE_SIZE (1024U * 1024U)
+#define EOS_PKG_LZ4_BLOCK_MAX_SIZE (16U * 1024U)
+#define EOS_PKG_LZ4_COMPRESSED_MAX_SIZE (EOS_PKG_LZ4_BLOCK_MAX_SIZE + 80U)
+#define EOS_PKG_MANIFEST_FILE_NAME "manifest.json"
+#define EOS_PKG_ICON_FILE_NAME "icon.bin"
+
+#define EOS_PKG_TYPE_APPLICATION 1U
+#define EOS_PKG_TYPE_WATCHFACE 2U
+
+#define EOS_PKG_ENTRY_FILE 0U
+#define EOS_PKG_ENTRY_DIRECTORY 1U
+
+#define EOS_PKG_CODEC_NONE 0U
+#define EOS_PKG_CODEC_LZ4_BLOCK 1U
+
+#define EOS_PKG_FPM_FLAG_HAS_ICON (1U << 0)
 
 /* Public typedefs --------------------------------------------*/
 /**
- * @brief Define package file header
+ * @brief Serialized EPKG header represented as host fields.
+ *
+ * This structure is not written directly to disk. Fields are serialized one
+ * by one according to docs/epkg_v1_spec.md.
  */
 typedef struct
 {
-    char magic[4]; // Magic Number
-    char pkg_name[EOS_PKG_NAME_LEN_MAX]; // Package name
-    char pkg_id[EOS_PKG_ID_LEN_MAX]; // Software ID
-    char pkg_version[EOS_PKG_VERSION_LEN_MAX]; // Software version
-    uint16_t min_api_level; // Minimum required API level
-    uint16_t target_api_level; // Target API level
-    uint32_t file_count; // File count
-    uint32_t reserved; // Reserved field for future expansion
+    char magic[4];
+    uint32_t format_version;
+    uint32_t header_size;
+    uint32_t package_type;
+    uint32_t flags;
+    uint32_t file_count;
+    uint32_t fpm_offset;
+    uint32_t fpm_size;
+    uint32_t table_offset;
+    uint32_t data_offset;
+    uint32_t signature_offset;
+    uint32_t signature_size;
+    uint32_t total_stored_size;
+    uint32_t total_original_size;
+    uint32_t header_crc32;
 } eos_pkg_header_t;
 
 /**
- * @brief Open EPK package context
- *
- * The context owns the package file handle and the single parsed Header
- * used by the rest of the package installation flow.
+ * @brief Serialized FPMA area represented as host fields.
+ */
+typedef struct
+{
+    char magic[4];
+    uint32_t fpm_version;
+    uint32_t area_size;
+    uint32_t flags;
+    uint32_t manifest_size;
+    uint32_t icon_size;
+    uint32_t manifest_crc32;
+    uint32_t icon_crc32;
+} eos_pkg_fpm_t;
+
+/**
+ * @brief Raw preview data loaded through FPMA.
+ */
+typedef struct
+{
+    eos_pkg_fpm_t fpm;
+    uint8_t *manifest;
+    uint32_t manifest_size;
+    uint8_t *icon;
+    uint32_t icon_size;
+} eos_pkg_preview_t;
+
+/**
+ * @brief Required manifest metadata used before installation.
+ */
+typedef struct
+{
+    char *id;
+    char *name;
+    char *version;
+    uint16_t min_api_level;
+    uint16_t target_api_level;
+} eos_pkg_manifest_info_t;
+
+/**
+ * @brief Open EPKG package context.
  */
 typedef struct eos_pkg eos_pkg_t;
 
-/**
- * @brief This structure is not used, but eos_pkg_unpack parses according to this structure
- * This structure is used to define the information structure of a single file/directory
- ***********************************
-    typedef struct
-    {
-        uint32_t name_len;  // File name length
-        char name[];        // File name (variable length)
-        uint32_t is_dir;    // Whether directory (0=file,1=directory)
-        uint32_t offset;    // Offset of data in package
-        uint32_t size;      // File size
-    } eos_pkg_entry_t;
- ************************************/
-
 /* Public function prototypes ---------------------------------*/
 
-/**
- * @brief Release and clear data inside script package
- * @param pkg Target script package
- */
 void eos_pkg_free(script_pkg_t *pkg);
-
-/**
- * @brief Read package header
- * @param pkg_path Package path
- * @param header Package header structure pointer
- * @return eos_result_t Execution result
- */
 eos_result_t eos_pkg_read_header(const char *pkg_path, eos_pkg_header_t *header);
-
-/**
- * @brief Open an EPK package and parse its Header once
- * @param pkg_path EPK package path
- * @param package Output package context
- * @return eos_result_t Execution result
- */
 eos_result_t eos_pkg_open(const char *pkg_path, eos_pkg_t **package);
-
-/**
- * @brief Close an EPK package context
- * @param package Package context
- */
 void eos_pkg_close(eos_pkg_t *package);
-
-/**
- * @brief Get the parsed Header owned by a package context
- * @param package Package context
- * @return const eos_pkg_header_t* Parsed Header, or NULL
- */
 const eos_pkg_header_t *eos_pkg_get_header(const eos_pkg_t *package);
-
-/**
- * @brief Get the validated Package Type owned by a package context
- * @param package Package context
- * @return script_pkg_type_t Package Type, or SCRIPT_TYPE_UNKNOWN
- */
+const eos_pkg_fpm_t *eos_pkg_get_fpm(const eos_pkg_t *package);
 script_pkg_type_t eos_pkg_get_package_type(const eos_pkg_t *package);
-
-/**
- * @brief Resolve the package type stored in the header magic
- * @param header Package header structure pointer
- * @param pkg_type Output package type
- * @return eos_result_t Execution result
- */
 eos_result_t eos_pkg_get_type(const eos_pkg_header_t *header, script_pkg_type_t *pkg_type);
-
-/**
- * @brief Unpack an opened EPK package
- * @param package Open package context
- * @param output_path Output directory
- * @return eos_result_t Execution result
- */
+eos_result_t eos_pkg_read_preview(eos_pkg_t *package, eos_pkg_preview_t *preview);
+void eos_pkg_preview_free(eos_pkg_preview_t *preview);
+eos_result_t eos_pkg_read_manifest_info(eos_pkg_t *package, eos_pkg_manifest_info_t *info);
+void eos_pkg_manifest_info_free(eos_pkg_manifest_info_t *info);
+eos_result_t eos_pkg_validate(eos_pkg_t *package);
 eos_result_t eos_pkg_unpack(eos_pkg_t *package, const char *output_path);
+
 #ifdef __cplusplus
 }
 #endif

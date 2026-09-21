@@ -1060,11 +1060,15 @@ static void refresh_icon_objects(eos_bubble_grid_t *wb)
 
         if (!node->active)
         {
-            if (node->visual_valid)
-            {
-                lv_obj_add_flag(bubble, LV_OBJ_FLAG_HIDDEN);
-                node->visual_valid = false;
-            }
+            /* Deactivation invalidates the cached geometry before this
+             * synchronous refresh runs.  Hide unconditionally so color-only
+             * bubbles, which have no image child to hide in the setter, do
+             * not remain visible at their previous position. */
+            lv_obj_set_hidden(bubble, true);
+            if (image != NULL)
+                lv_obj_set_hidden(image, true);
+            node->visual_valid = false;
+            node->visual_pressed = false;
             continue;
         }
 

@@ -111,6 +111,7 @@ typedef enum
     SNI_H_LV_CHART_SERIES,
     SNI_H_LV_EVENT_CB,
     SNI_H_LV_EVENT_DSC,
+    SNI_H_EOS_ANALOG_HAND,
     __SNI_TREE_DEPENDENT_RESOURCE_END,
 
     /* ---- Hybrid Resources ------------------------------------------
@@ -267,6 +268,7 @@ typedef struct sni_managed_resource_node
     bool is_alive; /**< Lifecycle status (was in control block) */
     struct sni_managed_resource_node *next; /**< Next node in type-specific list */
     struct sni_control_block *parent_cb; /**< Parent control block (only for sub-resources) */
+    struct sni_managed_resource_node *parent_next; /**< Next node in the parent's sub-resource list */
 } sni_managed_resource_node_t;
 
 /**
@@ -305,6 +307,7 @@ typedef struct sni_context
     int resource_counts[SNI_MANAGED_RESOURCE_COUNT];
     void *event_ctx_list;
     void *sensor_request_ctx_list;
+    void *metric_subscription_ctx_list;
     struct script_program *owner;
     bool paused;
     sni_teardown_phase_t teardown_phase; /**< Current phase during Realm destruction */

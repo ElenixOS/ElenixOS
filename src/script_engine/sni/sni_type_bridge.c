@@ -253,9 +253,10 @@ void sni_obj_deleted_cb(lv_event_t *e)
     sni_managed_resource_node_t *sub = cb->sub_resource_head;
     while (sub)
     {
-        sni_managed_resource_node_t *next = sub->next;
+        sni_managed_resource_node_t *next = sub->parent_next;
         sub->is_alive = false;
         sub->parent_cb = NULL;
+        sub->parent_next = NULL;
         sub->ptr = NULL;
         if (!jerry_value_is_undefined(sub->js_obj) && !jerry_value_is_null(sub->js_obj))
         {
@@ -351,12 +352,13 @@ static void sni_resource_node_free_cb(void *native_p, struct jerry_object_native
         {
             if (*pp == node)
             {
-                *pp = node->next;
+                *pp = node->parent_next;
                 break;
             }
-            pp = &(*pp)->next;
+            pp = &(*pp)->parent_next;
         }
         node->parent_cb = NULL;
+        node->parent_next = NULL;
     }
 
     /* Remove from the context's type-indexed resource list so that
@@ -987,7 +989,7 @@ void sni_tb_link_sub_resource(void *parent_ptr, void *sub_ptr, sni_type_t sub_ty
     }
 
     sub_node->parent_cb = parent_cb;
-    sub_node->next = parent_cb->sub_resource_head;
+    sub_node->parent_next = parent_cb->sub_resource_head;
     parent_cb->sub_resource_head = sub_node;
 }
 
@@ -1021,13 +1023,14 @@ void sni_tb_unlink_sub_resource(void *sub_ptr, sni_type_t sub_type)
     {
         if (*prev == sub_node)
         {
-            *prev = sub_node->next;
+            *prev = sub_node->parent_next;
             break;
         }
-        prev = &(*prev)->next;
+        prev = &(*prev)->parent_next;
     }
 
     sub_node->parent_cb = NULL;
+    sub_node->parent_next = NULL;
 }
 
 bool sni_tb_js2c_parent(jerry_value_t val, void **out)

@@ -18,6 +18,7 @@
 #include "script_engine_core.h"
 #include "spm.h"
 #include "eos_dispatcher.h"
+#include "eos_service_metric.h"
 #include "src/misc/lv_timer_private.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -146,6 +147,25 @@ typedef struct sni_sensor_request_callback_ctx
     bool release_pending;
     struct sni_sensor_request_callback_ctx *next;
 } sni_sensor_request_callback_ctx_t;
+
+typedef struct sni_metric_subscription_ctx
+{
+    uint32_t handle;
+    eos_metric_id_t metric_id;
+    lv_timer_t *timer;
+    jerry_value_t js_cb;
+    sni_context_t *owner_ctx;
+    uint32_t engine_gen;
+    bool alive;
+    bool source_acquired;
+    uint32_t dispatch_depth;
+    bool free_pending;
+    bool release_pending;
+    struct sni_metric_subscription_ctx *next;
+} sni_metric_subscription_ctx_t;
+
+static sni_metric_subscription_ctx_t *s_dispatching_metric = NULL;
+static uint32_t s_next_metric_handle = 1U;
 
 /* Function Implementations -----------------------------------*/
 
@@ -1371,6 +1391,244 @@ void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx)
         (void)eos_sensor_cancel(callback_ctx->request_id);
         _sni_sensor_request_free(callback_ctx, false);
         callback_ctx = next;
+    }
+}
+
+/* Semantic Metric callback implementation --------------------*/
+
+static sni_metric_subscription_ctx_t **_sni_metric_list_ptr(sni_context_t *ctx)
+{
+    return (sni_metric_subscription_ctx_t **)&ctx->metric_subscription_ctx_list;
+}
+
+static void _sni_metric_unlink(sni_metric_subscription_ctx_t *subscription)
+{
+    if (!subscription || !subscription->owner_ctx)
+        return;
+
+    sni_metric_subscription_ctx_t **link = _sni_metric_list_ptr(subscription->owner_ctx);
+    while (*link)
+    {
+        if (*link == subscription)
+        {
+            *link = subscription->next;
+            return;
+        }
+        link = &(*link)->next;
+    }
+}
+
+static void _sni_metric_free(sni_metric_subscription_ctx_t *subscription, bool release_js)
+{
+    if (!subscription)
+        return;
+
+    if (subscription->dispatch_depth > 0U)
+    {
+        subscription->free_pending = true;
+        subscription->release_pending = subscription->release_pending || release_js;
+        subscription->alive = false;
+        _sni_metric_unlink(subscription);
+        return;
+    }
+
+    if (subscription->alive)
+    {
+        subscription->alive = false;
+        _sni_metric_unlink(subscription);
+    }
+    if (subscription->timer && subscription != s_dispatching_metric)
+    {
+        lv_timer_delete(subscription->timer);
+        subscription->timer = NULL;
+    }
+    if (subscription->source_acquired)
+    {
+        (void)eos_metric_release(subscription->metric_id);
+        subscription->source_acquired = false;
+    }
+    if (release_js)
+        sni_cb_safe_jerry_value_free(subscription->owner_ctx, &subscription->js_cb);
+    else
+        subscription->js_cb = jerry_undefined();
+    eos_free(subscription);
+}
+
+static bool _sni_metric_context_is_active(sni_metric_subscription_ctx_t *subscription)
+{
+    if (!subscription || !subscription->alive || !subscription->owner_ctx || !subscription->owner_ctx->owner)
+        return false;
+    if (subscription->engine_gen != script_engine_get_gen())
+        return false;
+    if (sni_context_is_paused(subscription->owner_ctx))
+        return false;
+    return subscription->owner_ctx->owner->state == SCRIPT_PROGRAM_STATE_ACTIVE;
+}
+
+static void _sni_metric_dispatch(lv_timer_t *timer)
+{
+    sni_metric_subscription_ctx_t *subscription = lv_timer_get_user_data(timer);
+    script_program_t *owner_program;
+    script_program_t *previous_program;
+    jerry_value_t previous_realm;
+    jerry_value_t event_obj;
+    jerry_value_t ret;
+    eos_metric_value_t sample;
+    const char *metric_name;
+    uint32_t saved_gen;
+
+    if (!_sni_metric_context_is_active(subscription))
+        return;
+
+    owner_program = subscription->owner_ctx->owner;
+    previous_program = script_engine_get_current_program();
+    if (previous_program != owner_program)
+        script_engine_set_current_program(owner_program);
+
+    previous_realm = jerry_set_realm(owner_program->realm);
+    if (jerry_value_is_exception(previous_realm))
+    {
+        jerry_value_free(previous_realm);
+        if (previous_program != owner_program)
+            script_engine_set_current_program(previous_program);
+        return;
+    }
+
+    subscription->dispatch_depth++;
+    s_dispatching_metric = subscription;
+    event_obj = jerry_object();
+    metric_name = eos_metric_name(subscription->metric_id);
+    (void)eos_metric_read(subscription->metric_id, &sample);
+    script_engine_set_prop_string(event_obj, "metric", metric_name ? metric_name : "unknown");
+    if (sample.boolean_value)
+        jerry_value_free(jerry_object_set_sz(event_obj, "value", jerry_boolean(sample.value != 0.0)));
+    else
+        script_engine_set_prop_number(event_obj, "value", sample.value);
+    script_engine_set_prop_string(event_obj, "unit", sample.unit ? sample.unit : "");
+    script_engine_set_prop_number(event_obj, "timestamp", (double)sample.timestamp);
+    jerry_value_free(jerry_object_set_sz(event_obj, "valid", jerry_boolean(sample.valid)));
+    jerry_value_free(jerry_object_set_sz(event_obj, "stale", jerry_boolean(sample.stale)));
+
+    jerry_value_t args[1] = {event_obj};
+    saved_gen = script_engine_get_gen();
+    s_dispatching_ctx = subscription->owner_ctx;
+    ret = spm_call(owner_program, subscription->js_cb, jerry_undefined(), args, 1);
+    s_dispatching_ctx = NULL;
+    if (saved_gen != script_engine_get_gen())
+    {
+        s_dispatching_metric = NULL;
+        return;
+    }
+
+    (void)jerry_set_realm(previous_realm);
+    if (previous_program != owner_program)
+    {
+        if (previous_program && previous_program->state == SCRIPT_PROGRAM_STATE_ACTIVE)
+            script_engine_set_current_program(previous_program);
+        else
+            script_engine_set_current_program(NULL);
+    }
+
+    if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
+        EOS_LOG_E("Metric callback encountered an error");
+    jerry_value_free(ret);
+    jerry_value_free(event_obj);
+    s_dispatching_metric = NULL;
+
+    subscription->dispatch_depth--;
+    if (subscription->dispatch_depth == 0U && subscription->free_pending)
+    {
+        bool release_js = subscription->release_pending;
+        subscription->free_pending = false;
+        subscription->release_pending = false;
+        _sni_metric_free(subscription, release_js);
+    }
+}
+
+bool sni_cb_metric_subscribe(sni_context_t *ctx,
+                             uint32_t metric_id,
+                             jerry_value_t js_cb,
+                             uint32_t interval_ms,
+                             uint32_t *out_handle)
+{
+    sni_metric_subscription_ctx_t *subscription;
+    eos_result_t result;
+
+    if (!ctx || metric_id >= EOS_METRIC_COUNT || !jerry_value_is_function(js_cb) || !out_handle)
+        return false;
+    if (interval_ms < 100U)
+        interval_ms = 100U;
+    if (interval_ms > 60000U)
+        interval_ms = 60000U;
+
+    result = eos_metric_acquire((eos_metric_id_t)metric_id);
+    if (result != EOS_OK)
+        return false;
+
+    subscription = eos_malloc_zeroed(sizeof(*subscription));
+    if (!subscription)
+    {
+        (void)eos_metric_release((eos_metric_id_t)metric_id);
+        return false;
+    }
+    subscription->handle = s_next_metric_handle++;
+    if (subscription->handle == 0U)
+        subscription->handle = s_next_metric_handle++;
+    subscription->metric_id = (eos_metric_id_t)metric_id;
+    subscription->js_cb = jerry_value_copy(js_cb);
+    subscription->owner_ctx = ctx;
+    subscription->engine_gen = script_engine_get_gen();
+    subscription->alive = true;
+    subscription->source_acquired = true;
+    subscription->timer = lv_timer_create(_sni_metric_dispatch, interval_ms, subscription);
+    if (!subscription->timer)
+    {
+        subscription->alive = false;
+        sni_cb_safe_jerry_value_free(ctx, &subscription->js_cb);
+        (void)eos_metric_release(subscription->metric_id);
+        eos_free(subscription);
+        return false;
+    }
+    subscription->next = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    ctx->metric_subscription_ctx_list = subscription;
+    *out_handle = subscription->handle;
+    lv_timer_ready(subscription->timer);
+    return true;
+}
+
+bool sni_cb_metric_unsubscribe(sni_context_t *ctx, uint32_t handle)
+{
+    sni_metric_subscription_ctx_t *subscription;
+
+    if (!ctx || handle == 0U)
+        return false;
+    subscription = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    while (subscription)
+    {
+        if (subscription->handle == handle && subscription->alive)
+        {
+            _sni_metric_free(subscription, true);
+            return true;
+        }
+        subscription = subscription->next;
+    }
+    return false;
+}
+
+void sni_cb_metric_cleanup_context(sni_context_t *ctx)
+{
+    sni_metric_subscription_ctx_t *subscription;
+
+    if (!ctx)
+        return;
+    subscription = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    ctx->metric_subscription_ctx_list = NULL;
+    while (subscription)
+    {
+        sni_metric_subscription_ctx_t *next = subscription->next;
+        subscription->alive = false;
+        _sni_metric_free(subscription, true);
+        subscription = next;
     }
 }
 

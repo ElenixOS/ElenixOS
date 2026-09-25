@@ -41,6 +41,12 @@ typedef enum
     EOS_WDATA_RADIO_ITEM_INDEX,
     EOS_WDATA_SLIDER_LABEL,
     EOS_WDATA_SNI_CB, /**< Script engine sni_control_block_t * (replaces raw lv_obj_set_user_data) */
+    EOS_WDATA_WW_ANALOG_DIAL,
+    EOS_WDATA_WW_COMPASS_DIAL,
+    EOS_WDATA_WW_RADIAL_GAUGE,
+    EOS_WDATA_WW_METRIC_RINGS,
+    EOS_WDATA_WW_TREND_CHART,
+    EOS_WDATA_WW_CALENDAR_GRID,
     EOS_WDATA_COUNT
 } eos_widget_data_type_t;
 

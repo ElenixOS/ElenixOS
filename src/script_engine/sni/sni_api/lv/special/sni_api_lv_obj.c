@@ -446,9 +446,10 @@ jerry_value_t sni_api_lv_obj_delete(const jerry_call_info_t *call_info_p,
         sni_managed_resource_node_t *sub = cb->sub_resource_head;
         while (sub)
         {
-            sni_managed_resource_node_t *next = sub->next;
+            sni_managed_resource_node_t *next = sub->parent_next;
             sub->is_alive = false;
             sub->parent_cb = NULL;
+            sub->parent_next = NULL;
             sub->ptr = NULL;
             if (!jerry_value_is_undefined(sub->js_obj) && !jerry_value_is_null(sub->js_obj))
             {

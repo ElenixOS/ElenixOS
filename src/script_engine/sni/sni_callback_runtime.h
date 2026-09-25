@@ -274,6 +274,35 @@ void sni_cb_sensor_request_cleanup_context(sni_context_t *ctx);
 void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx);
 
 /**
+ * @brief Create one semantic Metric subscription owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param metric_id Metric identifier
+ * @param js_cb JavaScript callback
+ * @param interval_ms Polling interval
+ * @param out_handle Returned subscription identifier
+ * @return true when the subscription was created
+ */
+bool sni_cb_metric_subscribe(sni_context_t *ctx,
+                             uint32_t metric_id,
+                             jerry_value_t js_cb,
+                             uint32_t interval_ms,
+                             uint32_t *out_handle);
+
+/**
+ * @brief Unsubscribe one Metric callback owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param handle Subscription identifier
+ * @return true when a subscription was removed
+ */
+bool sni_cb_metric_unsubscribe(sni_context_t *ctx, uint32_t handle);
+
+/**
+ * @brief Cancel and release all Metric subscriptions owned by a context
+ * @param ctx Owning SNI context
+ */
+void sni_cb_metric_cleanup_context(sni_context_t *ctx);
+
+/**
  * @brief Check if the given timer is currently dispatching (in-callback).
  * Used by sni_context_sweep_all to avoid deleting the executing timer.
  */

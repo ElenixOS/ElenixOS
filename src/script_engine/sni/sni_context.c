@@ -36,6 +36,7 @@ static const char *_sni_type_names[SNI_MANAGED_RESOURCE_COUNT] = {
     [SNI_H_LV_CHART_SERIES - __SNI_HANDLE_RESOURCE_START - 1] = "LV_CHART_SERIES",
     [SNI_H_LV_EVENT_CB - __SNI_HANDLE_RESOURCE_START - 1] = "LV_EVENT_CB",
     [SNI_H_LV_EVENT_DSC - __SNI_HANDLE_RESOURCE_START - 1] = "LV_EVENT_DSC",
+    [SNI_H_EOS_ANALOG_HAND - __SNI_HANDLE_RESOURCE_START - 1] = "EOS_ANALOG_HAND",
     [SNI_H_EOS_ACTIVITY - __SNI_HANDLE_RESOURCE_START - 1] = "EOS_ACTIVITY",
     [SNI_H_EOS_VIEW - __SNI_HANDLE_RESOURCE_START - 1] = "EOS_VIEW",
     [SNI_H_LV_TIMER - __SNI_HANDLE_RESOURCE_START - 1] = "LV_TIMER",
@@ -513,6 +514,7 @@ void sni_context_sweep_js_refs(sni_context_t *ctx)
 
     /* Sensor API callbacks hold JS functions outside the managed LVGL
      * resource lists. Cancel them before releasing Realm references. */
+    sni_cb_metric_cleanup_context(ctx);
     sni_cb_sensor_request_cleanup_context(ctx);
 
     _SWEEP_HEAP_LOG("sweep-js start");
@@ -622,12 +624,13 @@ void sni_context_sweep_all(sni_context_t *ctx)
                 {
                     if (*pp == node)
                     {
-                        *pp = node->next;
+                        *pp = node->parent_next;
                         break;
                     }
-                    pp = &(*pp)->next;
+                    pp = &(*pp)->parent_next;
                 }
                 node->parent_cb = NULL;
+                node->parent_next = NULL;
             }
 
             /* Tree-Dependent: never destroy the native object — LVGL

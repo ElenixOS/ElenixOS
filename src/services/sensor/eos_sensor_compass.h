@@ -82,6 +82,13 @@ eos_result_t eos_sensor_compass_start(eos_sensor_compass_cb_t callback,
  */
 eos_result_t eos_sensor_compass_cancel(eos_sensor_request_id_t request_id);
 
+/**
+ * @brief Read the latest successful compass result
+ * @param result Output result
+ * @return EOS_OK when a successful result has been produced
+ */
+eos_result_t eos_sensor_compass_read_latest(eos_sensor_compass_result_t *result);
+
 #ifdef __cplusplus
 }
 #endif

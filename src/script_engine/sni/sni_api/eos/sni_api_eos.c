@@ -28,8 +28,8 @@
 #include "eos_watchface.h"
 #include "eos_service_storage.h"
 #include "eos_app_header.h"
-#include "eos_ww_clock_hand.h"
 #include "sni_api_eos_ww.h"
+#include "sni_api_eos_metric.h"
 #include "sni_api_eos_permission.h"
 #include "eos_service_sensor.h"
 /* Macros and Definitions -------------------------------------*/
@@ -695,150 +695,6 @@ jerry_value_t sni_api_eos_app_header_show(const jerry_call_info_t *call_info_p,
     }
 
     eos_app_header_show(current);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_create(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    char *src;
-    int32_t type;
-    int32_t cx;
-    int32_t cy;
-    lv_obj_t *ret_obj;
-
-    (void)call_info_p;
-
-    if (args_count != 5)
-    {
-        return sni_api_throw_error("Usage: clockHand.create(obj, src, type, cx, cy)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj))
-    {
-        return sni_api_throw_error("Invalid object argument");
-    }
-
-    if (!jerry_value_is_string(args_p[1]) || !jerry_value_is_number(args_p[2]) || !jerry_value_is_number(args_p[3])
-        || !jerry_value_is_number(args_p[4]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    src = sni_api_eos_get_assets_file_str(args_p[1]);
-    if (!src)
-    {
-        return sni_api_throw_error("Invalid image source");
-    }
-
-    type = (int32_t)jerry_value_as_number(args_p[2]);
-    cx = (int32_t)jerry_value_as_number(args_p[3]);
-    cy = (int32_t)jerry_value_as_number(args_p[4]);
-
-    ret_obj = eos_clock_hand_create(obj, src, (eos_clock_hand_type_t)type, cx, cy);
-    eos_free(src);
-    return sni_tb_c2js(&ret_obj, SNI_H_LV_OBJ);
-}
-
-jerry_value_t sni_api_eos_clock_hand_center(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-
-    (void)call_info_p;
-
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Usage: clockHand.center(obj)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj))
-    {
-        return sni_api_throw_error("Invalid object argument");
-    }
-
-    eos_clock_hand_center(obj);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_place_pivot(const jerry_call_info_t *call_info_p,
-                                                 const jerry_value_t args_p[],
-                                                 const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t x;
-    int32_t y;
-
-    (void)call_info_p;
-
-    if (args_count != 3)
-    {
-        return sni_api_throw_error("Usage: clockHand.placePivot(obj, x, y)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1])
-        || !jerry_value_is_number(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    x = (int32_t)jerry_value_as_number(args_p[1]);
-    y = (int32_t)jerry_value_as_number(args_p[2]);
-    eos_clock_hand_place_pivot(obj, x, y);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_attach(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t type;
-
-    (void)call_info_p;
-
-    if (args_count != 2)
-    {
-        return sni_api_throw_error("Usage: clockHand.attach(obj, type)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    type = (int32_t)jerry_value_as_number(args_p[1]);
-    eos_clock_hand_attach(obj, (eos_clock_hand_type_t)type);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_center_style(const jerry_call_info_t *call_info_p,
-                                                  const jerry_value_t args_p[],
-                                                  const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t px;
-    int32_t py;
-
-    (void)call_info_p;
-
-    if (args_count != 3)
-    {
-        return sni_api_throw_error("Usage: clockHand.centerStyle(obj, pivotX, pivotY)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1])
-        || !jerry_value_is_number(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    px = (int32_t)jerry_value_as_number(args_p[1]);
-    py = (int32_t)jerry_value_as_number(args_p[2]);
-    eos_clock_hand_center_style(obj, px, py);
     return jerry_undefined();
 }
 
@@ -1552,15 +1408,6 @@ const sni_method_desc_t eos_class_static_methods_app_header[] = {
     {.name = NULL, .handler = NULL},
 };
 
-const sni_method_desc_t eos_class_static_methods_clock_hand[] = {
-    {.name = "create", .handler = sni_api_eos_clock_hand_create},
-    {.name = "center", .handler = sni_api_eos_clock_hand_center},
-    {.name = "placePivot", .handler = sni_api_eos_clock_hand_place_pivot},
-    {.name = "attach", .handler = sni_api_eos_clock_hand_attach},
-    {.name = "centerStyle", .handler = sni_api_eos_clock_hand_center_style},
-    {.name = NULL, .handler = NULL},
-};
-
 const sni_method_desc_t eos_class_static_methods_activity[] = {
     {.name = "create", .handler = sni_api_eos_activity_create},
     {.name = "destroy", .handler = sni_api_eos_activity_destroy},
@@ -1633,16 +1480,6 @@ const sni_class_desc_t eos_class_desc_app_header = {
     .constants = NULL,
 };
 
-const sni_class_desc_t eos_class_desc_clock_hand = {
-    .name = "clockHand",
-    .constructor = NULL,
-    .base_class = NULL,
-    .methods = NULL,
-    .properties = NULL,
-    .static_methods = eos_class_static_methods_clock_hand,
-    .constants = NULL,
-};
-
 const sni_class_desc_t eos_class_desc_ww = {
     .name = "ww",
     .constructor = NULL,
@@ -1699,17 +1536,27 @@ const sni_class_desc_t eos_class_desc_sensor = {
     .constants = NULL,
 };
 
+const sni_class_desc_t eos_class_desc_metric = {
+    .name = "metric",
+    .constructor = NULL,
+    .base_class = NULL,
+    .methods = NULL,
+    .properties = NULL,
+    .static_methods = eos_metric_static_methods,
+    .constants = NULL,
+};
+
 const sni_class_desc_t *const eos_api_classes[] = {
     &eos_class_desc_view,
     &eos_class_desc_console,
     &eos_class_desc_config,
     &eos_class_desc_time,
     &eos_class_desc_app_header,
-    &eos_class_desc_clock_hand,
     &eos_class_desc_ww,
     &eos_class_desc_activity,
     &eos_class_desc_permission,
     &eos_class_desc_sensor,
+    &eos_class_desc_metric,
     NULL,
 };
 
@@ -1719,9 +1566,6 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "FONT_SIZE_SMALL", .type = SNI_CONST_INT, .value.i = EOS_FONT_SIZE_SMALL},
     {.name = "DISPLAY_WIDTH", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_WIDTH},
     {.name = "DISPLAY_HEIGHT", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_HEIGHT},
-    {.name = "CLOCK_HAND_HOUR", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_HOUR},
-    {.name = "CLOCK_HAND_MINUTE", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_MINUTE},
-    {.name = "CLOCK_HAND_SECOND", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_SECOND},
     {.name = "ACTIVITY_TYPE_NULL", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_NULL},
     {.name = "ACTIVITY_TYPE_APP", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_APP},
     {.name = "ACTIVITY_TYPE_APP_LIST", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_APP_LIST},

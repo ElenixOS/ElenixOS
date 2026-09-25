@@ -79,6 +79,8 @@ typedef struct
 static _compass_session_t *_compass_session = NULL;
 static eos_sensor_request_id_t _compass_next_request_id = 0x40000001U;
 static _compass_calibration_t _compass_calibration = {0};
+static eos_sensor_compass_result_t _compass_latest;
+static bool _compass_has_latest;
 
 /* Function Implementations -----------------------------------*/
 static bool _compass_is_terminal(eos_sensor_compass_state_t state)
@@ -386,6 +388,8 @@ static void _compass_process(_compass_session_t *request)
                     .field_strength_nt = (int32_t)field,
                     .timestamp = request->mag.timestamp,
                 };
+                _compass_latest = result;
+                _compass_has_latest = true;
                 _compass_finish(request, EOS_SENSOR_COMPASS_STATE_SUCCESS, &result);
                 return;
             }
@@ -522,5 +526,15 @@ eos_result_t eos_sensor_compass_cancel(eos_sensor_request_id_t request_id)
     _compass_cleanup_clients(_compass_session);
     if (!_compass_session->clients)
         _compass_finish(_compass_session, EOS_SENSOR_COMPASS_STATE_CANCELLED, NULL);
+    return EOS_OK;
+}
+
+eos_result_t eos_sensor_compass_read_latest(eos_sensor_compass_result_t *result)
+{
+    if (!result)
+        return EOS_ERR_INVALID_ARG;
+    if (!_compass_has_latest)
+        return EOS_ERR_NOT_FOUND;
+    *result = _compass_latest;
     return EOS_OK;
 }

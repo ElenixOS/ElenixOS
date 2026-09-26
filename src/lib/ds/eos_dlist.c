@@ -73,7 +73,7 @@ bool eos_dlist_push_front(eos_dlist_t *list, void *data)
     list->head = node;
     list->size++;
 
-    EOS_LOG_I("push_front data[%p]", data);
+    EOS_LOG_D("push_front data[%p]", data);
     return true;
 }
 
@@ -96,7 +96,7 @@ bool eos_dlist_push_back(eos_dlist_t *list, void *data)
     list->tail = node;
     list->size++;
 
-    EOS_LOG_I("push_back data[%p]", data);
+    EOS_LOG_D("push_back data[%p]", data);
     return true;
 }
 
@@ -128,7 +128,7 @@ bool eos_dlist_insert_at(eos_dlist_t *list, size_t index, void *data)
     cur->prev = node;
     list->size++;
 
-    EOS_LOG_I("insert_at data[%p] at index %zu", data, index);
+    EOS_LOG_D("insert_at data[%p] at index %zu", data, index);
     return true;
 }
 
@@ -151,7 +151,7 @@ void *eos_dlist_pop_front(eos_dlist_t *list)
     list->size--;
     eos_free(node);
 
-    EOS_LOG_I("pop_front data[%p]", data);
+    EOS_LOG_D("pop_front data[%p]", data);
     return data;
 }
 
@@ -174,7 +174,7 @@ void *eos_dlist_pop_back(eos_dlist_t *list)
     list->size--;
     eos_free(node);
 
-    EOS_LOG_I("pop_back data[%p]", data);
+    EOS_LOG_D("pop_back data[%p]", data);
     return data;
 }
 
@@ -202,7 +202,7 @@ void *eos_dlist_remove_at(eos_dlist_t *list, size_t index)
     list->size--;
     eos_free(cur);
 
-    EOS_LOG_I("remove_at data[%p] at index %zu", data, index);
+    EOS_LOG_D("remove_at data[%p] at index %zu", data, index);
     return data;
 }
 
@@ -228,7 +228,7 @@ bool eos_dlist_remove(eos_dlist_t *list, void *data)
             list->size--;
             eos_free(cur);
 
-            EOS_LOG_I("remove data[%p]", data);
+            EOS_LOG_D("remove data[%p]", data);
             return true;
         }
         cur = cur->next;
@@ -253,7 +253,7 @@ void eos_dlist_clear(eos_dlist_t *list)
     list->tail = NULL;
     list->size = 0;
 
-    EOS_LOG_I("dlist cleared");
+    EOS_LOG_D("dlist cleared");
 }
 
 void *eos_dlist_get_front(eos_dlist_t *list)
@@ -343,7 +343,7 @@ bool eos_dlist_reverse(eos_dlist_t *list)
     list->head = list->tail;
     list->tail = tmp;
 
-    EOS_LOG_I("dlist reversed");
+    EOS_LOG_D("dlist reversed");
     return true;
 }
 

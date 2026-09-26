@@ -76,7 +76,7 @@ static void _virtual_display_flush_cb(lv_display_t *disp, const lv_area_t *area,
     lv_coord_t h = lv_area_get_height(area);
 
 #if EOS_VIRTUAL_DISP_FLUSH_DIAG
-    EOS_LOG_E("[FLUSH_DIAG] FLUSH area=%d,%d-%d,%d (w=%d h=%d)", area->x1, area->y1, area->x2, area->y2, w, h);
+    EOS_LOG_D("[FLUSH_DIAG] FLUSH area=%d,%d-%d,%d (w=%d h=%d)", area->x1, area->y1, area->x2, area->y2, w, h);
 #endif
 
     uint32_t px_size = lv_color_format_get_size(vd->cf);

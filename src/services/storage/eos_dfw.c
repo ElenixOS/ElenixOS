@@ -54,7 +54,7 @@ bool eos_dfw_write(const char *path, const uint8_t *data, size_t data_size)
     eos_dfw_cache_t *cache = _find_cache(path);
     if (cache)
     {
-        EOS_LOG_I("Cache found");
+        EOS_LOG_D("Cache found");
         if (cache->data)
             eos_free(cache->data);
         cache->data = eos_malloc(data_size + 1);
@@ -65,7 +65,7 @@ bool eos_dfw_write(const char *path, const uint8_t *data, size_t data_size)
     }
     else
     {
-        EOS_LOG_I("Cache not found");
+        EOS_LOG_D("Cache not found");
         cache = eos_malloc_zeroed(sizeof(eos_dfw_cache_t));
         EOS_CHECK_PTR_RETURN_VAL(cache, false);
         strncpy(cache->path, path, EOS_FS_PATH_MAX - 1);
@@ -76,7 +76,7 @@ bool eos_dfw_write(const char *path, const uint8_t *data, size_t data_size)
         cache->data_size = data_size;
         if (eos_cqueue_enqueue(cq, cache))
         {
-            EOS_LOG_I("Cache enqueued");
+            EOS_LOG_D("Cache enqueued");
         }
         else
         {
@@ -92,7 +92,7 @@ uint8_t *eos_dfw_read(const char *path)
     eos_dfw_cache_t *cache = _find_cache(path);
     if (cache)
     {
-        EOS_LOG_I("Cache found");
+        EOS_LOG_D("Cache found");
         uint8_t *copy = eos_malloc_zeroed(cache->data_size);
         memcpy(copy, cache->data, cache->data_size);
         return copy;
@@ -115,7 +115,7 @@ void eos_dfw_sync(void)
         }
         else
         {
-            EOS_LOG_I("Write done");
+            EOS_LOG_D("Write done");
         }
         eos_free(cache->data);
         eos_free(cache);

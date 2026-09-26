@@ -121,7 +121,7 @@ lv_font_t *eos_font_init(void)
 
     if (!font_large || !font_medium || !font_small)
     {
-        EOS_LOG_E("Some fonts failed to load!");
+        EOS_LOG_W("Some fonts failed to load!");
         _destroy_loaded_ttf_fonts();
         return _use_builtin_fallback();
     }

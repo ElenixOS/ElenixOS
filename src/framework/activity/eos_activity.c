@@ -589,25 +589,25 @@ static void _anim_clean_up_activity_deferred(void *user_data)
         snapshot_count++;
         node = node->next;
     }
-    EOS_LOG_E("DEFERRED cleanup: snapshot_count=%d exit_policy=%d", snapshot_count, anim_ctx->exit_policy);
+    EOS_LOG_D("DEFERRED cleanup: snapshot_count=%d exit_policy=%d", snapshot_count, anim_ctx->exit_policy);
     node = anim_ctx->snapshots;
     while (node)
     {
         eos_activity_snapshot_node_t *next = node->next;
         if (node->snapshot_obj && lv_obj_is_valid(node->snapshot_obj))
         {
-            EOS_LOG_E("Deleting snapshot_obj[%p] draw_buf[%p]", node->snapshot_obj, node->draw_buf);
+            EOS_LOG_D("Deleting snapshot_obj[%p] draw_buf[%p]", node->snapshot_obj, node->draw_buf);
             lv_obj_delete(node->snapshot_obj);
         }
         else
         {
-            EOS_LOG_E("Skipping invalid snapshot_obj[%p] draw_buf[%p]", node->snapshot_obj, node->draw_buf);
+            EOS_LOG_W("Skipping invalid snapshot_obj[%p] draw_buf[%p]", node->snapshot_obj, node->draw_buf);
         }
         eos_free(node);
         node = next;
     }
     anim_ctx->snapshots = NULL;
-    EOS_LOG_E("DEFERRED cleanup: snapshots freed");
+    EOS_LOG_D("DEFERRED cleanup: snapshots freed");
 
     if (anim_ctx->exit_policy == EOS_ACTIVITY_EXIT_SUSPEND && anim_ctx->from)
     {
@@ -1043,7 +1043,7 @@ static void _anim_clean_up_activity(void *user_data)
               (void *)anim_ctx->to,
               _activity_type_to_str(anim_ctx->to ? anim_ctx->to->type : EOS_ACTIVITY_TYPE_NULL));
 
-    EOS_LOG_E("DISPATCHING deferred cleanup for anim_ctx[%p]", anim_ctx);
+    EOS_LOG_D("DISPATCHING deferred cleanup for anim_ctx[%p]", anim_ctx);
     eos_dispatcher_call(_anim_clean_up_activity_deferred, anim_ctx);
 }
 

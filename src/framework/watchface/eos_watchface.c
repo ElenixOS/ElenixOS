@@ -301,7 +301,7 @@ eos_result_t eos_watchface_install_package(struct eos_pkg *package)
     }
     eos_storage_mkdir_if_not_exist(data_path);
     _eos_watchface_list_refresh();
-    EOS_LOG_D("Watchface installed successfully: %s", manifest_info.id);
+    EOS_LOG_I("Watchface installed successfully: %s", manifest_info.id);
     eos_pkg_manifest_info_free(&manifest_info);
     return EOS_OK;
 }
@@ -345,7 +345,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
         return EOS_FAILED;
     }
     _eos_watchface_list_refresh();
-    EOS_LOG_D("Watchface uninstalled successfully: %s", watchface_id);
+    EOS_LOG_I("Watchface uninstalled successfully: %s", watchface_id);
     return EOS_OK;
 }
 

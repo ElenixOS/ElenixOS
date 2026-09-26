@@ -1538,7 +1538,7 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
         {
             if (eos_recent_apps_suspend_current() != EOS_OK)
             {
-                EOS_LOG_W("Failed to suspend current app before resuming '%s'", app_id);
+                EOS_LOG_E("Failed to suspend current app before resuming '%s'", app_id);
                 return EOS_FAILED;
             }
         }
@@ -1570,7 +1570,7 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
         EOS_LOG_I("Suspending current app before launching '%s'", app_id);
         if (eos_recent_apps_suspend_current() != EOS_OK)
         {
-            EOS_LOG_W("Failed to suspend current app before launching '%s'", app_id);
+            EOS_LOG_E("Failed to suspend current app before launching '%s'", app_id);
             return EOS_FAILED;
         }
     }

@@ -627,7 +627,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
 
     eos_event_post(EOS_EVENT_APP_UNINSTALLED, (void *)app_id, NULL);
 
-    EOS_LOG_D("App uninstalled successfully: %s", app_id);
+    EOS_LOG_I("App uninstalled successfully: %s", app_id);
     return EOS_OK;
 }
 

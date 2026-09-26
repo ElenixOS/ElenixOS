@@ -210,10 +210,10 @@ void eos_anim_del(eos_anim_t *anim)
         eos_anim_group_t *g = anim->group;
         anim->group = NULL;
         g->completed++;
-        EOS_LOG_E("Anim[%p] DEL: group[%p] completed=%d expected=%d", anim, g, g->completed, g->expected);
+        EOS_LOG_D("Anim[%p] DEL: group[%p] completed=%d expected=%d", anim, g, g->completed, g->expected);
         if (g->completed >= g->expected && g->callback)
         {
-            EOS_LOG_E("Group[%p] ALL COMPLETE via del: triggering callback", g);
+            EOS_LOG_D("Group[%p] ALL COMPLETE via del: triggering callback", g);
             g->callback(g->user_data);
         }
     }
@@ -393,10 +393,10 @@ static void _eos_anim_ready_cb(lv_anim_t *a)
             eos_anim_group_t *g = anim->group;
             anim->group = NULL;
             g->completed++;
-            EOS_LOG_E("Anim[%p] group[%p]: completed=%d expected=%d", anim, g, g->completed, g->expected);
+            EOS_LOG_D("Anim[%p] group[%p]: completed=%d expected=%d", anim, g, g->completed, g->expected);
             if (g->completed >= g->expected && g->callback)
             {
-                EOS_LOG_E("Group[%p] ALL COMPLETE: triggering cleanup callback", g);
+                EOS_LOG_D("Group[%p] ALL COMPLETE: triggering cleanup callback", g);
                 g->callback(g->user_data);
             }
         }
@@ -790,7 +790,7 @@ static bool _snapshot_backend_prepare(eos_anim_t *anim)
         }
         else
         {
-            EOS_LOG_E("[SNAP_BATCH] batch full! fall through to immediate path for target=%p", target);
+            EOS_LOG_W("[SNAP_BATCH] batch full! fall through to immediate path for target=%p", target);
             _snapshot_present_once(image, "frame_A_before_hide");
             if (anim->preserve_layout)
             {
@@ -1024,7 +1024,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (start_x == end_x)
     {
         anim->cfg.move.disable_x = true;
-        EOS_LOG_E("MOVE_X DISABLED: start_x=%d end_x=%d", start_x, end_x);
+        EOS_LOG_D("MOVE_X DISABLED: start_x=%d end_x=%d", start_x, end_x);
     }
     else
     {
@@ -1035,7 +1035,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (start_y == end_y)
     {
         anim->cfg.move.disable_y = true;
-        EOS_LOG_E("MOVE_Y DISABLED: start_y=%d end_y=%d", start_y, end_y);
+        EOS_LOG_D("MOVE_Y DISABLED: start_y=%d end_y=%d", start_y, end_y);
     }
     else
     {
@@ -1294,7 +1294,7 @@ bool eos_anim_start(eos_anim_t *anim)
             lv_anim_start(&anim->anim.fade.a_opa);
             break;
         case EOS_ANIM_MOVE:
-            EOS_LOG_E("MOVE start: disable_x=%d disable_y=%d anim_count=%d",
+            EOS_LOG_D("MOVE start: disable_x=%d disable_y=%d anim_count=%d",
                       anim->cfg.move.disable_x,
                       anim->cfg.move.disable_y,
                       anim->anim_count);
@@ -1303,14 +1303,14 @@ bool eos_anim_start(eos_anim_t *anim)
                 _apply_delay(&anim->anim.move.a_x, anim);
                 _apply_repeat_playback(&anim->anim.move.a_x, anim);
                 lv_anim_t *lv_anim_x = lv_anim_start(&anim->anim.move.a_x);
-                EOS_LOG_E("MOVE a_x lv_anim_start=%p", lv_anim_x);
+                EOS_LOG_D("MOVE a_x lv_anim_start=%p", lv_anim_x);
             }
             if (!anim->cfg.move.disable_y)
             {
                 _apply_delay(&anim->anim.move.a_y, anim);
                 _apply_repeat_playback(&anim->anim.move.a_y, anim);
                 lv_anim_t *lv_anim_y = lv_anim_start(&anim->anim.move.a_y);
-                EOS_LOG_E("MOVE a_y lv_anim_start=%p", lv_anim_y);
+                EOS_LOG_D("MOVE a_y lv_anim_start=%p", lv_anim_y);
             }
             break;
         case EOS_ANIM_TRANSFORM_SCALE:

@@ -603,7 +603,7 @@ static void _deferred_resume_timer_cb(lv_timer_t *t)
         EOS_LOG_I("Deferred resume for: '%s'", app_id);
         eos_result_t ret = eos_recent_apps_resume_by_id(app_id);
         if (ret != EOS_OK)
-            EOS_LOG_W("Deferred resume failed for '%s': %d", app_id, ret);
+            EOS_LOG_E("Deferred resume failed for '%s': %d", app_id, ret);
         eos_free(app_id);
     }
 }

@@ -205,11 +205,11 @@ void sni_obj_deleted_cb(lv_event_t *e)
     cb = (sni_control_block_t *)lv_event_get_user_data(e);
     if (!cb)
     {
-        EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb=NULL (no control block)", (void *)obj);
+        EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb=NULL (no control block)", (void *)obj);
         return;
     }
 
-    EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb=%p is_alive=%d child_cnt=%u",
+    EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb=%p is_alive=%d child_cnt=%u",
               (void *)obj,
               (void *)cb,
               cb->is_alive,
@@ -234,7 +234,7 @@ void sni_obj_deleted_cb(lv_event_t *e)
      * and return — the JS reference was already released. */
     if (!cb->is_alive)
     {
-        EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb already dead, cleaning wdata", (void *)obj);
+        EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb already dead, cleaning wdata", (void *)obj);
         eos_wdata_remove(obj, EOS_WDATA_SNI_CB);
         return;
     }

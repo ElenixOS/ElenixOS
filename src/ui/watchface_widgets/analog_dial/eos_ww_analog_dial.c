@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "eos_mem.h"
+#include "eos_service_storage.h"
 #include "eos_service_time.h"
 #include "eos_widget_data.h"
 #include "eos_ww_internal.h"
@@ -31,6 +32,9 @@ typedef struct
     eos_ww_analog_hand_config_t style;
     eos_ww_analog_dial_hand_handle_t handle;
     lv_obj_t *object;
+    lv_image_dsc_t image_dsc;
+    uint8_t *image_data;
+    uint32_t image_data_size;
     int32_t angle_tenths;
 } _analog_hand_t;
 
@@ -70,6 +74,9 @@ struct eos_ww_analog_dial_t
 static void _analog_event_cb(lv_event_t *event);
 static void _analog_update(_analog_dial_t *dial);
 static void _analog_layout_hands(_analog_dial_t *dial);
+static void _analog_release_image_source(_analog_hand_t *hand);
+static bool _analog_load_image_source(_analog_hand_t *hand);
+static bool _analog_set_image_source(_analog_hand_t *hand);
 static bool _analog_ensure_image(_analog_hand_t *hand);
 static void _analog_layout_primitive(_analog_hand_t *hand);
 static void _analog_update_geometry(_analog_dial_t *dial);
@@ -198,9 +205,90 @@ static void _analog_set_hand_hidden(_analog_hand_t *hand)
          * laid out.  Hiding the object at that point leaves it hidden because
          * no later layout pass is guaranteed to run when the decoder finishes.
          */
-        hidden = hidden || hand->style.image_src[0] == '\0';
+        hidden = hidden || hand->style.image_src[0] == '\0' || hand->image_data == NULL;
     }
     lv_obj_set_hidden(hand->object, hidden);
+}
+
+static void _analog_release_image_source(_analog_hand_t *hand)
+{
+    if (!hand)
+        return;
+    if (hand->image_data)
+        eos_free(hand->image_data);
+    hand->image_data = NULL;
+    hand->image_data_size = 0;
+    memset(&hand->image_dsc, 0, sizeof(hand->image_dsc));
+}
+
+static bool _analog_load_image_source(_analog_hand_t *hand)
+{
+    eos_file_t file;
+    uint32_t file_size;
+    uint32_t offset = 0;
+    uint8_t *data;
+
+    if (!hand || hand->style.image_src[0] == '\0')
+        return false;
+
+    file = eos_storage_file_open_read(hand->style.image_src);
+    if (file == EOS_FILE_INVALID)
+        return false;
+    if (eos_storage_file_size(file, &file_size) != EOS_OK || file_size == 0U)
+    {
+        eos_storage_file_close(file);
+        return false;
+    }
+
+    data = eos_malloc(file_size);
+    if (!data)
+    {
+        eos_storage_file_close(file);
+        return false;
+    }
+
+    while (offset < file_size)
+    {
+        ssize_t read_size = eos_storage_file_read(file, data + offset, file_size - offset);
+        if (read_size <= 0 || (uint32_t)read_size > file_size - offset)
+        {
+            eos_free(data);
+            eos_storage_file_close(file);
+            return false;
+        }
+        offset += (uint32_t)read_size;
+    }
+    eos_storage_file_close(file);
+
+    _analog_release_image_source(hand);
+    hand->image_data = data;
+    hand->image_data_size = file_size;
+    hand->image_dsc = (lv_image_dsc_t){
+        .header =
+            {
+                .magic = LV_IMAGE_HEADER_MAGIC,
+                .cf = LV_COLOR_FORMAT_UNKNOWN,
+            },
+        .data_size = file_size,
+        .data = data,
+    };
+    return true;
+}
+
+static bool _analog_set_image_source(_analog_hand_t *hand)
+{
+    if (!hand || !hand->object || !lv_obj_is_valid(hand->object))
+        return false;
+
+    lv_image_set_src(hand->object, NULL);
+    _analog_release_image_source(hand);
+    if (hand->style.image_src[0] == '\0')
+        return true;
+    if (!_analog_load_image_source(hand))
+        return false;
+
+    lv_image_set_src(hand->object, &hand->image_dsc);
+    return lv_image_get_src_width(hand->object) > 0 && lv_image_get_src_height(hand->object) > 0;
 }
 
 static void _analog_layout_image(_analog_hand_t *hand)
@@ -220,10 +308,10 @@ static void _analog_layout_image(_analog_hand_t *hand)
     pivot_x = LV_CLAMP(0.0f, pivot_x, 1.0f);
     pivot_y = LV_CLAMP(0.0f, pivot_y, 1.0f);
 
-    /* LVGL v9 stores normalized image pivots as percentages in 0..1000. */
+    /* LVGL v9 stores image percentage pivots in the 0..100 range. */
     lv_image_set_pivot(hand->object,
-                       lv_pct((int32_t)llround((double)pivot_x * 1000.0)),
-                       lv_pct((int32_t)llround((double)pivot_y * 1000.0)));
+                       lv_pct((int32_t)llround((double)pivot_x * 100.0)),
+                       lv_pct((int32_t)llround((double)pivot_y * 100.0)));
     lv_obj_update_layout(hand->object);
     lv_image_get_pivot(hand->object, &pivot);
 
@@ -249,8 +337,8 @@ static bool _analog_ensure_image(_analog_hand_t *hand)
 
     eos_ww_internal_make_static(hand->object);
     lv_obj_set_style_image_opa(hand->object, hand->style.opacity, LV_PART_MAIN);
-    if (hand->style.image_src[0] != '\0')
-        lv_image_set_src(hand->object, hand->style.image_src);
+    if (!_analog_set_image_source(hand) && hand->style.image_src[0] != '\0')
+        EOS_LOG_W("Image hand source unavailable: %s", hand->style.image_src);
     _analog_layout_image(hand);
     return true;
 }
@@ -897,9 +985,9 @@ static void _analog_destroy(void *data)
         if (dial->hands[i].style.type == EOS_WW_ANALOG_HAND_IMAGE && dial->hands[i].object
             && lv_obj_is_valid(dial->hands[i].object))
         {
-            /* The image source points into dial->hands[].style.image_src. */
             lv_image_set_src(dial->hands[i].object, NULL);
         }
+        _analog_release_image_source(&dial->hands[i]);
         dial->hands[i].handle.owner = NULL;
     }
     if (dial->timer)
@@ -941,6 +1029,7 @@ lv_obj_t *eos_ww_analog_dial_create(lv_obj_t *parent, const eos_ww_analog_dial_c
 
     lv_obj_set_size(root, defaults.width, defaults.height);
     eos_ww_internal_make_container(root);
+    lv_obj_set_overflow_visible(root, true);
     lv_obj_update_layout(root);
     dial->root = root;
     dial->major_ticks = defaults.major_ticks;
@@ -1014,9 +1103,13 @@ bool eos_ww_analog_dial_hand_set_type(eos_ww_analog_dial_hand_handle_t *handle, 
         return false;
     if (hand->object && lv_obj_is_valid(hand->object))
     {
+        if (hand->style.type == EOS_WW_ANALOG_HAND_IMAGE)
+            lv_image_set_src(hand->object, NULL);
         lv_obj_delete(hand->object);
         hand->object = NULL;
     }
+    if (hand->style.type == EOS_WW_ANALOG_HAND_IMAGE)
+        _analog_release_image_source(hand);
     hand->style.type = type;
     if ((type == EOS_WW_ANALOG_HAND_IMAGE ? !_analog_ensure_image(hand) : !_analog_ensure_primitive(hand)))
         return false;
@@ -1146,9 +1239,11 @@ bool eos_ww_analog_dial_hand_set_image(eos_ww_analog_dial_hand_handle_t *handle,
         memcpy(hand->style.image_src, src, length + 1U);
     else
         hand->style.image_src[0] = '\0';
-    if (!_analog_ensure_image(hand))
+    if (!_analog_set_image_source(hand))
+    {
+        _analog_layout_image(hand);
         return false;
-    lv_image_set_src(hand->object, hand->style.image_src[0] ? hand->style.image_src : NULL);
+    }
     _analog_layout_image(hand);
     _analog_refresh_ext_draw_size(hand->handle.owner);
     lv_obj_invalidate(hand->handle.owner->root);

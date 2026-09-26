@@ -32,6 +32,10 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_OFF] = "OFF",
     [STR_ID_NORMAL] = "Normal",
     [STR_ID_INTENSE] = "Intense",
+    [STR_ID_LOG_LEVEL_DEBUG] = "Debug",
+    [STR_ID_LOG_LEVEL_INFO] = "Info",
+    [STR_ID_LOG_LEVEL_WARN] = "Warning",
+    [STR_ID_LOG_LEVEL_ERROR] = "Error",
     [STR_ID_MSG_LIST_CLEAR_ALL] = "Clear all",
     [STR_ID_MSG_LIST_NO_MSG] = "No notifications",
     [STR_ID_MSG_LIST_ITEM_MARK_AS_READ] = "Mark as read",
@@ -165,6 +169,7 @@ const char *lang_en[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_DEVELOPER_MEMORY_FREE] = "Free Memory",
     [STR_ID_SETTINGS_DEVELOPER_OBJS] = "OBJS Display",
     [STR_ID_SETTINGS_DEVELOPER_TOUCH] = "Touch Coordinates",
+    [STR_ID_SETTINGS_DEVELOPER_LOG_LEVEL] = "Log Level",
     [STR_ID_RECENT_APPS_EMPTY] = "No recent apps",
     // Add new string IDs and English translations here as needed
 };
@@ -182,6 +187,10 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_OFF] = "关闭",
     [STR_ID_NORMAL] = "正常",
     [STR_ID_INTENSE] = "强",
+    [STR_ID_LOG_LEVEL_DEBUG] = "调试",
+    [STR_ID_LOG_LEVEL_INFO] = "信息",
+    [STR_ID_LOG_LEVEL_WARN] = "警告",
+    [STR_ID_LOG_LEVEL_ERROR] = "错误",
     [STR_ID_MSG_LIST_CLEAR_ALL] = "全部清除",
     [STR_ID_MSG_LIST_NO_MSG] = "没有消息",
     [STR_ID_MSG_LIST_ITEM_MARK_AS_READ] = "标记为已读",
@@ -311,6 +320,7 @@ const char *lang_zh[STR_ID_MAX_NUMBER] = {
     [STR_ID_SETTINGS_DEVELOPER_MEMORY_FREE] = "空闲内存",
     [STR_ID_SETTINGS_DEVELOPER_OBJS] = "OBJS显示",
     [STR_ID_SETTINGS_DEVELOPER_TOUCH] = "触摸坐标",
+    [STR_ID_SETTINGS_DEVELOPER_LOG_LEVEL] = "日志等级",
     [STR_ID_RECENT_APPS_EMPTY] = "暂无最近应用",
     // Add new string IDs and Chinese translations here as needed
 };

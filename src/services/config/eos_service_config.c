@@ -230,6 +230,18 @@ void eos_service_config_init()
     }
 
     /* Load system settings ---------------------------------------*/
+    double configured_log_level = eos_config_get_number(EOS_CONFIG_KEY_DEV_LOG_LEVEL_NUMBER, EOS_LOG_LEVEL_DEBUG);
+    eos_log_level_t log_level = EOS_LOG_LEVEL_DEBUG;
+    if (configured_log_level == EOS_LOG_LEVEL_INFO)
+        log_level = EOS_LOG_LEVEL_INFO;
+    else if (configured_log_level == EOS_LOG_LEVEL_WARN)
+        log_level = EOS_LOG_LEVEL_WARN;
+    else if (configured_log_level == EOS_LOG_LEVEL_ERROR)
+        log_level = EOS_LOG_LEVEL_ERROR;
+    eos_result_t log_result = eos_log_set_level(log_level);
+    if (log_result != EOS_OK)
+        EOS_LOG_E("Failed to restore configured log level: %d", log_result);
+
     if (eos_config_get_bool(EOS_CONFIG_KEY_BLUETOOTH_BOOL, false))
     {
         eos_bluetooth_enable();

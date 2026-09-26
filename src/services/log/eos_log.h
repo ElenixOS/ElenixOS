@@ -70,10 +70,30 @@ extern "C" {
 #define EOS_LOG_FMT(fmt) fmt
 #endif /* EOS_LOG_TAG */
 
-#define EOS_LOG_D(fmt, ...) eos_log(EOS_LOG_LEVEL_DEBUG, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_I(fmt, ...) eos_log(EOS_LOG_LEVEL_INFO, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_W(fmt, ...) eos_log(EOS_LOG_LEVEL_WARN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_E(fmt, ...) eos_log(EOS_LOG_LEVEL_ERROR, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_D(fmt, ...)                                                \
+    do                                                                     \
+    {                                                                      \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_DEBUG))                       \
+            eos_log(EOS_LOG_LEVEL_DEBUG, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_I(fmt, ...)                                               \
+    do                                                                    \
+    {                                                                     \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_INFO))                       \
+            eos_log(EOS_LOG_LEVEL_INFO, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_W(fmt, ...)                                               \
+    do                                                                    \
+    {                                                                     \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_WARN))                       \
+            eos_log(EOS_LOG_LEVEL_WARN, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_E(fmt, ...)                                                \
+    do                                                                     \
+    {                                                                      \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_ERROR))                       \
+            eos_log(EOS_LOG_LEVEL_ERROR, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
 
 #endif /* EOS_LOG_DISABLE */
 
@@ -184,6 +204,13 @@ typedef struct
  * @return EOS_OK on success
  */
 void eos_service_log_init(void);
+
+/**
+ * @brief Check whether a message at the given level would be dispatched
+ * @param level Message level
+ * @return true if the message meets the current minimum level
+ */
+bool eos_log_is_enabled(eos_log_level_t level);
 
 /**
  * @brief Get the minimum level dispatched by the log service

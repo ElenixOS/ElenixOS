@@ -37,6 +37,11 @@ void eos_service_log_init(void)
 #endif
 }
 
+bool eos_log_is_enabled(eos_log_level_t level)
+{
+    return _initialized && level >= s_min_level && level <= EOS_LOG_LEVEL_ERROR;
+}
+
 eos_log_level_t eos_log_get_level(void)
 {
     return s_min_level;
@@ -172,7 +177,7 @@ void eos_log_dispatch(eos_log_level_t level, const char *buf, size_t len)
 
 void eos_log(eos_log_level_t level, const char *fmt, ...)
 {
-    if (!_initialized || !fmt)
+    if (!fmt || !eos_log_is_enabled(level))
     {
         return;
     }

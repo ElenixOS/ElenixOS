@@ -8,6 +8,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #define EOS_LOG_TAG "Settings"
 #include "eos_log.h"
@@ -1632,6 +1633,38 @@ static void _dev_touch_switch_cb(lv_event_t *e)
     eos_developer_options_set_touch_enabled(lv_obj_has_state(sw, LV_STATE_CHECKED));
 }
 
+static void _dev_log_level_radio_cb(lv_event_t *e)
+{
+    uint32_t index = (uint32_t)(uintptr_t)lv_event_get_param(e);
+    if (index > EOS_LOG_LEVEL_ERROR)
+        return;
+
+    eos_result_t result = eos_developer_options_set_log_level((eos_log_level_t)index);
+    if (result != EOS_OK)
+        EOS_LOG_E("Failed to save log level: %d", result);
+}
+
+static void _dev_log_level_clicked_cb(lv_event_t *e)
+{
+    (void)e;
+    static const lang_string_id_t level_labels[] = {
+        STR_ID_LOG_LEVEL_DEBUG,
+        STR_ID_LOG_LEVEL_INFO,
+        STR_ID_LOG_LEVEL_WARN,
+        STR_ID_LOG_LEVEL_ERROR,
+    };
+
+    eos_radio_page_t *rp = eos_radio_page_create(eos_lang_get_text(STR_ID_SETTINGS_DEVELOPER_LOG_LEVEL));
+    EOS_CHECK_PTR_RETURN(rp);
+
+    for (uint32_t level = 0; level <= EOS_LOG_LEVEL_ERROR; level++)
+        eos_radio_page_add_item(rp, eos_lang_get_text(level_labels[level]));
+
+    eos_radio_page_add_event_cb(rp, _dev_log_level_radio_cb, NULL);
+    eos_radio_page_check(rp, (uint32_t)eos_developer_options_get_log_level());
+    eos_radio_page_show(rp);
+}
+
 /**
  * @brief Developer Options page
  */
@@ -1643,8 +1676,11 @@ static void _settings_view_developer_options(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(a && view);
     lv_obj_t *list = eos_list_create(view);
 
+    lv_obj_t *btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_DEVELOPER_LOG_LEVEL);
+    lv_obj_add_event_cb(btn, _dev_log_level_clicked_cb, LV_EVENT_CLICKED, NULL);
+
     /* View Logs entry button */
-    lv_obj_t *btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_DEVELOPER_VIEW_LOGS);
+    btn = eos_list_add_entry_button_str_id(list, STR_ID_SETTINGS_DEVELOPER_VIEW_LOGS);
     lv_obj_add_event_cb(btn, _settings_view_logs, LV_EVENT_CLICKED, NULL);
 
     /* FPS Display switch */

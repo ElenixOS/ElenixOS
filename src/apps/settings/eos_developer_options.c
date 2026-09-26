@@ -602,3 +602,17 @@ bool eos_developer_options_get_touch_enabled(void)
 {
     return _touch_enabled;
 }
+
+eos_result_t eos_developer_options_set_log_level(eos_log_level_t level)
+{
+    eos_result_t result = eos_log_set_level(level);
+    if (result != EOS_OK)
+        return result;
+
+    return eos_config_set_number(EOS_CONFIG_KEY_DEV_LOG_LEVEL_NUMBER, (double)level);
+}
+
+eos_log_level_t eos_developer_options_get_log_level(void)
+{
+    return eos_log_get_level();
+}

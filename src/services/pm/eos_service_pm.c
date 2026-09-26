@@ -17,7 +17,6 @@
 #include "eos_config.h"
 #include "eos_touch.h"
 #include "eos_dispatcher.h"
-#include "eos_dfw.h"
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_DISABLE_TIMER 1 /**< [Debug] Whether to disable the timer */
 #define _DEFAULT_TIMEOUT_SEC 15
@@ -71,9 +70,6 @@ static void _pm_set_state(eos_pm_state_t state)
         case EOS_PM_SLEEP:
             lv_timer_pause(t);
             eos_event_post(EOS_EVENT_SYSTEM_SLEEP, NULL, NULL);
-#if EOS_DFW_ENABLE
-            eos_dfw_sync();
-#endif /* EOS_DFW_ENABLE */
             dev->ops->set_power(DEV_POWER_STATE_SLEEP);
             break;
         case EOS_PM_DISPLAY_AOD:

@@ -535,10 +535,6 @@ config EOS_LVGL_FS_LETTER
       The value must match LV_FS_DEFAULT_DRIVE_LETTER in lv_conf.h.
       Example: 90 = 'Z' (recommended), 65 = 'A' (STDIO default).
 
-config EOS_DFW_ENABLE
-    bool "Enable delayed file writer"
-    default n
-
 endmenu
 
 menu "Language"

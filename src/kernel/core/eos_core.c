@@ -52,7 +52,6 @@
 #include "eos_service_battery.h"
 #include "eos_developer_options.h"
 #include "eos_service_pm.h"
-#include "eos_dfw.h"
 #include "eos_app_header.h"
 #include "eos_toast.h"
 #include "eos_service_haptic.h"

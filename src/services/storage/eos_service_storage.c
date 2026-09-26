@@ -12,7 +12,6 @@
 #include "eos_config.h"
 #include "eos_log.h"
 #include "eos_mem.h"
-#include "eos_dfw.h"
 #include "cJSON.h"
 #include "eos_lvgl_fs.h"
 #if EOS_FS_TYPE == EOS_FS_POSIX
@@ -519,24 +518,12 @@ char *eos_storage_read_file_immediate(const char *path)
 
 eos_result_t eos_storage_write_file(const char *path, const void *data, size_t data_size)
 {
-#if EOS_DFW_ENABLE
-    if (!path || !data || data_size == 0)
-    {
-        return EOS_ERR_INVALID_ARG;
-    }
-    return eos_dfw_write(path, (const uint8_t *)data, data_size) ? EOS_OK : EOS_ERR_FILE_ERROR;
-#else
     return eos_storage_write_file_immediate(path, data, data_size);
-#endif
 }
 
 char *eos_storage_read_file(const char *path)
 {
-#if EOS_DFW_ENABLE
-    return (char *)eos_dfw_read(path);
-#else
     return eos_storage_read_file_immediate(path);
-#endif
 }
 
 eos_result_t eos_storage_rm_recursive(const char *path)
@@ -740,8 +727,5 @@ void eos_storage_dir_close(eos_dir_t dir)
 void eos_service_storage_init(void)
 {
     eos_lvgl_fs_register();
-#if EOS_DFW_ENABLE
-    eos_dfw_init();
-#endif /* EOS_DFW_ENABLE */
     EOS_LOG_I("Storage service initialized");
 }

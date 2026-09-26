@@ -324,10 +324,6 @@
 #define EOS_LVGL_FS_LETTER 'Z'
 #endif
 
-#ifndef EOS_DFW_ENABLE
-#define EOS_DFW_ENABLE 0
-#endif
-
 /* Language ---------------------------------------------------*/
 
 #ifndef EOS_CONFIG_DEFAULT_LANGUAGE

@@ -174,6 +174,8 @@ class FuncArg:
     name: str
     c_type: str
     bridge: TypeBridge
+    docstring: str = ""
+    js_type: str = "unknown"
 
 
 @dataclass
@@ -182,6 +184,9 @@ class ApiFunction:
     return_type: str
     return_bridge: TypeBridge
     args: List[FuncArg]
+    docstring: str = ""
+    return_docstring: str = ""
+    return_js_type: str = "unknown"
     lifecycle_class: str = ""
     native_call_name: Optional[str] = None
     output_string: Optional[Tuple[str, str, str]] = None
@@ -294,6 +299,64 @@ def normalize_type_key(c_type: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     text = text.replace(" *", "*").replace("* ", "*")
     return text
+
+
+def js_type_for_bridge(bridge: TypeBridge, c_type: str, lv_type_entries: Dict[str, str], return_value: bool) -> str:
+    """Return the JavaScript type accepted or produced by a bridge.
+
+    This is deliberately based on the SNI conversion contract, not the C
+    spelling.  In particular, ``SNI_T_PTR`` is a JavaScript number and
+    ``SNI_V_LV_COLOR`` accepts a number as an argument but produces a color
+    object when returned to JavaScript.
+    """
+    sni_type = bridge.sni_type
+    if sni_type == "SNI_T_STRING":
+        return "string"
+    if sni_type == "SNI_T_BOOL":
+        return "boolean"
+    if sni_type == "SNI_T_PTR":
+        return "number"
+    if sni_type in {
+        "SNI_T_UINT8",
+        "SNI_T_INT8",
+        "SNI_T_UINT16",
+        "SNI_T_INT16",
+        "SNI_T_UINT32",
+        "SNI_T_INT32",
+        "SNI_T_DOUBLE",
+        "SNI_T_FLOAT",
+    }:
+        return "number"
+    if sni_type == "SNI_V_LV_COLOR":
+        return "object" if return_value else "number"
+    if sni_type and (sni_type.startswith("SNI_H_") or sni_type.startswith("SNI_V_")):
+        return "object"
+
+    normalized = normalize_type_key(c_type)
+    default_map = make_default_type_map()
+    primitive_sni_type = default_map.get(normalized)
+    if primitive_sni_type:
+        return js_type_for_bridge(
+            TypeBridge(c_type, "", "none", None, primitive_sni_type, "none", None),
+            c_type,
+            lv_type_entries,
+            return_value,
+        )
+
+    object_type = lv_type_entries.get(normalized)
+    if object_type is None:
+        object_type = lv_type_entries.get(normalized.replace("*", ""), "")
+    if object_type in {"int", "uint", "int8", "uint8", "int16", "uint16"}:
+        return "number"
+    if object_type == "handle_object":
+        return "object"
+    if object_type == "value_object":
+        return "object"
+    if normalized == "void":
+        return "undefined"
+    if normalized.endswith("*"):
+        return "object"
+    return "unknown"
 
 
 def c_type_to_base_name(c_type: str) -> str:
@@ -651,6 +714,27 @@ def parse_string_constant(value_text: str) -> Optional[str]:
     return None
 
 
+def add_exported_constants(
+    constants: Dict[str, ApiConstant],
+    lvgl_data: Dict[str, Any],
+    whitelist: List[str],
+    blacklist: List[str],
+    stats: Optional[FilterStats] = None,
+) -> None:
+    for item in lvgl_data.get("exported_constants", []):
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+            continue
+        if not include_by_filter(name, whitelist, blacklist, stats):
+            continue
+
+        # Keep the C symbol.  The generated sni_api_lv.c includes lvgl.h, so
+        # the compiler remains the source of truth for config-dependent values.
+        constants[name] = ApiConstant(name=name, kind="int", value=name)
+
+
 def resolve_lvgl_version_header(lvgl_json_path: Path, configured_path: Optional[Path]) -> Path:
     """Find the LVGL version header used by the generated API description."""
     if configured_path is not None:
@@ -699,7 +783,7 @@ def render_lvgl_compatibility_guard(
     """Render compile-time guards for the generated LVGL descriptor."""
     major, minor, patch = lvgl_version
     lines = [
-        "/* Compile-time compatibility guard generated from lvgl.json. */",
+        "/* Compile-time compatibility guard generated from lv_version.h. */",
         f"#define SNI_LVGL_API_VERSION_MAJOR {major}",
         f"#define SNI_LVGL_API_VERSION_MINOR {minor}",
         f"#define SNI_LVGL_API_VERSION_PATCH {patch}",
@@ -787,6 +871,7 @@ def collect_constants(
                 kind, val = number
                 constants[name] = ApiConstant(name=name, kind=kind, value=val)
 
+    add_exported_constants(constants, lvgl_data, whitelist, blacklist, stats)
     return [constants[name] for name in sorted(constants.keys())]
 
 
@@ -839,6 +924,7 @@ def build_constant_index(lvgl_data: Dict[str, Any]) -> Dict[str, ApiConstant]:
                 kind, val = number
                 constants[name] = ApiConstant(name=name, kind=kind, value=val)
 
+    add_exported_constants(constants, lvgl_data, [], [])
     return constants
 
 
@@ -1130,7 +1216,15 @@ def build_api_function(
                 f"{context} argument #{idx} ({arg_name})",
                 name,
             )
-        args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
+        args.append(
+            FuncArg(
+                name=arg_name,
+                c_type=arg_type,
+                bridge=arg_bridge,
+                docstring=str(arg.get("docstring") or "").strip(),
+                js_type=js_type_for_bridge(arg_bridge, arg_type, lv_type_entries, False),
+            )
+        )
 
     if output_string is not None:
         arg_by_name = {arg.name: arg for arg in args}
@@ -1148,6 +1242,9 @@ def build_api_function(
         return_type=ret_type,
         return_bridge=ret_bridge,
         args=args,
+        docstring=str(item.get("docstring") or "").strip(),
+        return_docstring=str((item.get("type") or {}).get("docstring") or "").strip(),
+        return_js_type=js_type_for_bridge(ret_bridge, ret_type, lv_type_entries, True),
         lifecycle_class=ret_lifecycle_class,
         native_call_name=native_call_name,
         output_string=output_string,
@@ -1185,7 +1282,8 @@ def render_arg_conversion(
         lines.append("    {")
         lines.append(f"        {c_var_name} = NULL;")
         lines.append("    }")
-        lines.append(f"    else if (jerry_value_is_object({arg_expr}))")
+        js_ptr_check = "jerry_value_is_number" if arg.bridge.sni_type == "SNI_T_PTR" else "jerry_value_is_object"
+        lines.append(f"    else if ({js_ptr_check}({arg_expr}))")
         lines.append("    {")
         lines.append(f"        if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{c_var_name}))")
         lines.append("        {")
@@ -1278,9 +1376,50 @@ def render_return_conversion(lines: List[str], func: ApiFunction, result_var: st
     lines.append('    return sni_api_throw_error("Unsupported return conversion");')
 
 
+def _doc_lines(text: str) -> List[str]:
+    return [line.strip() for line in text.replace("*/", "* /").splitlines() if line.strip()]
+
+
+def _doc_brief_and_details(text: str) -> Tuple[str, List[str]]:
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
+    if not paragraphs:
+        return "", []
+    return paragraphs[0].replace("\n", " "), paragraphs[1:]
+
+
+def render_function_docstring(lines: List[str], func: ApiFunction, skip_this: bool = False) -> None:
+    brief, details = _doc_brief_and_details(func.docstring)
+    if not brief:
+        brief = f"JavaScript binding for {func.name}."
+
+    lines.append("/**")
+    lines.append(f" * @brief {brief}")
+
+    if details:
+        lines.append(" *")
+        lines.append(" * @details")
+        for detail in details:
+            for detail_line in _doc_lines(detail):
+                lines.append(f" * {detail_line}")
+
+    args = func.args[1:] if skip_this and func.args else func.args
+    for arg in args:
+        description = arg.docstring or "JavaScript argument."
+        lines.append(" *")
+        lines.append(f" * @param {arg.name} ({arg.js_type}) {description}")
+
+    if func.return_js_type != "undefined":
+        description = func.return_docstring or "JavaScript return value."
+        lines.append(" *")
+        lines.append(f" * @return ({func.return_js_type}) {description}")
+
+    lines.append(" */")
+
+
 def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     wrapper_name = f"sni_api_ctor_{sanitize_ident(cls.name)}"
     lines: List[str] = []
+    render_function_docstring(lines, ctor_func)
 
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
@@ -1388,6 +1527,7 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
+    render_function_docstring(lines, func, skip_this=True)
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
     lines.append(f"{func_prefix}const jerry_call_info_t *call_info_p,")
@@ -1433,6 +1573,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
+    render_function_docstring(lines, func, skip_this=True)
 
     if not func.args:
         raise SystemExit(f"[Error] instance method {func.name} missing this parameter")
@@ -1491,6 +1632,7 @@ def render_static_wrapper(func: ApiFunction) -> str:
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
+    render_function_docstring(lines, func)
 
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
@@ -1537,6 +1679,7 @@ def render_static_wrapper(func: ApiFunction) -> str:
 def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
     wrapper_name = f"sni_api_prop_get_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
     lines: List[str] = []
+    render_function_docstring(lines, func, skip_this=True)
 
     if len(func.args) != 1:
         raise SystemExit(f"[Error] property getter {func.name} must only have a this parameter")
@@ -1571,6 +1714,7 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
 def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
     wrapper_name = f"sni_api_prop_set_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
     lines: List[str] = []
+    render_function_docstring(lines, func, skip_this=True)
 
     if len(func.args) != 2:
         raise SystemExit(f"[Error] property setter {func.name} must have exactly two parameters: this and value")
@@ -1903,7 +2047,7 @@ def build_bridge_from_type(
         if sni_type in {"SNI_T_UINT8", "SNI_T_UINT16"}:
             return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", sni_type, "bridge", None)
         if sni_type == "SNI_T_PTR":
-            return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, sni_type, "bridge", None)
+            return TypeBridge(c_type, "jerry_value_is_number", "bridge", None, sni_type, "bridge", None)
 
     # First try mapping by primitive base type, e.g. typedef int
     if normalized.endswith("_t") and normalized in lv_type_entries:
@@ -2042,7 +2186,15 @@ def collect_functions(
                     f"Function {name} argument #{idx} ({arg_name})",
                     name,
                 )
-                args.append(FuncArg(name=arg_name, c_type=arg_type, bridge=arg_bridge))
+                args.append(
+                    FuncArg(
+                        name=arg_name,
+                        c_type=arg_type,
+                        bridge=arg_bridge,
+                        docstring=str(arg.get("docstring") or "").strip(),
+                        js_type=js_type_for_bridge(arg_bridge, arg_type, lv_type_entries, False),
+                    )
+                )
         except SkipFunctionError as exc:
             handle_skip_exception(exc, blacklist)
             if exc.add_to_blacklist:
@@ -2050,7 +2202,17 @@ def collect_functions(
             stats.skipped_by_user += 1
             continue
 
-        result.append(ApiFunction(name=name, return_type=ret_type, return_bridge=ret_bridge, args=args))
+        result.append(
+            ApiFunction(
+                name=name,
+                return_type=ret_type,
+                return_bridge=ret_bridge,
+                args=args,
+                docstring=str(item.get("docstring") or "").strip(),
+                return_docstring=str((item.get("type") or {}).get("docstring") or "").strip(),
+                return_js_type=js_type_for_bridge(ret_bridge, ret_type, lv_type_entries, True),
+            )
+        )
 
     return sorted(result, key=lambda x: x.name)
 

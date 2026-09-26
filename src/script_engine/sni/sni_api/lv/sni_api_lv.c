@@ -26,7 +26,7 @@
 static jerry_value_t lv_api_obj;
 /* Function Implementations -----------------------------------*/
 
-/* Compile-time compatibility guard generated from lvgl.json. */
+/* Compile-time compatibility guard generated from lv_version.h. */
 #define SNI_LVGL_API_VERSION_MAJOR 9
 #define SNI_LVGL_API_VERSION_MINOR 6
 #define SNI_LVGL_API_VERSION_PATCH 0
@@ -124,6 +124,13 @@ SNI_LVGL_API_STATIC_ASSERT(LV_EVENT_PREPROCESS == 32768, sni_lvgl_api_assert_lv_
 SNI_LVGL_API_STATIC_ASSERT(LV_EVENT_MARKED_DELETING == 65536, sni_lvgl_api_assert_lv_event_marked_deleting);
 #undef SNI_LVGL_API_STATIC_ASSERT
 
+/**
+ * @brief Create a base object (a rectangle)
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the new object
+ */
 jerry_value_t sni_api_ctor_obj(const jerry_call_info_t *call_info_p,
                                const jerry_value_t args_p[],
                                const jerry_length_t args_count)
@@ -152,6 +159,11 @@ jerry_value_t sni_api_ctor_obj(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how the item should flow
+ *
+ * @param flow (number) an element of lv_flex_flow_t .
+ */
 jerry_value_t sni_api_lv_obj_set_flex_flow(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -182,6 +194,15 @@ jerry_value_t sni_api_lv_obj_set_flex_flow(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how to place (where to align) the items and tracks
+ *
+ * @param main_place (number) where to place the items on main axis (in their track). Any value of lv_flex_align_t .
+ *
+ * @param cross_place (number) where to place the item in their track on the cross axis. LV_FLEX_ALIGN_START/END/CENTER
+ *
+ * @param track_cross_place (number) where to place the tracks in the cross direction. Any value of lv_flex_align_t .
+ */
 jerry_value_t sni_api_lv_obj_set_flex_align(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -226,6 +247,11 @@ jerry_value_t sni_api_lv_obj_set_flex_align(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the width or height (on main axis) to grow the object in order fill the free space
+ *
+ * @param grow (number) a value to set how much free space to take proportionally to other growing items.
+ */
 jerry_value_t sni_api_lv_obj_set_flex_grow(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -256,6 +282,13 @@ jerry_value_t sni_api_lv_obj_set_flex_grow(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a grid layout on a Widget by describing its column and row track sizes. Each element of the descriptor arrays is either a size in pixels, LV_GRID_FR(x) to take a proportional share of the free space, or LV_GRID_CONTENT to fit the largest child on that track. Both arrays must be closed with LV_GRID_TEMPLATE_LAST . Only the pointers are saved, so the arrays must be static, global or dynamically allocated. They must outlive the Widget. Calling this function also sets the Widget's layout to LV_LAYOUT_GRID , so its children will be positioned by the cells assigned with lv_obj_set_grid_cell() . Passing NULL for either array turns that axis into a sub-grid: the tracks are taken from the parent Grid container, sliced to the cell this Widget occupies (its own position and span on that axis). This makes a wrapper Widget "transparent" so that its children align to the outer grid's tracks.
+ *
+ * @param col_dsc (number) array of column track sizes closed by LV_GRID_TEMPLATE_LAST. May be NULL . Pass NULL to inherit the parent's columns (sub-grid)
+ *
+ * @param row_dsc (number) array of row track sizes closed by LV_GRID_TEMPLATE_LAST. May be NULL . Pass NULL to inherit the parent's rows (sub-grid)
+ */
 jerry_value_t sni_api_lv_obj_set_grid_dsc_array(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -275,7 +308,7 @@ jerry_value_t sni_api_lv_obj_set_grid_dsc_array(const jerry_call_info_t *call_in
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -285,7 +318,7 @@ jerry_value_t sni_api_lv_obj_set_grid_dsc_array(const jerry_call_info_t *call_in
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -299,6 +332,13 @@ jerry_value_t sni_api_lv_obj_set_grid_dsc_array(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how the Grid's tracks are distributed inside the container's content area. This aligns the grid as a whole, similar to CSS's justify-content / align-content , not of justify-self / align-self . To align an individual item inside its cell, use the align parameters of lv_obj_set_grid_cell() . It only has a visible effect if there is free space left over after the tracks are sized. A grid built purely from LV_GRID_FR(x) tracks consumes all available space, so alignment will appear to do nothing. Accepted values on both axes: LV_GRID_ALIGN_START : tracks are packed to the left/top (default) LV_GRID_ALIGN_CENTER : tracks are centered LV_GRID_ALIGN_END : tracks are packed to the right/bottom LV_GRID_ALIGN_SPACE_BETWEEN : free space is split between the tracks, none at the edges LV_GRID_ALIGN_SPACE_AROUND : equal space around each track, so edge space is half of the space between tracks LV_GRID_ALIGN_SPACE_EVENLY : gaps between tracks and at the edges are all equal
+ *
+ * @param column_align (number) how to distribute the columns horizontally
+ *
+ * @param row_align (number) how to distribute the rows vertically
+ */
 jerry_value_t sni_api_lv_obj_set_grid_align(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -336,6 +376,21 @@ jerry_value_t sni_api_lv_obj_set_grid_align(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the cell of an object. The object's parent needs to have grid layout, else nothing will happen
+ *
+ * @param column_align (number) the vertical alignment in the cell. LV_GRID_START/END/CENTER/STRETCH
+ *
+ * @param col_pos (number) column ID
+ *
+ * @param col_span (number) number of columns to take (>= 1)
+ *
+ * @param row_align (number) the horizontal alignment in the cell. LV_GRID_START/END/CENTER/STRETCH
+ *
+ * @param row_pos (number) row ID
+ *
+ * @param row_span (number) number of rows to take (>= 1)
+ */
 jerry_value_t sni_api_lv_obj_set_grid_cell(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -407,6 +462,9 @@ jerry_value_t sni_api_lv_obj_set_grid_cell(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Delete all children of an object. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETE to deleted objects.
+ */
 jerry_value_t sni_api_lv_obj_clean(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -430,6 +488,11 @@ jerry_value_t sni_api_lv_obj_clean(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Delete an object after some delay
+ *
+ * @param delay_ms (number) time to wait before delete in milliseconds
+ */
 jerry_value_t sni_api_lv_obj_delete_delayed(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -460,6 +523,9 @@ jerry_value_t sni_api_lv_obj_delete_delayed(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Helper function for asynchronously deleting objects. Useful for cases where you can't delete an object directly in an LV_EVENT_DELETE handler (i.e. parent).
+ */
 jerry_value_t sni_api_lv_obj_delete_async(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -483,6 +549,11 @@ jerry_value_t sni_api_lv_obj_delete_async(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Swap the positions of two objects. When used in listboxes, it can be used to sort the listbox items.
+ *
+ * @param obj2 (object) pointer to the second object
+ */
 jerry_value_t sni_api_lv_obj_swap(const jerry_call_info_t *call_info_p,
                                   const jerry_value_t args_p[],
                                   const jerry_length_t args_count)
@@ -516,6 +587,11 @@ jerry_value_t sni_api_lv_obj_swap(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief moves the object to the given index in its parent. When used in listboxes, it can be used to sort the listbox items.
+ *
+ * @param index (number) new index in parent. -1 to count from the back
+ */
 jerry_value_t sni_api_lv_obj_move_to_index(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -546,6 +622,11 @@ jerry_value_t sni_api_lv_obj_move_to_index(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the screen of an object
+ *
+ * @return (object) pointer to the object's screen
+ */
 jerry_value_t sni_api_lv_obj_get_screen(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -569,6 +650,11 @@ jerry_value_t sni_api_lv_obj_get_screen(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the parent of an object
+ *
+ * @return (object) the parent of the object. (NULL if obj was a screen)
+ */
 jerry_value_t sni_api_lv_obj_get_parent(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -592,6 +678,13 @@ jerry_value_t sni_api_lv_obj_get_parent(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the child of an object by the child's index.
+ *
+ * @param idx (number) the index of the child. 0: the oldest (firstly created) child 1: the second oldest child count-1: the youngest -1: the youngest -2: the second youngest
+ *
+ * @return (object) pointer to the child or NULL if the index was invalid
+ */
 jerry_value_t sni_api_lv_obj_get_child(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -622,6 +715,15 @@ jerry_value_t sni_api_lv_obj_get_child(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the child of an object by the child's index. Consider the children only with a given type.
+ *
+ * @param idx (number) the index of the child. 0: the oldest (firstly created) child 1: the second oldest child count-1: the youngest -1: the youngest -2: the second youngest
+ *
+ * @param class_p (object) the type of the children to check
+ *
+ * @return (object) pointer to the child or NULL if the index was invalid
+ */
 jerry_value_t sni_api_lv_obj_get_child_by_type(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -662,6 +764,13 @@ jerry_value_t sni_api_lv_obj_get_child_by_type(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Return a sibling of an object
+ *
+ * @param idx (number) 0: obj itself -1: the first older sibling -2: the next older sibling 1: the first younger sibling 2: the next younger sibling etc
+ *
+ * @return (object) pointer to the requested sibling or NULL if there is no such sibling - would navigate outside the array of children using the index (get the -3rd sibling of the second child of the parent)
+ */
 jerry_value_t sni_api_lv_obj_get_sibling(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -692,6 +801,15 @@ jerry_value_t sni_api_lv_obj_get_sibling(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Return a sibling of an object. Consider the siblings only with a given type.
+ *
+ * @param idx (number) 0: obj itself -1: the first older sibling -2: the next older sibling 1: the first younger sibling 2: the next younger sibling etc
+ *
+ * @param class_p (object) the type of the children to check
+ *
+ * @return (object) pointer to the requested sibling or NULL if there is no such sibling or would navigate outside the array of children using the index (get the -3rd sibling of the second child of the parent)
+ */
 jerry_value_t sni_api_lv_obj_get_sibling_by_type(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -732,6 +850,11 @@ jerry_value_t sni_api_lv_obj_get_sibling_by_type(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the number of children
+ *
+ * @return (number) the number of children
+ */
 jerry_value_t sni_api_lv_obj_get_child_count(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -755,6 +878,13 @@ jerry_value_t sni_api_lv_obj_get_child_count(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the number of children having a given type.
+ *
+ * @param class_p (object) the type of the children to check
+ *
+ * @return (number) the number of children
+ */
 jerry_value_t sni_api_lv_obj_get_child_count_by_type(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -788,6 +918,11 @@ jerry_value_t sni_api_lv_obj_get_child_count_by_type(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the index of a child.
+ *
+ * @return (number) the child index of the object. E.g. 0: the oldest (firstly created child). (-1 if child could not be found or no parent exists)
+ */
 jerry_value_t sni_api_lv_obj_get_index(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -811,6 +946,13 @@ jerry_value_t sni_api_lv_obj_get_index(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the index of a child. Consider the children only with a given type.
+ *
+ * @param class_p (object) the type of the children to check
+ *
+ * @return (number) the child index of the object. E.g. 0: the oldest (firstly created child with the given class). (-1 if child could not be found or no parent exists)
+ */
 jerry_value_t sni_api_lv_obj_get_index_by_type(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -844,6 +986,13 @@ jerry_value_t sni_api_lv_obj_get_index_by_type(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Iterate through all children of any object.
+ *
+ * @param cb (object) call this callback on the objects
+ *
+ * @param user_data (number) pointer to any user related data (will be passed to cb ) May be NULL .
+ */
 jerry_value_t sni_api_lv_obj_tree_walk(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -873,7 +1022,7 @@ jerry_value_t sni_api_lv_obj_tree_walk(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -887,6 +1036,9 @@ jerry_value_t sni_api_lv_obj_tree_walk(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Iterate through all children of any object and print their ID.
+ */
 jerry_value_t sni_api_lv_obj_dump_tree(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -910,6 +1062,13 @@ jerry_value_t sni_api_lv_obj_dump_tree(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the position of an object relative to the set alignment.
+ *
+ * @param x (number) new x coordinate
+ *
+ * @param y (number) new y coordinate
+ */
 jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -947,6 +1106,11 @@ jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the x coordinate of an object
+ *
+ * @param x (number) new x coordinate
+ */
 jerry_value_t sni_api_lv_obj_set_x(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -977,6 +1141,11 @@ jerry_value_t sni_api_lv_obj_set_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the y coordinate of an object
+ *
+ * @param y (number) new y coordinate
+ */
 jerry_value_t sni_api_lv_obj_set_y(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -1007,6 +1176,13 @@ jerry_value_t sni_api_lv_obj_set_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the size of an object.
+ *
+ * @param w (number) the new width
+ *
+ * @param h (number) the new height
+ */
 jerry_value_t sni_api_lv_obj_set_size(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -1044,6 +1220,11 @@ jerry_value_t sni_api_lv_obj_set_size(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Recalculate the size of the object
+ *
+ * @return (boolean) true: the size has been changed
+ */
 jerry_value_t sni_api_lv_obj_refr_size(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -1067,6 +1248,11 @@ jerry_value_t sni_api_lv_obj_refr_size(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set the width of an object
+ *
+ * @param w (number) the new width
+ */
 jerry_value_t sni_api_lv_obj_set_width(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -1097,6 +1283,11 @@ jerry_value_t sni_api_lv_obj_set_width(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the height of an object
+ *
+ * @param h (number) the new height
+ */
 jerry_value_t sni_api_lv_obj_set_height(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -1127,6 +1318,11 @@ jerry_value_t sni_api_lv_obj_set_height(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the width reduced by the left and right padding and the border width.
+ *
+ * @param w (number) the width without paddings in pixels
+ */
 jerry_value_t sni_api_lv_obj_set_content_width(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -1157,6 +1353,11 @@ jerry_value_t sni_api_lv_obj_set_content_width(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the height reduced by the top and bottom padding and the border width.
+ *
+ * @param h (number) the height without paddings in pixels
+ */
 jerry_value_t sni_api_lv_obj_set_content_height(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -1187,6 +1388,11 @@ jerry_value_t sni_api_lv_obj_set_content_height(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a layout for an object
+ *
+ * @param layout (number) pointer to a layout descriptor to set
+ */
 jerry_value_t sni_api_lv_obj_set_layout(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -1217,6 +1423,11 @@ jerry_value_t sni_api_lv_obj_set_layout(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Test whether the and object is positioned by a layout or not
+ *
+ * @return (boolean) true: positioned by a layout; false: not positioned by a layout
+ */
 jerry_value_t sni_api_lv_obj_is_layout_positioned(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -1240,6 +1451,9 @@ jerry_value_t sni_api_lv_obj_is_layout_positioned(const jerry_call_info_t *call_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Mark the object for layout update.
+ */
 jerry_value_t sni_api_lv_obj_mark_layout_as_dirty(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -1263,6 +1477,9 @@ jerry_value_t sni_api_lv_obj_mark_layout_as_dirty(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Update the layout of an object.
+ */
 jerry_value_t sni_api_lv_obj_update_layout(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -1286,6 +1503,11 @@ jerry_value_t sni_api_lv_obj_update_layout(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Change the alignment of an object.
+ *
+ * @param align (number) type of alignment (see ' lv_align_t ' enum) LV_ALIGN_OUT_... can't be used.
+ */
 jerry_value_t sni_api_lv_obj_set_align(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -1316,6 +1538,15 @@ jerry_value_t sni_api_lv_obj_set_align(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Change the alignment of an object and set new coordinates. Equivalent to: lv_obj_set_align(obj, align); lv_obj_set_pos(obj, x_ofs, y_ofs);
+ *
+ * @param align (number) type of alignment (see ' lv_align_t ' enum) LV_ALIGN_OUT_... can't be used.
+ *
+ * @param x_ofs (number) x coordinate offset after alignment
+ *
+ * @param y_ofs (number) y coordinate offset after alignment
+ */
 jerry_value_t sni_api_lv_obj_align(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -1360,6 +1591,17 @@ jerry_value_t sni_api_lv_obj_align(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Align an object to another object.
+ *
+ * @param base (object) pointer to another object that obj will be aligned to. May be NULL . When NULL obj s parent is used.
+ *
+ * @param align (number) type of alignment (see ' lv_align_t ' enum)
+ *
+ * @param x_ofs (number) x coordinate offset after alignment
+ *
+ * @param y_ofs (number) y coordinate offset after alignment
+ */
 jerry_value_t sni_api_lv_obj_align_to(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -1414,6 +1656,9 @@ jerry_value_t sni_api_lv_obj_align_to(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Align an object to the center on its parent.
+ */
 jerry_value_t sni_api_lv_obj_center(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -1437,6 +1682,9 @@ jerry_value_t sni_api_lv_obj_center(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Reset the transform matrix of an object to identity matrix
+ */
 jerry_value_t sni_api_lv_obj_reset_transform(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -1460,6 +1708,11 @@ jerry_value_t sni_api_lv_obj_reset_transform(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the x coordinate of object.
+ *
+ * @return (number) distance of obj from the left side of its parent plus the parent's left padding
+ */
 jerry_value_t sni_api_lv_obj_get_x(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -1483,6 +1736,11 @@ jerry_value_t sni_api_lv_obj_get_x(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the x2 coordinate of object.
+ *
+ * @return (number) distance of obj from the right side of its parent plus the parent's right padding
+ */
 jerry_value_t sni_api_lv_obj_get_x2(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -1506,6 +1764,11 @@ jerry_value_t sni_api_lv_obj_get_x2(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the y coordinate of object.
+ *
+ * @return (number) distance of obj from the top side of its parent plus the parent's top padding
+ */
 jerry_value_t sni_api_lv_obj_get_y(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -1529,6 +1792,11 @@ jerry_value_t sni_api_lv_obj_get_y(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the y2 coordinate of object.
+ *
+ * @return (number) distance of obj from the bottom side of its parent plus the parent's bottom padding
+ */
 jerry_value_t sni_api_lv_obj_get_y2(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -1552,6 +1820,11 @@ jerry_value_t sni_api_lv_obj_get_y2(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the actually set x coordinate of object, i.e. the offset from the set alignment
+ *
+ * @return (number) the set x coordinate
+ */
 jerry_value_t sni_api_lv_obj_get_x_aligned(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -1575,6 +1848,11 @@ jerry_value_t sni_api_lv_obj_get_x_aligned(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the actually set y coordinate of object, i.e. the offset from the set alignment
+ *
+ * @return (number) the set y coordinate
+ */
 jerry_value_t sni_api_lv_obj_get_y_aligned(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -1598,6 +1876,11 @@ jerry_value_t sni_api_lv_obj_get_y_aligned(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width of an object
+ *
+ * @return (number) the width in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_width(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -1621,6 +1904,11 @@ jerry_value_t sni_api_lv_obj_get_width(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the height of an object
+ *
+ * @return (number) the height in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_height(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -1644,6 +1932,11 @@ jerry_value_t sni_api_lv_obj_get_height(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width reduced by the left and right padding and the border width.
+ *
+ * @return (number) the width which still fits into its parent without causing overflow (making the parent scrollable)
+ */
 jerry_value_t sni_api_lv_obj_get_content_width(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -1667,6 +1960,11 @@ jerry_value_t sni_api_lv_obj_get_content_width(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the height reduced by the top and bottom padding and the border width.
+ *
+ * @return (number) the height which still fits into the parent without causing overflow (making the parent scrollable)
+ */
 jerry_value_t sni_api_lv_obj_get_content_height(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -1690,6 +1988,11 @@ jerry_value_t sni_api_lv_obj_get_content_height(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width occupied by the "parts" of the widget. E.g. the width of all columns of a table.
+ *
+ * @return (number) the width of the virtually drawn content
+ */
 jerry_value_t sni_api_lv_obj_get_self_width(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -1713,6 +2016,11 @@ jerry_value_t sni_api_lv_obj_get_self_width(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the height occupied by the "parts" of the widget. E.g. the height of all rows of a table.
+ *
+ * @return (number) the width of the virtually drawn content
+ */
 jerry_value_t sni_api_lv_obj_get_self_height(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -1736,6 +2044,11 @@ jerry_value_t sni_api_lv_obj_get_self_height(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the style width actually used by the object after clamping the width within the min max range.
+ *
+ * @return (number) the min/max/normal width set by lv_obj_set_style_<min/max>_width()
+ */
 jerry_value_t sni_api_lv_obj_get_style_clamped_width(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -1759,6 +2072,11 @@ jerry_value_t sni_api_lv_obj_get_style_clamped_width(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the style height actually used by the object after clamping the height within the min max range.
+ *
+ * @return (number) the min/max/normal height set by lv_obj_set_style_<min/max>_height()
+ */
 jerry_value_t sni_api_lv_obj_get_style_clamped_height(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -1782,6 +2100,11 @@ jerry_value_t sni_api_lv_obj_get_style_clamped_height(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Determine if any of the object's width style properties are set to LV_SIZE_CONTENT .
+ *
+ * @return (boolean) false No width style properties are LV_SIZE_CONTENT .
+ */
 jerry_value_t sni_api_lv_obj_is_style_any_width_content(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -1805,6 +2128,11 @@ jerry_value_t sni_api_lv_obj_is_style_any_width_content(const jerry_call_info_t 
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Determine if any of the object's height style properties are set to LV_SIZE_CONTENT .
+ *
+ * @return (boolean) false No height style properties are LV_SIZE_CONTENT .
+ */
 jerry_value_t sni_api_lv_obj_is_style_any_height_content(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -1828,6 +2156,14 @@ jerry_value_t sni_api_lv_obj_is_style_any_height_content(const jerry_call_info_t
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Determine if the object's resolved width was limited by its minimum width constraint.
+ *
+ * @details
+ * This function reports whether, in the most recent layout / size calculation, the object's final (used) width had to be raised to satisfy a minimum width requirement.
+ *
+ * @return (boolean) false The width is larger than the minimum (not min‑clamped).
+ */
 jerry_value_t sni_api_lv_obj_is_width_min(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -1851,6 +2187,14 @@ jerry_value_t sni_api_lv_obj_is_width_min(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Determine if the object's resolved height was limited by its minimum height constraint.
+ *
+ * @details
+ * This function reports whether, in the most recent layout / size calculation, the object's final (used) height had to be raised to satisfy a minimum height requirement.
+ *
+ * @return (boolean) false The height is larger than the minimum (not min‑clamped).
+ */
 jerry_value_t sni_api_lv_obj_is_height_min(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -1874,6 +2218,14 @@ jerry_value_t sni_api_lv_obj_is_height_min(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Determine if the object's resolved width was limited by its maximum width constraint.
+ *
+ * @details
+ * This function reports whether, in the most recent layout / size calculation, the object's final (used) width had to be raised to satisfy a maximum width requirement.
+ *
+ * @return (boolean) false The width is smaller than the maximum (not min‑clamped).
+ */
 jerry_value_t sni_api_lv_obj_is_width_max(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -1897,6 +2249,14 @@ jerry_value_t sni_api_lv_obj_is_width_max(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Determine if the object's resolved height was limited by its maximum height constraint.
+ *
+ * @details
+ * This function reports whether, in the most recent layout / size calculation, the object's final (used) height had to be raised to satisfy a maximum height requirement.
+ *
+ * @return (boolean) false The height is smaller than the maximum (not min‑clamped).
+ */
 jerry_value_t sni_api_lv_obj_is_height_max(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -1920,6 +2280,11 @@ jerry_value_t sni_api_lv_obj_is_height_max(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Handle if the size of the internal ("virtual") content of an object has changed.
+ *
+ * @return (boolean) false: nothing happened; true: refresh happened
+ */
 jerry_value_t sni_api_lv_obj_refresh_self_size(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -1943,6 +2308,9 @@ jerry_value_t sni_api_lv_obj_refresh_self_size(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_refr_pos.
+ */
 jerry_value_t sni_api_lv_obj_refr_pos(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -1966,6 +2334,13 @@ jerry_value_t sni_api_lv_obj_refr_pos(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_move_to.
+ *
+ * @param x (number) JavaScript argument.
+ *
+ * @param y (number) JavaScript argument.
+ */
 jerry_value_t sni_api_lv_obj_move_to(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -2003,6 +2378,15 @@ jerry_value_t sni_api_lv_obj_move_to(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_move_children_by.
+ *
+ * @param x_diff (number) JavaScript argument.
+ *
+ * @param y_diff (number) JavaScript argument.
+ *
+ * @param ignore_floating (boolean) JavaScript argument.
+ */
 jerry_value_t sni_api_lv_obj_move_children_by(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -2047,6 +2431,13 @@ jerry_value_t sni_api_lv_obj_move_children_by(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Transform a point using the angle and zoom style properties of an object
+ *
+ * @param p (object) a point to transform, the result will be written back here too
+ *
+ * @param flags (number) OR-ed valued of :cpp:enum: lv_obj_point_transform_flag_t
+ */
 jerry_value_t sni_api_lv_obj_transform_point(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -2091,6 +2482,15 @@ jerry_value_t sni_api_lv_obj_transform_point(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Transform an array of points using the angle and zoom style properties of an object
+ *
+ * @param points (number) the array of points to transform, the result will be written back here too
+ *
+ * @param count (number) number of points in the array
+ *
+ * @param flags (number) OR-ed valued of :cpp:enum: lv_obj_point_transform_flag_t
+ */
 jerry_value_t sni_api_lv_obj_transform_point_array(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -2110,7 +2510,7 @@ jerry_value_t sni_api_lv_obj_transform_point_array(const jerry_call_info_t *call
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -2138,6 +2538,13 @@ jerry_value_t sni_api_lv_obj_transform_point_array(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Transform an area using the angle and zoom style properties of an object
+ *
+ * @param area (object) an area to transform, the result will be written back here too
+ *
+ * @param flags (number) OR-ed valued of :cpp:enum: lv_obj_point_transform_flag_t
+ */
 jerry_value_t sni_api_lv_obj_get_transformed_area(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -2174,6 +2581,13 @@ jerry_value_t sni_api_lv_obj_get_transformed_area(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Mark an area of an object as invalid. The area will be truncated to the object's area and marked for redraw.
+ *
+ * @param area (object) the area to redraw
+ *
+ * @return (number) LV_RESULT_OK: the area is invalidated; LV_RESULT_INVALID: the area wasn't invalidated. (maybe it was off-screen or fully clipped)
+ */
 jerry_value_t sni_api_lv_obj_invalidate_area(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -2211,6 +2625,11 @@ jerry_value_t sni_api_lv_obj_invalidate_area(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Mark the object as invalid to redrawn its area
+ *
+ * @return (number) LV_RESULT_OK: the area is invalidated; LV_RESULT_INVALID: the area wasn't invalidated. (maybe it was off-screen or fully clipped)
+ */
 jerry_value_t sni_api_lv_obj_invalidate(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -2234,6 +2653,13 @@ jerry_value_t sni_api_lv_obj_invalidate(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Tell whether an area of an object is visible (even partially) now or not
+ *
+ * @param area (object) the are to check. The visible part of the area will be written back here.
+ *
+ * @return (boolean) true visible; false not visible (hidden, out of parent, on other screen, etc)
+ */
 jerry_value_t sni_api_lv_obj_area_is_visible(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -2271,6 +2697,11 @@ jerry_value_t sni_api_lv_obj_area_is_visible(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Tell whether an object is visible (even partially) now or not
+ *
+ * @return (boolean) true: visible; false not visible (hidden, out of parent, on other screen, etc)
+ */
 jerry_value_t sni_api_lv_obj_is_visible(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -2294,6 +2725,11 @@ jerry_value_t sni_api_lv_obj_is_visible(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set the size of an extended clickable area
+ *
+ * @param size (number) extended clickable area in all 4 directions [px]
+ */
 jerry_value_t sni_api_lv_obj_set_ext_click_area(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -2324,6 +2760,13 @@ jerry_value_t sni_api_lv_obj_set_ext_click_area(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Hit-test an object given a particular point in screen space.
+ *
+ * @param point (object) screen-space point (absolute coordinate)
+ *
+ * @return (boolean) true: if the object is considered under the point
+ */
 jerry_value_t sni_api_lv_obj_hit_test(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -2361,6 +2804,13 @@ jerry_value_t sni_api_lv_obj_hit_test(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Calculates the width in pixels of an LVGL object based on its style and parent for a given width prop .
+ *
+ * @param prop (number) Which style width to calculate for. Valid values are: LV_STYLE_WIDTH, LV_STYLE_MIN_WIDTH, or LV_STYLE_MAX_WIDTH.
+ *
+ * @return (number) The computed width for the object:
+ */
 jerry_value_t sni_api_lv_obj_calc_dynamic_width(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -2391,6 +2841,13 @@ jerry_value_t sni_api_lv_obj_calc_dynamic_width(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculates the height in pixels of an LVGL object based on its style and parent for a given height prop .
+ *
+ * @param prop (number) Which style height to calculate for. Valid values are: LV_STYLE_HEIGHT, LV_STYLE_MIN_HEIGHT, or LV_STYLE_MAX_HEIGHT.
+ *
+ * @return (number) The computed height for the object:
+ */
 jerry_value_t sni_api_lv_obj_calc_dynamic_height(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -2421,6 +2878,11 @@ jerry_value_t sni_api_lv_obj_calc_dynamic_height(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set how the scrollbars should behave.
+ *
+ * @param mode (number) LV_SCROLL_MODE_ON/OFF/AUTO/ACTIVE
+ */
 jerry_value_t sni_api_lv_obj_set_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -2451,6 +2913,11 @@ jerry_value_t sni_api_lv_obj_set_scrollbar_mode(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set direction Widget can be scrolled
+ *
+ * @param dir (number) one or more bit-wise OR-ed values of lv_dir_t enumeration
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -2481,6 +2948,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_dir(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set where to snap the children when scrolling ends horizontally
+ *
+ * @param align (number) value from lv_scroll_snap_t enumeration
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2511,6 +2983,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_snap_x(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set where to snap the children when scrolling ends vertically
+ *
+ * @param align (number) value from lv_scroll_snap_t enumeration
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2541,6 +3018,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_snap_y(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the current scroll mode (when to hide the scrollbars)
+ *
+ * @return (number) the current scroll mode from lv_scrollbar_mode_t
+ */
 jerry_value_t sni_api_lv_obj_get_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -2564,6 +3046,11 @@ jerry_value_t sni_api_lv_obj_get_scrollbar_mode(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get directions Widget can be scrolled (set with lv_obj_set_scroll_dir() )
+ *
+ * @return (number) current scroll direction bit(s)
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -2587,6 +3074,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_dir(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get where to snap child Widgets when horizontal scrolling ends.
+ *
+ * @return (number) current snap value from lv_scroll_snap_t
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2610,6 +3102,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_snap_x(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get where to snap child Widgets when vertical scrolling ends.
+ *
+ * @return (number) current snap value from lv_scroll_snap_t
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2633,6 +3130,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_snap_y(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get current X scroll position. Identical to lv_obj_get_scroll_left() .
+ *
+ * @return (number) current scroll position from left edge If Widget is not scrolled return 0. If scrolled return > 0. If scrolled inside (elastic scroll) return < 0.
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_x(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -2656,6 +3158,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_x(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get current Y scroll position. Identical to lv_obj_get_scroll_top() .
+ *
+ * @return (number) current scroll position from top edge If Widget is not scrolled return 0. If scrolled return > 0. If scrolled inside (elastic scroll) return < 0.
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_y(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -2679,6 +3186,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_y(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled down before its top edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged below its normal top-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled down before its top edge appears
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_top(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -2702,6 +3214,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_top(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled up before its bottom edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged above its normal bottom-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled up before its bottom edge appears
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_bottom(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2725,6 +3242,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_bottom(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled right before its left edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged farther right than its normal left-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled right before its left edge appears
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_left(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -2748,6 +3270,11 @@ jerry_value_t sni_api_lv_obj_get_scroll_left(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled left before its right edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged farther left than its normal right-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled left before its right edge appears
+ */
 jerry_value_t sni_api_lv_obj_get_scroll_right(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -2771,6 +3298,15 @@ jerry_value_t sni_api_lv_obj_get_scroll_right(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Scroll by given amount of pixels.
+ *
+ * @param dx (number) pixels to scroll horizontally
+ *
+ * @param dy (number) pixels to scroll vertically
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_by(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -2815,6 +3351,15 @@ jerry_value_t sni_api_lv_obj_scroll_by(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll by given amount of pixels. dx and dy will be limited internally to allow scrolling only on the content area.
+ *
+ * @param dx (number) pixels to scroll horizontally
+ *
+ * @param dy (number) pixels to scroll vertically
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_by_bounded(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -2859,6 +3404,15 @@ jerry_value_t sni_api_lv_obj_scroll_by_bounded(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll to given coordinate on Widget. x and y will be limited internally to allow scrolling only on the content area.
+ *
+ * @param x (number) pixels to scroll horizontally
+ *
+ * @param y (number) pixels to scroll vertically
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_to(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -2903,6 +3457,13 @@ jerry_value_t sni_api_lv_obj_scroll_to(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll to X coordinate on Widget. x will be limited internally to allow scrolling only on the content area.
+ *
+ * @param x (number) pixels to scroll horizontally
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_to_x(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -2940,6 +3501,13 @@ jerry_value_t sni_api_lv_obj_scroll_to_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll to Y coordinate on Widget. y will be limited internally to allow scrolling only on the content area.
+ *
+ * @param y (number) pixels to scroll vertically
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_to_y(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -2977,6 +3545,11 @@ jerry_value_t sni_api_lv_obj_scroll_to_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll obj 's parent Widget until obj becomes visible.
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_to_view(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -3007,6 +3580,11 @@ jerry_value_t sni_api_lv_obj_scroll_to_view(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Scroll obj 's parent Widgets recursively until obj becomes visible. Widget will be scrolled into view even it has nested scrollable parents.
+ *
+ * @param anim_en (number) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
+ */
 jerry_value_t sni_api_lv_obj_scroll_to_view_recursive(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -3037,6 +3615,11 @@ jerry_value_t sni_api_lv_obj_scroll_to_view_recursive(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Tell whether Widget is being scrolled or not at this moment
+ *
+ * @return (boolean) true: obj is being scrolled
+ */
 jerry_value_t sni_api_lv_obj_is_scrolling(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -3060,6 +3643,9 @@ jerry_value_t sni_api_lv_obj_is_scrolling(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Stop scrolling the current object
+ */
 jerry_value_t sni_api_lv_obj_stop_scroll_anim(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -3083,6 +3669,11 @@ jerry_value_t sni_api_lv_obj_stop_scroll_anim(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Check children of obj and scroll obj to fulfill scroll_snap settings.
+ *
+ * @param anim_en (number) LV_ANIM_ON/OFF
+ */
 jerry_value_t sni_api_lv_obj_update_snap(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -3113,6 +3704,9 @@ jerry_value_t sni_api_lv_obj_update_snap(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Invalidate the area of the scrollbars
+ */
 jerry_value_t sni_api_lv_obj_scrollbar_invalidate(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -3136,6 +3730,11 @@ jerry_value_t sni_api_lv_obj_scrollbar_invalidate(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Checks if the content is scrolled "in" and adjusts it to a normal position.
+ *
+ * @param anim_en (number) LV_ANIM_ON/OFF
+ */
 jerry_value_t sni_api_lv_obj_readjust_scroll(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -3166,6 +3765,13 @@ jerry_value_t sni_api_lv_obj_readjust_scroll(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Add a style to an object. Examples: lv_obj_add_style(btn, &style_btn, 0); //Default button style lv_obj_add_style(btn, &btn_red, LV_STATE_PRESSED); //Overwrite only some colors to red when pressed
+ *
+ * @param style (object) pointer to a style to add
+ *
+ * @param selector (number) OR-ed value of parts and state to which the style should be added
+ */
 jerry_value_t sni_api_lv_obj_add_style(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -3206,6 +3812,17 @@ jerry_value_t sni_api_lv_obj_add_style(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Replaces a style of an object, preserving the order of the style stack (local styles and transitions are ignored). Examples: lv_obj_replace_style(obj, &yellow_style, &blue_style, LV_PART_ANY | LV_STATE_ANY); //Replace a specific style lv_obj_replace_style(obj, &yellow_style, &blue_style, LV_PART_MAIN | LV_STATE_PRESSED); //Replace a specific style assigned to the main part when it is pressed
+ *
+ * @param old_style (object) pointer to a style to replace.
+ *
+ * @param new_style (object) pointer to a style to replace the old style with.
+ *
+ * @param selector (number) OR-ed values of states and a part to replace only styles with matching selectors. LV_STATE_ANY and LV_PART_ANY can be used
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_replace_style(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -3256,6 +3873,13 @@ jerry_value_t sni_api_lv_obj_replace_style(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Remove a style from an object. Examples: lv_obj_remove_style(obj, &style, LV_PART_ANY | LV_STATE_ANY); //Remove a specific style lv_obj_remove_style(obj, NULL, LV_PART_MAIN | LV_STATE_ANY); //Remove all styles from the main part lv_obj_remove_style(obj, NULL, LV_PART_ANY | LV_STATE_ANY); //Remove all styles
+ *
+ * @param style (object) pointer to a style to remove. May be NULL . When NULL every style matching selector is removed.
+ *
+ * @param selector (number) OR-ed value of parts and states to remove the style from
+ */
 jerry_value_t sni_api_lv_obj_remove_style(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -3296,6 +3920,11 @@ jerry_value_t sni_api_lv_obj_remove_style(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Remove all styles added by a theme from a widget
+ *
+ * @param selector (number) OR-ed values of states and a part to remove only styles with matching selectors. LV_STATE_ANY and LV_PART_ANY can be used
+ */
 jerry_value_t sni_api_lv_obj_remove_theme(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -3326,6 +3955,9 @@ jerry_value_t sni_api_lv_obj_remove_theme(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Remove all styles from an object
+ */
 jerry_value_t sni_api_lv_obj_remove_style_all(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -3349,6 +3981,13 @@ jerry_value_t sni_api_lv_obj_remove_style_all(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Notify an object and its children about its style is modified.
+ *
+ * @param part (number) the part whose style was changed. E.g. LV_PART_ANY , LV_PART_MAIN
+ *
+ * @param prop (number) LV_STYLE_PROP_ANY or an LV_STYLE_... property. It is used to optimize what needs to be refreshed. LV_STYLE_PROP_INV to perform only a style cache update
+ */
 jerry_value_t sni_api_lv_obj_refresh_style(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -3386,6 +4025,15 @@ jerry_value_t sni_api_lv_obj_refresh_style(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Temporary enable or disable a style for a selector. A disabled style will look like it wasn't added at all.
+ *
+ * @param style (object) pointer to a style
+ *
+ * @param selector (number) the selector of a style (e.g. LV_STATE_PRESSED | LV_PART_KNOB)
+ *
+ * @param en (boolean) true: enable the style, false: disable the style
+ */
 jerry_value_t sni_api_lv_obj_set_style_enabled(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -3433,6 +4081,15 @@ jerry_value_t sni_api_lv_obj_set_style_enabled(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get if a given style is enabled on an object.
+ *
+ * @param style (object) pointer to a style
+ *
+ * @param selector (number) the selector of a style (e.g. LV_STATE_PRESSED | LV_PART_KNOB)
+ *
+ * @return (boolean) true: the style is enabled, false: the style is disabled
+ */
 jerry_value_t sni_api_lv_obj_get_style_enabled(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -3473,6 +4130,15 @@ jerry_value_t sni_api_lv_obj_get_style_enabled(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Temporary disable a style for a selector. It will look like is the style wasn't added Deprecated Use lv_obj_set_style_enabled() instead (with inverted logic).
+ *
+ * @param style (object) pointer to a style
+ *
+ * @param selector (number) the selector of a style (e.g. LV_STATE_PRESSED | LV_PART_KNOB)
+ *
+ * @param dis (boolean) true: disable the style, false: enable the style
+ */
 jerry_value_t sni_api_lv_obj_style_set_disabled(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -3520,6 +4186,15 @@ jerry_value_t sni_api_lv_obj_style_set_disabled(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get if a given style is disabled on an object. Deprecated Use lv_obj_get_style_enabled() instead (with inverted logic).
+ *
+ * @param style (object) pointer to a style
+ *
+ * @param selector (number) the selector of a style (e.g. LV_STATE_PRESSED | LV_PART_KNOB)
+ *
+ * @return (boolean) true: disable the style, false: enable the style
+ */
 jerry_value_t sni_api_lv_obj_style_get_disabled(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -3560,6 +4235,15 @@ jerry_value_t sni_api_lv_obj_style_get_disabled(const jerry_call_info_t *call_in
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Check if an object has a specified style property for a given style selector.
+ *
+ * @param selector (number) the style selector to be checked, defining the scope of the style to be examined.
+ *
+ * @param prop (number) the property to be checked.
+ *
+ * @return (boolean) true if the object has the specified selector and property, false otherwise.
+ */
 jerry_value_t sni_api_lv_obj_has_style_prop(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -3597,6 +4281,15 @@ jerry_value_t sni_api_lv_obj_has_style_prop(const jerry_call_info_t *call_info_p
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set local style property on an object's part and state.
+ *
+ * @param prop (number) the property
+ *
+ * @param value (object) value of the property. The correct element should be set according to the type of the property
+ *
+ * @param selector (number) OR-ed value of parts and state for which the style should be set
+ */
 jerry_value_t sni_api_lv_obj_set_local_style_prop(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -3644,6 +4337,17 @@ jerry_value_t sni_api_lv_obj_set_local_style_prop(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_get_local_style_prop.
+ *
+ * @param prop (number) JavaScript argument.
+ *
+ * @param value (object) JavaScript argument.
+ *
+ * @param selector (number) JavaScript argument.
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_local_style_prop(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -3691,6 +4395,15 @@ jerry_value_t sni_api_lv_obj_get_local_style_prop(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Remove a local style property from a part of an object with a given state.
+ *
+ * @param prop (number) a style property to remove.
+ *
+ * @param selector (number) OR-ed value of parts and state for which the style should be removed
+ *
+ * @return (boolean) true the property was found and removed; false: the property was not found
+ */
 jerry_value_t sni_api_lv_obj_remove_local_style_prop(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -3728,6 +4441,13 @@ jerry_value_t sni_api_lv_obj_remove_local_style_prop(const jerry_call_info_t *ca
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Fade in an an object and all its children.
+ *
+ * @param time (number) time of fade
+ *
+ * @param delay (number) delay to start the animation
+ */
 jerry_value_t sni_api_lv_obj_fade_in(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -3765,6 +4485,13 @@ jerry_value_t sni_api_lv_obj_fade_in(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Fade out an an object and all its children.
+ *
+ * @param time (number) time of fade
+ *
+ * @param delay (number) delay to start the animation
+ */
 jerry_value_t sni_api_lv_obj_fade_out(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -3802,6 +4529,13 @@ jerry_value_t sni_api_lv_obj_fade_out(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Gets width of Widget. Pixel, percentage and LV_SIZE_CONTENT values can be used. Percentage values are relative to the width of the parent's content area. Default: Widget dependent, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_width(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -3832,6 +4566,13 @@ jerry_value_t sni_api_lv_obj_get_style_width(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets a minimal width. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_min_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -3862,6 +4603,13 @@ jerry_value_t sni_api_lv_obj_get_style_min_width(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets a maximal width. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: LV_COORD_MAX, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_max_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -3892,6 +4640,13 @@ jerry_value_t sni_api_lv_obj_get_style_max_width(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets height of Widget. Pixel, percentage and LV_SIZE_CONTENT can be used. Percentage values are relative to the height of the parent's content area. Default: Widget dependent, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_height(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -3922,6 +4677,13 @@ jerry_value_t sni_api_lv_obj_get_style_height(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets a minimal height. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_min_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -3952,6 +4714,13 @@ jerry_value_t sni_api_lv_obj_get_style_min_height(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets a maximal height. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: LV_COORD_MAX, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_max_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -3982,6 +4751,13 @@ jerry_value_t sni_api_lv_obj_get_style_max_height(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Its meaning depends on the type of Widget. For example in case of lv_scale it means the length of the ticks. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_length(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -4012,6 +4788,13 @@ jerry_value_t sni_api_lv_obj_get_style_length(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get X coordinate of Widget considering the align setting. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_x(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -4042,6 +4825,13 @@ jerry_value_t sni_api_lv_obj_get_style_x(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get Y coordinate of Widget considering the align setting. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_y(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -4072,6 +4862,13 @@ jerry_value_t sni_api_lv_obj_get_style_y(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the alignment which tells from which point of the parent the X and Y coordinates should be interpreted. Possible values are: LV_ALIGN_DEFAULT , LV_ALIGN_TOP_LEFT/MID/RIGHT , LV_ALIGN_BOTTOM_LEFT/MID/RIGHT , LV_ALIGN_LEFT/RIGHT_MID , LV_ALIGN_CENTER . LV_ALIGN_DEFAULT means LV_ALIGN_TOP_LEFT with LTR base direction and LV_ALIGN_TOP_RIGHT with RTL base direction. Default: LV_ALIGN_DEFAULT , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_align(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -4102,6 +4899,13 @@ jerry_value_t sni_api_lv_obj_get_style_align(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make Widget wider on both sides with this value. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's width. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -4132,6 +4936,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_width(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make Widget higher on both sides with this value. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's height. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_height(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -4162,6 +4973,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_height(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Move Widget with this value in X direction. Applied after layouts, aligns and other positioning. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's width. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_translate_x(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -4192,6 +5010,13 @@ jerry_value_t sni_api_lv_obj_get_style_translate_x(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Move Widget with this value in Y direction. Applied after layouts, aligns and other positioning. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's height. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_translate_y(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -4222,6 +5047,13 @@ jerry_value_t sni_api_lv_obj_get_style_translate_y(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Move object around the centre of the parent object (e.g. around the circumference of a scale). Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_translate_radial(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -4252,6 +5084,13 @@ jerry_value_t sni_api_lv_obj_get_style_translate_radial(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Zoom Widget horizontally. The value 256 (or LV_SCALE_NONE ) means normal size, 128 half size, 512 double size, and so on. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_scale_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -4282,6 +5121,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_scale_x(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Zoom Widget vertically. The value 256 (or LV_SCALE_NONE ) means normal size, 128 half size, 512 double size, and so on. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_scale_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -4312,6 +5158,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_scale_y(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Rotate Widget. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_rotation(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -4342,6 +5195,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_rotation(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get pivot point's X coordinate for transformations. Relative to Widget's top left corner. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_pivot_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -4372,6 +5232,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_pivot_x(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get pivot point's Y coordinate for transformations. Relative to Widget's top left corner. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_pivot_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -4402,6 +5269,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_pivot_y(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Skew Widget horizontally. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_skew_x(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -4432,6 +5306,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_skew_x(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Skew Widget vertically. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_skew_y(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -4462,6 +5343,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_skew_y(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding on the top. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_top(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -4492,6 +5380,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_top(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding on the bottom. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_bottom(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -4522,6 +5417,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_bottom(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding on the left. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_left(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -4552,6 +5454,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_left(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding on the right. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_right(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -4582,6 +5491,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_right(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding between the rows. Used by the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_row(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -4612,6 +5528,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_row(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the padding between the columns. Used by the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_column(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -4642,6 +5565,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_column(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Pad text labels away from the scale ticks/remainder of the LV_PART_ . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_pad_radial(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -4672,6 +5602,13 @@ jerry_value_t sni_api_lv_obj_get_style_pad_radial(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets margin on the top. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_margin_top(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -4702,6 +5639,13 @@ jerry_value_t sni_api_lv_obj_get_style_margin_top(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets margin on the bottom. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_margin_bottom(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -4732,6 +5676,13 @@ jerry_value_t sni_api_lv_obj_get_style_margin_bottom(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets margin on the left. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_margin_left(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -4762,6 +5713,13 @@ jerry_value_t sni_api_lv_obj_get_style_margin_left(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets margin on the right. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_margin_right(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -4792,6 +5750,13 @@ jerry_value_t sni_api_lv_obj_get_style_margin_right(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get background color of Widget. Default: 0xffffff , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_color(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -4822,6 +5787,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_color(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get background color of Widget. Default: 0xffffff , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_color_filtered(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -4852,6 +5824,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_color_filtered(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of the background. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_opa(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -4882,6 +5861,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_opa(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get gradient color of the background. Used only if grad_dir is not LV_GRAD_DIR_NONE . Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_grad_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -4912,6 +5898,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_grad_color(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get gradient color of the background. Used only if grad_dir is not LV_GRAD_DIR_NONE . Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_grad_color_filtered(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -4942,6 +5935,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_grad_color_filtered(const jerry_call_i
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get direction of the gradient of the background. Possible values are LV_GRAD_DIR_NONE/HOR/VER . Default: LV_GRAD_DIR_NONE , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_grad_dir(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -4972,6 +5972,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_grad_dir(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get point from which background color should start for gradients. 0 means to top/left side, 255 the bottom/right side, 128 the center, and so on. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_main_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5002,6 +6009,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_main_stop(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get point from which background's gradient color should start. 0 means to top/left side, 255 the bottom/right side, 128 the center, and so on. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_grad_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5032,6 +6046,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_grad_stop(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get opacity of the first gradient color. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_main_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5062,6 +6083,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_main_opa(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get opacity of the second gradient color. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_grad_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5092,6 +6120,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_grad_opa(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get a background image. Can be a pointer to lv_image_dsc_t , a path to a file or an LV_SYMBOL_... . Default: NULL , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_src(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5122,6 +6157,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_src(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Get opacity of the background image. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_opa(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5152,6 +6194,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_opa(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get a color to mix to the background image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -5182,6 +6231,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get a color to mix to the background image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor_filtered(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
                                                                  const jerry_length_t args_count)
@@ -5212,6 +6268,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor_filtered(const jerry_cal
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get intensity of background image recoloring. Value 0, LV_OPA_0 or LV_OPA_TRANSP means no mixing, 255, LV_OPA_100 or LV_OPA_COVER means full recoloring, other values or LV_OPA_10, LV_OPA_20, etc are interpreted proportionally. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -5242,6 +6305,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_recolor_opa(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief If enabled the background image will be tiled. Possible values are true or false . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bg_image_tiled(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -5272,6 +6342,13 @@ jerry_value_t sni_api_lv_obj_get_style_bg_image_tiled(const jerry_call_info_t *c
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get color of the border. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5302,6 +6379,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_color(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color of the border. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_color_filtered(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -5332,6 +6416,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_color_filtered(const jerry_call_in
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of the border. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -5362,6 +6453,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_opa(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get width of the border. Only pixel values can be used. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5392,6 +6490,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_width(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get only which side(s) the border should be drawn. Possible values are LV_BORDER_SIDE_NONE/TOP/BOTTOM/LEFT/RIGHT/INTERNAL . OR-ed values can be used as well, e.g. LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_LEFT . Default: LV_BORDER_SIDE_FULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_side(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5422,6 +6527,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_side(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets whether the border should be drawn before or after the children are drawn. true : after children, false : before children. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_border_post(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5452,6 +6564,13 @@ jerry_value_t sni_api_lv_obj_get_style_border_post(const jerry_call_info_t *call
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get width of outline in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_outline_width(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -5482,6 +6601,13 @@ jerry_value_t sni_api_lv_obj_get_style_outline_width(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get color of outline. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_outline_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -5512,6 +6638,13 @@ jerry_value_t sni_api_lv_obj_get_style_outline_color(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color of outline. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_outline_color_filtered(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -5542,6 +6675,13 @@ jerry_value_t sni_api_lv_obj_get_style_outline_color_filtered(const jerry_call_i
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of outline. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_outline_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5572,6 +6712,13 @@ jerry_value_t sni_api_lv_obj_get_style_outline_opa(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get padding of outline, i.e. the gap between Widget and the outline. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_outline_pad(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -5602,6 +6749,13 @@ jerry_value_t sni_api_lv_obj_get_style_outline_pad(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get width of the shadow in pixels. The value should be >= 0. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5632,6 +6786,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_width(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get an offset on the shadow in pixels in X direction. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -5662,6 +6823,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_offset_x(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get an offset on the shadow in pixels in Y direction. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -5692,6 +6860,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_offset_y(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make shadow calculation to use a larger or smaller rectangle as base. The value can be in pixels to make the area larger/smaller. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_spread(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -5722,6 +6897,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_spread(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get color of shadow. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -5752,6 +6934,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_color(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color of shadow. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_color_filtered(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -5782,6 +6971,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_color_filtered(const jerry_call_in
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of shadow. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_shadow_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -5812,6 +7008,13 @@ jerry_value_t sni_api_lv_obj_get_style_shadow_opa(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get opacity of an image. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_image_opa(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -5842,6 +7045,13 @@ jerry_value_t sni_api_lv_obj_get_style_image_opa(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get color to mix with the image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_image_recolor(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -5872,6 +7082,13 @@ jerry_value_t sni_api_lv_obj_get_style_image_recolor(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color to mix with the image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_image_recolor_filtered(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -5902,6 +7119,13 @@ jerry_value_t sni_api_lv_obj_get_style_image_recolor_filtered(const jerry_call_i
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get intensity of color mixing. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -5932,6 +7156,13 @@ jerry_value_t sni_api_lv_obj_get_style_image_recolor_opa(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get width of lines in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_width(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -5962,6 +7193,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_width(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get width of dashes in pixels. Note that dash works only on horizontal and vertical lines. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_dash_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -5992,6 +7230,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_dash_width(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get gap between dashes in pixels. Note that dash works only on horizontal and vertical lines. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_dash_gap(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -6022,6 +7267,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_dash_gap(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make end points of the lines rounded. true : rounded, false : perpendicular line ending. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_rounded(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -6052,6 +7304,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_rounded(const jerry_call_info_t *cal
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get color of lines. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -6082,6 +7341,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_color(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color of lines. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_color_filtered(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -6112,6 +7378,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_color_filtered(const jerry_call_info
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of lines. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_line_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -6142,6 +7415,13 @@ jerry_value_t sni_api_lv_obj_get_style_line_opa(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get width (thickness) of arcs in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -6172,6 +7452,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_width(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make end points of arcs rounded. true : rounded, false : perpendicular line ending. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_rounded(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -6202,6 +7489,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_rounded(const jerry_call_info_t *call
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get color of arc. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_color(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -6232,6 +7526,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_color(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get color of arc. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_color_filtered(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -6262,6 +7563,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_color_filtered(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of arcs. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_opa(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -6292,6 +7600,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_opa(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get an image from which arc will be masked out. It's useful to display complex effects on the arcs. Can be a pointer to lv_image_dsc_t or a path to a file. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_arc_image_src(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -6322,6 +7637,13 @@ jerry_value_t sni_api_lv_obj_get_style_arc_image_src(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Gets color of text. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -6352,6 +7674,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_color(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Gets color of text. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_color_filtered(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -6382,6 +7711,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_color_filtered(const jerry_call_info
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get opacity of text. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -6412,6 +7748,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_opa(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get letter space in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_letter_space(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -6442,6 +7785,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_letter_space(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get line space in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_line_space(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -6472,6 +7822,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_line_space(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get decoration for the text. Possible values are LV_TEXT_DECOR_NONE/UNDERLINE/STRIKETHROUGH . OR-ed values can be used as well. Default: LV_TEXT_DECOR_NONE , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_decor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -6502,6 +7859,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_decor(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get how to align the lines of the text. Note that it doesn't align the Widget itself, only the lines inside the Widget. Possible values are LV_TEXT_ALIGN_LEFT/CENTER/RIGHT/AUTO . LV_TEXT_ALIGN_AUTO detect the text base direction and uses left or right alignment accordingly. Default: LV_TEXT_ALIGN_AUTO , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_align(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -6532,6 +7896,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_align(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the color of letter outline stroke. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_color(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
                                                                  const jerry_length_t args_count)
@@ -6562,6 +7933,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_color(const jerry_cal
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Gets the color of letter outline stroke. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_color_filtered(const jerry_call_info_t *call_info_p,
                                                                           const jerry_value_t args_p[],
                                                                           const jerry_length_t args_count)
@@ -6592,6 +7970,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_color_filtered(const 
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get the letter outline stroke width in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_width(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
                                                                  const jerry_length_t args_count)
@@ -6622,6 +8007,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_width(const jerry_cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the opacity of the letter outline stroke. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_opa(const jerry_call_info_t *call_info_p,
                                                                const jerry_value_t args_p[],
                                                                const jerry_length_t args_count)
@@ -6652,6 +8044,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_outline_stroke_opa(const jerry_call_
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get the text leading trim mode. Removes empty space above and/or below text based on font metrics (cap-height, x-height, baseline). Similar to CSS text-box-trim . Possible values are LV_TEXT_LEADING_TRIM_NONE/CAPITAL_BASELINE/LOWER_BASELINE/CAPITAL/LOWER . Default: LV_TEXT_LEADING_TRIM_NONE , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_text_leading_trim(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -6682,6 +8081,13 @@ jerry_value_t sni_api_lv_obj_get_style_text_leading_trim(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the intensity of blurring. Applied on each lv_part separately before the children are rendered. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_blur_radius(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -6712,6 +8118,13 @@ jerry_value_t sni_api_lv_obj_get_style_blur_radius(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief If true the background of the widget will be blurred. The part should have less than 100% opacity to make it visible. If false the given part will be blurred when it's rendered but before drawing the children. Default: false , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_blur_backdrop(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -6742,6 +8155,13 @@ jerry_value_t sni_api_lv_obj_get_style_blur_backdrop(const jerry_call_info_t *ca
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Setting to LV_BLUR_QUALITY_SPEED the blurring algorithm will prefer speed over quality. LV_BLUR_QUALITY_PRECISION will force using higher quality but slower blur. With LV_BLUR_QUALITY_AUTO the quality will be selected automatically. Default: LV_BLUR_QUALITY_AUTO , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_blur_quality(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -6772,6 +8192,13 @@ jerry_value_t sni_api_lv_obj_get_style_blur_quality(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the intensity of blurring. Applied on each lv_part separately before the children are rendered. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_radius(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -6802,6 +8229,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_radius(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get an offset on the shadow in pixels in X direction. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -6832,6 +8266,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_offset_x(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get an offset on the shadow in pixels in Y direction. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -6862,6 +8303,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_offset_y(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the color of the shadow. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_color(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -6892,6 +8340,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_color(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get the color of the shadow. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_color_filtered(const jerry_call_info_t *call_info_p,
                                                                   const jerry_value_t args_p[],
                                                                   const jerry_length_t args_count)
@@ -6922,6 +8377,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_color_filtered(const jerry_ca
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Get the opacity of the shadow. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_opa(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -6952,6 +8414,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_opa(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Setting to LV_BLUR_QUALITY_SPEED the blurring algorithm will prefer speed over quality. LV_BLUR_QUALITY_PRECISION will force using higher quality but slower blur. With LV_BLUR_QUALITY_AUTO the quality will be selected automatically. Default: LV_BLUR_QUALITY_PRECISION , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_drop_shadow_quality(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -6982,6 +8451,13 @@ jerry_value_t sni_api_lv_obj_get_style_drop_shadow_quality(const jerry_call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get radius on every corner. The value is interpreted in pixels (>= 0) or LV_RADIUS_CIRCLE for max radius. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_radius(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -7012,6 +8488,13 @@ jerry_value_t sni_api_lv_obj_get_style_radius(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Move start point of object (e.g. scale tick) radially. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_radial_offset(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -7042,6 +8525,13 @@ jerry_value_t sni_api_lv_obj_get_style_radial_offset(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Enable clipping of content that overflows rounded corners of parent Widget. Can be true or false . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_clip_corner(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -7072,6 +8562,13 @@ jerry_value_t sni_api_lv_obj_get_style_clip_corner(const jerry_call_info_t *call
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Scale down all opacity values of the Widget by this factor. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_opa(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -7102,6 +8599,13 @@ jerry_value_t sni_api_lv_obj_get_style_opa(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief First draw Widget on the layer, then scale down layer opacity factor. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_opa_layered(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -7132,6 +8636,13 @@ jerry_value_t sni_api_lv_obj_get_style_opa_layered(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief The intensity of mixing of color filter. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_color_filter_opa(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -7162,6 +8673,13 @@ jerry_value_t sni_api_lv_obj_get_style_color_filter_opa(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Get a color to mix to the obj. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_recolor(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -7192,6 +8710,13 @@ jerry_value_t sni_api_lv_obj_get_style_recolor(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Gets the intensity of color mixing. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent. A value of 255, LV_OPA_100 or LV_OPA_COVER means fully opaque. Intermediate values like LV_OPA_10, LV_OPA_20, etc result in semi-transparency. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_recolor_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -7222,6 +8747,13 @@ jerry_value_t sni_api_lv_obj_get_style_recolor_opa(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Animation duration in milliseconds. Its meaning is widget specific. E.g. blink time of the cursor on the Text Area or scroll time of a roller. See Widgets' documentation to learn more. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_anim_duration(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -7252,6 +8784,13 @@ jerry_value_t sni_api_lv_obj_get_style_anim_duration(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Describes how to blend the colors to the background. Possible values are LV_BLEND_MODE_NORMAL/ADDITIVE/SUBTRACTIVE/MULTIPLY/DIFFERENCE . Default: LV_BLEND_MODE_NORMAL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_blend_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -7282,6 +8821,13 @@ jerry_value_t sni_api_lv_obj_get_style_blend_mode(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get layout of Widget. Children will be repositioned and resized according to policies set for the layout. For possible values see documentation of the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_layout(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -7312,6 +8858,13 @@ jerry_value_t sni_api_lv_obj_get_style_layout(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_UINT16);
 }
 
+/**
+ * @brief Get base direction of Widget. Possible values are LV_BIDI_DIR_LTR/RTL/AUTO . Default: LV_BASE_DIR_AUTO , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_base_dir(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -7342,6 +8895,13 @@ jerry_value_t sni_api_lv_obj_get_style_base_dir(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief If set, a layer will be created for the widget and the layer will be masked with this A8 bitmap mask. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_bitmap_mask_src(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -7372,6 +8932,13 @@ jerry_value_t sni_api_lv_obj_get_style_bitmap_mask_src(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Adjust sensitivity for rotary encoders in 1/256 unit. It means, 128: slow down the rotary to half, 512: speeds up to double, 256: no change. Default: 256 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_rotary_sensitivity(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -7402,6 +8969,13 @@ jerry_value_t sni_api_lv_obj_get_style_rotary_sensitivity(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Defines in which direction the flex layout should arrange the children. Default: LV_FLEX_FLOW_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_flex_flow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -7432,6 +9006,13 @@ jerry_value_t sni_api_lv_obj_get_style_flex_flow(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Defines how to align the children in the direction of flex flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_flex_main_place(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -7462,6 +9043,13 @@ jerry_value_t sni_api_lv_obj_get_style_flex_main_place(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Defines how to align the children perpendicular to the direction of flex flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_flex_cross_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -7492,6 +9080,13 @@ jerry_value_t sni_api_lv_obj_get_style_flex_cross_place(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Defines how to align the tracks of the flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_flex_track_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -7522,6 +9117,13 @@ jerry_value_t sni_api_lv_obj_get_style_flex_track_place(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Defines how much space to take proportionally from the free space of the Widget's track. Default: 0 , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_flex_grow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -7552,6 +9154,13 @@ jerry_value_t sni_api_lv_obj_get_style_flex_grow(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Defines how to distribute the columns. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_column_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -7582,6 +9191,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_column_align(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Defines how to distribute the rows. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_row_align(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -7612,6 +9228,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_row_align(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get column in which Widget should be placed. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_column_pos(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -7642,6 +9265,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_column_pos(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get how to align Widget horizontally. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_x_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -7672,6 +9302,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_x_align(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get how many columns Widget should span. Needs to be >= 1. Default: 1, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_column_span(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -7702,6 +9339,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_column_span(const jerry_call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get row in which Widget should be placed. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_row_pos(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -7732,6 +9376,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_row_pos(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get how to align Widget vertically. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_y_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -7762,6 +9413,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_y_align(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get how many rows Widget should span. Needs to be >= 1. Default: 1, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_style_grid_cell_row_span(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -7792,6 +9450,13 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_row_span(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Sets width of Widget. Pixel, percentage and LV_SIZE_CONTENT values can be used. Percentage values are relative to the width of the parent's content area. Default: Widget dependent, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_width(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -7829,6 +9494,13 @@ jerry_value_t sni_api_lv_obj_set_style_width(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets a minimal width. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_min_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -7866,6 +9538,13 @@ jerry_value_t sni_api_lv_obj_set_style_min_width(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets a maximal width. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: LV_COORD_MAX, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_max_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -7903,6 +9582,13 @@ jerry_value_t sni_api_lv_obj_set_style_max_width(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets height of Widget. Pixel, percentage and LV_SIZE_CONTENT can be used. Percentage values are relative to the height of the parent's content area. Default: Widget dependent, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_height(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -7940,6 +9626,13 @@ jerry_value_t sni_api_lv_obj_set_style_height(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets a minimal height. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_min_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -7977,6 +9670,13 @@ jerry_value_t sni_api_lv_obj_set_style_min_height(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets a maximal height. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: LV_COORD_MAX, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_max_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -8014,6 +9714,13 @@ jerry_value_t sni_api_lv_obj_set_style_max_height(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Its meaning depends on the type of Widget. For example in case of lv_scale it means the length of the ticks. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_length(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -8051,6 +9758,13 @@ jerry_value_t sni_api_lv_obj_set_style_length(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set X coordinate of Widget considering the align setting. Pixel and percentage values can be used. Percentage values are relative to the width of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_x(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -8088,6 +9802,13 @@ jerry_value_t sni_api_lv_obj_set_style_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set Y coordinate of Widget considering the align setting. Pixel and percentage values can be used. Percentage values are relative to the height of the parent's content area. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_y(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -8125,6 +9846,13 @@ jerry_value_t sni_api_lv_obj_set_style_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the alignment which tells from which point of the parent the X and Y coordinates should be interpreted. Possible values are: LV_ALIGN_DEFAULT , LV_ALIGN_TOP_LEFT/MID/RIGHT , LV_ALIGN_BOTTOM_LEFT/MID/RIGHT , LV_ALIGN_LEFT/RIGHT_MID , LV_ALIGN_CENTER . LV_ALIGN_DEFAULT means LV_ALIGN_TOP_LEFT with LTR base direction and LV_ALIGN_TOP_RIGHT with RTL base direction. Default: LV_ALIGN_DEFAULT , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_align(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -8162,6 +9890,13 @@ jerry_value_t sni_api_lv_obj_set_style_align(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Make Widget wider on both sides with this value. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's width. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -8199,6 +9934,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_width(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Make Widget higher on both sides with this value. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's height. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_height(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -8236,6 +9978,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_height(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Move Widget with this value in X direction. Applied after layouts, aligns and other positioning. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's width. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_translate_x(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -8273,6 +10022,13 @@ jerry_value_t sni_api_lv_obj_set_style_translate_x(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Move Widget with this value in Y direction. Applied after layouts, aligns and other positioning. Pixel and percentage (with lv_pct(x) ) values can be used. Percentage values are relative to Widget's height. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_translate_y(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -8310,6 +10066,13 @@ jerry_value_t sni_api_lv_obj_set_style_translate_y(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Move object around the centre of the parent object (e.g. around the circumference of a scale). Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_translate_radial(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -8347,6 +10110,13 @@ jerry_value_t sni_api_lv_obj_set_style_translate_radial(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Zoom Widget horizontally. The value 256 (or LV_SCALE_NONE ) means normal size, 128 half size, 512 double size, and so on. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -8384,6 +10154,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_scale_x(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Zoom Widget vertically. The value 256 (or LV_SCALE_NONE ) means normal size, 128 half size, 512 double size, and so on. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -8421,6 +10198,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_scale_y(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Rotate Widget. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_rotation(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -8458,6 +10242,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_rotation(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set pivot point's X coordinate for transformations. Relative to Widget's top left corner. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_pivot_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -8495,6 +10286,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_pivot_x(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set pivot point's Y coordinate for transformations. Relative to Widget's top left corner. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_pivot_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -8532,6 +10330,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_pivot_y(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Skew Widget horizontally. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_skew_x(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -8569,6 +10374,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_skew_x(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Skew Widget vertically. The value is interpreted in 0.1 degree units. E.g. 450 means 45 deg. Default: 0, inherited: No, layout: Yes, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_skew_y(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -8606,6 +10418,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_skew_y(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding on the top. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_top(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -8643,6 +10462,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_top(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding on the bottom. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_bottom(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -8680,6 +10506,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_bottom(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding on the left. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_left(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -8717,6 +10550,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_left(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding on the right. It makes the content area smaller in this direction. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_right(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -8754,6 +10594,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_right(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding between the rows. Used by the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_row(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -8791,6 +10638,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_row(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the padding between the columns. Used by the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_column(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -8828,6 +10682,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_column(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Pad text labels away from the scale ticks/remainder of the LV_PART_ . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_radial(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -8865,6 +10726,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_radial(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets margin on the top. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_top(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -8902,6 +10770,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_top(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets margin on the bottom. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_bottom(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -8939,6 +10814,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_bottom(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets margin on the left. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_left(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -8976,6 +10858,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_left(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets margin on the right. Widget will keep this space from its siblings in layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_right(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9013,6 +10902,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_right(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set background color of Widget. Default: 0xffffff , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_color(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -9049,6 +10945,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_color(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of the background. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_opa(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -9086,6 +10989,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_opa(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set gradient color of the background. Used only if grad_dir is not LV_GRAD_DIR_NONE . Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -9122,6 +11032,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_color(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Set direction of the gradient of the background. Possible values are LV_GRAD_DIR_NONE/HOR/VER . Default: LV_GRAD_DIR_NONE , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9159,6 +11076,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set point from which background color should start for gradients. 0 means to top/left side, 255 the bottom/right side, 128 the center, and so on. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_main_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9196,6 +11120,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_main_stop(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set point from which background's gradient color should start. 0 means to top/left side, 255 the bottom/right side, 128 the center, and so on. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9233,6 +11164,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of the first gradient color. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_main_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9270,6 +11208,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_main_opa(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of the second gradient color. Default: 255, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9307,6 +11252,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set gradient definition. The pointed instance must exist while Widget is alive. NULL to disable. It wraps BG_GRAD_COLOR , BG_GRAD_DIR , BG_MAIN_STOP and BG_GRAD_STOP into one descriptor and allows creating gradients with more colors as well. If it's set other gradient related properties will be ignored. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (object) Pointer to gradient descriptor May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -9347,6 +11299,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a background image. Can be a pointer to lv_image_dsc_t , a path to a file or an LV_SYMBOL_... . Default: NULL , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Pointer to image source May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_src(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9366,7 +11325,7 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_src(const jerry_call_info_t *cal
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -9387,6 +11346,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_src(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of the background image. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_opa(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9424,6 +11390,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_opa(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a color to mix to the background image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -9460,6 +11433,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Set intensity of background image recoloring. Value 0, LV_OPA_0 or LV_OPA_TRANSP means no mixing, 255, LV_OPA_100 or LV_OPA_COVER means full recoloring, other values or LV_OPA_10, LV_OPA_20, etc are interpreted proportionally. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -9497,6 +11477,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief If enabled the background image will be tiled. Possible values are true or false . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -9534,6 +11521,13 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color of the border. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_border_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9570,6 +11564,13 @@ jerry_value_t sni_api_lv_obj_set_style_border_color(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of the border. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_border_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -9607,6 +11608,13 @@ jerry_value_t sni_api_lv_obj_set_style_border_opa(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width of the border. Only pixel values can be used. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_border_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9644,6 +11652,13 @@ jerry_value_t sni_api_lv_obj_set_style_border_width(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set only which side(s) the border should be drawn. Possible values are LV_BORDER_SIDE_NONE/TOP/BOTTOM/LEFT/RIGHT/INTERNAL . OR-ed values can be used as well, e.g. LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_LEFT . Default: LV_BORDER_SIDE_FULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_border_side(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9681,6 +11696,13 @@ jerry_value_t sni_api_lv_obj_set_style_border_side(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets whether the border should be drawn before or after the children are drawn. true : after children, false : before children. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_border_post(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9718,6 +11740,13 @@ jerry_value_t sni_api_lv_obj_set_style_border_post(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width of outline in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_outline_width(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -9755,6 +11784,13 @@ jerry_value_t sni_api_lv_obj_set_style_outline_width(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color of outline. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_outline_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -9791,6 +11827,13 @@ jerry_value_t sni_api_lv_obj_set_style_outline_color(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of outline. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_outline_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9828,6 +11871,13 @@ jerry_value_t sni_api_lv_obj_set_style_outline_opa(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set padding of outline, i.e. the gap between Widget and the outline. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_outline_pad(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -9865,6 +11915,13 @@ jerry_value_t sni_api_lv_obj_set_style_outline_pad(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width of the shadow in pixels. The value should be >= 0. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -9902,6 +11959,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_width(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an offset on the shadow in pixels in X direction. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -9939,6 +12003,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an offset on the shadow in pixels in Y direction. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -9976,6 +12047,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Make shadow calculation to use a larger or smaller rectangle as base. The value can be in pixels to make the area larger/smaller. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_spread(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -10013,6 +12091,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_spread(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color of shadow. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -10049,6 +12134,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_color(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of shadow. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_shadow_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10086,6 +12178,13 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_opa(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of an image. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_image_opa(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -10123,6 +12222,13 @@ jerry_value_t sni_api_lv_obj_set_style_image_opa(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color to mix with the image. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_image_recolor(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -10159,6 +12265,13 @@ jerry_value_t sni_api_lv_obj_set_style_image_recolor(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Set intensity of color mixing. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -10196,6 +12309,13 @@ jerry_value_t sni_api_lv_obj_set_style_image_recolor_opa(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width of lines in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_width(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10233,6 +12353,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_width(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width of dashes in pixels. Note that dash works only on horizontal and vertical lines. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_dash_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -10270,6 +12397,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_dash_width(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Set gap between dashes in pixels. Note that dash works only on horizontal and vertical lines. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_dash_gap(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -10307,6 +12441,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_dash_gap(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Make end points of the lines rounded. true : rounded, false : perpendicular line ending. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_rounded(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -10344,6 +12485,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_rounded(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color of lines. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10380,6 +12528,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_color(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of lines. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_line_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -10417,6 +12572,13 @@ jerry_value_t sni_api_lv_obj_set_style_line_opa(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set width (thickness) of arcs in pixels. Default: 0, inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_arc_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -10454,6 +12616,13 @@ jerry_value_t sni_api_lv_obj_set_style_arc_width(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Make end points of arcs rounded. true : rounded, false : perpendicular line ending. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_arc_rounded(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -10491,6 +12660,13 @@ jerry_value_t sni_api_lv_obj_set_style_arc_rounded(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set color of arc. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_arc_color(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -10527,6 +12703,13 @@ jerry_value_t sni_api_lv_obj_set_style_arc_color(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of arcs. Default: LV_OPA_COVER , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_arc_opa(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -10564,6 +12747,13 @@ jerry_value_t sni_api_lv_obj_set_style_arc_opa(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an image from which arc will be masked out. It's useful to display complex effects on the arcs. Can be a pointer to lv_image_dsc_t or a path to a file. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Pointer to image source May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_arc_image_src(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -10583,7 +12773,7 @@ jerry_value_t sni_api_lv_obj_set_style_arc_image_src(const jerry_call_info_t *ca
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -10604,6 +12794,13 @@ jerry_value_t sni_api_lv_obj_set_style_arc_image_src(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets color of text. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10640,6 +12837,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_color(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set opacity of text. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -10677,6 +12881,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_opa(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set font of text (a pointer lv_font_t * ). Default: LV_FONT_DEFAULT , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (object) Pointer to font
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_font(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -10717,6 +12928,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_font(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set letter space in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_letter_space(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -10754,6 +12972,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_letter_space(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set line space in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_line_space(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -10791,6 +13016,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_line_space(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Set decoration for the text. Possible values are LV_TEXT_DECOR_NONE/UNDERLINE/STRIKETHROUGH . OR-ed values can be used as well. Default: LV_TEXT_DECOR_NONE , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_decor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10828,6 +13060,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_decor(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how to align the lines of the text. Note that it doesn't align the Widget itself, only the lines inside the Widget. Possible values are LV_TEXT_ALIGN_LEFT/CENTER/RIGHT/AUTO . LV_TEXT_ALIGN_AUTO detect the text base direction and uses left or right alignment accordingly. Default: LV_TEXT_ALIGN_AUTO , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_align(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -10865,6 +13104,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_align(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the color of letter outline stroke. Default: 0x000000 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_color(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
                                                                  const jerry_length_t args_count)
@@ -10901,6 +13147,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_color(const jerry_cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the letter outline stroke width in pixels. Default: 0, inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_width(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
                                                                  const jerry_length_t args_count)
@@ -10938,6 +13191,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_width(const jerry_cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the opacity of the letter outline stroke. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_opa(const jerry_call_info_t *call_info_p,
                                                                const jerry_value_t args_p[],
                                                                const jerry_length_t args_count)
@@ -10975,6 +13235,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_opa(const jerry_call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the text leading trim mode. Removes empty space above and/or below text based on font metrics (cap-height, x-height, baseline). Similar to CSS text-box-trim . Possible values are LV_TEXT_LEADING_TRIM_NONE/CAPITAL_BASELINE/LOWER_BASELINE/CAPITAL/LOWER . Default: LV_TEXT_LEADING_TRIM_NONE , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_text_leading_trim(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -11012,6 +13279,13 @@ jerry_value_t sni_api_lv_obj_set_style_text_leading_trim(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the intensity of blurring. Applied on each lv_part separately before the children are rendered. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_blur_radius(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -11049,6 +13323,13 @@ jerry_value_t sni_api_lv_obj_set_style_blur_radius(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief If true the background of the widget will be blurred. The part should have less than 100% opacity to make it visible. If false the given part will be blurred when it's rendered but before drawing the children. Default: false , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_blur_backdrop(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -11086,6 +13367,13 @@ jerry_value_t sni_api_lv_obj_set_style_blur_backdrop(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Setting to LV_BLUR_QUALITY_SPEED the blurring algorithm will prefer speed over quality. LV_BLUR_QUALITY_PRECISION will force using higher quality but slower blur. With LV_BLUR_QUALITY_AUTO the quality will be selected automatically. Default: LV_BLUR_QUALITY_AUTO , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_blur_quality(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -11123,6 +13411,13 @@ jerry_value_t sni_api_lv_obj_set_style_blur_quality(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the intensity of blurring. Applied on each lv_part separately before the children are rendered. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_radius(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -11160,6 +13455,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_radius(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an offset on the shadow in pixels in X direction. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -11197,6 +13499,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_x(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an offset on the shadow in pixels in Y direction. Default: 0 , inherited: No, layout: No, ext. draw: Yes.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -11234,6 +13543,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_y(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the color of the shadow. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_color(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -11270,6 +13586,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_color(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the opacity of the shadow. Default: 0 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_opa(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -11307,6 +13630,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_opa(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Setting to LV_BLUR_QUALITY_SPEED the blurring algorithm will prefer speed over quality. LV_BLUR_QUALITY_PRECISION will force using higher quality but slower blur. With LV_BLUR_QUALITY_AUTO the quality will be selected automatically. Default: LV_BLUR_QUALITY_PRECISION , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_quality(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -11344,6 +13674,13 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_quality(const jerry_call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set radius on every corner. The value is interpreted in pixels (>= 0) or LV_RADIUS_CIRCLE for max radius. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_radius(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -11381,6 +13718,13 @@ jerry_value_t sni_api_lv_obj_set_style_radius(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Move start point of object (e.g. scale tick) radially. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_radial_offset(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -11418,6 +13762,13 @@ jerry_value_t sni_api_lv_obj_set_style_radial_offset(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Enable clipping of content that overflows rounded corners of parent Widget. Can be true or false . Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (boolean) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_clip_corner(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -11455,6 +13806,13 @@ jerry_value_t sni_api_lv_obj_set_style_clip_corner(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Scale down all opacity values of the Widget by this factor. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_opa(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -11492,6 +13850,13 @@ jerry_value_t sni_api_lv_obj_set_style_opa(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief First draw Widget on the layer, then scale down layer opacity factor. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent, 255, LV_OPA_100 or LV_OPA_COVER means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency. Default: LV_OPA_COVER , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_opa_layered(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -11529,6 +13894,13 @@ jerry_value_t sni_api_lv_obj_set_style_opa_layered(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Mix a color with all colors of the Widget. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (object) Pointer to color-filter descriptor May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_color_filter_dsc(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -11569,6 +13941,13 @@ jerry_value_t sni_api_lv_obj_set_style_color_filter_dsc(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief The intensity of mixing of color filter. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_color_filter_opa(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -11606,6 +13985,13 @@ jerry_value_t sni_api_lv_obj_set_style_color_filter_opa(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a color to mix to the obj. Default: 0x000000 , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Color to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_recolor(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -11642,6 +14028,13 @@ jerry_value_t sni_api_lv_obj_set_style_recolor(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the intensity of color mixing. Value 0, LV_OPA_0 or LV_OPA_TRANSP means fully transparent. A value of 255, LV_OPA_100 or LV_OPA_COVER means fully opaque. Intermediate values like LV_OPA_10, LV_OPA_20, etc result in semi-transparency. Default: LV_OPA_TRANSP , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_recolor_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -11679,6 +14072,13 @@ jerry_value_t sni_api_lv_obj_set_style_recolor_opa(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Animation template for Widget's animation. Should be a pointer to lv_anim_t . The animation parameters are widget specific, e.g. animation time could be the E.g. blink time of the cursor on the Text Area or scroll time of a roller. See Widgets' documentation to learn more. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (object) Pointer to animation descriptor May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_anim(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -11719,6 +14119,13 @@ jerry_value_t sni_api_lv_obj_set_style_anim(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Animation duration in milliseconds. Its meaning is widget specific. E.g. blink time of the cursor on the Text Area or scroll time of a roller. See Widgets' documentation to learn more. Default: 0, inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_anim_duration(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -11756,6 +14163,13 @@ jerry_value_t sni_api_lv_obj_set_style_anim_duration(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief An initialized lv_style_transition_dsc_t to describe a transition. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (object) Pointer to transition descriptor May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transition(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -11796,6 +14210,13 @@ jerry_value_t sni_api_lv_obj_set_style_transition(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Describes how to blend the colors to the background. Possible values are LV_BLEND_MODE_NORMAL/ADDITIVE/SUBTRACTIVE/MULTIPLY/DIFFERENCE . Default: LV_BLEND_MODE_NORMAL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_blend_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -11833,6 +14254,13 @@ jerry_value_t sni_api_lv_obj_set_style_blend_mode(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set layout of Widget. Children will be repositioned and resized according to policies set for the layout. For possible values see documentation of the layouts. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_layout(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -11870,6 +14298,13 @@ jerry_value_t sni_api_lv_obj_set_style_layout(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set base direction of Widget. Possible values are LV_BIDI_DIR_LTR/RTL/AUTO . Default: LV_BASE_DIR_AUTO , inherited: Yes, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_base_dir(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -11907,6 +14342,13 @@ jerry_value_t sni_api_lv_obj_set_style_base_dir(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief If set, a layer will be created for the widget and the layer will be masked with this A8 bitmap mask. Default: NULL , inherited: No, layout: No, ext. draw: No.
+ *
+ * @param value (number) Pointer to A8 bitmap mask May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -11926,7 +14368,7 @@ jerry_value_t sni_api_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t *
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -11947,6 +14389,13 @@ jerry_value_t sni_api_lv_obj_set_style_bitmap_mask_src(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Adjust sensitivity for rotary encoders in 1/256 unit. It means, 128: slow down the rotary to half, 512: speeds up to double, 256: no change. Default: 256 , inherited: Yes, layout: No, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_rotary_sensitivity(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -11984,6 +14433,13 @@ jerry_value_t sni_api_lv_obj_set_style_rotary_sensitivity(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines in which direction the flex layout should arrange the children. Default: LV_FLEX_FLOW_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_flex_flow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -12021,6 +14477,13 @@ jerry_value_t sni_api_lv_obj_set_style_flex_flow(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how to align the children in the direction of flex flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_flex_main_place(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -12058,6 +14521,13 @@ jerry_value_t sni_api_lv_obj_set_style_flex_main_place(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how to align the children perpendicular to the direction of flex flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_flex_cross_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -12095,6 +14565,13 @@ jerry_value_t sni_api_lv_obj_set_style_flex_cross_place(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how to align the tracks of the flow. Default: LV_FLEX_ALIGN_NONE , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_flex_track_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -12132,6 +14609,13 @@ jerry_value_t sni_api_lv_obj_set_style_flex_track_place(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how much space to take proportionally from the free space of the Widget's track. Default: 0 , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_flex_grow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -12169,6 +14653,13 @@ jerry_value_t sni_api_lv_obj_set_style_flex_grow(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief An array to describe the columns of the grid. Should be LV_GRID_TEMPLATE_LAST terminated. Default: NULL , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (object) Pointer to grid-column descriptor array May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_column_dsc_array(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -12209,6 +14700,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_column_dsc_array(const jerry_call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how to distribute the columns. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_column_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -12246,6 +14744,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_column_align(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief An array to describe the rows of the grid. Should be LV_GRID_TEMPLATE_LAST terminated. Default: NULL , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (object) Pointer to grid-row descriptor array May be NULL .
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_row_dsc_array(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -12286,6 +14791,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_row_dsc_array(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Defines how to distribute the rows. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_row_align(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -12323,6 +14835,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_row_align(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Set column in which Widget should be placed. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_pos(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -12360,6 +14879,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_pos(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how to align Widget horizontally. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_x_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -12397,6 +14923,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_x_align(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how many columns Widget should span. Needs to be >= 1. Default: 1, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_span(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -12434,6 +14967,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_span(const jerry_call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set row in which Widget should be placed. Default: 0, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -12471,6 +15011,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how to align Widget vertically. Default: LV_GRID_ALIGN_START , inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_y_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -12508,6 +15055,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_y_align(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how many rows Widget should span. Needs to be >= 1. Default: 1, inherited: No, layout: Yes, ext. draw: No.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_span(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -12545,6 +15099,13 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_span(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets padding on all four sides at once by calling lv_obj_set_style_pad_top() , lv_obj_set_style_pad_bottom() , lv_obj_set_style_pad_left() and lv_obj_set_style_pad_right() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_all(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -12582,6 +15143,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_all(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets horizontal padding by calling lv_obj_set_style_pad_left() and lv_obj_set_style_pad_right() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_hor(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -12619,6 +15187,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_hor(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets vertical padding by calling lv_obj_set_style_pad_top() and lv_obj_set_style_pad_bottom() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_ver(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -12656,6 +15231,13 @@ jerry_value_t sni_api_lv_obj_set_style_pad_ver(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets margin on all four sides at once by calling lv_obj_set_style_margin_top() , lv_obj_set_style_margin_bottom() , lv_obj_set_style_margin_left() and lv_obj_set_style_margin_right() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_all(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -12693,6 +15275,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_all(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets horizontal margin by calling lv_obj_set_style_margin_left() and lv_obj_set_style_margin_right() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_hor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -12730,6 +15319,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_hor(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets vertical margin by calling lv_obj_set_style_margin_top() and lv_obj_set_style_margin_bottom() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_margin_ver(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -12767,6 +15363,13 @@ jerry_value_t sni_api_lv_obj_set_style_margin_ver(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the gap between the children in both directions by calling lv_obj_set_style_pad_row() and lv_obj_set_style_pad_column() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_pad_gap(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -12804,6 +15407,15 @@ jerry_value_t sni_api_lv_obj_set_style_pad_gap(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets size of Widget by calling lv_obj_set_style_width() and lv_obj_set_style_height() .
+ *
+ * @param width (number) Width value to submit
+ *
+ * @param height (number) Height value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_size(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -12848,6 +15460,13 @@ jerry_value_t sni_api_lv_obj_set_style_size(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the zoom factor of Widget in both directions by calling lv_obj_set_style_transform_scale_x() and lv_obj_set_style_transform_scale_y() with the same value.
+ *
+ * @param value (number) Value to submit
+ *
+ * @param selector (number) A joint type for lv_part_t and lv_state_t . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
+ */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -12885,6 +15504,13 @@ jerry_value_t sni_api_lv_obj_set_style_transform_scale(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Gets the space taken on the left side, i.e. the sum of pad_left and the border width. It tells how far the content area starts from the left edge of Widget's bounding box.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) Space on the left in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_style_space_left(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -12915,6 +15541,13 @@ jerry_value_t sni_api_lv_obj_get_style_space_left(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the space taken on the right side, i.e. the sum of pad_right and the border width. It tells how far the content area ends from the right edge of Widget's bounding box.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) Space on the right in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_style_space_right(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -12945,6 +15578,13 @@ jerry_value_t sni_api_lv_obj_get_style_space_right(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the space taken on the top side, i.e. the sum of pad_top and the border width. It tells how far the content area starts from the top edge of Widget's bounding box.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) Space on the top in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_style_space_top(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -12975,6 +15615,13 @@ jerry_value_t sni_api_lv_obj_get_style_space_top(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the space taken on the bottom side, i.e. the sum of pad_bottom and the border width. It tells how far the content area ends from the bottom edge of Widget's bounding box.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) Space on the bottom in pixels
+ */
 jerry_value_t sni_api_lv_obj_get_style_space_bottom(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -13005,6 +15652,15 @@ jerry_value_t sni_api_lv_obj_get_style_space_bottom(const jerry_call_info_t *cal
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the text alignment which should be really used. Compared to lv_obj_get_style_text_align() it resolves LV_TEXT_ALIGN_AUTO by considering the base direction of Widget and the text itself.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @param txt (string) The text to align. Its first strong character determines the direction if the base direction is LV_BASE_DIR_AUTO .
+ *
+ * @return (number) The resolved alignment: LV_TEXT_ALIGN_LEFT/CENTER/RIGHT (never LV_TEXT_ALIGN_AUTO )
+ */
 jerry_value_t sni_api_lv_obj_calculate_style_text_align(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -13047,6 +15703,13 @@ jerry_value_t sni_api_lv_obj_calculate_style_text_align(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the horizontal zoom factor of Widget in a way which is safe to divide or multiply by. Same as lv_obj_get_style_transform_scale_x() except that 0 is replaced by 1 to avoid division by zero.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) The horizontal scale factor, never 0 . 256 ( LV_SCALE_NONE ) means normal size.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_scale_x_safe(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -13077,6 +15740,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_scale_x_safe(const jerry_call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Gets the vertical zoom factor of Widget in a way which is safe to divide or multiply by. Same as lv_obj_get_style_transform_scale_y() except that 0 is replaced by 1 to avoid division by zero.
+ *
+ * @param part (number) One of the LV_PART_... enum values
+ *
+ * @return (number) The vertical scale factor, never 0 . 256 ( LV_SCALE_NONE ) means normal size.
+ */
 jerry_value_t sni_api_lv_obj_get_style_transform_scale_y_safe(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -13107,6 +15777,13 @@ jerry_value_t sni_api_lv_obj_get_style_transform_scale_y_safe(const jerry_call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the opa style property from all parents and multiply and >> 8 them.
+ *
+ * @param part (number) the part whose opacity should be get. Non-MAIN parts will consider the opa of the MAIN part too
+ *
+ * @return (number) the final opacity considering the parents' opacity too
+ */
 jerry_value_t sni_api_lv_obj_get_style_opa_recursive(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -13137,6 +15814,15 @@ jerry_value_t sni_api_lv_obj_get_style_opa_recursive(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_UINT8);
 }
 
+/**
+ * @brief Apply recolor effect to the input color based on the object's style properties.
+ *
+ * @param part (number) the part to retrieve recolor styles.
+ *
+ * @param color (object) the original color to be modified
+ *
+ * @return (object) the blended color after applying recolor and opacity
+ */
 jerry_value_t sni_api_lv_obj_style_apply_recolor(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -13177,6 +15863,13 @@ jerry_value_t sni_api_lv_obj_style_apply_recolor(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_V_LV_COLOR32);
 }
 
+/**
+ * @brief Get the recolor style property from all parents and blend them recursively.
+ *
+ * @param part (number) the target part to check. Non-MAIN parts will also consider the recolor value from the MAIN part during calculation
+ *
+ * @return (object) the final blended recolor value combining all parent's recolor values
+ */
 jerry_value_t sni_api_lv_obj_get_style_recolor_recursive(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -13207,6 +15900,11 @@ jerry_value_t sni_api_lv_obj_get_style_recolor_recursive(const jerry_call_info_t
     return sni_tb_c2js(&result, SNI_V_LV_COLOR32);
 }
 
+/**
+ * @brief Set a custom extra draw area (around the widget) to draw shadow, outline, or children etc.
+ *
+ * @param size (number) the extra size to allow around the object
+ */
 jerry_value_t sni_api_lv_obj_set_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -13237,6 +15935,13 @@ jerry_value_t sni_api_lv_obj_set_ext_draw_size(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the required extra size (around the object's part) to draw shadow, outline, value etc.
+ *
+ * @param part (number) part of the object
+ *
+ * @return (number) the extra size required around the object
+ */
 jerry_value_t sni_api_lv_obj_calculate_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -13267,6 +15972,9 @@ jerry_value_t sni_api_lv_obj_calculate_ext_draw_size(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Send a 'LV_EVENT_REFR_EXT_DRAW_SIZE' Call the ancestor's event handler to the object to refresh the value of the extended draw size. The result will be saved in obj .
+ */
 jerry_value_t sni_api_lv_obj_refresh_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -13290,6 +15998,9 @@ jerry_value_t sni_api_lv_obj_refresh_ext_draw_size(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_class_init_obj.
+ */
 jerry_value_t sni_api_lv_obj_class_init_obj(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -13313,6 +16024,11 @@ jerry_value_t sni_api_lv_obj_class_init_obj(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_is_editable.
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_is_editable(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -13336,6 +16052,11 @@ jerry_value_t sni_api_lv_obj_is_editable(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_is_group_def.
+ *
+ * @return (boolean) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_is_group_def(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -13359,6 +16080,11 @@ jerry_value_t sni_api_lv_obj_is_group_def(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_get_event_count.
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_obj_get_event_count(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -13382,6 +16108,11 @@ jerry_value_t sni_api_lv_obj_get_event_count(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Create a base object (a rectangle)
+ *
+ * @return (object) pointer to the new object
+ */
 jerry_value_t sni_api_lv_obj_create(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -13405,6 +16136,11 @@ jerry_value_t sni_api_lv_obj_create(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Set one or more flags Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj, true) .
+ *
+ * @param f (number) OR-ed values from lv_obj_flag_t to set.
+ */
 jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -13435,6 +16171,11 @@ jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Remove one or more flags Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj, false) .
+ *
+ * @param f (number) OR-ed values from lv_obj_flag_t to clear.
+ */
 jerry_value_t sni_api_lv_obj_remove_flag(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -13465,6 +16206,13 @@ jerry_value_t sni_api_lv_obj_remove_flag(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set add or remove one or more flags. Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj, en) .
+ *
+ * @param f (number) OR-ed values from lv_obj_flag_t to update.
+ *
+ * @param v (boolean) true: add the flags; false: remove the flags
+ */
 jerry_value_t sni_api_lv_obj_set_flag(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -13502,6 +16250,11 @@ jerry_value_t sni_api_lv_obj_set_flag(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object hidden. (Like it wasn't there at all)
+ *
+ * @param en (boolean) enable or disable the hidden property
+ */
 jerry_value_t sni_api_lv_obj_set_hidden(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -13532,6 +16285,11 @@ jerry_value_t sni_api_lv_obj_set_hidden(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object clickable by the input devices
+ *
+ * @param en (boolean) enable or disable the clickable property
+ */
 jerry_value_t sni_api_lv_obj_set_clickable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -13562,6 +16320,11 @@ jerry_value_t sni_api_lv_obj_set_clickable(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add focused state to the object when clicked
+ *
+ * @param en (boolean) enable or disable the click focusable property
+ */
 jerry_value_t sni_api_lv_obj_set_click_focusable(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -13592,6 +16355,11 @@ jerry_value_t sni_api_lv_obj_set_click_focusable(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Toggle checked state when the object is clicked
+ *
+ * @param en (boolean) enable or disable the checkable property
+ */
 jerry_value_t sni_api_lv_obj_set_checkable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -13622,6 +16390,11 @@ jerry_value_t sni_api_lv_obj_set_checkable(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object scrollable
+ *
+ * @param en (boolean) enable or disable the scrollable property
+ */
 jerry_value_t sni_api_lv_obj_set_scrollable(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -13652,6 +16425,11 @@ jerry_value_t sni_api_lv_obj_set_scrollable(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow scrolling inside but with slower speed
+ *
+ * @param en (boolean) enable or disable the scroll elastic property
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_elastic(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -13682,6 +16460,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_elastic(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object scroll further when "thrown"
+ *
+ * @param en (boolean) enable or disable the scroll momentum property
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_momentum(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -13712,6 +16495,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_momentum(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow scrolling only one snappable child
+ *
+ * @param en (boolean) enable or disable the scroll one property
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_one(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -13742,6 +16530,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_one(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow propagating the scrolling in any directions to a parent
+ *
+ * @param en (boolean) enable or disable scroll chaining
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_chain(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -13772,6 +16565,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow propagating the horizontal scroll to a parent
+ *
+ * @param en (boolean) enable or disable horizontal scroll chaining
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_chain_hor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -13802,6 +16600,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain_hor(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow propagating the vertical scroll to a parent
+ *
+ * @param en (boolean) enable or disable vertical scroll chaining
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_chain_ver(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -13832,6 +16635,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain_ver(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Automatically scroll object to make it visible when focused
+ *
+ * @param en (boolean) enable or disable scroll on focus
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_on_focus(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -13862,6 +16670,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_on_focus(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow scrolling the focused object with arrow keys
+ *
+ * @param en (boolean) enable or disable scroll with arrow keys
+ */
 jerry_value_t sni_api_lv_obj_set_scroll_with_arrow(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -13892,6 +16705,11 @@ jerry_value_t sni_api_lv_obj_set_scroll_with_arrow(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow snapping to this object if scroll snap is enabled on the parent
+ *
+ * @param en (boolean) enable or disable the snappable property
+ */
 jerry_value_t sni_api_lv_obj_set_snappable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -13922,6 +16740,11 @@ jerry_value_t sni_api_lv_obj_set_snappable(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Keep the object pressed even if the press slid from the object
+ *
+ * @param en (boolean) enable or disable the press lock property
+ */
 jerry_value_t sni_api_lv_obj_set_press_lock(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -13952,6 +16775,11 @@ jerry_value_t sni_api_lv_obj_set_press_lock(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the events to the parent too
+ *
+ * @param en (boolean) enable or disable event bubbling
+ */
 jerry_value_t sni_api_lv_obj_set_event_bubble(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -13982,6 +16810,11 @@ jerry_value_t sni_api_lv_obj_set_event_bubble(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the gestures to the parent
+ *
+ * @param en (boolean) enable or disable gesture bubbling
+ */
 jerry_value_t sni_api_lv_obj_set_gesture_bubble(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -14012,6 +16845,11 @@ jerry_value_t sni_api_lv_obj_set_gesture_bubble(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow performing more accurate hit test
+ *
+ * @param en (boolean) enable or disable advanced hit testing
+ */
 jerry_value_t sni_api_lv_obj_set_adv_hittest(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -14042,6 +16880,11 @@ jerry_value_t sni_api_lv_obj_set_adv_hittest(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object not positioned by layouts
+ *
+ * @param en (boolean) enable or disable ignoring layout
+ */
 jerry_value_t sni_api_lv_obj_set_ignore_layout(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -14072,6 +16915,11 @@ jerry_value_t sni_api_lv_obj_set_ignore_layout(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Do not scroll the object when the parent scrolls and ignore layout
+ *
+ * @param en (boolean) enable or disable floating mode
+ */
 jerry_value_t sni_api_lv_obj_set_floating(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14102,6 +16950,11 @@ jerry_value_t sni_api_lv_obj_set_floating(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Send LV_EVENT_DRAW_TASK_ADDED events
+ *
+ * @param en (boolean) enable or disable draw task events
+ */
 jerry_value_t sni_api_lv_obj_set_send_draw_task_events(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -14132,6 +16985,11 @@ jerry_value_t sni_api_lv_obj_set_send_draw_task_events(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Do not clip the children to the parent's extended draw size
+ *
+ * @param en (boolean) enable or disable overflow visibility
+ */
 jerry_value_t sni_api_lv_obj_set_overflow_visible(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -14162,6 +17020,11 @@ jerry_value_t sni_api_lv_obj_set_overflow_visible(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the events to the children too
+ *
+ * @param en (boolean) enable or disable event trickling
+ */
 jerry_value_t sni_api_lv_obj_set_event_trickle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -14192,6 +17055,11 @@ jerry_value_t sni_api_lv_obj_set_event_trickle(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the states to the children too
+ *
+ * @param en (boolean) enable or disable state trickling
+ */
 jerry_value_t sni_api_lv_obj_set_state_trickle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -14222,6 +17090,11 @@ jerry_value_t sni_api_lv_obj_set_state_trickle(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow only one RADIO_BUTTON sibling to be checked
+ *
+ * @param en (boolean) enable or disable radio button behavior
+ */
 jerry_value_t sni_api_lv_obj_set_radio_button(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -14252,6 +17125,11 @@ jerry_value_t sni_api_lv_obj_set_radio_button(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Start a new flex track on this item
+ *
+ * @param en (boolean) enable or disable new flex track
+ */
 jerry_value_t sni_api_lv_obj_set_flex_in_new_track(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -14282,6 +17160,11 @@ jerry_value_t sni_api_lv_obj_set_flex_in_new_track(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Add one or more states to the object. The other state bits will remain unchanged. If specified in the styles, transition animation will be started from the previous state to the current.
+ *
+ * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
+ */
 jerry_value_t sni_api_lv_obj_add_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -14312,6 +17195,11 @@ jerry_value_t sni_api_lv_obj_add_state(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Remove one or more states to the object. The other state bits will remain unchanged. If specified in the styles, transition animation will be started from the previous state to the current.
+ *
+ * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
+ */
 jerry_value_t sni_api_lv_obj_remove_state(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14342,6 +17230,13 @@ jerry_value_t sni_api_lv_obj_remove_state(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove one or more states to the object. The other state bits will remain unchanged.
+ *
+ * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
+ *
+ * @param v (boolean) true: add the states; false: remove the states
+ */
 jerry_value_t sni_api_lv_obj_set_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -14379,6 +17274,11 @@ jerry_value_t sni_api_lv_obj_set_state(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_ALT . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_alt(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -14409,6 +17309,11 @@ jerry_value_t sni_api_lv_obj_set_alt(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_CHECKED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_checked(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -14439,6 +17344,11 @@ jerry_value_t sni_api_lv_obj_set_checked(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_FOCUSED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_focused(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -14469,6 +17379,11 @@ jerry_value_t sni_api_lv_obj_set_focused(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_FOCUS_KEY . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_focus_key(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -14499,6 +17414,11 @@ jerry_value_t sni_api_lv_obj_set_focus_key(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_EDITED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_edited(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -14529,6 +17449,11 @@ jerry_value_t sni_api_lv_obj_set_edited(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_HOVERED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_hovered(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -14559,6 +17484,11 @@ jerry_value_t sni_api_lv_obj_set_hovered(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_PRESSED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_pressed(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -14589,6 +17519,11 @@ jerry_value_t sni_api_lv_obj_set_pressed(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_SCROLLED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_scrolled(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14619,6 +17554,11 @@ jerry_value_t sni_api_lv_obj_set_scrolled(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_DISABLED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_disabled(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14649,6 +17589,11 @@ jerry_value_t sni_api_lv_obj_set_disabled(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_1 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_state_user_1(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -14679,6 +17624,11 @@ jerry_value_t sni_api_lv_obj_set_state_user_1(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_2 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_state_user_2(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -14709,6 +17659,11 @@ jerry_value_t sni_api_lv_obj_set_state_user_2(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_3 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_state_user_3(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -14739,6 +17694,11 @@ jerry_value_t sni_api_lv_obj_set_state_user_3(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_4 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_lv_obj_set_state_user_4(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -14769,6 +17729,13 @@ jerry_value_t sni_api_lv_obj_set_state_user_4(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set one of the 4 flags available for the user
+ *
+ * @param bit (number) the index of the bit (0..3)
+ *
+ * @param v (boolean) the value of the bit, true or false
+ */
 jerry_value_t sni_api_lv_obj_set_user_flag(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -14806,6 +17773,13 @@ jerry_value_t sni_api_lv_obj_set_user_flag(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Check if a given flag or all the given flags are set on an object. Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_is_hidden(obj) .
+ *
+ * @param f (number) the flag(s) to check (OR-ed values can be used)
+ *
+ * @return (boolean) true: all flags are set; false: not all flags are set
+ */
 jerry_value_t sni_api_lv_obj_has_flag(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -14836,6 +17810,13 @@ jerry_value_t sni_api_lv_obj_has_flag(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Check if a given flag or any of the flags are set on an object. Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj) .
+ *
+ * @param f (number) the flag(s) to check (OR-ed values can be used)
+ *
+ * @return (boolean) true: at least one flag is set; false: none of the flags are set
+ */
 jerry_value_t sni_api_lv_obj_has_flag_any(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14866,6 +17847,11 @@ jerry_value_t sni_api_lv_obj_has_flag_any(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is hidden
+ *
+ * @return (boolean) true if the object is hidden, false otherwise
+ */
 jerry_value_t sni_api_lv_obj_is_hidden(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -14889,6 +17875,11 @@ jerry_value_t sni_api_lv_obj_is_hidden(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is clickable by input devices
+ *
+ * @return (boolean) true if the object is clickable
+ */
 jerry_value_t sni_api_lv_obj_is_clickable(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14912,6 +17903,11 @@ jerry_value_t sni_api_lv_obj_is_clickable(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object gets focused when clicked
+ *
+ * @return (boolean) true if click focusable is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_click_focusable(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -14935,6 +17931,11 @@ jerry_value_t sni_api_lv_obj_is_click_focusable(const jerry_call_info_t *call_in
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object toggles checked state when clicked
+ *
+ * @return (boolean) true if the object is checkable
+ */
 jerry_value_t sni_api_lv_obj_is_checkable(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -14958,6 +17959,11 @@ jerry_value_t sni_api_lv_obj_is_checkable(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is scrollable
+ *
+ * @return (boolean) true if the object is scrollable
+ */
 jerry_value_t sni_api_lv_obj_is_scrollable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -14981,6 +17987,11 @@ jerry_value_t sni_api_lv_obj_is_scrollable(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether elastic scrolling is enabled
+ *
+ * @return (boolean) true if scroll elastic is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_elastic(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -15004,6 +18015,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_elastic(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether scroll momentum is enabled
+ *
+ * @return (boolean) true if scroll momentum is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_momentum(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -15027,6 +18043,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_momentum(const jerry_call_info_t *call_in
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether only one snappable child can be scrolled
+ *
+ * @return (boolean) true if scroll one is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_one(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -15050,6 +18071,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_one(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether horizontal scroll chaining is enabled
+ *
+ * @return (boolean) true if horizontal scroll chaining is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_chain_hor(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -15073,6 +18099,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_chain_hor(const jerry_call_info_t *call_i
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether vertical scroll chaining is enabled
+ *
+ * @return (boolean) true if vertical scroll chaining is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_chain_ver(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -15096,6 +18127,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_chain_ver(const jerry_call_info_t *call_i
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object auto-scrolls into view when focused
+ *
+ * @return (boolean) true if scroll on focus is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_on_focus(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -15119,6 +18155,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_on_focus(const jerry_call_info_t *call_in
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the focused object can be scrolled with arrow keys
+ *
+ * @return (boolean) true if scroll with arrow keys is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_scroll_with_arrow(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -15142,6 +18183,11 @@ jerry_value_t sni_api_lv_obj_is_scroll_with_arrow(const jerry_call_info_t *call_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is snappable by a scrolling parent
+ *
+ * @return (boolean) true if the object is snappable
+ */
 jerry_value_t sni_api_lv_obj_is_snappable(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -15165,6 +18211,11 @@ jerry_value_t sni_api_lv_obj_is_snappable(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether press lock is enabled
+ *
+ * @return (boolean) true if press lock is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_press_lock(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -15188,6 +18239,11 @@ jerry_value_t sni_api_lv_obj_is_press_lock(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether events bubble to the parent
+ *
+ * @return (boolean) true if event bubbling is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_event_bubble(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15211,6 +18267,11 @@ jerry_value_t sni_api_lv_obj_is_event_bubble(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether gestures bubble to the parent
+ *
+ * @return (boolean) true if gesture bubbling is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_gesture_bubble(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -15234,6 +18295,11 @@ jerry_value_t sni_api_lv_obj_is_gesture_bubble(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether advanced hit testing is enabled
+ *
+ * @return (boolean) true if advanced hit testing is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_adv_hittest(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -15257,6 +18323,11 @@ jerry_value_t sni_api_lv_obj_is_adv_hittest(const jerry_call_info_t *call_info_p
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object ignores layout positioning
+ *
+ * @return (boolean) true if ignore layout is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_ignore_layout(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -15280,6 +18351,11 @@ jerry_value_t sni_api_lv_obj_is_ignore_layout(const jerry_call_info_t *call_info
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is floating
+ *
+ * @return (boolean) true if floating mode is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_floating(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -15303,6 +18379,11 @@ jerry_value_t sni_api_lv_obj_is_floating(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether draw task events are sent
+ *
+ * @return (boolean) true if draw task events are enabled
+ */
 jerry_value_t sni_api_lv_obj_is_send_draw_task_events(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -15326,6 +18407,11 @@ jerry_value_t sni_api_lv_obj_is_send_draw_task_events(const jerry_call_info_t *c
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether overflow is visible outside the parent
+ *
+ * @return (boolean) true if overflow is visible
+ */
 jerry_value_t sni_api_lv_obj_is_overflow_visible(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -15349,6 +18435,11 @@ jerry_value_t sni_api_lv_obj_is_overflow_visible(const jerry_call_info_t *call_i
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether events trickle to the children
+ *
+ * @return (boolean) true if event trickling is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_event_trickle(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -15372,6 +18463,11 @@ jerry_value_t sni_api_lv_obj_is_event_trickle(const jerry_call_info_t *call_info
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether states trickle to the children
+ *
+ * @return (boolean) true if state trickling is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_state_trickle(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -15395,6 +18491,11 @@ jerry_value_t sni_api_lv_obj_is_state_trickle(const jerry_call_info_t *call_info
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is a radio button
+ *
+ * @return (boolean) true if radio button behavior is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_radio_button(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15418,6 +18519,11 @@ jerry_value_t sni_api_lv_obj_is_radio_button(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the widget should be placed in a new flex track
+ *
+ * @return (boolean) true if flex in new track is enabled
+ */
 jerry_value_t sni_api_lv_obj_is_flex_in_new_track(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -15441,6 +18547,11 @@ jerry_value_t sni_api_lv_obj_is_flex_in_new_track(const jerry_call_info_t *call_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the state of an object
+ *
+ * @return (number) the state (OR-ed values from lv_state_t )
+ */
 jerry_value_t sni_api_lv_obj_get_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -15464,6 +18575,13 @@ jerry_value_t sni_api_lv_obj_get_state(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT16);
 }
 
+/**
+ * @brief Check if the object is in a given state or not.
+ *
+ * @param state (number) a state or combination of states to check
+ *
+ * @return (boolean) true: obj is in state ; false: obj is not in state
+ */
 jerry_value_t sni_api_lv_obj_has_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -15494,6 +18612,11 @@ jerry_value_t sni_api_lv_obj_has_state(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_ALT
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_alt(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -15517,6 +18640,11 @@ jerry_value_t sni_api_lv_obj_is_alt(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_CHECKED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_checked(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -15540,6 +18668,11 @@ jerry_value_t sni_api_lv_obj_is_checked(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_FOCUSED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_focused(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -15563,6 +18696,11 @@ jerry_value_t sni_api_lv_obj_is_focused(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_FOCUS_KEY
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_focus_key(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -15586,6 +18724,11 @@ jerry_value_t sni_api_lv_obj_is_focus_key(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_EDITED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_edited(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -15609,6 +18752,11 @@ jerry_value_t sni_api_lv_obj_is_edited(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_HOVERED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_hovered(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -15632,6 +18780,11 @@ jerry_value_t sni_api_lv_obj_is_hovered(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_PRESSED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_pressed(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -15655,6 +18808,11 @@ jerry_value_t sni_api_lv_obj_is_pressed(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_SCROLLED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_scrolled(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -15678,6 +18836,11 @@ jerry_value_t sni_api_lv_obj_is_scrolled(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_DISABLED
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_disabled(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -15701,6 +18864,11 @@ jerry_value_t sni_api_lv_obj_is_disabled(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_USER_1
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_state_user_1(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15724,6 +18892,11 @@ jerry_value_t sni_api_lv_obj_is_state_user_1(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_USER_2
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_state_user_2(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15747,6 +18920,11 @@ jerry_value_t sni_api_lv_obj_is_state_user_2(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_USER_3
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_state_user_3(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15770,6 +18948,11 @@ jerry_value_t sni_api_lv_obj_is_state_user_3(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get whether the object is in LV_STATE_USER_4
+ *
+ * @return (boolean) true if the state is set
+ */
 jerry_value_t sni_api_lv_obj_is_state_user_4(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -15793,6 +18976,13 @@ jerry_value_t sni_api_lv_obj_is_state_user_4(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the value of one of the 4 flags available for the user
+ *
+ * @param bit (number) the index of the bit (0..3)
+ *
+ * @return (boolean) the value of the bit, true or false
+ */
 jerry_value_t sni_api_lv_obj_get_user_flag(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -15823,6 +19013,13 @@ jerry_value_t sni_api_lv_obj_get_user_flag(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Check the type of obj.
+ *
+ * @param class_p (object) a class to check (e.g. lv_slider_class )
+ *
+ * @return (boolean) true: class_p is the obj class.
+ */
 jerry_value_t sni_api_lv_obj_check_type(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -15856,6 +19053,13 @@ jerry_value_t sni_api_lv_obj_check_type(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Check if any object has a given class (type). It checks the ancestor classes too.
+ *
+ * @param class_p (object) a class to check (e.g. lv_slider_class )
+ *
+ * @return (boolean) true: obj has the given class
+ */
 jerry_value_t sni_api_lv_obj_has_class(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -15889,6 +19093,11 @@ jerry_value_t sni_api_lv_obj_has_class(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Walk up obj 's parent chain to its root and check whether that root is present in some lv_display_t 's screen list. For any properly-created live object this returns true: the public API does not allow creating a screen without registering it on a display, nor detaching a subtree from its display. The function is therefore primarily a defensive check — it returns false for NULL, and (best-effort) for stale/corrupted pointers whose memory no longer reads back as a chain terminating at a registered screen. It is not a reliable use-after-free detector: freed memory may still satisfy the check by coincidence.
+ *
+ * @return (boolean) true if the root of obj 's parent chain is a registered screen
+ */
 jerry_value_t sni_api_lv_obj_is_in_widget_tree(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -15912,6 +19121,9 @@ jerry_value_t sni_api_lv_obj_is_in_widget_tree(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Utility to set an object reference to NULL when it gets deleted. The reference should be in a location that will not become invalid during the object's lifetime, i.e. static or allocated.
+ */
 jerry_value_t sni_api_lv_obj_null_on_delete(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -15935,6 +19147,19 @@ jerry_value_t sni_api_lv_obj_null_on_delete(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Add an event handler to a widget that will load a screen on a trigger.
+ *
+ * @param trigger (number) an event code, e.g. LV_EVENT_CLICKED
+ *
+ * @param screen (object) the screen to load (must be a valid widget)
+ *
+ * @param anim_type (number) element of lv_screen_load_anim_t the screen load animation
+ *
+ * @param duration (number) duration of the animation in milliseconds
+ *
+ * @param delay (number) delay before the screen load in milliseconds
+ */
 jerry_value_t sni_api_lv_obj_add_screen_load_event(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -15996,6 +19221,11 @@ jerry_value_t sni_api_lv_obj_add_screen_load_event(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Remove Observers associated with Widget obj from specified subject or all Subjects.
+ *
+ * @param subject (object) Subject to remove Widget from. May be NULL . When NULL the Widget is removed from all Subjects.
+ */
 jerry_value_t sni_api_lv_obj_remove_from_subject(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -16029,6 +19259,13 @@ jerry_value_t sni_api_lv_obj_remove_from_subject(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Toggle the value of an integer subject on an event. If it was != 0 it will be 0. If it was 0, it will be 1.
+ *
+ * @param subject (object) pointer to a subject to toggle
+ *
+ * @param trigger (number) the trigger on which the subject should be changed
+ */
 jerry_value_t sni_api_lv_obj_add_subject_toggle_event(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -16069,6 +19306,15 @@ jerry_value_t sni_api_lv_obj_add_subject_toggle_event(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the value of an integer subject.
+ *
+ * @param subject (object) pointer to a subject to change
+ *
+ * @param trigger (number) the trigger on which the subject should be changed
+ *
+ * @param value (number) the value to set
+ */
 jerry_value_t sni_api_lv_obj_add_subject_set_int_event(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -16116,6 +19362,15 @@ jerry_value_t sni_api_lv_obj_add_subject_set_int_event(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the value of a float subject.
+ *
+ * @param subject (object) pointer to a subject to change
+ *
+ * @param trigger (number) the trigger on which the subject should be changed
+ *
+ * @param value (number) the value to set
+ */
 jerry_value_t sni_api_lv_obj_add_subject_set_float_event(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -16166,6 +19421,15 @@ jerry_value_t sni_api_lv_obj_add_subject_set_float_event(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the value of a string subject.
+ *
+ * @param subject (object) pointer to a subject to change
+ *
+ * @param trigger (number) the trigger on which the subject should be changed
+ *
+ * @param value (string) the value to set
+ */
 jerry_value_t sni_api_lv_obj_add_subject_set_string_event(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -16218,6 +19482,9 @@ jerry_value_t sni_api_lv_obj_add_subject_set_string_event(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Move the object to the foreground. It will look like if it was created as the last child of its parent. It also means it can cover any of the siblings.
+ */
 jerry_value_t sni_api_lv_obj_move_foreground(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16241,6 +19508,9 @@ jerry_value_t sni_api_lv_obj_move_foreground(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Move the object to the background. It will look like if it was created as the first child of its parent. It also means any of the siblings can cover the object.
+ */
 jerry_value_t sni_api_lv_obj_move_background(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16264,6 +19534,11 @@ jerry_value_t sni_api_lv_obj_move_background(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow performing more accurate hit test
+ *
+ * @param en (boolean) enable or disable advanced hit testing
+ */
 jerry_value_t sni_api_prop_set_obj_adv_hittest(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -16294,6 +19569,11 @@ jerry_value_t sni_api_prop_set_obj_adv_hittest(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Change the alignment of an object.
+ *
+ * @param align (number) type of alignment (see ' lv_align_t ' enum) LV_ALIGN_OUT_... can't be used.
+ */
 jerry_value_t sni_api_prop_set_obj_align(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -16324,6 +19604,11 @@ jerry_value_t sni_api_prop_set_obj_align(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_ALT . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_alt(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -16354,6 +19639,11 @@ jerry_value_t sni_api_prop_set_obj_alt(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Toggle checked state when the object is clicked
+ *
+ * @param en (boolean) enable or disable the checkable property
+ */
 jerry_value_t sni_api_prop_set_obj_checkable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16384,6 +19674,11 @@ jerry_value_t sni_api_prop_set_obj_checkable(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_CHECKED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_checked(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -16414,6 +19709,11 @@ jerry_value_t sni_api_prop_set_obj_checked(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the number of children
+ *
+ * @return (number) the number of children
+ */
 jerry_value_t sni_api_prop_get_obj_child_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -16438,6 +19738,11 @@ jerry_value_t sni_api_prop_get_obj_child_count(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Add focused state to the object when clicked
+ *
+ * @param en (boolean) enable or disable the click focusable property
+ */
 jerry_value_t sni_api_prop_set_obj_click_focusable(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -16468,6 +19773,11 @@ jerry_value_t sni_api_prop_set_obj_click_focusable(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object clickable by the input devices
+ *
+ * @param en (boolean) enable or disable the clickable property
+ */
 jerry_value_t sni_api_prop_set_obj_clickable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16498,6 +19808,11 @@ jerry_value_t sni_api_prop_set_obj_clickable(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the height reduced by the top and bottom padding and the border width.
+ *
+ * @return (number) the height which still fits into the parent without causing overflow (making the parent scrollable)
+ */
 jerry_value_t sni_api_prop_get_obj_content_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -16522,6 +19837,11 @@ jerry_value_t sni_api_prop_get_obj_content_height(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the height reduced by the top and bottom padding and the border width.
+ *
+ * @param h (number) the height without paddings in pixels
+ */
 jerry_value_t sni_api_prop_set_obj_content_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -16552,6 +19872,11 @@ jerry_value_t sni_api_prop_set_obj_content_height(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the width reduced by the left and right padding and the border width.
+ *
+ * @return (number) the width which still fits into its parent without causing overflow (making the parent scrollable)
+ */
 jerry_value_t sni_api_prop_get_obj_content_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -16576,6 +19901,11 @@ jerry_value_t sni_api_prop_get_obj_content_width(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the width reduced by the left and right padding and the border width.
+ *
+ * @param w (number) the width without paddings in pixels
+ */
 jerry_value_t sni_api_prop_set_obj_content_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -16606,6 +19936,11 @@ jerry_value_t sni_api_prop_set_obj_content_width(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_DISABLED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_disabled(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -16636,6 +19971,11 @@ jerry_value_t sni_api_prop_set_obj_disabled(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_EDITED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_edited(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -16666,6 +20006,11 @@ jerry_value_t sni_api_prop_set_obj_edited(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the events to the parent too
+ *
+ * @param en (boolean) enable or disable event bubbling
+ */
 jerry_value_t sni_api_prop_set_obj_event_bubble(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -16696,6 +20041,11 @@ jerry_value_t sni_api_prop_set_obj_event_bubble(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_obj_get_event_count.
+ *
+ * @return (number) JavaScript return value.
+ */
 jerry_value_t sni_api_prop_get_obj_event_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -16720,6 +20070,11 @@ jerry_value_t sni_api_prop_get_obj_event_count(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Propagate the events to the children too
+ *
+ * @param en (boolean) enable or disable event trickling
+ */
 jerry_value_t sni_api_prop_set_obj_event_trickle(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -16750,6 +20105,11 @@ jerry_value_t sni_api_prop_set_obj_event_trickle(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the size of an extended clickable area
+ *
+ * @param size (number) extended clickable area in all 4 directions [px]
+ */
 jerry_value_t sni_api_prop_set_obj_ext_click_area(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -16780,6 +20140,11 @@ jerry_value_t sni_api_prop_set_obj_ext_click_area(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a custom extra draw area (around the widget) to draw shadow, outline, or children etc.
+ *
+ * @param size (number) the extra size to allow around the object
+ */
 jerry_value_t sni_api_prop_set_obj_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -16810,6 +20175,11 @@ jerry_value_t sni_api_prop_set_obj_ext_draw_size(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set how the item should flow
+ *
+ * @param flow (number) an element of lv_flex_flow_t .
+ */
 jerry_value_t sni_api_prop_set_obj_flex_flow(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16840,6 +20210,11 @@ jerry_value_t sni_api_prop_set_obj_flex_flow(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Sets the width or height (on main axis) to grow the object in order fill the free space
+ *
+ * @param grow (number) a value to set how much free space to take proportionally to other growing items.
+ */
 jerry_value_t sni_api_prop_set_obj_flex_grow(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16870,6 +20245,11 @@ jerry_value_t sni_api_prop_set_obj_flex_grow(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Start a new flex track on this item
+ *
+ * @param en (boolean) enable or disable new flex track
+ */
 jerry_value_t sni_api_prop_set_obj_flex_in_new_track(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -16900,6 +20280,11 @@ jerry_value_t sni_api_prop_set_obj_flex_in_new_track(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Do not scroll the object when the parent scrolls and ignore layout
+ *
+ * @param en (boolean) enable or disable floating mode
+ */
 jerry_value_t sni_api_prop_set_obj_floating(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -16930,6 +20315,11 @@ jerry_value_t sni_api_prop_set_obj_floating(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_FOCUS_KEY . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_focus_key(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -16960,6 +20350,11 @@ jerry_value_t sni_api_prop_set_obj_focus_key(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_FOCUSED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_focused(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -16990,6 +20385,11 @@ jerry_value_t sni_api_prop_set_obj_focused(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Propagate the gestures to the parent
+ *
+ * @param en (boolean) enable or disable gesture bubbling
+ */
 jerry_value_t sni_api_prop_set_obj_gesture_bubble(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -17020,6 +20420,11 @@ jerry_value_t sni_api_prop_set_obj_gesture_bubble(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the height of an object
+ *
+ * @return (number) the height in pixels
+ */
 jerry_value_t sni_api_prop_get_obj_height(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17044,6 +20449,11 @@ jerry_value_t sni_api_prop_get_obj_height(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the height of an object
+ *
+ * @param h (number) the new height
+ */
 jerry_value_t sni_api_prop_set_obj_height(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17074,6 +20484,11 @@ jerry_value_t sni_api_prop_set_obj_height(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object hidden. (Like it wasn't there at all)
+ *
+ * @param en (boolean) enable or disable the hidden property
+ */
 jerry_value_t sni_api_prop_set_obj_hidden(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17104,6 +20519,11 @@ jerry_value_t sni_api_prop_set_obj_hidden(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_HOVERED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_hovered(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -17134,6 +20554,11 @@ jerry_value_t sni_api_prop_set_obj_hovered(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the object not positioned by layouts
+ *
+ * @param en (boolean) enable or disable ignoring layout
+ */
 jerry_value_t sni_api_prop_set_obj_ignore_layout(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17164,6 +20589,11 @@ jerry_value_t sni_api_prop_set_obj_ignore_layout(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of a child.
+ *
+ * @return (number) the child index of the object. E.g. 0: the oldest (firstly created child). (-1 if child could not be found or no parent exists)
+ */
 jerry_value_t sni_api_prop_get_obj_index(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -17188,6 +20618,11 @@ jerry_value_t sni_api_prop_get_obj_index(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set a layout for an object
+ *
+ * @param layout (number) pointer to a layout descriptor to set
+ */
 jerry_value_t sni_api_prop_set_obj_layout(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17218,6 +20653,11 @@ jerry_value_t sni_api_prop_set_obj_layout(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Do not clip the children to the parent's extended draw size
+ *
+ * @param en (boolean) enable or disable overflow visibility
+ */
 jerry_value_t sni_api_prop_set_obj_overflow_visible(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -17248,6 +20688,11 @@ jerry_value_t sni_api_prop_set_obj_overflow_visible(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the parent of an object
+ *
+ * @return (object) the parent of the object. (NULL if obj was a screen)
+ */
 jerry_value_t sni_api_prop_get_obj_parent(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17272,6 +20717,11 @@ jerry_value_t sni_api_prop_get_obj_parent(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Keep the object pressed even if the press slid from the object
+ *
+ * @param en (boolean) enable or disable the press lock property
+ */
 jerry_value_t sni_api_prop_set_obj_press_lock(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17302,6 +20752,11 @@ jerry_value_t sni_api_prop_set_obj_press_lock(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_PRESSED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_pressed(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -17332,6 +20787,11 @@ jerry_value_t sni_api_prop_set_obj_pressed(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow only one RADIO_BUTTON sibling to be checked
+ *
+ * @param en (boolean) enable or disable radio button behavior
+ */
 jerry_value_t sni_api_prop_set_obj_radio_button(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -17362,6 +20822,11 @@ jerry_value_t sni_api_prop_set_obj_radio_button(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the screen of an object
+ *
+ * @return (object) pointer to the object's screen
+ */
 jerry_value_t sni_api_prop_get_obj_screen(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -17386,6 +20851,11 @@ jerry_value_t sni_api_prop_get_obj_screen(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled up before its bottom edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged above its normal bottom-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled up before its bottom edge appears
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_bottom(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17410,6 +20880,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_bottom(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Allow propagating the scrolling in any directions to a parent
+ *
+ * @param en (boolean) enable or disable scroll chaining
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_chain(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -17440,6 +20915,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_chain(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow propagating the horizontal scroll to a parent
+ *
+ * @param en (boolean) enable or disable horizontal scroll chaining
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_chain_hor(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -17470,6 +20950,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_chain_hor(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow propagating the vertical scroll to a parent
+ *
+ * @param en (boolean) enable or disable vertical scroll chaining
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_chain_ver(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -17500,6 +20985,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_chain_ver(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Get directions Widget can be scrolled (set with lv_obj_set_scroll_dir() )
+ *
+ * @return (number) current scroll direction bit(s)
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_dir(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17524,6 +21014,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_dir(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set direction Widget can be scrolled
+ *
+ * @param dir (number) one or more bit-wise OR-ed values of lv_dir_t enumeration
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_dir(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17554,6 +21049,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_dir(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow scrolling inside but with slower speed
+ *
+ * @param en (boolean) enable or disable the scroll elastic property
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_elastic(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -17584,6 +21084,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_elastic(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled right before its left edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged farther right than its normal left-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled right before its left edge appears
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_left(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -17608,6 +21113,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_left(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make the object scroll further when "thrown"
+ *
+ * @param en (boolean) enable or disable the scroll momentum property
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_momentum(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -17638,6 +21148,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_momentum(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Automatically scroll object to make it visible when focused
+ *
+ * @param en (boolean) enable or disable scroll on focus
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_on_focus(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -17668,6 +21183,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_on_focus(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow scrolling only one snappable child
+ *
+ * @param en (boolean) enable or disable the scroll one property
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_one(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17698,6 +21218,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_one(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled left before its right edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged farther left than its normal right-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled left before its right edge appears
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_right(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -17722,6 +21247,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_right(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get where to snap child Widgets when horizontal scrolling ends.
+ *
+ * @return (number) current snap value from lv_scroll_snap_t
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17746,6 +21276,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_snap_x(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set where to snap the children when scrolling ends horizontally
+ *
+ * @param align (number) value from lv_scroll_snap_t enumeration
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17776,6 +21311,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_snap_x(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get where to snap child Widgets when vertical scrolling ends.
+ *
+ * @return (number) current snap value from lv_scroll_snap_t
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17800,6 +21340,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_snap_y(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set where to snap the children when scrolling ends vertically
+ *
+ * @param align (number) value from lv_scroll_snap_t enumeration
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -17830,6 +21375,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_snap_y(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Number of pixels a scrollable container Widget can be scrolled down before its top edge appears. When LV_OBJ_FLAG_SCROLL_ELASTIC flag is set in Widget, this value can go negative while Widget is being dragged below its normal top-edge boundary.
+ *
+ * @return (number) pixels Widget can be scrolled down before its top edge appears
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_top(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17854,6 +21404,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_top(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Allow scrolling the focused object with arrow keys
+ *
+ * @param en (boolean) enable or disable scroll with arrow keys
+ */
 jerry_value_t sni_api_prop_set_obj_scroll_with_arrow(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -17884,6 +21439,11 @@ jerry_value_t sni_api_prop_set_obj_scroll_with_arrow(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Get current X scroll position. Identical to lv_obj_get_scroll_left() .
+ *
+ * @return (number) current scroll position from left edge If Widget is not scrolled return 0. If scrolled return > 0. If scrolled inside (elastic scroll) return < 0.
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_x(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -17908,6 +21468,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_x(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get current Y scroll position. Identical to lv_obj_get_scroll_top() .
+ *
+ * @return (number) current scroll position from top edge If Widget is not scrolled return 0. If scrolled return > 0. If scrolled inside (elastic scroll) return < 0.
+ */
 jerry_value_t sni_api_prop_get_obj_scroll_y(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -17932,6 +21497,11 @@ jerry_value_t sni_api_prop_get_obj_scroll_y(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Make the object scrollable
+ *
+ * @param en (boolean) enable or disable the scrollable property
+ */
 jerry_value_t sni_api_prop_set_obj_scrollable(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -17962,6 +21532,11 @@ jerry_value_t sni_api_prop_set_obj_scrollable(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the current scroll mode (when to hide the scrollbars)
+ *
+ * @return (number) the current scroll mode from lv_scrollbar_mode_t
+ */
 jerry_value_t sni_api_prop_get_obj_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -17986,6 +21561,11 @@ jerry_value_t sni_api_prop_get_obj_scrollbar_mode(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set how the scrollbars should behave.
+ *
+ * @param mode (number) LV_SCROLL_MODE_ON/OFF/AUTO/ACTIVE
+ */
 jerry_value_t sni_api_prop_set_obj_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -18016,6 +21596,11 @@ jerry_value_t sni_api_prop_set_obj_scrollbar_mode(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_SCROLLED . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_scrolled(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -18046,6 +21631,11 @@ jerry_value_t sni_api_prop_set_obj_scrolled(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the height occupied by the "parts" of the widget. E.g. the height of all rows of a table.
+ *
+ * @return (number) the width of the virtually drawn content
+ */
 jerry_value_t sni_api_prop_get_obj_self_height(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -18070,6 +21660,11 @@ jerry_value_t sni_api_prop_get_obj_self_height(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width occupied by the "parts" of the widget. E.g. the width of all columns of a table.
+ *
+ * @return (number) the width of the virtually drawn content
+ */
 jerry_value_t sni_api_prop_get_obj_self_width(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -18094,6 +21689,11 @@ jerry_value_t sni_api_prop_get_obj_self_width(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Send LV_EVENT_DRAW_TASK_ADDED events
+ *
+ * @param en (boolean) enable or disable draw task events
+ */
 jerry_value_t sni_api_prop_set_obj_send_draw_task_events(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -18124,6 +21724,11 @@ jerry_value_t sni_api_prop_set_obj_send_draw_task_events(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Allow snapping to this object if scroll snap is enabled on the parent
+ *
+ * @param en (boolean) enable or disable the snappable property
+ */
 jerry_value_t sni_api_prop_set_obj_snappable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18154,6 +21759,11 @@ jerry_value_t sni_api_prop_set_obj_snappable(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the state of an object
+ *
+ * @return (number) the state (OR-ed values from lv_state_t )
+ */
 jerry_value_t sni_api_prop_get_obj_state(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -18178,6 +21788,11 @@ jerry_value_t sni_api_prop_get_obj_state(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT16);
 }
 
+/**
+ * @brief Propagate the states to the children too
+ *
+ * @param en (boolean) enable or disable state trickling
+ */
 jerry_value_t sni_api_prop_set_obj_state_trickle(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -18208,6 +21823,11 @@ jerry_value_t sni_api_prop_set_obj_state_trickle(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_1 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_state_user_1(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -18238,6 +21858,11 @@ jerry_value_t sni_api_prop_set_obj_state_user_1(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_2 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_state_user_2(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -18268,6 +21893,11 @@ jerry_value_t sni_api_prop_set_obj_state_user_2(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_3 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_state_user_3(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -18298,6 +21928,11 @@ jerry_value_t sni_api_prop_set_obj_state_user_3(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Add or remove LV_STATE_USER_4 . The other states remain unchanged.
+ *
+ * @param en (boolean) true: add the state; false: remove the state
+ */
 jerry_value_t sni_api_prop_set_obj_state_user_4(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -18328,6 +21963,11 @@ jerry_value_t sni_api_prop_set_obj_state_user_4(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the style height actually used by the object after clamping the height within the min max range.
+ *
+ * @return (number) the min/max/normal height set by lv_obj_set_style_<min/max>_height()
+ */
 jerry_value_t sni_api_prop_get_obj_style_clamped_height(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -18352,6 +21992,11 @@ jerry_value_t sni_api_prop_get_obj_style_clamped_height(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the style width actually used by the object after clamping the width within the min max range.
+ *
+ * @return (number) the min/max/normal width set by lv_obj_set_style_<min/max>_width()
+ */
 jerry_value_t sni_api_prop_get_obj_style_clamped_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -18376,6 +22021,11 @@ jerry_value_t sni_api_prop_get_obj_style_clamped_width(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width of an object
+ *
+ * @return (number) the width in pixels
+ */
 jerry_value_t sni_api_prop_get_obj_width(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -18400,6 +22050,11 @@ jerry_value_t sni_api_prop_get_obj_width(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the width of an object
+ *
+ * @param w (number) the new width
+ */
 jerry_value_t sni_api_prop_set_obj_width(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -18430,6 +22085,11 @@ jerry_value_t sni_api_prop_set_obj_width(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the x coordinate of object.
+ *
+ * @return (number) distance of obj from the left side of its parent plus the parent's left padding
+ */
 jerry_value_t sni_api_prop_get_obj_x(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -18454,6 +22114,11 @@ jerry_value_t sni_api_prop_get_obj_x(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the x coordinate of an object
+ *
+ * @param x (number) new x coordinate
+ */
 jerry_value_t sni_api_prop_set_obj_x(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -18484,6 +22149,11 @@ jerry_value_t sni_api_prop_set_obj_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the x2 coordinate of object.
+ *
+ * @return (number) distance of obj from the right side of its parent plus the parent's right padding
+ */
 jerry_value_t sni_api_prop_get_obj_x2(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -18508,6 +22178,11 @@ jerry_value_t sni_api_prop_get_obj_x2(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the actually set x coordinate of object, i.e. the offset from the set alignment
+ *
+ * @return (number) the set x coordinate
+ */
 jerry_value_t sni_api_prop_get_obj_x_aligned(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18532,6 +22207,11 @@ jerry_value_t sni_api_prop_get_obj_x_aligned(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the y coordinate of object.
+ *
+ * @return (number) distance of obj from the top side of its parent plus the parent's top padding
+ */
 jerry_value_t sni_api_prop_get_obj_y(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -18556,6 +22236,11 @@ jerry_value_t sni_api_prop_get_obj_y(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the y coordinate of an object
+ *
+ * @param y (number) new y coordinate
+ */
 jerry_value_t sni_api_prop_set_obj_y(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -18586,6 +22271,11 @@ jerry_value_t sni_api_prop_set_obj_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the y2 coordinate of object.
+ *
+ * @return (number) distance of obj from the bottom side of its parent plus the parent's bottom padding
+ */
 jerry_value_t sni_api_prop_get_obj_y2(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -18610,6 +22300,11 @@ jerry_value_t sni_api_prop_get_obj_y2(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the actually set y coordinate of object, i.e. the offset from the set alignment
+ *
+ * @return (number) the set y coordinate
+ */
 jerry_value_t sni_api_prop_get_obj_y_aligned(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18634,6 +22329,13 @@ jerry_value_t sni_api_prop_get_obj_y_aligned(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Create a button object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created button
+ */
 jerry_value_t sni_api_ctor_button(const jerry_call_info_t *call_info_p,
                                   const jerry_value_t args_p[],
                                   const jerry_length_t args_count)
@@ -18662,6 +22364,13 @@ jerry_value_t sni_api_ctor_button(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a label object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created button
+ */
 jerry_value_t sni_api_ctor_label(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],
                                  const jerry_length_t args_count)
@@ -18690,6 +22399,11 @@ jerry_value_t sni_api_ctor_label(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a new text for a label. Memory will be allocated to store the text by the label.
+ *
+ * @param text (string) '\0' terminated character string. May be NULL . When NULL the label is refreshed with its current text.
+ */
 jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -18725,6 +22439,11 @@ jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the behavior of the label with text longer than the object size
+ *
+ * @param long_mode (number) the new mode from 'lv_label_long_mode' enum. In LV_LONG_WRAP/DOT/SCROLL/SCROLL_CIRC the size of the label should be set AFTER this function
+ */
 jerry_value_t sni_api_lv_label_set_long_mode(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18755,6 +22474,11 @@ jerry_value_t sni_api_lv_label_set_long_mode(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the maximum number of lines that the label should display in LV_LABEL_LONG_MODE_WRAP and LV_LABEL_LONG_MODE_DOTS mode.
+ *
+ * @param lines (number) number of lines to display (unlimited if not positive)
+ */
 jerry_value_t sni_api_lv_label_set_max_lines(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18785,6 +22509,11 @@ jerry_value_t sni_api_lv_label_set_max_lines(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set where text selection should start
+ *
+ * @param index (number) character index from where selection should start. LV_LABEL_TEXT_SELECTION_OFF for no selection
+ */
 jerry_value_t sni_api_lv_label_set_text_selection_start(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -18815,6 +22544,11 @@ jerry_value_t sni_api_lv_label_set_text_selection_start(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Set where text selection should end
+ *
+ * @param index (number) character index where selection should end. LV_LABEL_TEXT_SELECTION_OFF for no selection
+ */
 jerry_value_t sni_api_lv_label_set_text_selection_end(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -18845,6 +22579,11 @@ jerry_value_t sni_api_lv_label_set_text_selection_end(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
+ */
 jerry_value_t sni_api_lv_label_set_recolor(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -18875,6 +22614,11 @@ jerry_value_t sni_api_lv_label_set_recolor(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the text of a label
+ *
+ * @return (string) the text of the label
+ */
 jerry_value_t sni_api_lv_label_get_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -18898,6 +22642,11 @@ jerry_value_t sni_api_lv_label_get_text(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get the long mode of a label
+ *
+ * @return (number) the current long mode
+ */
 jerry_value_t sni_api_lv_label_get_long_mode(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18921,6 +22670,11 @@ jerry_value_t sni_api_lv_label_get_long_mode(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the maximum number of lines that a label should display
+ *
+ * @return (number) the maximum number of lines, if positive
+ */
 jerry_value_t sni_api_lv_label_get_max_lines(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -18944,6 +22698,13 @@ jerry_value_t sni_api_lv_label_get_max_lines(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the relative x and y coordinates of a letter
+ *
+ * @param char_id (number) index of the character [0 ... text length - 1]. Expressed in character index, not byte index (different in UTF-8)
+ *
+ * @param pos (object) store the result here (E.g. index = 0 gives 0;0 coordinates if the text if aligned to the left)
+ */
 jerry_value_t sni_api_lv_label_get_letter_pos(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -18980,6 +22741,15 @@ jerry_value_t sni_api_lv_label_get_letter_pos(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of letter on a relative point of a label.
+ *
+ * @param pos_in (object) pointer to point with coordinates on a the label
+ *
+ * @param bidi (boolean) whether to use bidi processed
+ *
+ * @return (number) The index of the letter on the 'pos_p' point (E.g. on 0;0 is the 0. letter if aligned to the left) Expressed in character index and not byte index (different in UTF-8)
+ */
 jerry_value_t sni_api_lv_label_get_letter_on(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19016,6 +22786,13 @@ jerry_value_t sni_api_lv_label_get_letter_on(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Check if a character is drawn under a point.
+ *
+ * @param pos (object) Point to check for character under
+ *
+ * @return (boolean) whether a character is drawn under the point
+ */
 jerry_value_t sni_api_lv_label_is_char_under_pos(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -19053,6 +22830,11 @@ jerry_value_t sni_api_lv_label_is_char_under_pos(const jerry_call_info_t *call_i
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the selection start index.
+ *
+ * @return (number) selection start index. LV_LABEL_TEXT_SELECTION_OFF if nothing is selected.
+ */
 jerry_value_t sni_api_lv_label_get_text_selection_start(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -19076,6 +22858,11 @@ jerry_value_t sni_api_lv_label_get_text_selection_start(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the selection end index.
+ *
+ * @return (number) selection end index. LV_LABEL_TXT_SEL_OFF if nothing is selected.
+ */
 jerry_value_t sni_api_lv_label_get_text_selection_end(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -19099,6 +22886,11 @@ jerry_value_t sni_api_lv_label_get_text_selection_end(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the recoloring attribute.
+ *
+ * @return (boolean) true: recoloring is enabled, false: recoloring is disabled
+ */
 jerry_value_t sni_api_lv_label_get_recolor(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -19122,6 +22914,13 @@ jerry_value_t sni_api_lv_label_get_recolor(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Insert a text to a label. The label text cannot be static.
+ *
+ * @param pos (number) character index to insert. Expressed in character index and not byte index. 0: before first char. LV_LABEL_POS_LAST: after last char.
+ *
+ * @param txt (string) pointer to the text to insert
+ */
 jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -19164,6 +22963,13 @@ jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Delete characters from a label. The label text cannot be static.
+ *
+ * @param pos (number) character index from where to cut. Expressed in character index and not byte index. 0: start in front of the first character
+ *
+ * @param cnt (number) number of characters to cut
+ */
 jerry_value_t sni_api_lv_label_cut_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -19201,6 +23007,11 @@ jerry_value_t sni_api_lv_label_cut_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the long mode of a label
+ *
+ * @return (number) the current long mode
+ */
 jerry_value_t sni_api_prop_get_label_long_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19225,6 +23036,11 @@ jerry_value_t sni_api_prop_get_label_long_mode(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the behavior of the label with text longer than the object size
+ *
+ * @param long_mode (number) the new mode from 'lv_label_long_mode' enum. In LV_LONG_WRAP/DOT/SCROLL/SCROLL_CIRC the size of the label should be set AFTER this function
+ */
 jerry_value_t sni_api_prop_set_label_long_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19255,6 +23071,11 @@ jerry_value_t sni_api_prop_set_label_long_mode(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the maximum number of lines that a label should display
+ *
+ * @return (number) the maximum number of lines, if positive
+ */
 jerry_value_t sni_api_prop_get_label_max_lines(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19279,6 +23100,11 @@ jerry_value_t sni_api_prop_get_label_max_lines(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the maximum number of lines that the label should display in LV_LABEL_LONG_MODE_WRAP and LV_LABEL_LONG_MODE_DOTS mode.
+ *
+ * @param lines (number) number of lines to display (unlimited if not positive)
+ */
 jerry_value_t sni_api_prop_set_label_max_lines(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19309,6 +23135,11 @@ jerry_value_t sni_api_prop_set_label_max_lines(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the recoloring attribute.
+ *
+ * @return (boolean) true: recoloring is enabled, false: recoloring is disabled
+ */
 jerry_value_t sni_api_prop_get_label_recolor(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19333,6 +23164,11 @@ jerry_value_t sni_api_prop_get_label_recolor(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
+ */
 jerry_value_t sni_api_prop_set_label_recolor(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19363,6 +23199,11 @@ jerry_value_t sni_api_prop_set_label_recolor(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the text of a label
+ *
+ * @return (string) the text of the label
+ */
 jerry_value_t sni_api_prop_get_label_text(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -19387,6 +23228,11 @@ jerry_value_t sni_api_prop_get_label_text(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Set a new text for a label. Memory will be allocated to store the text by the label.
+ *
+ * @param text (string) '\0' terminated character string. May be NULL . When NULL the label is refreshed with its current text.
+ */
 jerry_value_t sni_api_prop_set_label_text(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -19422,6 +23268,11 @@ jerry_value_t sni_api_prop_set_label_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the selection end index.
+ *
+ * @return (number) selection end index. LV_LABEL_TXT_SEL_OFF if nothing is selected.
+ */
 jerry_value_t sni_api_prop_get_label_text_selection_end(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -19446,6 +23297,11 @@ jerry_value_t sni_api_prop_get_label_text_selection_end(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set where text selection should end
+ *
+ * @param index (number) character index where selection should end. LV_LABEL_TEXT_SELECTION_OFF for no selection
+ */
 jerry_value_t sni_api_prop_set_label_text_selection_end(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -19476,6 +23332,11 @@ jerry_value_t sni_api_prop_set_label_text_selection_end(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the selection start index.
+ *
+ * @return (number) selection start index. LV_LABEL_TEXT_SELECTION_OFF if nothing is selected.
+ */
 jerry_value_t sni_api_prop_get_label_text_selection_start(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -19500,6 +23361,11 @@ jerry_value_t sni_api_prop_get_label_text_selection_start(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set where text selection should start
+ *
+ * @param index (number) character index from where selection should start. LV_LABEL_TEXT_SELECTION_OFF for no selection
+ */
 jerry_value_t sni_api_prop_set_label_text_selection_start(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -19530,6 +23396,13 @@ jerry_value_t sni_api_prop_set_label_text_selection_start(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Create an arc object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created arc
+ */
 jerry_value_t sni_api_ctor_arc(const jerry_call_info_t *call_info_p,
                                const jerry_value_t args_p[],
                                const jerry_length_t args_count)
@@ -19558,6 +23431,11 @@ jerry_value_t sni_api_ctor_arc(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the end angle of an arc.
+ *
+ * @return (number) the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_get_arc_angle_end(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19582,6 +23460,11 @@ jerry_value_t sni_api_prop_get_arc_angle_end(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_FLOAT);
 }
 
+/**
+ * @brief Get the start angle of an arc.
+ *
+ * @return (number) the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_get_arc_angle_start(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19606,6 +23489,11 @@ jerry_value_t sni_api_prop_get_arc_angle_start(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_FLOAT);
 }
 
+/**
+ * @brief Get the end angle of an arc background.
+ *
+ * @return (number) the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_get_arc_bg_angle_end(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -19630,6 +23518,11 @@ jerry_value_t sni_api_prop_get_arc_bg_angle_end(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_FLOAT);
 }
 
+/**
+ * @brief Get the start angle of an arc background.
+ *
+ * @return (number) the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_get_arc_bg_angle_start(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -19654,6 +23547,11 @@ jerry_value_t sni_api_prop_get_arc_bg_angle_start(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_FLOAT);
 }
 
+/**
+ * @brief Set the start angle of an arc background. 0 deg: right, 90 bottom etc.
+ *
+ * @param end (number) the end angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_set_arc_bg_end_angle(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -19687,6 +23585,11 @@ jerry_value_t sni_api_prop_set_arc_bg_end_angle(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the start angle of an arc background. 0 deg: right, 90 bottom, etc.
+ *
+ * @param start (number) the start angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_set_arc_bg_start_angle(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -19720,6 +23623,11 @@ jerry_value_t sni_api_prop_set_arc_bg_start_angle(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the change rate of an arc
+ *
+ * @return (number) the change rate
+ */
 jerry_value_t sni_api_prop_get_arc_change_rate(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19744,6 +23652,11 @@ jerry_value_t sni_api_prop_get_arc_change_rate(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set a change rate to limit the speed how fast the arc should reach the pressed point.
+ *
+ * @param rate (number) the change rate
+ */
 jerry_value_t sni_api_prop_set_arc_change_rate(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19774,6 +23687,11 @@ jerry_value_t sni_api_prop_set_arc_change_rate(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the end angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param end (number) the end angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_set_arc_end_angle(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19807,6 +23725,11 @@ jerry_value_t sni_api_prop_set_arc_end_angle(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the current knob angle offset
+ *
+ * @return (number) arc's current knob offset
+ */
 jerry_value_t sni_api_prop_get_arc_knob_offset(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19831,6 +23754,11 @@ jerry_value_t sni_api_prop_get_arc_knob_offset(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set an offset angle for the knob
+ *
+ * @param offset (number) knob offset from main arc in degrees
+ */
 jerry_value_t sni_api_prop_set_arc_knob_offset(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -19861,6 +23789,11 @@ jerry_value_t sni_api_prop_set_arc_knob_offset(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the maximum value of an arc
+ *
+ * @return (number) the maximum value of the arc
+ */
 jerry_value_t sni_api_prop_get_arc_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19885,6 +23818,11 @@ jerry_value_t sni_api_prop_get_arc_max_value(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the maximum values of an arc
+ *
+ * @param max (number) maximum value
+ */
 jerry_value_t sni_api_prop_set_arc_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19915,6 +23853,11 @@ jerry_value_t sni_api_prop_set_arc_max_value(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the minimum value of an arc
+ *
+ * @return (number) the minimum value of the arc
+ */
 jerry_value_t sni_api_prop_get_arc_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19939,6 +23882,11 @@ jerry_value_t sni_api_prop_get_arc_min_value(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the minimum values of an arc
+ *
+ * @param min (number) minimum value
+ */
 jerry_value_t sni_api_prop_set_arc_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -19969,6 +23917,11 @@ jerry_value_t sni_api_prop_set_arc_min_value(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get whether the arc is type or not.
+ *
+ * @return (number) arc's mode
+ */
 jerry_value_t sni_api_prop_get_arc_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -19993,6 +23946,11 @@ jerry_value_t sni_api_prop_get_arc_mode(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set in which direction the indicator should grow.
+ *
+ * @param type (number) arc's mode
+ */
 jerry_value_t sni_api_prop_set_arc_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -20023,6 +23981,11 @@ jerry_value_t sni_api_prop_set_arc_mode(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the rotation for the whole arc
+ *
+ * @return (number) arc's current rotation
+ */
 jerry_value_t sni_api_prop_get_arc_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -20047,6 +24010,11 @@ jerry_value_t sni_api_prop_get_arc_rotation(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the rotation for the whole arc
+ *
+ * @param rotation (number) rotation angle
+ */
 jerry_value_t sni_api_prop_set_arc_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -20077,6 +24045,11 @@ jerry_value_t sni_api_prop_set_arc_rotation(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the start angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param start (number) the start angle. (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
 jerry_value_t sni_api_prop_set_arc_start_angle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -20110,6 +24083,11 @@ jerry_value_t sni_api_prop_set_arc_start_angle(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the value of an arc
+ *
+ * @return (number) the value of the arc
+ */
 jerry_value_t sni_api_prop_get_arc_value(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -20134,6 +24112,11 @@ jerry_value_t sni_api_prop_get_arc_value(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set a new value on the arc
+ *
+ * @param value (number) new value
+ */
 jerry_value_t sni_api_prop_set_arc_value(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -20164,6 +24147,13 @@ jerry_value_t sni_api_prop_set_arc_value(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a bar object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created bar
+ */
 jerry_value_t sni_api_ctor_bar(const jerry_call_info_t *call_info_p,
                                const jerry_value_t args_p[],
                                const jerry_length_t args_count)
@@ -20192,6 +24182,13 @@ jerry_value_t sni_api_ctor_bar(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a new value on the bar
+ *
+ * @param value (number) new value
+ *
+ * @param anim (number) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
+ */
 jerry_value_t sni_api_lv_bar_set_value(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -20229,6 +24226,13 @@ jerry_value_t sni_api_lv_bar_set_value(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a new start value on the bar
+ *
+ * @param start_value (number) new start value
+ *
+ * @param anim (number) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
+ */
 jerry_value_t sni_api_lv_bar_set_start_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20266,6 +24270,13 @@ jerry_value_t sni_api_lv_bar_set_start_value(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set minimum and the maximum values of a bar
+ *
+ * @param min (number) minimum value
+ *
+ * @param max (number) maximum value
+ */
 jerry_value_t sni_api_lv_bar_set_range(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -20303,6 +24314,11 @@ jerry_value_t sni_api_lv_bar_set_range(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set minimum value of a bar
+ *
+ * @param min (number) minimum value
+ */
 jerry_value_t sni_api_lv_bar_set_min_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -20333,6 +24349,11 @@ jerry_value_t sni_api_lv_bar_set_min_value(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set maximum value of a bar
+ *
+ * @param max (number) maximum value
+ */
 jerry_value_t sni_api_lv_bar_set_max_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -20363,6 +24384,11 @@ jerry_value_t sni_api_lv_bar_set_max_value(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the type of bar.
+ *
+ * @param mode (number) bar type from lv_bar_mode_t
+ */
 jerry_value_t sni_api_lv_bar_set_mode(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -20393,6 +24419,11 @@ jerry_value_t sni_api_lv_bar_set_mode(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the orientation of bar.
+ *
+ * @param orientation (number) bar orientation from lv_bar_orientation_t
+ */
 jerry_value_t sni_api_lv_bar_set_orientation(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20423,6 +24454,11 @@ jerry_value_t sni_api_lv_bar_set_orientation(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the value of a bar
+ *
+ * @return (number) the value of the bar
+ */
 jerry_value_t sni_api_lv_bar_get_value(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -20446,6 +24482,11 @@ jerry_value_t sni_api_lv_bar_get_value(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the start value of a bar
+ *
+ * @return (number) the start value of the bar
+ */
 jerry_value_t sni_api_lv_bar_get_start_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20469,6 +24510,11 @@ jerry_value_t sni_api_lv_bar_get_start_value(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the minimum value of a bar
+ *
+ * @return (number) the minimum value of the bar
+ */
 jerry_value_t sni_api_lv_bar_get_min_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -20492,6 +24538,11 @@ jerry_value_t sni_api_lv_bar_get_min_value(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the maximum value of a bar
+ *
+ * @return (number) the maximum value of the bar
+ */
 jerry_value_t sni_api_lv_bar_get_max_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -20515,6 +24566,11 @@ jerry_value_t sni_api_lv_bar_get_max_value(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the type of bar.
+ *
+ * @return (number) bar type from lv_bar_mode_t
+ */
 jerry_value_t sni_api_lv_bar_get_mode(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -20538,6 +24594,11 @@ jerry_value_t sni_api_lv_bar_get_mode(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the orientation of bar.
+ *
+ * @return (number) bar orientation from lv_bar_orientation_t
+ */
 jerry_value_t sni_api_lv_bar_get_orientation(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20561,6 +24622,11 @@ jerry_value_t sni_api_lv_bar_get_orientation(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Give the bar is in symmetrical mode or not
+ *
+ * @return (boolean) true: in symmetrical mode false : not in
+ */
 jerry_value_t sni_api_lv_bar_is_symmetrical(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -20584,6 +24650,11 @@ jerry_value_t sni_api_lv_bar_is_symmetrical(const jerry_call_info_t *call_info_p
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the maximum value of a bar
+ *
+ * @return (number) the maximum value of the bar
+ */
 jerry_value_t sni_api_prop_get_bar_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20608,6 +24679,11 @@ jerry_value_t sni_api_prop_get_bar_max_value(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set maximum value of a bar
+ *
+ * @param max (number) maximum value
+ */
 jerry_value_t sni_api_prop_set_bar_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20638,6 +24714,11 @@ jerry_value_t sni_api_prop_set_bar_max_value(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the minimum value of a bar
+ *
+ * @return (number) the minimum value of the bar
+ */
 jerry_value_t sni_api_prop_get_bar_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20662,6 +24743,11 @@ jerry_value_t sni_api_prop_get_bar_min_value(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set minimum value of a bar
+ *
+ * @param min (number) minimum value
+ */
 jerry_value_t sni_api_prop_set_bar_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -20692,6 +24778,11 @@ jerry_value_t sni_api_prop_set_bar_min_value(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the type of bar.
+ *
+ * @return (number) bar type from lv_bar_mode_t
+ */
 jerry_value_t sni_api_prop_get_bar_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -20716,6 +24807,11 @@ jerry_value_t sni_api_prop_get_bar_mode(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the type of bar.
+ *
+ * @param mode (number) bar type from lv_bar_mode_t
+ */
 jerry_value_t sni_api_prop_set_bar_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -20746,6 +24842,11 @@ jerry_value_t sni_api_prop_set_bar_mode(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the orientation of bar.
+ *
+ * @return (number) bar orientation from lv_bar_orientation_t
+ */
 jerry_value_t sni_api_prop_get_bar_orientation(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -20770,6 +24871,11 @@ jerry_value_t sni_api_prop_get_bar_orientation(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the orientation of bar.
+ *
+ * @param orientation (number) bar orientation from lv_bar_orientation_t
+ */
 jerry_value_t sni_api_prop_set_bar_orientation(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -20800,6 +24906,11 @@ jerry_value_t sni_api_prop_set_bar_orientation(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the start value of a bar
+ *
+ * @return (number) the start value of the bar
+ */
 jerry_value_t sni_api_prop_get_bar_start_value(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -20824,6 +24935,11 @@ jerry_value_t sni_api_prop_get_bar_start_value(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the value of a bar
+ *
+ * @return (number) the value of the bar
+ */
 jerry_value_t sni_api_prop_get_bar_value(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -20848,6 +24964,11 @@ jerry_value_t sni_api_prop_get_bar_value(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the active screen of the default display
+ *
+ * @return (object) pointer to the active screen
+ */
 jerry_value_t sni_api_lv_screen_active(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -20863,6 +24984,13 @@ jerry_value_t sni_api_lv_screen_active(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Create a color from 0x000000..0xffffff input
+ *
+ * @param c (number) the hex input
+ *
+ * @return (object) the color
+ */
 jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -20885,6 +25013,9 @@ jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_V_LV_COLOR);
 }
 
+/**
+ * @brief Pause a timer. It is typically safe to call from an interrupt handler or a different thread.
+ */
 jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -20908,6 +25039,9 @@ jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Resume a timer.
+ */
 jerry_value_t sni_api_lv_timer_resume(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -20931,6 +25065,11 @@ jerry_value_t sni_api_lv_timer_resume(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set new period for a lv_timer
+ *
+ * @param period (number) the new period
+ */
 jerry_value_t sni_api_lv_timer_set_period(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -20961,6 +25100,9 @@ jerry_value_t sni_api_lv_timer_set_period(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Make a lv_timer ready. It will not wait its period.
+ */
 jerry_value_t sni_api_lv_timer_ready(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -20984,6 +25126,11 @@ jerry_value_t sni_api_lv_timer_ready(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of times a timer will repeat.
+ *
+ * @param repeat_count (number) -1 : infinity; 0 : stop ; n>0: residual times
+ */
 jerry_value_t sni_api_lv_timer_set_repeat_count(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -21014,6 +25161,9 @@ jerry_value_t sni_api_lv_timer_set_repeat_count(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Reset a lv_timer. It will be called the previously set period milliseconds later.
+ */
 jerry_value_t sni_api_lv_timer_reset(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -21037,6 +25187,11 @@ jerry_value_t sni_api_lv_timer_reset(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the pause state of a timer
+ *
+ * @return (boolean) true: timer is paused; false: timer is running
+ */
 jerry_value_t sni_api_lv_timer_get_paused(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -21060,6 +25215,11 @@ jerry_value_t sni_api_lv_timer_get_paused(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the pause state of a timer
+ *
+ * @return (boolean) true: timer is paused; false: timer is running
+ */
 jerry_value_t sni_api_prop_get_timer_paused(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -21084,6 +25244,11 @@ jerry_value_t sni_api_prop_get_timer_paused(const jerry_call_info_t *call_info_p
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set new period for a lv_timer
+ *
+ * @param period (number) the new period
+ */
 jerry_value_t sni_api_prop_set_timer_period(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -21114,6 +25279,11 @@ jerry_value_t sni_api_prop_set_timer_period(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of times a timer will repeat.
+ *
+ * @param repeat_count (number) -1 : infinity; 0 : stop ; n>0: residual times
+ */
 jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -21144,6 +25314,9 @@ jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Initialize an animation variable. E.g.: lv_anim_t a; lv_anim_init(&a); lv_anim_set_...(&a); lv_anim_start(&a);
+ */
 jerry_value_t sni_api_lv_anim_init(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
                                    const jerry_length_t args_count)
@@ -21167,6 +25340,9 @@ jerry_value_t sni_api_lv_anim_init(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Resumes a paused animation
+ */
 jerry_value_t sni_api_lv_anim_resume(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
                                      const jerry_length_t args_count)
@@ -21190,6 +25366,9 @@ jerry_value_t sni_api_lv_anim_resume(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Pauses the animation
+ */
 jerry_value_t sni_api_lv_anim_pause(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -21213,6 +25392,11 @@ jerry_value_t sni_api_lv_anim_pause(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Pauses the animation for ms milliseconds
+ *
+ * @param ms (number) the pause time in milliseconds
+ */
 jerry_value_t sni_api_lv_anim_pause_for(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -21243,6 +25427,11 @@ jerry_value_t sni_api_lv_anim_pause_for(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Check if the animation is paused
+ *
+ * @return (boolean) true if the animation is paused else false
+ */
 jerry_value_t sni_api_lv_anim_is_paused(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -21266,6 +25455,11 @@ jerry_value_t sni_api_lv_anim_is_paused(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Make the animation to play back to when the forward direction is ready
+ *
+ * @param duration (number) duration of playback animation in milliseconds. 0: disable playback
+ */
 jerry_value_t sni_api_lv_anim_set_reverse_duration(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -21296,6 +25490,11 @@ jerry_value_t sni_api_lv_anim_set_reverse_duration(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Legacy lv_anim_set_reverse_time API will be removed soon, use lv_anim_set_reverse_duration instead.
+ *
+ * @param duration (number) JavaScript argument.
+ */
 jerry_value_t sni_api_lv_anim_set_reverse_time(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -21326,6 +25525,11 @@ jerry_value_t sni_api_lv_anim_set_reverse_time(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the animation to play back to when the forward direction is ready
+ *
+ * @param delay (number) delay in milliseconds before starting the playback animation.
+ */
 jerry_value_t sni_api_lv_anim_set_reverse_delay(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -21356,6 +25560,11 @@ jerry_value_t sni_api_lv_anim_set_reverse_delay(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a delay before repeating the animation.
+ *
+ * @param delay (number) delay in milliseconds before repeating the animation.
+ */
 jerry_value_t sni_api_lv_anim_set_repeat_delay(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -21386,6 +25595,11 @@ jerry_value_t sni_api_lv_anim_set_repeat_delay(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a whether the animation's should be applied immediately or only when the delay expired.
+ *
+ * @param en (boolean) true: apply the start value immediately in lv_anim_start ; false: apply the start value only when delay ms is elapsed and the animations really starts
+ */
 jerry_value_t sni_api_lv_anim_set_early_apply(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -21416,6 +25630,17 @@ jerry_value_t sni_api_lv_anim_set_early_apply(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set parameter for cubic bezier path
+ *
+ * @param x1 (number) first control point X
+ *
+ * @param y1 (number) first control point Y
+ *
+ * @param x2 (number) second control point X
+ *
+ * @param y2 (number) second control point Y
+ */
 jerry_value_t sni_api_lv_anim_set_bezier3_param(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -21467,6 +25692,11 @@ jerry_value_t sni_api_lv_anim_set_bezier3_param(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get a delay before starting the animation
+ *
+ * @return (number) delay before the animation in milliseconds
+ */
 jerry_value_t sni_api_lv_anim_get_delay(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -21490,6 +25720,11 @@ jerry_value_t sni_api_lv_anim_get_delay(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the time used to play the animation.
+ *
+ * @return (number) the play time in milliseconds.
+ */
 jerry_value_t sni_api_lv_anim_get_playtime(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -21513,6 +25748,11 @@ jerry_value_t sni_api_lv_anim_get_playtime(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the duration of an animation
+ *
+ * @return (number) the duration of the animation in milliseconds
+ */
 jerry_value_t sni_api_lv_anim_get_time(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -21536,6 +25776,11 @@ jerry_value_t sni_api_lv_anim_get_time(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the repeat count of the animation.
+ *
+ * @return (number) the repeat count or LV_ANIM_REPEAT_INFINITE for infinite repetition. 0: disabled repetition.
+ */
 jerry_value_t sni_api_lv_anim_get_repeat_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -21559,6 +25804,11 @@ jerry_value_t sni_api_lv_anim_get_repeat_count(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation applying linear characteristic
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_linear(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -21582,6 +25832,11 @@ jerry_value_t sni_api_lv_anim_path_linear(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation slowing down the start phase
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_ease_in(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -21605,6 +25860,11 @@ jerry_value_t sni_api_lv_anim_path_ease_in(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation slowing down the end phase
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_ease_out(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -21628,6 +25888,11 @@ jerry_value_t sni_api_lv_anim_path_ease_out(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation applying an "S" characteristic (cosine)
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_ease_in_out(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -21651,6 +25916,11 @@ jerry_value_t sni_api_lv_anim_path_ease_in_out(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation with overshoot at the end
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_overshoot(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -21674,6 +25944,11 @@ jerry_value_t sni_api_lv_anim_path_overshoot(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation with 3 bounces
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_bounce(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -21697,6 +25972,11 @@ jerry_value_t sni_api_lv_anim_path_bounce(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Calculate the current value of an animation applying step characteristic. (Set end value on the end of the animation)
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_step(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -21720,6 +26000,11 @@ jerry_value_t sni_api_lv_anim_path_step(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief A custom cubic bezier animation path, need to specify cubic-parameters in a->parameter.bezier3
+ *
+ * @return (number) the current value to set
+ */
 jerry_value_t sni_api_lv_anim_path_custom_bezier3(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -21743,6 +26028,11 @@ jerry_value_t sni_api_lv_anim_path_custom_bezier3(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get a delay before starting the animation
+ *
+ * @return (number) delay before the animation in milliseconds
+ */
 jerry_value_t sni_api_prop_get_anim_delay(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -21767,6 +26057,11 @@ jerry_value_t sni_api_prop_get_anim_delay(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set a whether the animation's should be applied immediately or only when the delay expired.
+ *
+ * @param en (boolean) true: apply the start value immediately in lv_anim_start ; false: apply the start value only when delay ms is elapsed and the animations really starts
+ */
 jerry_value_t sni_api_prop_set_anim_early_apply(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -21797,6 +26092,11 @@ jerry_value_t sni_api_prop_set_anim_early_apply(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the time used to play the animation.
+ *
+ * @return (number) the play time in milliseconds.
+ */
 jerry_value_t sni_api_prop_get_anim_playtime(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -21821,6 +26121,11 @@ jerry_value_t sni_api_prop_get_anim_playtime(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the repeat count of the animation.
+ *
+ * @return (number) the repeat count or LV_ANIM_REPEAT_INFINITE for infinite repetition. 0: disabled repetition.
+ */
 jerry_value_t sni_api_prop_get_anim_repeat_count(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -21845,6 +26150,11 @@ jerry_value_t sni_api_prop_get_anim_repeat_count(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set a delay before repeating the animation.
+ *
+ * @param delay (number) delay in milliseconds before repeating the animation.
+ */
 jerry_value_t sni_api_prop_set_anim_repeat_delay(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -21875,6 +26185,11 @@ jerry_value_t sni_api_prop_set_anim_repeat_delay(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the animation to play back to when the forward direction is ready
+ *
+ * @param delay (number) delay in milliseconds before starting the playback animation.
+ */
 jerry_value_t sni_api_prop_set_anim_reverse_delay(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -21905,6 +26220,11 @@ jerry_value_t sni_api_prop_set_anim_reverse_delay(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the animation to play back to when the forward direction is ready
+ *
+ * @param duration (number) duration of playback animation in milliseconds. 0: disable playback
+ */
 jerry_value_t sni_api_prop_set_anim_reverse_duration(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -21935,6 +26255,11 @@ jerry_value_t sni_api_prop_set_anim_reverse_duration(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Legacy lv_anim_set_reverse_time API will be removed soon, use lv_anim_set_reverse_duration instead.
+ *
+ * @param duration (number) JavaScript argument.
+ */
 jerry_value_t sni_api_prop_set_anim_reverse_time(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -21965,6 +26290,11 @@ jerry_value_t sni_api_prop_set_anim_reverse_time(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the duration of an animation
+ *
+ * @return (number) the duration of the animation in milliseconds
+ */
 jerry_value_t sni_api_prop_get_anim_time(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -21989,6 +26319,11 @@ jerry_value_t sni_api_prop_get_anim_time(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the selected buttons
+ *
+ * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
+ */
 jerry_value_t sni_api_lv_buttonmatrix_set_selected_button(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -22019,6 +26354,13 @@ jerry_value_t sni_api_lv_buttonmatrix_set_selected_button(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the attributes of a button of the button matrix
+ *
+ * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
+ *
+ * @param ctrl (number) OR-ed attributes. E.g. LV_BUTTONMATRIX_CTRL_NO_REPEAT | LV_BUTTONMATRIX_CTRL_CHECKABLE
+ */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -22056,6 +26398,13 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Clear the attributes of a button of the button matrix
+ *
+ * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
+ *
+ * @param ctrl (number) OR-ed attributes. E.g. LV_BUTTONMATRIX_CTRL_NO_REPEAT | LV_BUTTONMATRIX_CTRL_CHECKABLE
+ */
 jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -22093,6 +26442,11 @@ jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Set attributes of all buttons of a button matrix
+ *
+ * @param ctrl (number) attribute(s) to set from lv_buttonmatrix_ctrl_t . Values can be ORed.
+ */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -22123,6 +26477,11 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl_all(const jerry_call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Clear the attributes of all buttons of a button matrix
+ *
+ * @param ctrl (number) attribute(s) to set from lv_buttonmatrix_ctrl_t . Values can be ORed.
+ */
 jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -22153,6 +26512,13 @@ jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl_all(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a single button's relative width. This method will cause the matrix be regenerated and is a relatively expensive operation. It is recommended that initial width be specified using lv_buttonmatrix_set_ctrl_map and this method only be used for dynamic changes.
+ *
+ * @param btn_id (number) 0 based index of the button to modify.
+ *
+ * @param width (number) relative width compared to the buttons in the same row. [1..15]
+ */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -22190,6 +26556,11 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_width(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Make the button matrix like a selector widget (only one button may be checked at a time). LV_BUTTONMATRIX_CTRL_CHECKABLE must be enabled on the buttons to be selected using lv_buttonmatrix_set_ctrl() or lv_buttonmatrix_set_button_ctrl_all() .
+ *
+ * @param en (boolean) whether "one check" mode is enabled
+ */
 jerry_value_t sni_api_lv_buttonmatrix_set_one_checked(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -22220,6 +26591,11 @@ jerry_value_t sni_api_lv_buttonmatrix_set_one_checked(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of the lastly "activated" button by the user (pressed, released, focused etc) Useful in the event_cb to get the text of the button, check if hidden etc.
+ *
+ * @return (number) index of the last released button (LV_BUTTONMATRIX_BUTTON_NONE: if unset)
+ */
 jerry_value_t sni_api_lv_buttonmatrix_get_selected_button(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
                                                           const jerry_length_t args_count)
@@ -22243,6 +26619,13 @@ jerry_value_t sni_api_lv_buttonmatrix_get_selected_button(const jerry_call_info_
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the button's text
+ *
+ * @param btn_id (number) the index a button not counting new line characters.
+ *
+ * @return (string) text of btn_index button
+ */
 jerry_value_t sni_api_lv_buttonmatrix_get_button_text(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -22273,6 +26656,15 @@ jerry_value_t sni_api_lv_buttonmatrix_get_button_text(const jerry_call_info_t *c
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get the whether a control value is enabled or disabled for button of a button matrix
+ *
+ * @param btn_id (number) the index of a button not counting new line characters.
+ *
+ * @param ctrl (number) control values to check (ORed value can be used)
+ *
+ * @return (boolean) true: the control attribute is enabled false: disabled
+ */
 jerry_value_t sni_api_lv_buttonmatrix_has_button_ctrl(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -22310,6 +26702,11 @@ jerry_value_t sni_api_lv_buttonmatrix_has_button_ctrl(const jerry_call_info_t *c
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Tell whether "one check" mode is enabled or not.
+ *
+ * @return (boolean) true: "one check" mode is enabled; false: disabled
+ */
 jerry_value_t sni_api_lv_buttonmatrix_get_one_checked(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -22333,6 +26730,11 @@ jerry_value_t sni_api_lv_buttonmatrix_get_one_checked(const jerry_call_info_t *c
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set attributes of all buttons of a button matrix
+ *
+ * @param ctrl (number) attribute(s) to set from lv_buttonmatrix_ctrl_t . Values can be ORed.
+ */
 jerry_value_t sni_api_prop_set_buttonmatrix_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -22363,6 +26765,11 @@ jerry_value_t sni_api_prop_set_buttonmatrix_button_ctrl_all(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Tell whether "one check" mode is enabled or not.
+ *
+ * @return (boolean) true: "one check" mode is enabled; false: disabled
+ */
 jerry_value_t sni_api_prop_get_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -22387,6 +26794,11 @@ jerry_value_t sni_api_prop_get_buttonmatrix_one_checked(const jerry_call_info_t 
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Make the button matrix like a selector widget (only one button may be checked at a time). LV_BUTTONMATRIX_CTRL_CHECKABLE must be enabled on the buttons to be selected using lv_buttonmatrix_set_ctrl() or lv_buttonmatrix_set_button_ctrl_all() .
+ *
+ * @param en (boolean) whether "one check" mode is enabled
+ */
 jerry_value_t sni_api_prop_set_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -22417,6 +26829,11 @@ jerry_value_t sni_api_prop_set_buttonmatrix_one_checked(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of the lastly "activated" button by the user (pressed, released, focused etc) Useful in the event_cb to get the text of the button, check if hidden etc.
+ *
+ * @return (number) index of the last released button (LV_BUTTONMATRIX_BUTTON_NONE: if unset)
+ */
 jerry_value_t sni_api_prop_get_buttonmatrix_selected_button(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -22441,6 +26858,11 @@ jerry_value_t sni_api_prop_get_buttonmatrix_selected_button(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the selected buttons
+ *
+ * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
+ */
 jerry_value_t sni_api_prop_set_buttonmatrix_selected_button(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -22471,6 +26893,13 @@ jerry_value_t sni_api_prop_set_buttonmatrix_selected_button(const jerry_call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a calendar widget
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer the created calendar
+ */
 jerry_value_t sni_api_ctor_calendar(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -22499,6 +26928,15 @@ jerry_value_t sni_api_ctor_calendar(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year, month and day at once
+ *
+ * @param year (number) today's year
+ *
+ * @param month (number) today's month [1..12]
+ *
+ * @param day (number) today's day [1..31]
+ */
 jerry_value_t sni_api_lv_calendar_set_today_date(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -22543,6 +26981,11 @@ jerry_value_t sni_api_lv_calendar_set_today_date(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param year (number) today's year
+ */
 jerry_value_t sni_api_lv_calendar_set_today_year(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -22573,6 +27016,11 @@ jerry_value_t sni_api_lv_calendar_set_today_year(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param month (number) today's month [1..12]
+ */
 jerry_value_t sni_api_lv_calendar_set_today_month(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -22603,6 +27051,11 @@ jerry_value_t sni_api_lv_calendar_set_today_month(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param day (number) today's day [1..31]
+ */
 jerry_value_t sni_api_lv_calendar_set_today_day(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -22633,6 +27086,13 @@ jerry_value_t sni_api_lv_calendar_set_today_day(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the currently shown year and month at once
+ *
+ * @param year (number) shown year
+ *
+ * @param month (number) shown month [1..12]
+ */
 jerry_value_t sni_api_lv_calendar_set_month_shown(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -22670,6 +27130,11 @@ jerry_value_t sni_api_lv_calendar_set_month_shown(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the currently shown year
+ *
+ * @param year (number) shown year
+ */
 jerry_value_t sni_api_lv_calendar_set_shown_year(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -22700,6 +27165,11 @@ jerry_value_t sni_api_lv_calendar_set_shown_year(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the currently shown month
+ *
+ * @param month (number) shown month [1..12]
+ */
 jerry_value_t sni_api_lv_calendar_set_shown_month(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -22730,6 +27200,11 @@ jerry_value_t sni_api_lv_calendar_set_shown_month(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the button matrix object of the calendar. It shows the dates and day names.
+ *
+ * @return (object) pointer to a the button matrix
+ */
 jerry_value_t sni_api_lv_calendar_get_btnmatrix(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -22753,6 +27228,11 @@ jerry_value_t sni_api_lv_calendar_get_btnmatrix(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the number of the highlighted dates
+ *
+ * @return (number) number of highlighted days
+ */
 jerry_value_t sni_api_lv_calendar_get_highlighted_dates_num(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
                                                             const jerry_length_t args_count)
@@ -22776,6 +27256,11 @@ jerry_value_t sni_api_lv_calendar_get_highlighted_dates_num(const jerry_call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the button matrix object of the calendar. It shows the dates and day names.
+ *
+ * @return (object) pointer to a the button matrix
+ */
 jerry_value_t sni_api_prop_get_calendar_btnmatrix(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -22800,6 +27285,11 @@ jerry_value_t sni_api_prop_get_calendar_btnmatrix(const jerry_call_info_t *call_
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the number of the highlighted dates
+ *
+ * @return (number) number of highlighted days
+ */
 jerry_value_t sni_api_prop_get_calendar_highlighted_dates_num(const jerry_call_info_t *call_info_p,
                                                               const jerry_value_t args_p[],
                                                               const jerry_length_t args_count)
@@ -22824,6 +27314,11 @@ jerry_value_t sni_api_prop_get_calendar_highlighted_dates_num(const jerry_call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the currently shown month
+ *
+ * @param month (number) shown month [1..12]
+ */
 jerry_value_t sni_api_prop_set_calendar_shown_month(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -22854,6 +27349,11 @@ jerry_value_t sni_api_prop_set_calendar_shown_month(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the currently shown year
+ *
+ * @param year (number) shown year
+ */
 jerry_value_t sni_api_prop_set_calendar_shown_year(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -22884,6 +27384,11 @@ jerry_value_t sni_api_prop_set_calendar_shown_year(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param day (number) today's day [1..31]
+ */
 jerry_value_t sni_api_prop_set_calendar_today_day(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -22914,6 +27419,11 @@ jerry_value_t sni_api_prop_set_calendar_today_day(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param month (number) today's month [1..12]
+ */
 jerry_value_t sni_api_prop_set_calendar_today_month(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -22944,6 +27454,11 @@ jerry_value_t sni_api_prop_set_calendar_today_month(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the today's year
+ *
+ * @param year (number) today's year
+ */
 jerry_value_t sni_api_prop_set_calendar_today_year(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -22974,6 +27489,13 @@ jerry_value_t sni_api_prop_set_calendar_today_year(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a chart object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created chart
+ */
 jerry_value_t sni_api_ctor_chart(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],
                                  const jerry_length_t args_count)
@@ -23002,6 +27524,11 @@ jerry_value_t sni_api_ctor_chart(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a new type for a chart
+ *
+ * @param type (number) new type of the chart (from ' lv_chart_type_t ' enum)
+ */
 jerry_value_t sni_api_lv_chart_set_type(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -23032,6 +27559,11 @@ jerry_value_t sni_api_lv_chart_set_type(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of points on a data line on a chart
+ *
+ * @param cnt (number) new number of points on the data lines
+ */
 jerry_value_t sni_api_lv_chart_set_point_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23062,6 +27594,15 @@ jerry_value_t sni_api_lv_chart_set_point_count(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the minimal and maximal y values on an axis
+ *
+ * @param axis (number) LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y
+ *
+ * @param min (number) minimum value of the y axis
+ *
+ * @param max (number) maximum value of the y axis
+ */
 jerry_value_t sni_api_lv_chart_set_axis_range(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -23106,6 +27647,13 @@ jerry_value_t sni_api_lv_chart_set_axis_range(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the minimal values on an axis
+ *
+ * @param axis (number) LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y
+ *
+ * @param min (number) minimal value of the y axis
+ */
 jerry_value_t sni_api_lv_chart_set_axis_min_value(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -23143,6 +27691,13 @@ jerry_value_t sni_api_lv_chart_set_axis_min_value(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the maximal y values on an axis
+ *
+ * @param axis (number) LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y
+ *
+ * @param max (number) maximum value of the y axis
+ */
 jerry_value_t sni_api_lv_chart_set_axis_max_value(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -23180,6 +27735,11 @@ jerry_value_t sni_api_lv_chart_set_axis_max_value(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set update mode of the chart object. Affects
+ *
+ * @param update_mode (number) the update mode
+ */
 jerry_value_t sni_api_lv_chart_set_update_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23210,6 +27770,13 @@ jerry_value_t sni_api_lv_chart_set_update_mode(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of horizontal and vertical division lines
+ *
+ * @param hdiv (number) number of horizontal division lines
+ *
+ * @param vdiv (number) number of vertical division lines
+ */
 jerry_value_t sni_api_lv_chart_set_div_line_count(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -23247,6 +27814,11 @@ jerry_value_t sni_api_lv_chart_set_div_line_count(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of horizontal division lines
+ *
+ * @param cnt (number) number of horizontal division lines
+ */
 jerry_value_t sni_api_lv_chart_set_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -23277,6 +27849,11 @@ jerry_value_t sni_api_lv_chart_set_hor_div_line_count(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the number of vertical division lines
+ *
+ * @param cnt (number) number of vertical division lines
+ */
 jerry_value_t sni_api_lv_chart_set_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -23307,6 +27884,11 @@ jerry_value_t sni_api_lv_chart_set_ver_div_line_count(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the type of a chart
+ *
+ * @return (number) type of the chart (from ' lv_chart_t ' enum)
+ */
 jerry_value_t sni_api_lv_chart_get_type(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -23330,6 +27912,11 @@ jerry_value_t sni_api_lv_chart_get_type(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the data point number per data line on chart
+ *
+ * @return (number) point number on each data line
+ */
 jerry_value_t sni_api_lv_chart_get_point_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23353,6 +27940,11 @@ jerry_value_t sni_api_lv_chart_get_point_count(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the update mode of a chart
+ *
+ * @return (number) the update mode
+ */
 jerry_value_t sni_api_lv_chart_get_update_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23376,6 +27968,11 @@ jerry_value_t sni_api_lv_chart_get_update_mode(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the number of horizontal division lines
+ *
+ * @return (number) the number of horizontal division lines
+ */
 jerry_value_t sni_api_lv_chart_get_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -23399,6 +27996,11 @@ jerry_value_t sni_api_lv_chart_get_hor_div_line_count(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the number of vertical division lines
+ *
+ * @return (number) the number of vertical division lines
+ */
 jerry_value_t sni_api_lv_chart_get_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -23422,6 +28024,13 @@ jerry_value_t sni_api_lv_chart_get_ver_div_line_count(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the current index of the x-axis start point in the data array
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @return (number) the index of the current x start point in the data array
+ */
 jerry_value_t sni_api_lv_chart_get_x_start_point(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -23455,6 +28064,9 @@ jerry_value_t sni_api_lv_chart_get_x_start_point(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Refresh a chart if its data line has changed
+ */
 jerry_value_t sni_api_lv_chart_refresh(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -23478,6 +28090,15 @@ jerry_value_t sni_api_lv_chart_refresh(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Allocate and add a data series to the chart
+ *
+ * @param color (number) color of the data series
+ *
+ * @param axis (number) the y axis to which the series should be attached ( LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y )
+ *
+ * @return (object) pointer to the allocated data series or NULL on failure
+ */
 jerry_value_t sni_api_lv_chart_add_series(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -23515,6 +28136,11 @@ jerry_value_t sni_api_lv_chart_add_series(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_CHART_SERIES);
 }
 
+/**
+ * @brief Deallocate and remove a data series from a chart
+ *
+ * @param series (object) pointer to a data series on 'chart'
+ */
 jerry_value_t sni_api_lv_chart_remove_series(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -23548,6 +28174,13 @@ jerry_value_t sni_api_lv_chart_remove_series(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the index of the x-axis start point in the data array. This point will be considers the first (left) point and the other points will be drawn after it.
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param id (number) the index of the x point in the data array
+ */
 jerry_value_t sni_api_lv_chart_set_x_start_point(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -23588,6 +28221,13 @@ jerry_value_t sni_api_lv_chart_set_x_start_point(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the next series.
+ *
+ * @param ser (object) the previous series. May be NULL . When NULL the first series is returned.
+ *
+ * @return (object) the next series or NULL if there is no more.
+ */
 jerry_value_t sni_api_lv_chart_get_series_next(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23621,6 +28261,15 @@ jerry_value_t sni_api_lv_chart_get_series_next(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_H_LV_CHART_SERIES);
 }
 
+/**
+ * @brief Add a cursor with a given color
+ *
+ * @param color (number) color of the cursor
+ *
+ * @param dir (number) direction of the cursor. LV_DIR_RIGHT/LEFT/TOP/DOWN/HOR/VER/ALL . OR-ed values are possible
+ *
+ * @return (object) pointer to the created cursor
+ */
 jerry_value_t sni_api_lv_chart_add_cursor(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -23658,6 +28307,11 @@ jerry_value_t sni_api_lv_chart_add_cursor(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_CHART_CURSOR);
 }
 
+/**
+ * @brief Remove a cursor
+ *
+ * @param cursor (object) pointer to the cursor
+ */
 jerry_value_t sni_api_lv_chart_remove_cursor(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -23691,6 +28345,13 @@ jerry_value_t sni_api_lv_chart_remove_cursor(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Initialize all data points of a series with a value
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param value (number) the new value for all points. LV_CHART_POINT_NONE can be used to hide the points.
+ */
 jerry_value_t sni_api_lv_chart_set_all_values(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -23731,6 +28392,13 @@ jerry_value_t sni_api_lv_chart_set_all_values(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the next point's Y value according to the update mode policy.
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param value (number) the new value of the next data
+ */
 jerry_value_t sni_api_lv_chart_set_next_value(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -23771,6 +28439,15 @@ jerry_value_t sni_api_lv_chart_set_next_value(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the next point's X and Y value according to the update mode policy.
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param x_value (number) the new X value of the next data
+ *
+ * @param y_value (number) the new Y value of the next data
+ */
 jerry_value_t sni_api_lv_chart_set_next_value2(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -23818,6 +28495,15 @@ jerry_value_t sni_api_lv_chart_set_next_value2(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Same as lv_chart_set_next_value but set the values from an array
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param values (number) the new values to set
+ *
+ * @param values_cnt (number) number of items in values
+ */
 jerry_value_t sni_api_lv_chart_set_series_values(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -23847,7 +28533,7 @@ jerry_value_t sni_api_lv_chart_set_series_values(const jerry_call_info_t *call_i
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -23868,6 +28554,17 @@ jerry_value_t sni_api_lv_chart_set_series_values(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Same as lv_chart_set_next_value2 but set the values from an array
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param x_values (number) the new values to set on the X axis
+ *
+ * @param y_values (number) the new values to set o nthe Y axis
+ *
+ * @param values_cnt (number) number of items in x_values and y_values
+ */
 jerry_value_t sni_api_lv_chart_set_series_values2(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -23897,7 +28594,7 @@ jerry_value_t sni_api_lv_chart_set_series_values2(const jerry_call_info_t *call_
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -23907,7 +28604,7 @@ jerry_value_t sni_api_lv_chart_set_series_values2(const jerry_call_info_t *call_
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[2]))
+    if (!jerry_value_is_number(args_p[2]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -23928,6 +28625,13 @@ jerry_value_t sni_api_lv_chart_set_series_values2(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an external array for the y data points to use for the chart NOTE: It is the users responsibility to make sure the point_cnt matches the external array size.
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param array (number) external array of points for chart
+ */
 jerry_value_t sni_api_lv_chart_set_series_ext_y_array(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -23957,7 +28661,7 @@ jerry_value_t sni_api_lv_chart_set_series_ext_y_array(const jerry_call_info_t *c
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -23971,6 +28675,13 @@ jerry_value_t sni_api_lv_chart_set_series_ext_y_array(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an external array for the x data points to use for the chart NOTE: It is the users responsibility to make sure the point_cnt matches the external array size.
+ *
+ * @param ser (object) pointer to a data series on 'chart'
+ *
+ * @param array (number) external array of points for chart
+ */
 jerry_value_t sni_api_lv_chart_set_series_ext_x_array(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -24000,7 +28711,7 @@ jerry_value_t sni_api_lv_chart_set_series_ext_x_array(const jerry_call_info_t *c
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -24014,6 +28725,11 @@ jerry_value_t sni_api_lv_chart_set_series_ext_x_array(const jerry_call_info_t *c
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of the currently pressed point. It's the same for every series.
+ *
+ * @return (number) the index of the point [0 .. point count] or LV_CHART_POINT_ID_NONE if no point is being pressed
+ */
 jerry_value_t sni_api_lv_chart_get_pressed_point(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -24037,6 +28753,11 @@ jerry_value_t sni_api_lv_chart_get_pressed_point(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the overall offset from the chart's side to the center of the first point. In case of a bar chart it will be the center of the first column group
+ *
+ * @return (number) the offset of the center
+ */
 jerry_value_t sni_api_lv_chart_get_first_point_center_offset(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
                                                              const jerry_length_t args_count)
@@ -24060,6 +28781,11 @@ jerry_value_t sni_api_lv_chart_get_first_point_center_offset(const jerry_call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the overall offset from the chart's side to the center of the first point. In case of a bar chart it will be the center of the first column group
+ *
+ * @return (number) the offset of the center
+ */
 jerry_value_t sni_api_prop_get_chart_first_point_center_offset(const jerry_call_info_t *call_info_p,
                                                                const jerry_value_t args_p[],
                                                                const jerry_length_t args_count)
@@ -24084,6 +28810,11 @@ jerry_value_t sni_api_prop_get_chart_first_point_center_offset(const jerry_call_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the number of horizontal division lines
+ *
+ * @return (number) the number of horizontal division lines
+ */
 jerry_value_t sni_api_prop_get_chart_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -24108,6 +28839,11 @@ jerry_value_t sni_api_prop_get_chart_hor_div_line_count(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the number of horizontal division lines
+ *
+ * @param cnt (number) number of horizontal division lines
+ */
 jerry_value_t sni_api_prop_set_chart_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -24138,6 +28874,11 @@ jerry_value_t sni_api_prop_set_chart_hor_div_line_count(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the data point number per data line on chart
+ *
+ * @return (number) point number on each data line
+ */
 jerry_value_t sni_api_prop_get_chart_point_count(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -24162,6 +28903,11 @@ jerry_value_t sni_api_prop_get_chart_point_count(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the number of points on a data line on a chart
+ *
+ * @param cnt (number) new number of points on the data lines
+ */
 jerry_value_t sni_api_prop_set_chart_point_count(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -24192,6 +28938,11 @@ jerry_value_t sni_api_prop_set_chart_point_count(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of the currently pressed point. It's the same for every series.
+ *
+ * @return (number) the index of the point [0 .. point count] or LV_CHART_POINT_ID_NONE if no point is being pressed
+ */
 jerry_value_t sni_api_prop_get_chart_pressed_point(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -24216,6 +28967,11 @@ jerry_value_t sni_api_prop_get_chart_pressed_point(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the type of a chart
+ *
+ * @return (number) type of the chart (from ' lv_chart_t ' enum)
+ */
 jerry_value_t sni_api_prop_get_chart_type(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -24240,6 +28996,11 @@ jerry_value_t sni_api_prop_get_chart_type(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set a new type for a chart
+ *
+ * @param type (number) new type of the chart (from ' lv_chart_type_t ' enum)
+ */
 jerry_value_t sni_api_prop_set_chart_type(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -24270,6 +29031,11 @@ jerry_value_t sni_api_prop_set_chart_type(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the update mode of a chart
+ *
+ * @return (number) the update mode
+ */
 jerry_value_t sni_api_prop_get_chart_update_mode(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -24294,6 +29060,11 @@ jerry_value_t sni_api_prop_get_chart_update_mode(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set update mode of the chart object. Affects
+ *
+ * @param update_mode (number) the update mode
+ */
 jerry_value_t sni_api_prop_set_chart_update_mode(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -24324,6 +29095,11 @@ jerry_value_t sni_api_prop_set_chart_update_mode(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the number of vertical division lines
+ *
+ * @return (number) the number of vertical division lines
+ */
 jerry_value_t sni_api_prop_get_chart_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -24348,6 +29124,11 @@ jerry_value_t sni_api_prop_get_chart_ver_div_line_count(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the number of vertical division lines
+ *
+ * @param cnt (number) number of vertical division lines
+ */
 jerry_value_t sni_api_prop_set_chart_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -24378,6 +29159,13 @@ jerry_value_t sni_api_prop_set_chart_ver_div_line_count(const jerry_call_info_t 
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a canvas object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created canvas
+ */
 jerry_value_t sni_api_ctor_canvas(const jerry_call_info_t *call_info_p,
                                   const jerry_value_t args_p[],
                                   const jerry_length_t args_count)
@@ -24406,6 +29194,17 @@ jerry_value_t sni_api_ctor_canvas(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a buffer for the canvas. Use lv_canvas_set_draw_buf() instead if you need to set a buffer with alignment requirement.
+ *
+ * @param buf (number) buffer where content of canvas will be. The required size is (lv_image_color_format_get_px_size(cf) * w) / 8 * h) It can be allocated with lv_malloc() or it can be statically allocated array (e.g. static lv_color_t buf[100*50]) or it can be an address in RAM or external SRAM
+ *
+ * @param w (number) width of canvas
+ *
+ * @param h (number) height of canvas
+ *
+ * @param cf (number) color format. LV_COLOR_FORMAT...
+ */
 jerry_value_t sni_api_lv_canvas_set_buffer(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -24425,7 +29224,7 @@ jerry_value_t sni_api_lv_canvas_set_buffer(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Failed to convert argument");
     }
 
-    if (!jerry_value_is_object(args_p[0]))
+    if (!jerry_value_is_number(args_p[0]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -24460,6 +29259,11 @@ jerry_value_t sni_api_lv_canvas_set_buffer(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set a draw buffer for the canvas. A draw buffer either can be allocated by lv_draw_buf_create() or defined statically by LV_DRAW_BUF_DEFINE_STATIC . When buffer start address and stride has alignment requirement, it's recommended to use lv_draw_buf_create .
+ *
+ * @param draw_buf (object) pointer to a draw buffer
+ */
 jerry_value_t sni_api_lv_canvas_set_draw_buf(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -24493,6 +29297,13 @@ jerry_value_t sni_api_lv_canvas_set_draw_buf(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the palette color of a canvas for index format. Valid only for LV_COLOR_FORMAT_I1/2/4/8
+ *
+ * @param index (number) the palette color to set: for LV_COLOR_FORMAT_I1 : 0..1 for LV_COLOR_FORMAT_I2 : 0..3 for LV_COLOR_FORMAT_I4 : 0..15 for LV_COLOR_FORMAT_I8 : 0..255
+ *
+ * @param color (object) the color to set
+ */
 jerry_value_t sni_api_lv_canvas_set_palette(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -24533,6 +29344,11 @@ jerry_value_t sni_api_lv_canvas_set_palette(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief JavaScript binding for lv_canvas_get_draw_buf.
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_lv_canvas_get_draw_buf(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -24556,6 +29372,11 @@ jerry_value_t sni_api_lv_canvas_get_draw_buf(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_H_LV_DRAW_BUF);
 }
 
+/**
+ * @brief Return the pointer for the buffer. It's recommended to use this function instead of the buffer form the return value of lv_canvas_get_image() as is can be aligned
+ *
+ * @return (number) pointer to the buffer
+ */
 jerry_value_t sni_api_lv_canvas_get_buf(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -24579,6 +29400,15 @@ jerry_value_t sni_api_lv_canvas_get_buf(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Copy a buffer to the canvas
+ *
+ * @param canvas_area (object) the area of the canvas to copy the new data to
+ *
+ * @param src_buf (object) pointer to a buffer holding the source data
+ *
+ * @param src_area (object) the area of the source buffer to copy from. May be NULL . When NULL the whole buffer is copied.
+ */
 jerry_value_t sni_api_lv_canvas_copy_buf(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -24640,6 +29470,13 @@ jerry_value_t sni_api_lv_canvas_copy_buf(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Fill the canvas with color
+ *
+ * @param color (number) the background color
+ *
+ * @param opa (number) the desired opacity
+ */
 jerry_value_t sni_api_lv_canvas_fill_bg(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -24676,6 +29513,11 @@ jerry_value_t sni_api_lv_canvas_fill_bg(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Initialize a layer to use LVGL's generic draw functions (lv_draw_rect/label/...) on the canvas. Needs to be usd in pair with lv_canvas_finish_layer .
+ *
+ * @param layer (object) pointer to a layer variable to initialize
+ */
 jerry_value_t sni_api_lv_canvas_init_layer(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -24709,6 +29551,11 @@ jerry_value_t sni_api_lv_canvas_init_layer(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Return the pointer for the buffer. It's recommended to use this function instead of the buffer form the return value of lv_canvas_get_image() as is can be aligned
+ *
+ * @return (number) pointer to the buffer
+ */
 jerry_value_t sni_api_prop_get_canvas_buf(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -24733,6 +29580,11 @@ jerry_value_t sni_api_prop_get_canvas_buf(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief JavaScript binding for lv_canvas_get_draw_buf.
+ *
+ * @return (object) JavaScript return value.
+ */
 jerry_value_t sni_api_prop_get_canvas_draw_buf(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -24757,6 +29609,11 @@ jerry_value_t sni_api_prop_get_canvas_draw_buf(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_H_LV_DRAW_BUF);
 }
 
+/**
+ * @brief Set a draw buffer for the canvas. A draw buffer either can be allocated by lv_draw_buf_create() or defined statically by LV_DRAW_BUF_DEFINE_STATIC . When buffer start address and stride has alignment requirement, it's recommended to use lv_draw_buf_create .
+ *
+ * @param draw_buf (object) pointer to a draw buffer
+ */
 jerry_value_t sni_api_prop_set_canvas_draw_buf(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -24790,6 +29647,13 @@ jerry_value_t sni_api_prop_set_canvas_draw_buf(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a check box object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created check box
+ */
 jerry_value_t sni_api_ctor_checkbox(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -24818,6 +29682,11 @@ jerry_value_t sni_api_ctor_checkbox(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the text of a check box. txt will be copied and may be deallocated after this function returns.
+ *
+ * @param txt (string) the text of the check box. May be NULL . When NULL the widget is only refreshed.
+ */
 jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -24853,6 +29722,11 @@ jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the text of a check box
+ *
+ * @return (string) pointer to the text of the check box
+ */
 jerry_value_t sni_api_lv_checkbox_get_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -24876,6 +29750,11 @@ jerry_value_t sni_api_lv_checkbox_get_text(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get the text of a check box
+ *
+ * @return (string) pointer to the text of the check box
+ */
 jerry_value_t sni_api_prop_get_checkbox_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -24900,6 +29779,11 @@ jerry_value_t sni_api_prop_get_checkbox_text(const jerry_call_info_t *call_info_
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Set the text of a check box. txt will be copied and may be deallocated after this function returns.
+ *
+ * @param txt (string) the text of the check box. May be NULL . When NULL the widget is only refreshed.
+ */
 jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -24935,6 +29819,13 @@ jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a drop-down list object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created drop-down list
+ */
 jerry_value_t sni_api_ctor_dropdown(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
                                     const jerry_length_t args_count)
@@ -24963,6 +29854,11 @@ jerry_value_t sni_api_ctor_dropdown(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set text of the drop-down list's button. If set to NULL the selected option's text will be displayed on the button. If set to a specific text then that text will be shown regardless of the selected option.
+ *
+ * @param text (string) the text as a string (Copy is saved). May be NULL . When NULL the selected option's text is displayed.
+ */
 jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -24998,6 +29894,11 @@ jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the options in a drop-down list from a string. The options will be copied and saved in the object so the options can be destroyed after calling this function
+ *
+ * @param options (string) a string with ' ' separated options. E.g. "One\nTwo\nThree"
+ */
 jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -25033,6 +29934,11 @@ jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the options in a drop-down list from a static string (global, static or dynamically allocated). Only the pointer of the option string will be saved.
+ *
+ * @param options (string) a static string with ' ' separated options. E.g. "One\nTwo\nThree"
+ */
 jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -25068,6 +29974,13 @@ jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *ca
     return jerry_undefined();
 }
 
+/**
+ * @brief Add an options to a drop-down list from a string. Only works for non-static options.
+ *
+ * @param option (string) a string without ' '. E.g. "Four"
+ *
+ * @param pos (number) the insert position, indexed from 0, LV_DROPDOWN_POS_LAST = end of string
+ */
 jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -25110,6 +30023,9 @@ jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Clear all options in a drop-down list. Works with both static and dynamic options.
+ */
 jerry_value_t sni_api_lv_dropdown_clear_options(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -25133,6 +30049,11 @@ jerry_value_t sni_api_lv_dropdown_clear_options(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the selected option
+ *
+ * @param sel_opt (number) id of the selected option (0 ... number of option - 1);
+ */
 jerry_value_t sni_api_lv_dropdown_set_selected(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -25163,6 +30084,11 @@ jerry_value_t sni_api_lv_dropdown_set_selected(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the direction of the a drop-down list
+ *
+ * @param dir (number) LV_DIR_LEFT/RIGHT/TOP/BOTTOM
+ */
 jerry_value_t sni_api_lv_dropdown_set_dir(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -25193,6 +30119,11 @@ jerry_value_t sni_api_lv_dropdown_set_dir(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set whether the selected option in the list should be highlighted or not
+ *
+ * @param en (boolean) true: highlight enabled; false: disabled
+ */
 jerry_value_t sni_api_lv_dropdown_set_selected_highlight(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -25223,6 +30154,11 @@ jerry_value_t sni_api_lv_dropdown_set_selected_highlight(const jerry_call_info_t
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the list of a drop-down to allow styling or other modifications
+ *
+ * @return (object) pointer to the list of the drop-down
+ */
 jerry_value_t sni_api_lv_dropdown_get_list(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -25246,6 +30182,11 @@ jerry_value_t sni_api_lv_dropdown_get_list(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get text of the drop-down list's button.
+ *
+ * @return (string) the text as string, NULL if no text
+ */
 jerry_value_t sni_api_lv_dropdown_get_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -25269,6 +30210,11 @@ jerry_value_t sni_api_lv_dropdown_get_text(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get the options of a drop-down list
+ *
+ * @return (string) the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ */
 jerry_value_t sni_api_lv_dropdown_get_options(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -25292,6 +30238,11 @@ jerry_value_t sni_api_lv_dropdown_get_options(const jerry_call_info_t *call_info
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get the index of the selected option
+ *
+ * @return (number) index of the selected option (0 ... number of option - 1);
+ */
 jerry_value_t sni_api_lv_dropdown_get_selected(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -25315,6 +30266,11 @@ jerry_value_t sni_api_lv_dropdown_get_selected(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the total number of options
+ *
+ * @return (number) the total number of options in the list
+ */
 jerry_value_t sni_api_lv_dropdown_get_option_count(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -25338,6 +30294,13 @@ jerry_value_t sni_api_lv_dropdown_get_option_count(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the current selected option as a string
+ *
+ * @param buf (string) pointer to an array to store the string
+ *
+ * @param buf_size (number) size of buf in bytes. 0: to ignore it.
+ */
 jerry_value_t sni_api_lv_dropdown_get_selected_str(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -25379,6 +30342,13 @@ jerry_value_t sni_api_lv_dropdown_get_selected_str(const jerry_call_info_t *call
     return result;
 }
 
+/**
+ * @brief Get the index of an option.
+ *
+ * @param option (string) an option as string
+ *
+ * @return (number) index of option in the list of all options. -1 if not found.
+ */
 jerry_value_t sni_api_lv_dropdown_get_option_index(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -25414,6 +30384,11 @@ jerry_value_t sni_api_lv_dropdown_get_option_index(const jerry_call_info_t *call
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the symbol on the drop-down list. Typically a down caret or arrow.
+ *
+ * @return (string) the symbol or NULL if not enabled
+ */
 jerry_value_t sni_api_lv_dropdown_get_symbol(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -25437,6 +30412,11 @@ jerry_value_t sni_api_lv_dropdown_get_symbol(const jerry_call_info_t *call_info_
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get whether the selected option in the list should be highlighted or not
+ *
+ * @return (boolean) true: highlight enabled; false: disabled
+ */
 jerry_value_t sni_api_lv_dropdown_get_selected_highlight(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
                                                          const jerry_length_t args_count)
@@ -25460,6 +30440,11 @@ jerry_value_t sni_api_lv_dropdown_get_selected_highlight(const jerry_call_info_t
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the direction of the drop-down list
+ *
+ * @return (number) LV_DIR_LEF/RIGHT/TOP/BOTTOM
+ */
 jerry_value_t sni_api_lv_dropdown_get_dir(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -25483,6 +30468,9 @@ jerry_value_t sni_api_lv_dropdown_get_dir(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Close (Collapse) the drop-down list
+ */
 jerry_value_t sni_api_lv_dropdown_close(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count)
@@ -25506,6 +30494,11 @@ jerry_value_t sni_api_lv_dropdown_close(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Tells whether the list is opened or not
+ *
+ * @return (boolean) true if the list os opened
+ */
 jerry_value_t sni_api_lv_dropdown_is_open(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -25529,6 +30522,11 @@ jerry_value_t sni_api_lv_dropdown_is_open(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the direction of the drop-down list
+ *
+ * @return (number) LV_DIR_LEF/RIGHT/TOP/BOTTOM
+ */
 jerry_value_t sni_api_prop_get_dropdown_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -25553,6 +30551,11 @@ jerry_value_t sni_api_prop_get_dropdown_dir(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the direction of the a drop-down list
+ *
+ * @param dir (number) LV_DIR_LEFT/RIGHT/TOP/BOTTOM
+ */
 jerry_value_t sni_api_prop_set_dropdown_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -25583,6 +30586,11 @@ jerry_value_t sni_api_prop_set_dropdown_dir(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the list of a drop-down to allow styling or other modifications
+ *
+ * @return (object) pointer to the list of the drop-down
+ */
 jerry_value_t sni_api_prop_get_dropdown_list(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -25607,6 +30615,11 @@ jerry_value_t sni_api_prop_get_dropdown_list(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Get the total number of options
+ *
+ * @return (number) the total number of options in the list
+ */
 jerry_value_t sni_api_prop_get_dropdown_option_count(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -25631,6 +30644,11 @@ jerry_value_t sni_api_prop_get_dropdown_option_count(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Get the options of a drop-down list
+ *
+ * @return (string) the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ */
 jerry_value_t sni_api_prop_get_dropdown_options(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -25655,6 +30673,11 @@ jerry_value_t sni_api_prop_get_dropdown_options(const jerry_call_info_t *call_in
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Set the options in a drop-down list from a string. The options will be copied and saved in the object so the options can be destroyed after calling this function
+ *
+ * @param options (string) a string with ' ' separated options. E.g. "One\nTwo\nThree"
+ */
 jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -25690,6 +30713,11 @@ jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the options in a drop-down list from a static string (global, static or dynamically allocated). Only the pointer of the option string will be saved.
+ *
+ * @param options (string) a static string with ' ' separated options. E.g. "One\nTwo\nThree"
+ */
 jerry_value_t sni_api_prop_set_dropdown_options_static(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -25725,6 +30753,11 @@ jerry_value_t sni_api_prop_set_dropdown_options_static(const jerry_call_info_t *
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the index of the selected option
+ *
+ * @return (number) index of the selected option (0 ... number of option - 1);
+ */
 jerry_value_t sni_api_prop_get_dropdown_selected(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -25749,6 +30782,11 @@ jerry_value_t sni_api_prop_get_dropdown_selected(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_UINT32);
 }
 
+/**
+ * @brief Set the selected option
+ *
+ * @param sel_opt (number) id of the selected option (0 ... number of option - 1);
+ */
 jerry_value_t sni_api_prop_set_dropdown_selected(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -25779,6 +30817,11 @@ jerry_value_t sni_api_prop_set_dropdown_selected(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get whether the selected option in the list should be highlighted or not
+ *
+ * @return (boolean) true: highlight enabled; false: disabled
+ */
 jerry_value_t sni_api_prop_get_dropdown_selected_highlight(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -25803,6 +30846,11 @@ jerry_value_t sni_api_prop_get_dropdown_selected_highlight(const jerry_call_info
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Set whether the selected option in the list should be highlighted or not
+ *
+ * @param en (boolean) true: highlight enabled; false: disabled
+ */
 jerry_value_t sni_api_prop_set_dropdown_selected_highlight(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
                                                            const jerry_length_t args_count)
@@ -25833,6 +30881,11 @@ jerry_value_t sni_api_prop_set_dropdown_selected_highlight(const jerry_call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the symbol on the drop-down list. Typically a down caret or arrow.
+ *
+ * @return (string) the symbol or NULL if not enabled
+ */
 jerry_value_t sni_api_prop_get_dropdown_symbol(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -25857,6 +30910,11 @@ jerry_value_t sni_api_prop_get_dropdown_symbol(const jerry_call_info_t *call_inf
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Get text of the drop-down list's button.
+ *
+ * @return (string) the text as string, NULL if no text
+ */
 jerry_value_t sni_api_prop_get_dropdown_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -25881,6 +30939,11 @@ jerry_value_t sni_api_prop_get_dropdown_text(const jerry_call_info_t *call_info_
     return sni_tb_c2js_string(result);
 }
 
+/**
+ * @brief Set text of the drop-down list's button. If set to NULL the selected option's text will be displayed on the button. If set to a specific text then that text will be shown regardless of the selected option.
+ *
+ * @param text (string) the text as a string (Copy is saved). May be NULL . When NULL the selected option's text is displayed.
+ */
 jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -25916,6 +30979,13 @@ jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Create an image object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created image
+ */
 jerry_value_t sni_api_ctor_image(const jerry_call_info_t *call_info_p,
                                  const jerry_value_t args_p[],
                                  const jerry_length_t args_count)
@@ -25944,6 +31014,11 @@ jerry_value_t sni_api_ctor_image(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Create an image object
+ *
+ * @return (object) pointer to the created image
+ */
 jerry_value_t sni_api_lv_image_create(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
                                       const jerry_length_t args_count)
@@ -25967,6 +31042,11 @@ jerry_value_t sni_api_lv_image_create(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Set an offset for the source of an image so the image will be displayed from the new origin.
+ *
+ * @param x (number) the new offset along x axis.
+ */
 jerry_value_t sni_api_lv_image_set_offset_x(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -25997,6 +31077,11 @@ jerry_value_t sni_api_lv_image_set_offset_x(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an offset for the source of an image. so the image will be displayed from the new origin.
+ *
+ * @param y (number) the new offset along y axis.
+ */
 jerry_value_t sni_api_lv_image_set_offset_y(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -26027,6 +31112,11 @@ jerry_value_t sni_api_lv_image_set_offset_y(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation angle of the image. The image will be rotated around the set pivot set by lv_image_set_pivot() Note that indexed and alpha only images can't be transformed.
+ *
+ * @param angle (number) rotation in degree with 0.1 degree resolution (0..3600: clock wise)
+ */
 jerry_value_t sni_api_lv_image_set_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -26057,6 +31147,13 @@ jerry_value_t sni_api_lv_image_set_rotation(const jerry_call_info_t *call_info_p
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation center of the image. The image will be rotated around this point. x, y can be set with value of LV_PCT, lv_image_get_pivot will return the true pixel coordinate of pivot in this case.
+ *
+ * @param x (number) rotation center x of the image
+ *
+ * @param y (number) rotation center y of the image
+ */
 jerry_value_t sni_api_lv_image_set_pivot(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -26094,6 +31191,11 @@ jerry_value_t sni_api_lv_image_set_pivot(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation horizontal center of the image.
+ *
+ * @param x (number) rotation center x of the image, or lv_pct()
+ */
 jerry_value_t sni_api_lv_image_set_pivot_x(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26124,6 +31226,11 @@ jerry_value_t sni_api_lv_image_set_pivot_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation vertical center of the image.
+ *
+ * @param y (number) rotation center y of the image, or lv_pct()
+ */
 jerry_value_t sni_api_lv_image_set_pivot_y(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26154,6 +31261,11 @@ jerry_value_t sni_api_lv_image_set_pivot_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_lv_image_set_scale(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -26184,6 +31296,11 @@ jerry_value_t sni_api_lv_image_set_scale(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the horizontal zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_lv_image_set_scale_x(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26214,6 +31331,11 @@ jerry_value_t sni_api_lv_image_set_scale_x(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the vertical zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_lv_image_set_scale_y(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26244,6 +31366,11 @@ jerry_value_t sni_api_lv_image_set_scale_y(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the blend mode of an image.
+ *
+ * @param blend_mode (number) the new blend mode
+ */
 jerry_value_t sni_api_lv_image_set_blend_mode(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26274,6 +31401,11 @@ jerry_value_t sni_api_lv_image_set_blend_mode(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Enable/disable anti-aliasing for the transformations (rotate, zoom) or not. The quality is better with anti-aliasing looks better but slower.
+ *
+ * @param antialias (boolean) true: anti-aliased; false: not anti-aliased
+ */
 jerry_value_t sni_api_lv_image_set_antialias(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -26304,6 +31436,11 @@ jerry_value_t sni_api_lv_image_set_antialias(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the image object size mode.
+ *
+ * @param align (number) the new align mode.
+ */
 jerry_value_t sni_api_lv_image_set_inner_align(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -26334,6 +31471,11 @@ jerry_value_t sni_api_lv_image_set_inner_align(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an A8 bitmap mask for the image.
+ *
+ * @param src (object) an lv_image_dsc_t bitmap mask source. May be NULL . When NULL the bitmap mask is removed.
+ */
 jerry_value_t sni_api_lv_image_set_bitmap_map_src(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -26367,6 +31509,11 @@ jerry_value_t sni_api_lv_image_set_bitmap_map_src(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the source of the image
+ *
+ * @return (number) the image source (symbol, file name or lv_image_dsc_t for C arrays)
+ */
 jerry_value_t sni_api_lv_image_get_src(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -26390,6 +31537,11 @@ jerry_value_t sni_api_lv_image_get_src(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Get the offset's x attribute of the image object.
+ *
+ * @return (number) offset X value.
+ */
 jerry_value_t sni_api_lv_image_get_offset_x(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -26413,6 +31565,11 @@ jerry_value_t sni_api_lv_image_get_offset_x(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the offset's y attribute of the image object.
+ *
+ * @return (number) offset Y value.
+ */
 jerry_value_t sni_api_lv_image_get_offset_y(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -26436,6 +31593,11 @@ jerry_value_t sni_api_lv_image_get_offset_y(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the rotation of the image.
+ *
+ * @return (number) rotation in 0.1 degrees (0..3600)
+ */
 jerry_value_t sni_api_lv_image_get_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -26459,6 +31621,11 @@ jerry_value_t sni_api_lv_image_get_rotation(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the pivot (rotation center) of the image. If pivot is set with LV_PCT, convert it to px before return.
+ *
+ * @param pivot (object) store the rotation center here
+ */
 jerry_value_t sni_api_lv_image_get_pivot(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -26488,6 +31655,11 @@ jerry_value_t sni_api_lv_image_get_pivot(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_lv_image_get_scale(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -26511,6 +31683,11 @@ jerry_value_t sni_api_lv_image_get_scale(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the horizontal zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_lv_image_get_scale_x(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26534,6 +31711,11 @@ jerry_value_t sni_api_lv_image_get_scale_x(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the vertical zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_lv_image_get_scale_y(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -26557,6 +31739,11 @@ jerry_value_t sni_api_lv_image_get_scale_y(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width of an image before any transformations.
+ *
+ * @return (number) The width of the image.
+ */
 jerry_value_t sni_api_lv_image_get_src_width(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -26580,6 +31767,11 @@ jerry_value_t sni_api_lv_image_get_src_width(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the height of an image before any transformations.
+ *
+ * @return (number) The height of the image.
+ */
 jerry_value_t sni_api_lv_image_get_src_height(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26603,6 +31795,11 @@ jerry_value_t sni_api_lv_image_get_src_height(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the transformed width of an image object.
+ *
+ * @return (number) The transformed width of the image.
+ */
 jerry_value_t sni_api_lv_image_get_transformed_width(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
                                                      const jerry_length_t args_count)
@@ -26626,6 +31823,11 @@ jerry_value_t sni_api_lv_image_get_transformed_width(const jerry_call_info_t *ca
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the transformed height of an image object.
+ *
+ * @return (number) The transformed height of the image.
+ */
 jerry_value_t sni_api_lv_image_get_transformed_height(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
                                                       const jerry_length_t args_count)
@@ -26649,6 +31851,11 @@ jerry_value_t sni_api_lv_image_get_transformed_height(const jerry_call_info_t *c
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the current blend mode of the image
+ *
+ * @return (number) the current blend mode
+ */
 jerry_value_t sni_api_lv_image_get_blend_mode(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26672,6 +31879,11 @@ jerry_value_t sni_api_lv_image_get_blend_mode(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get whether the transformations (rotate, zoom) are anti-aliased or not
+ *
+ * @return (boolean) true: anti-aliased; false: not anti-aliased
+ */
 jerry_value_t sni_api_lv_image_get_antialias(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -26695,6 +31907,11 @@ jerry_value_t sni_api_lv_image_get_antialias(const jerry_call_info_t *call_info_
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Get the size mode of the image
+ *
+ * @return (number) element of lv_image_align_t
+ */
 jerry_value_t sni_api_lv_image_get_inner_align(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -26718,6 +31935,11 @@ jerry_value_t sni_api_lv_image_get_inner_align(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get whether the transformations (rotate, zoom) are anti-aliased or not
+ *
+ * @return (boolean) true: anti-aliased; false: not anti-aliased
+ */
 jerry_value_t sni_api_prop_get_image_antialias(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -26742,6 +31964,11 @@ jerry_value_t sni_api_prop_get_image_antialias(const jerry_call_info_t *call_inf
     return sni_tb_c2js_boolean(result);
 }
 
+/**
+ * @brief Enable/disable anti-aliasing for the transformations (rotate, zoom) or not. The quality is better with anti-aliasing looks better but slower.
+ *
+ * @param antialias (boolean) true: anti-aliased; false: not anti-aliased
+ */
 jerry_value_t sni_api_prop_set_image_antialias(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -26772,6 +31999,11 @@ jerry_value_t sni_api_prop_set_image_antialias(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Set an A8 bitmap mask for the image.
+ *
+ * @param src (object) an lv_image_dsc_t bitmap mask source. May be NULL . When NULL the bitmap mask is removed.
+ */
 jerry_value_t sni_api_prop_set_image_bitmap_map_src(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
                                                     const jerry_length_t args_count)
@@ -26805,6 +32037,11 @@ jerry_value_t sni_api_prop_set_image_bitmap_map_src(const jerry_call_info_t *cal
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the current blend mode of the image
+ *
+ * @return (number) the current blend mode
+ */
 jerry_value_t sni_api_prop_get_image_blend_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -26829,6 +32066,11 @@ jerry_value_t sni_api_prop_get_image_blend_mode(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the blend mode of an image.
+ *
+ * @param blend_mode (number) the new blend mode
+ */
 jerry_value_t sni_api_prop_set_image_blend_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -26859,6 +32101,11 @@ jerry_value_t sni_api_prop_set_image_blend_mode(const jerry_call_info_t *call_in
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the size mode of the image
+ *
+ * @return (number) element of lv_image_align_t
+ */
 jerry_value_t sni_api_prop_get_image_inner_align(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -26883,6 +32130,11 @@ jerry_value_t sni_api_prop_get_image_inner_align(const jerry_call_info_t *call_i
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the image object size mode.
+ *
+ * @param align (number) the new align mode.
+ */
 jerry_value_t sni_api_prop_set_image_inner_align(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -26913,6 +32165,11 @@ jerry_value_t sni_api_prop_set_image_inner_align(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the offset's x attribute of the image object.
+ *
+ * @return (number) offset X value.
+ */
 jerry_value_t sni_api_prop_get_image_offset_x(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26937,6 +32194,11 @@ jerry_value_t sni_api_prop_get_image_offset_x(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set an offset for the source of an image so the image will be displayed from the new origin.
+ *
+ * @param x (number) the new offset along x axis.
+ */
 jerry_value_t sni_api_prop_set_image_offset_x(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26967,6 +32229,11 @@ jerry_value_t sni_api_prop_set_image_offset_x(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the offset's y attribute of the image object.
+ *
+ * @return (number) offset Y value.
+ */
 jerry_value_t sni_api_prop_get_image_offset_y(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -26991,6 +32258,11 @@ jerry_value_t sni_api_prop_get_image_offset_y(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set an offset for the source of an image. so the image will be displayed from the new origin.
+ *
+ * @param y (number) the new offset along y axis.
+ */
 jerry_value_t sni_api_prop_set_image_offset_y(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -27021,6 +32293,11 @@ jerry_value_t sni_api_prop_set_image_offset_y(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation horizontal center of the image.
+ *
+ * @param x (number) rotation center x of the image, or lv_pct()
+ */
 jerry_value_t sni_api_prop_set_image_pivot_x(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27051,6 +32328,11 @@ jerry_value_t sni_api_prop_set_image_pivot_x(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the rotation vertical center of the image.
+ *
+ * @param y (number) rotation center y of the image, or lv_pct()
+ */
 jerry_value_t sni_api_prop_set_image_pivot_y(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27081,6 +32363,11 @@ jerry_value_t sni_api_prop_set_image_pivot_y(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the rotation of the image.
+ *
+ * @return (number) rotation in 0.1 degrees (0..3600)
+ */
 jerry_value_t sni_api_prop_get_image_rotation(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -27105,6 +32392,11 @@ jerry_value_t sni_api_prop_get_image_rotation(const jerry_call_info_t *call_info
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the rotation angle of the image. The image will be rotated around the set pivot set by lv_image_set_pivot() Note that indexed and alpha only images can't be transformed.
+ *
+ * @param angle (number) rotation in degree with 0.1 degree resolution (0..3600: clock wise)
+ */
 jerry_value_t sni_api_prop_set_image_rotation(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count)
@@ -27135,6 +32427,11 @@ jerry_value_t sni_api_prop_set_image_rotation(const jerry_call_info_t *call_info
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_prop_get_image_scale(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -27159,6 +32456,11 @@ jerry_value_t sni_api_prop_get_image_scale(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_prop_set_image_scale(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
                                            const jerry_length_t args_count)
@@ -27189,6 +32491,11 @@ jerry_value_t sni_api_prop_set_image_scale(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the horizontal zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_prop_get_image_scale_x(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27213,6 +32520,11 @@ jerry_value_t sni_api_prop_get_image_scale_x(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the horizontal zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_prop_set_image_scale_x(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27243,6 +32555,11 @@ jerry_value_t sni_api_prop_set_image_scale_x(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the vertical zoom factor of the image.
+ *
+ * @return (number) zoom factor (256: no zoom)
+ */
 jerry_value_t sni_api_prop_get_image_scale_y(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27267,6 +32584,11 @@ jerry_value_t sni_api_prop_get_image_scale_y(const jerry_call_info_t *call_info_
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Set the vertical zoom factor of the image. Note that indexed and alpha only images can't be transformed.
+ *
+ * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
+ */
 jerry_value_t sni_api_prop_set_image_scale_y(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
@@ -27297,6 +32619,11 @@ jerry_value_t sni_api_prop_set_image_scale_y(const jerry_call_info_t *call_info_
     return jerry_undefined();
 }
 
+/**
+ * @brief Get the source of the image
+ *
+ * @return (number) the image source (symbol, file name or lv_image_dsc_t for C arrays)
+ */
 jerry_value_t sni_api_prop_get_image_src(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -27321,6 +32648,11 @@ jerry_value_t sni_api_prop_get_image_src(const jerry_call_info_t *call_info_p,
     return sni_tb_c2js(&result, SNI_T_PTR);
 }
 
+/**
+ * @brief Get the height of an image before any transformations.
+ *
+ * @return (number) The height of the image.
+ */
 jerry_value_t sni_api_prop_get_image_src_height(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
                                                 const jerry_length_t args_count)
@@ -27345,6 +32677,11 @@ jerry_value_t sni_api_prop_get_image_src_height(const jerry_call_info_t *call_in
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the width of an image before any transformations.
+ *
+ * @return (number) The width of the image.
+ */
 jerry_value_t sni_api_prop_get_image_src_width(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -27369,6 +32706,11 @@ jerry_value_t sni_api_prop_get_image_src_width(const jerry_call_info_t *call_inf
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the transformed height of an image object.
+ *
+ * @return (number) The transformed height of the image.
+ */
 jerry_value_t sni_api_prop_get_image_transformed_height(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
                                                         const jerry_length_t args_count)
@@ -27393,6 +32735,11 @@ jerry_value_t sni_api_prop_get_image_transformed_height(const jerry_call_info_t 
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Get the transformed width of an image object.
+ *
+ * @return (number) The transformed width of the image.
+ */
 jerry_value_t sni_api_prop_get_image_transformed_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
                                                        const jerry_length_t args_count)
@@ -27417,6 +32764,13 @@ jerry_value_t sni_api_prop_get_image_transformed_width(const jerry_call_info_t *
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
+/**
+ * @brief Create an image button object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created image button
+ */
 jerry_value_t sni_api_ctor_imagebutton(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
@@ -27445,6 +32799,11 @@ jerry_value_t sni_api_ctor_imagebutton(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
+/**
+ * @brief Create an image button object
+ *
+ * @return (object) pointer to the created image button
+ */
 jerry_value_t sni_api_lv_imagebutton_create(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count)
@@ -27468,6 +32827,13 @@ jerry_value_t sni_api_lv_imagebutton_create(const jerry_call_info_t *call_info_p
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
+/**
+ * @brief Set the left image for a state of the image button
+ *
+ * @param state (number) for which state set the new image
+ *
+ * @param src_left (number) pointer to an image source for the left side of the button (a C array or path to a file) May be NULL . When NULL the left side is not drawn.
+ */
 jerry_value_t sni_api_lv_imagebutton_set_src_left(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
                                                   const jerry_length_t args_count)
@@ -27494,7 +32860,7 @@ jerry_value_t sni_api_lv_imagebutton_set_src_left(const jerry_call_info_t *call_
     lv_imagebutton_state_t arg_state;
     arg_state = sni_tb_js2c_int32(args_p[0]);
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -27508,6 +32874,13 @@ jerry_value_t sni_api_lv_imagebutton_set_src_left(const jerry_call_info_t *call_
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the right image for a state of the image button
+ *
+ * @param state (number) for which state set the new image
+ *
+ * @param src_right (number) pointer to an image source for the right side of the button (a C array or path to a file) May be NULL . When NULL the right side is not drawn.
+ */
 jerry_value_t sni_api_lv_imagebutton_set_src_right(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
@@ -27534,7 +32907,7 @@ jerry_value_t sni_api_lv_imagebutton_set_src_right(const jerry_call_info_t *call
     lv_imagebutton_state_t arg_state;
     arg_state = sni_tb_js2c_int32(args_p[0]);
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -27548,6 +32921,13 @@ jerry_value_t sni_api_lv_imagebutton_set_src_right(const jerry_call_info_t *call
     return jerry_undefined();
 }
 
+/**
+ * @brief Set the middle image for a state of the image button
+ *
+ * @param state (number) for which state set the new image
+ *
+ * @param src_mid (number) pointer to an image source for the middle of the button (a C array or path to a file) May be NULL . When NULL the middle is not drawn.
+ */
 jerry_value_t sni_api_lv_imagebutton_set_src_mid(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -27574,7 +32954,7 @@ jerry_value_t sni_api_lv_imagebutton_set_src_mid(const jerry_call_info_t *call_i
     lv_imagebutton_state_t arg_state;
     arg_state = sni_tb_js2c_int32(args_p[0]);
 
-    if (!jerry_value_is_object(args_p[1]))
+    if (!jerry_value_is_number(args_p[1]))
     {
         return sni_api_throw_error("Invalid argument type");
     }
@@ -27588,6 +32968,11 @@ jerry_value_t sni_api_lv_imagebutton_set_src_mid(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Use this function instead of lv_obj_add/remove_state to set a state manually
+ *
+ * @param state (number) the new state
+ */
 jerry_value_t sni_api_lv_imagebutton_set_state(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
                                                const jerry_length_t args_count)
@@ -27618,6 +33003,11 @@ jerry_value_t sni_api_lv_imagebutton_set_state(const jerry_call_info_t *call_inf
     return jerry_undefined();
 }
 
+/**
+ * @brief Use this function instead of lv_obj_add/remove_state to set a state manually
+ *
+ * @param state (number) the new state
+ */
 jerry_value_t sni_api_prop_set_imagebutton_state(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
                                                  const jerry_length_t args_count)
@@ -28882,8 +34272,14 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "ALIGN_TOP_MID", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "ALIGN_TOP_RIGHT", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "ANIM_IMAGE_PART_MAIN", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "ANIM_PAUSE_FOREVER", .type = SNI_CONST_INT, .value.i = -1},
+    {.name = "ANIM_PLAYTIME_INFINITE", .type = SNI_CONST_INT, .value.i = LV_ANIM_PLAYTIME_INFINITE},
+    {.name = "ANIM_REPEAT_INFINITE", .type = SNI_CONST_INT, .value.i = LV_ANIM_REPEAT_INFINITE},
+    {.name = "ANIM_TIMELINE_PROGRESS_MAX", .type = SNI_CONST_INT, .value.i = 65535},
+    {.name = "ARCLABEL_DEFAULT_TEXT", .type = SNI_CONST_STRING, .value.s = "Arced Text"},
     {.name = "ARCLABEL_DIR_CLOCKWISE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "ARCLABEL_DIR_COUNTER_CLOCKWISE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "ARCLABEL_DOT_NUM", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "ARCLABEL_OVERFLOW_CLIP", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "ARCLABEL_OVERFLOW_ELLIPSIS", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "ARCLABEL_OVERFLOW_VISIBLE", .type = SNI_CONST_INT, .value.i = 0},
@@ -28894,6 +34290,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "ARC_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "ARC_MODE_REVERSE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "ARC_MODE_SYMMETRICAL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "ARRAY_DEFAULT_CAPACITY", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "ARRAY_DEFAULT_SHRINK_RATIO", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "ASSERT_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "ATTRIBUTE_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "ATTRIBUTE_FAST_MEM_USE_IRAM", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "BARCODE_ENCODING_CODE128_GS1", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "BARCODE_ENCODING_CODE128_RAW", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "BARCODE_UPDATE_MODE_DEFERRED", .type = SNI_CONST_INT, .value.i = 1},
@@ -28909,6 +34310,9 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BASE_DIR_NEUTRAL", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "BASE_DIR_RTL", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "BASE_DIR_WEAK", .type = SNI_CONST_INT, .value.i = 33},
+    {.name = "BEZIER_VAL_SHIFT", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "BIDI_LRO", .type = SNI_CONST_STRING, .value.s = "\xE2\x80\xAD"},
+    {.name = "BIDI_RLO", .type = SNI_CONST_STRING, .value.s = "\xE2\x80\xAE"},
     {.name = "BLEND_MODE_ADDITIVE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "BLEND_MODE_DIFFERENCE", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "BLEND_MODE_MULTIPLY", .type = SNI_CONST_INT, .value.i = 3},
@@ -28924,6 +34328,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BORDER_SIDE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "BORDER_SIDE_RIGHT", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "BORDER_SIDE_TOP", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "BUTTONMATRIX_BUTTON_NONE", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_BUTTON_NONE},
     {.name = "BUTTONMATRIX_CTRL_CHECKABLE", .type = SNI_CONST_INT, .value.i = 128},
     {.name = "BUTTONMATRIX_CTRL_CHECKED", .type = SNI_CONST_INT, .value.i = 256},
     {.name = "BUTTONMATRIX_CTRL_CLICK_TRIG", .type = SNI_CONST_INT, .value.i = 512},
@@ -28952,11 +34357,14 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BUTTONMATRIX_CTRL_WIDTH_7", .type = SNI_CONST_INT, .value.i = 7},
     {.name = "BUTTONMATRIX_CTRL_WIDTH_8", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "BUTTONMATRIX_CTRL_WIDTH_9", .type = SNI_CONST_INT, .value.i = 9},
+    {.name = "CALENDAR_DISABLE_DEFAULT_DAY_NAMES", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "CALENDAR_DISABLE_DEFAULT_MONTH_NAMES", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "CHART_AXIS_LAST", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "CHART_AXIS_PRIMARY_X", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "CHART_AXIS_PRIMARY_Y", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "CHART_AXIS_SECONDARY_X", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "CHART_AXIS_SECONDARY_Y", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "CHART_POINT_NONE", .type = SNI_CONST_INT, .value.i = LV_CHART_POINT_NONE},
     {.name = "CHART_TYPE_BAR", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "CHART_TYPE_CURVE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "CHART_TYPE_LINE", .type = SNI_CONST_INT, .value.i = 1},
@@ -28965,6 +34373,77 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "CHART_TYPE_STACKED", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "CHART_UPDATE_MODE_CIRCULAR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "CHART_UPDATE_MODE_SHIFT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "CHECK_ARG_LOG_MODE_MINIMAL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "CHECK_ARG_LOG_MODE_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "CHECK_ARG_LOG_MODE_VERBOSE", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "CLR_COL", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "CLR_STN", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "CLR_TAG", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "CMD_APPEND", .type = SNI_CONST_INT, .value.i = -226},
+    {.name = "CMD_BGCOLOR", .type = SNI_CONST_INT, .value.i = -247},
+    {.name = "CMD_BUTTON", .type = SNI_CONST_INT, .value.i = -243},
+    {.name = "CMD_CALIBRATE", .type = SNI_CONST_INT, .value.i = -235},
+    {.name = "CMD_CLOCK", .type = SNI_CONST_INT, .value.i = -236},
+    {.name = "CMD_COLDSTART", .type = SNI_CONST_INT, .value.i = -206},
+    {.name = "CMD_DIAL", .type = SNI_CONST_INT, .value.i = -211},
+    {.name = "CMD_DLSTART", .type = SNI_CONST_INT, .value.i = -256},
+    {.name = "CMD_FGCOLOR", .type = SNI_CONST_INT, .value.i = -246},
+    {.name = "CMD_GAUGE", .type = SNI_CONST_INT, .value.i = -237},
+    {.name = "CMD_GETMATRIX", .type = SNI_CONST_INT, .value.i = -205},
+    {.name = "CMD_GETPROPS", .type = SNI_CONST_INT, .value.i = -219},
+    {.name = "CMD_GETPTR", .type = SNI_CONST_INT, .value.i = -221},
+    {.name = "CMD_GRADCOLOR", .type = SNI_CONST_INT, .value.i = -204},
+    {.name = "CMD_GRADIENT", .type = SNI_CONST_INT, .value.i = -245},
+    {.name = "CMD_INFLATE", .type = SNI_CONST_INT, .value.i = -222},
+    {.name = "CMD_INTERRUPT", .type = SNI_CONST_INT, .value.i = -254},
+    {.name = "CMD_KEYS", .type = SNI_CONST_INT, .value.i = -242},
+    {.name = "CMD_LOADIDENTITY", .type = SNI_CONST_INT, .value.i = -218},
+    {.name = "CMD_LOADIMAGE", .type = SNI_CONST_INT, .value.i = -220},
+    {.name = "CMD_LOGO", .type = SNI_CONST_INT, .value.i = -207},
+    {.name = "CMD_MEDIAFIFO", .type = SNI_CONST_INT, .value.i = -199},
+    {.name = "CMD_MEMCPY", .type = SNI_CONST_INT, .value.i = -227},
+    {.name = "CMD_MEMCRC", .type = SNI_CONST_INT, .value.i = -232},
+    {.name = "CMD_MEMSET", .type = SNI_CONST_INT, .value.i = -229},
+    {.name = "CMD_MEMWRITE", .type = SNI_CONST_INT, .value.i = -230},
+    {.name = "CMD_MEMZERO", .type = SNI_CONST_INT, .value.i = -228},
+    {.name = "CMD_NUMBER", .type = SNI_CONST_INT, .value.i = -210},
+    {.name = "CMD_PLAYVIDEO", .type = SNI_CONST_INT, .value.i = -198},
+    {.name = "CMD_PROGRESS", .type = SNI_CONST_INT, .value.i = -241},
+    {.name = "CMD_REGREAD", .type = SNI_CONST_INT, .value.i = -231},
+    {.name = "CMD_ROMFONT", .type = SNI_CONST_INT, .value.i = -193},
+    {.name = "CMD_ROTATE", .type = SNI_CONST_INT, .value.i = -215},
+    {.name = "CMD_SCALE", .type = SNI_CONST_INT, .value.i = -216},
+    {.name = "CMD_SCREENSAVER", .type = SNI_CONST_INT, .value.i = -209},
+    {.name = "CMD_SCROLLBAR", .type = SNI_CONST_INT, .value.i = -239},
+    {.name = "CMD_SETBASE", .type = SNI_CONST_INT, .value.i = -200},
+    {.name = "CMD_SETBITMAP", .type = SNI_CONST_INT, .value.i = -189},
+    {.name = "CMD_SETFONT", .type = SNI_CONST_INT, .value.i = -213},
+    {.name = "CMD_SETFONT2", .type = SNI_CONST_INT, .value.i = -197},
+    {.name = "CMD_SETMATRIX", .type = SNI_CONST_INT, .value.i = -214},
+    {.name = "CMD_SETROTATE", .type = SNI_CONST_INT, .value.i = -202},
+    {.name = "CMD_SETSCRATCH", .type = SNI_CONST_INT, .value.i = -196},
+    {.name = "CMD_SKETCH", .type = SNI_CONST_INT, .value.i = -208},
+    {.name = "CMD_SLIDER", .type = SNI_CONST_INT, .value.i = -240},
+    {.name = "CMD_SNAPSHOT", .type = SNI_CONST_INT, .value.i = -225},
+    {.name = "CMD_SNAPSHOT2", .type = SNI_CONST_INT, .value.i = -201},
+    {.name = "CMD_SPINNER", .type = SNI_CONST_INT, .value.i = -234},
+    {.name = "CMD_STOP", .type = SNI_CONST_INT, .value.i = -233},
+    {.name = "CMD_SWAP", .type = SNI_CONST_INT, .value.i = -255},
+    {.name = "CMD_TEXT", .type = SNI_CONST_INT, .value.i = -244},
+    {.name = "CMD_TOGGLE", .type = SNI_CONST_INT, .value.i = -238},
+    {.name = "CMD_TRACK", .type = SNI_CONST_INT, .value.i = -212},
+    {.name = "CMD_TRANSLATE", .type = SNI_CONST_INT, .value.i = -217},
+    {.name = "CMD_VIDEOFRAME", .type = SNI_CONST_INT, .value.i = -191},
+    {.name = "CMD_VIDEOSTART", .type = SNI_CONST_INT, .value.i = -192},
+    {.name = "COLOR_DEPTH", .type = SNI_CONST_INT, .value.i = LV_COLOR_DEPTH},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_ARGB8888", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_ARGB8888_PREMULTIPLIED", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_I1", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_L8", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_RGB565", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_RGB565_SWAPPED", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_RGB888", .type = SNI_CONST_INT, .value.i = 24},
+    {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_XRGB8888", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "COLOR_FORMAT_A1", .type = SNI_CONST_INT, .value.i = 11},
     {.name = "COLOR_FORMAT_A2", .type = SNI_CONST_INT, .value.i = 12},
     {.name = "COLOR_FORMAT_A4", .type = SNI_CONST_INT, .value.i = 13},
@@ -29008,9 +34487,20 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "COLOR_FORMAT_YUV_END", .type = SNI_CONST_INT, .value.i = 39},
     {.name = "COLOR_FORMAT_YUV_START", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "COLOR_FORMAT_YUY2", .type = SNI_CONST_INT, .value.i = 38},
+    {.name = "COLOR_NATIVE_WITH_ALPHA_SIZE", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "COORD_MAX", .type = SNI_CONST_INT, .value.i = LV_COORD_MAX},
+    {.name = "COORD_MIN", .type = SNI_CONST_INT, .value.i = LV_COORD_MIN},
+    {.name = "COORD_TYPE_SHIFT", .type = SNI_CONST_INT, .value.i = 29},
     {.name = "COVER_RES_COVER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "COVER_RES_MASKED", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "COVER_RES_NOT_COVER", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "DEMO_BENCHMARK_ALIGNED_FONTS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_EBIKE_PORTRAIT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_MUSIC_AUTO_PLAY", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_MUSIC_LANDSCAPE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_MUSIC_LARGE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_MUSIC_ROUND", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DEMO_MUSIC_SQUARE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DIR_ALL", .type = SNI_CONST_INT, .value.i = 15},
     {.name = "DIR_BOTTOM", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "DIR_HOR", .type = SNI_CONST_INT, .value.i = 3},
@@ -29026,6 +34516,28 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DISPLAY_ROTATION_180", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "DISPLAY_ROTATION_270", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "DISPLAY_ROTATION_90", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "DL_DISPLAY", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DL_END", .type = SNI_CONST_INT, .value.i = 553648128},
+    {.name = "DPI_DEF", .type = SNI_CONST_INT, .value.i = LV_DPI_DEF},
+    {.name = "DRAW_BUF_ALIGN", .type = SNI_CONST_INT, .value.i = LV_DRAW_BUF_ALIGN},
+    {.name = "DRAW_BUF_STRIDE_ALIGN", .type = SNI_CONST_INT, .value.i = LV_DRAW_BUF_STRIDE_ALIGN},
+    {.name = "DRAW_DISABLE_TILED_RENDERING", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_DMA2D_HAL_INCLUDE", .type = SNI_CONST_STRING, .value.s = "stm32h7xx_hal.h"},
+    {.name = "DRAW_EVE_EVE_GENERATION", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "DRAW_EVE_WRITE_BUFFER_SIZE", .type = SNI_CONST_INT, .value.i = 2048},
+    {.name = "DRAW_HAS_3D_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_HAS_VECTOR_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_LABEL_NO_TXT_SEL", .type = SNI_CONST_INT, .value.i = 65535},
+    {.name = "DRAW_OPENGLES_TEXTURE_CACHE_COUNT", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "DRAW_SW_ASM_CUSTOM", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "DRAW_SW_ASM_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "DRAW_SW_ASM_HELIUM", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "DRAW_SW_ASM_NEON", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "DRAW_SW_ASM_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_SW_ASM_RISCV_V", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "DRAW_SW_ASM_SVE2", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "DRAW_SW_ASM_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_SW_DRAW_UNIT_CNT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "DRAW_TASK_STATE_BLOCKED", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_TASK_STATE_FAILED", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "DRAW_TASK_STATE_FINISHED", .type = SNI_CONST_INT, .value.i = 4},
@@ -29046,6 +34558,12 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DRAW_TASK_TYPE_MASK_RECTANGLE", .type = SNI_CONST_INT, .value.i = 11},
     {.name = "DRAW_TASK_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_TASK_TYPE_TRIANGLE", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "DRAW_THREAD_PRIO", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "DRAW_THREAD_STACK_SIZE", .type = SNI_CONST_INT, .value.i = 8192},
+    {.name = "DRAW_TRANSFORM_USE_MATRIX", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_UNIT_IDLE", .type = SNI_CONST_INT, .value.i = -1},
+    {.name = "DRAW_UNIT_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DROPDOWN_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_DROPDOWN_POS_LAST},
     {.name = "EVENT_ALL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "EVENT_CANCEL", .type = SNI_CONST_INT, .value.i = 43},
     {.name = "EVENT_CHECKED", .type = SNI_CONST_INT, .value.i = 45},
@@ -29129,6 +34647,220 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "EVENT_VALUE_CHANGED", .type = SNI_CONST_INT, .value.i = 39},
     {.name = "EVENT_VSYNC", .type = SNI_CONST_INT, .value.i = 77},
     {.name = "EVENT_VSYNC_REQUEST", .type = SNI_CONST_INT, .value.i = 78},
+    {.name = "EVE_ADC_DIFFERENTIAL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_ADC_SINGLE_ENDED", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_ALARM", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "EVE_ALWAYS", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "EVE_ARGB1555", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_ARGB2", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_ARGB4", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "EVE_BARGRAPH", .type = SNI_CONST_INT, .value.i = 11},
+    {.name = "EVE_BEEPING", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_BELL", .type = SNI_CONST_INT, .value.i = 73},
+    {.name = "EVE_BILINEAR", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_BITMAPS", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_BORDER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_CAROUSEL", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "EVE_CHACK", .type = SNI_CONST_INT, .value.i = 88},
+    {.name = "EVE_CHIMES", .type = SNI_CONST_INT, .value.i = 71},
+    {.name = "EVE_CLACK", .type = SNI_CONST_INT, .value.i = 87},
+    {.name = "EVE_CLICK", .type = SNI_CONST_INT, .value.i = 80},
+    {.name = "EVE_COWBELL", .type = SNI_CONST_INT, .value.i = 82},
+    {.name = "EVE_DECR", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_DLSWAP_DONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_DLSWAP_FRAME", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_DLSWAP_LINE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_DST_ALPHA", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_EDGE_STRIP_A", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "EVE_EDGE_STRIP_B", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "EVE_EDGE_STRIP_L", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "EVE_EDGE_STRIP_R", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_EQUAL", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_GEQUAL", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_GLOCKENSPIEL", .type = SNI_CONST_INT, .value.i = 67},
+    {.name = "EVE_GPIO0", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_GREATER", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_HARP", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "EVE_HIHAT", .type = SNI_CONST_INT, .value.i = 84},
+    {.name = "EVE_INCR", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_INT_CMDEMPTY", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "EVE_INT_CMDFLAG", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "EVE_INT_CONVCOMPLETE", .type = SNI_CONST_INT, .value.i = 128},
+    {.name = "EVE_INT_G8", .type = SNI_CONST_INT, .value.i = 18},
+    {.name = "EVE_INT_L8C", .type = SNI_CONST_INT, .value.i = 12},
+    {.name = "EVE_INT_PLAYBACK", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "EVE_INT_SOUND", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "EVE_INT_SWAP", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_INT_TAG", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_INT_TOUCH", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_INT_VGA", .type = SNI_CONST_INT, .value.i = 13},
+    {.name = "EVE_INVERT", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_KEEP", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_KICKDRUM", .type = SNI_CONST_INT, .value.i = 85},
+    {.name = "EVE_L1", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_L2", .type = SNI_CONST_INT, .value.i = 17},
+    {.name = "EVE_L4", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_L8", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_LEQUAL", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_LESS", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_LINES", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_LINE_STRIP", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_MIDI_A0", .type = SNI_CONST_INT, .value.i = 21},
+    {.name = "EVE_MIDI_A1", .type = SNI_CONST_INT, .value.i = 33},
+    {.name = "EVE_MIDI_A2", .type = SNI_CONST_INT, .value.i = 45},
+    {.name = "EVE_MIDI_A3", .type = SNI_CONST_INT, .value.i = 57},
+    {.name = "EVE_MIDI_A4", .type = SNI_CONST_INT, .value.i = 69},
+    {.name = "EVE_MIDI_A5", .type = SNI_CONST_INT, .value.i = 81},
+    {.name = "EVE_MIDI_A6", .type = SNI_CONST_INT, .value.i = 93},
+    {.name = "EVE_MIDI_A7", .type = SNI_CONST_INT, .value.i = 105},
+    {.name = "EVE_MIDI_A_0", .type = SNI_CONST_INT, .value.i = 22},
+    {.name = "EVE_MIDI_A_1", .type = SNI_CONST_INT, .value.i = 34},
+    {.name = "EVE_MIDI_A_2", .type = SNI_CONST_INT, .value.i = 46},
+    {.name = "EVE_MIDI_A_3", .type = SNI_CONST_INT, .value.i = 58},
+    {.name = "EVE_MIDI_A_4", .type = SNI_CONST_INT, .value.i = 70},
+    {.name = "EVE_MIDI_A_5", .type = SNI_CONST_INT, .value.i = 82},
+    {.name = "EVE_MIDI_A_6", .type = SNI_CONST_INT, .value.i = 94},
+    {.name = "EVE_MIDI_A_7", .type = SNI_CONST_INT, .value.i = 106},
+    {.name = "EVE_MIDI_B0", .type = SNI_CONST_INT, .value.i = 23},
+    {.name = "EVE_MIDI_B1", .type = SNI_CONST_INT, .value.i = 35},
+    {.name = "EVE_MIDI_B2", .type = SNI_CONST_INT, .value.i = 47},
+    {.name = "EVE_MIDI_B3", .type = SNI_CONST_INT, .value.i = 59},
+    {.name = "EVE_MIDI_B4", .type = SNI_CONST_INT, .value.i = 71},
+    {.name = "EVE_MIDI_B5", .type = SNI_CONST_INT, .value.i = 83},
+    {.name = "EVE_MIDI_B6", .type = SNI_CONST_INT, .value.i = 95},
+    {.name = "EVE_MIDI_B7", .type = SNI_CONST_INT, .value.i = 107},
+    {.name = "EVE_MIDI_C1", .type = SNI_CONST_INT, .value.i = 24},
+    {.name = "EVE_MIDI_C2", .type = SNI_CONST_INT, .value.i = 36},
+    {.name = "EVE_MIDI_C3", .type = SNI_CONST_INT, .value.i = 48},
+    {.name = "EVE_MIDI_C4", .type = SNI_CONST_INT, .value.i = 60},
+    {.name = "EVE_MIDI_C5", .type = SNI_CONST_INT, .value.i = 72},
+    {.name = "EVE_MIDI_C6", .type = SNI_CONST_INT, .value.i = 84},
+    {.name = "EVE_MIDI_C7", .type = SNI_CONST_INT, .value.i = 96},
+    {.name = "EVE_MIDI_C8", .type = SNI_CONST_INT, .value.i = 108},
+    {.name = "EVE_MIDI_C_1", .type = SNI_CONST_INT, .value.i = 25},
+    {.name = "EVE_MIDI_C_2", .type = SNI_CONST_INT, .value.i = 37},
+    {.name = "EVE_MIDI_C_3", .type = SNI_CONST_INT, .value.i = 49},
+    {.name = "EVE_MIDI_C_4", .type = SNI_CONST_INT, .value.i = 61},
+    {.name = "EVE_MIDI_C_5", .type = SNI_CONST_INT, .value.i = 73},
+    {.name = "EVE_MIDI_C_6", .type = SNI_CONST_INT, .value.i = 85},
+    {.name = "EVE_MIDI_C_7", .type = SNI_CONST_INT, .value.i = 97},
+    {.name = "EVE_MIDI_D1", .type = SNI_CONST_INT, .value.i = 26},
+    {.name = "EVE_MIDI_D2", .type = SNI_CONST_INT, .value.i = 38},
+    {.name = "EVE_MIDI_D3", .type = SNI_CONST_INT, .value.i = 50},
+    {.name = "EVE_MIDI_D4", .type = SNI_CONST_INT, .value.i = 62},
+    {.name = "EVE_MIDI_D5", .type = SNI_CONST_INT, .value.i = 74},
+    {.name = "EVE_MIDI_D6", .type = SNI_CONST_INT, .value.i = 86},
+    {.name = "EVE_MIDI_D7", .type = SNI_CONST_INT, .value.i = 98},
+    {.name = "EVE_MIDI_D_1", .type = SNI_CONST_INT, .value.i = 27},
+    {.name = "EVE_MIDI_D_2", .type = SNI_CONST_INT, .value.i = 39},
+    {.name = "EVE_MIDI_D_3", .type = SNI_CONST_INT, .value.i = 51},
+    {.name = "EVE_MIDI_D_4", .type = SNI_CONST_INT, .value.i = 63},
+    {.name = "EVE_MIDI_D_5", .type = SNI_CONST_INT, .value.i = 75},
+    {.name = "EVE_MIDI_D_6", .type = SNI_CONST_INT, .value.i = 87},
+    {.name = "EVE_MIDI_D_7", .type = SNI_CONST_INT, .value.i = 99},
+    {.name = "EVE_MIDI_E1", .type = SNI_CONST_INT, .value.i = 28},
+    {.name = "EVE_MIDI_E2", .type = SNI_CONST_INT, .value.i = 40},
+    {.name = "EVE_MIDI_E3", .type = SNI_CONST_INT, .value.i = 52},
+    {.name = "EVE_MIDI_E4", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "EVE_MIDI_E5", .type = SNI_CONST_INT, .value.i = 76},
+    {.name = "EVE_MIDI_E6", .type = SNI_CONST_INT, .value.i = 88},
+    {.name = "EVE_MIDI_E7", .type = SNI_CONST_INT, .value.i = 100},
+    {.name = "EVE_MIDI_F1", .type = SNI_CONST_INT, .value.i = 29},
+    {.name = "EVE_MIDI_F2", .type = SNI_CONST_INT, .value.i = 41},
+    {.name = "EVE_MIDI_F3", .type = SNI_CONST_INT, .value.i = 53},
+    {.name = "EVE_MIDI_F4", .type = SNI_CONST_INT, .value.i = 65},
+    {.name = "EVE_MIDI_F5", .type = SNI_CONST_INT, .value.i = 77},
+    {.name = "EVE_MIDI_F6", .type = SNI_CONST_INT, .value.i = 89},
+    {.name = "EVE_MIDI_F7", .type = SNI_CONST_INT, .value.i = 101},
+    {.name = "EVE_MIDI_F_1", .type = SNI_CONST_INT, .value.i = 30},
+    {.name = "EVE_MIDI_F_2", .type = SNI_CONST_INT, .value.i = 42},
+    {.name = "EVE_MIDI_F_3", .type = SNI_CONST_INT, .value.i = 54},
+    {.name = "EVE_MIDI_F_4", .type = SNI_CONST_INT, .value.i = 66},
+    {.name = "EVE_MIDI_F_5", .type = SNI_CONST_INT, .value.i = 78},
+    {.name = "EVE_MIDI_F_6", .type = SNI_CONST_INT, .value.i = 90},
+    {.name = "EVE_MIDI_F_7", .type = SNI_CONST_INT, .value.i = 102},
+    {.name = "EVE_MIDI_G1", .type = SNI_CONST_INT, .value.i = 31},
+    {.name = "EVE_MIDI_G2", .type = SNI_CONST_INT, .value.i = 43},
+    {.name = "EVE_MIDI_G3", .type = SNI_CONST_INT, .value.i = 55},
+    {.name = "EVE_MIDI_G4", .type = SNI_CONST_INT, .value.i = 67},
+    {.name = "EVE_MIDI_G5", .type = SNI_CONST_INT, .value.i = 79},
+    {.name = "EVE_MIDI_G6", .type = SNI_CONST_INT, .value.i = 91},
+    {.name = "EVE_MIDI_G7", .type = SNI_CONST_INT, .value.i = 103},
+    {.name = "EVE_MIDI_G_1", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "EVE_MIDI_G_2", .type = SNI_CONST_INT, .value.i = 44},
+    {.name = "EVE_MIDI_G_3", .type = SNI_CONST_INT, .value.i = 56},
+    {.name = "EVE_MIDI_G_4", .type = SNI_CONST_INT, .value.i = 68},
+    {.name = "EVE_MIDI_G_5", .type = SNI_CONST_INT, .value.i = 80},
+    {.name = "EVE_MIDI_G_6", .type = SNI_CONST_INT, .value.i = 92},
+    {.name = "EVE_MIDI_G_7", .type = SNI_CONST_INT, .value.i = 104},
+    {.name = "EVE_MUSICBOX", .type = SNI_CONST_INT, .value.i = 72},
+    {.name = "EVE_MUTE", .type = SNI_CONST_INT, .value.i = 96},
+    {.name = "EVE_NEAREST", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_NEVER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_NOTCH", .type = SNI_CONST_INT, .value.i = 83},
+    {.name = "EVE_NOTEQUAL", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "EVE_ONE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_ONE_MINUS_DST_ALPHA", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "EVE_ONE_MINUS_SRC_ALPHA", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_OPT_CENTERX", .type = SNI_CONST_INT, .value.i = 512},
+    {.name = "EVE_OPT_CENTERY", .type = SNI_CONST_INT, .value.i = 1024},
+    {.name = "EVE_OPT_FLAT", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "EVE_OPT_FULLSCREEN", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "EVE_OPT_MEDIAFIFO", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "EVE_OPT_MONO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_OPT_NOBACK", .type = SNI_CONST_INT, .value.i = 4096},
+    {.name = "EVE_OPT_NODL", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_OPT_NOHANDS", .type = SNI_CONST_INT, .value.i = 49152},
+    {.name = "EVE_OPT_NOHM", .type = SNI_CONST_INT, .value.i = 16384},
+    {.name = "EVE_OPT_NOPOINTER", .type = SNI_CONST_INT, .value.i = 16384},
+    {.name = "EVE_OPT_NOSECS", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "EVE_OPT_NOTEAR", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_OPT_NOTICKS", .type = SNI_CONST_INT, .value.i = 8192},
+    {.name = "EVE_OPT_RIGHTX", .type = SNI_CONST_INT, .value.i = 2048},
+    {.name = "EVE_OPT_SIGNED", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "EVE_OPT_SOUND", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "EVE_ORGAN", .type = SNI_CONST_INT, .value.i = 68},
+    {.name = "EVE_PALETTED", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "EVE_PALETTED4444", .type = SNI_CONST_INT, .value.i = 15},
+    {.name = "EVE_PALETTED565", .type = SNI_CONST_INT, .value.i = 14},
+    {.name = "EVE_PALETTED8", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "EVE_PIANO", .type = SNI_CONST_INT, .value.i = 70},
+    {.name = "EVE_POINTS", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_POP", .type = SNI_CONST_INT, .value.i = 86},
+    {.name = "EVE_RAM_CMD", .type = SNI_CONST_INT, .value.i = 3178496},
+    {.name = "EVE_RAM_DL", .type = SNI_CONST_INT, .value.i = 3145728},
+    {.name = "EVE_RAM_G", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_RAM_REG", .type = SNI_CONST_INT, .value.i = 3153920},
+    {.name = "EVE_RECTS", .type = SNI_CONST_INT, .value.i = 9},
+    {.name = "EVE_REPEAT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_REPLACE", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_RGB332", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_RGB565", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "EVE_ROM_CHIPID", .type = SNI_CONST_INT, .value.i = 786432},
+    {.name = "EVE_ROM_FONT", .type = SNI_CONST_INT, .value.i = 1966080},
+    {.name = "EVE_ROM_FONT_ADDR", .type = SNI_CONST_INT, .value.i = 3145724},
+    {.name = "EVE_SAWTOOTH", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_SILENCE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_SINEWAVE", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_SQUAREWAVE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_SRC_ALPHA", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_SWITCH", .type = SNI_CONST_INT, .value.i = 81},
+    {.name = "EVE_TEXT8X8", .type = SNI_CONST_INT, .value.i = 9},
+    {.name = "EVE_TEXTVGA", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "EVE_TMODE_CONTINUOUS", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "EVE_TMODE_FRAME", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "EVE_TMODE_OFF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "EVE_TMODE_ONESHOT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "EVE_TRIANGLE", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "EVE_TRUMPET", .type = SNI_CONST_INT, .value.i = 69},
+    {.name = "EVE_TUBA", .type = SNI_CONST_INT, .value.i = 66},
+    {.name = "EVE_UNMUTE", .type = SNI_CONST_INT, .value.i = 97},
+    {.name = "EVE_WARBLE", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "EVE_XYLOPHONE", .type = SNI_CONST_INT, .value.i = 65},
+    {.name = "EVE_ZERO", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FFMPEG_DUMP_FORMAT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FFMPEG_PLAYER_USE_LV_FS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FILE_EXPLORER_PATH_MAX_LEN", .type = SNI_CONST_INT, .value.i = 128},
     {.name = "FLEX_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FLEX_ALIGN_END", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FLEX_ALIGN_SPACE_AROUND", .type = SNI_CONST_INT, .value.i = 4},
@@ -29143,6 +34875,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FLEX_FLOW_ROW_REVERSE", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "FLEX_FLOW_ROW_WRAP", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "FLEX_FLOW_ROW_WRAP_REVERSE", .type = SNI_CONST_INT, .value.i = 12},
+    {.name = "FONT_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "FONT_FMT_TXT_CMAP_FORMAT0_FULL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FONT_FMT_TXT_CMAP_FORMAT0_TINY", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FONT_FMT_TXT_CMAP_SPARSE_FULL", .type = SNI_CONST_INT, .value.i = 1},
@@ -29162,6 +34895,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FONT_GLYPH_FORMAT_VECTOR", .type = SNI_CONST_INT, .value.i = 26},
     {.name = "FONT_KERNING_NONE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FONT_KERNING_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FONT_MANAGER_NAME_MAX_LEN", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "FONT_SUBPX_BOTH", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "FONT_SUBPX_HOR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FONT_SUBPX_NONE", .type = SNI_CONST_INT, .value.i = 0},
@@ -29176,8 +34910,25 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FREETYPE_OUTLINE_END", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FREETYPE_OUTLINE_LINE_TO", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FREETYPE_OUTLINE_MOVE_TO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "FS_ARDUINO_ESP_LITTLEFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_ARDUINO_ESP_LITTLEFS_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "FS_ARDUINO_SD_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_ARDUINO_SD_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "FS_FATFS_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_FATFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_FATFS_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "FS_FROGFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_LITTLEFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_LITTLEFS_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "FS_MAX_FN_LENGTH", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "FS_MAX_PATH_LEN", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "FS_MAX_PATH_LENGTH", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "FS_MEMFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FS_MODE_RD", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FS_MODE_WR", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "FS_POSIX_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_POSIX_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_POSIX_PATH", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "FS_RES_BUSY", .type = SNI_CONST_INT, .value.i = 7},
     {.name = "FS_RES_DENIED", .type = SNI_CONST_INT, .value.i = 6},
     {.name = "FS_RES_DRIVE_LETTER_ALREADY_USED", .type = SNI_CONST_INT, .value.i = 12},
@@ -29195,6 +34946,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FS_SEEK_CUR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FS_SEEK_END", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FS_SEEK_SET", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_STDIO_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_STDIO_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_STDIO_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "FS_UEFI_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_WIN32_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_WIN32_LETTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FS_WIN32_PATH", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "G2D_HASH_TABLE_SIZE", .type = SNI_CONST_INT, .value.i = 50},
+    {.name = "GLOBAL_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = "lv_global.h"},
+    {.name = "GLOBAL_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GRAD_DIR_CONICAL", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "GRAD_DIR_HOR", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "GRAD_DIR_LINEAR", .type = SNI_CONST_INT, .value.i = 3},
@@ -29216,6 +34977,8 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "GRID_ALIGN_SPACE_EVENLY", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "GRID_ALIGN_START", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GRID_ALIGN_STRETCH", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "GRID_CONTENT", .type = SNI_CONST_INT, .value.i = LV_GRID_CONTENT},
+    {.name = "GRID_TEMPLATE_LAST", .type = SNI_CONST_INT, .value.i = LV_GRID_TEMPLATE_LAST},
     {.name = "GROUP_REFOCUS_POLICY_NEXT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GROUP_REFOCUS_POLICY_PREV", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "IMAGEBUTTON_STATE_CHECKED_DISABLED", .type = SNI_CONST_INT, .value.i = 5},
@@ -29256,10 +35019,20 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "IMAGE_FLAGS_USER6", .type = SNI_CONST_INT, .value.i = 8192},
     {.name = "IMAGE_FLAGS_USER7", .type = SNI_CONST_INT, .value.i = 16384},
     {.name = "IMAGE_FLAGS_USER8", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "IMAGE_FLAGS_USER_MASK", .type = SNI_CONST_INT, .value.i = 65280},
+    {.name = "IMAGE_HEADER_DEADBEEF", .type = SNI_CONST_INT, .value.i = 29},
+    {.name = "IMAGE_HEADER_LEGACY", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "IMAGE_HEADER_MAGIC", .type = SNI_CONST_INT, .value.i = LV_IMAGE_HEADER_MAGIC},
     {.name = "IMAGE_SRC_FILE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "IMAGE_SRC_SYMBOL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "IMAGE_SRC_UNKNOWN", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "IMAGE_SRC_VARIABLE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "IME_PINYIN_CAND_TEXT_NUM", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "IME_PINYIN_K9_CAND_TEXT_NUM", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "INDEV_DEF_GESTURE_PINCH_DOWN_THRESHOLD", .type = SNI_CONST_INT, .value.i = 75},
+    {.name = "INDEV_DEF_GESTURE_PINCH_MAX_INITIAL_SCALE", .type = SNI_CONST_INT, .value.i = 250},
+    {.name = "INDEV_DEF_GESTURE_PINCH_UP_THRESHOLD", .type = SNI_CONST_INT, .value.i = 150},
+    {.name = "INDEV_DEF_GESTURE_ROTATION_THRESHOLD", .type = SNI_CONST_INT, .value.i = 200},
     {.name = "INDEV_GESTURE_CNT", .type = SNI_CONST_INT, .value.i = 6},
     {.name = "INDEV_GESTURE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "INDEV_GESTURE_PINCH", .type = SNI_CONST_INT, .value.i = 1},
@@ -29277,6 +35050,8 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "INDEV_TYPE_KEYPAD", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "INDEV_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "INDEV_TYPE_POINTER", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "INDEV_VECT_HIST_SIZE", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "INV_BUF_SIZE", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "KEYBOARD_MODE_NUMBER", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "KEYBOARD_MODE_SPECIAL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "KEYBOARD_MODE_TEXT_LOWER", .type = SNI_CONST_INT, .value.i = 0},
@@ -29297,11 +35072,15 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "KEY_PREV", .type = SNI_CONST_INT, .value.i = 11},
     {.name = "KEY_RIGHT", .type = SNI_CONST_INT, .value.i = 19},
     {.name = "KEY_UP", .type = SNI_CONST_INT, .value.i = 17},
+    {.name = "LABEL_DEFAULT_TEXT", .type = SNI_CONST_STRING, .value.s = "Text"},
+    {.name = "LABEL_DOT_NUM", .type = SNI_CONST_INT, .value.i = LV_LABEL_DOT_NUM},
     {.name = "LABEL_LONG_MODE_CLIP", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "LABEL_LONG_MODE_DOTS", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "LABEL_LONG_MODE_SCROLL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "LABEL_LONG_MODE_SCROLL_CIRCULAR", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "LABEL_LONG_MODE_WRAP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LABEL_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_LABEL_POS_LAST},
+    {.name = "LABEL_TEXT_SELECTION_OFF", .type = SNI_CONST_INT, .value.i = LV_LABEL_TEXT_SELECTION_OFF},
     {.name = "LAYER_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "LAYER_TYPE_SIMPLE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "LAYER_TYPE_TRANSFORM", .type = SNI_CONST_INT, .value.i = 2},
@@ -29309,11 +35088,77 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "LAYOUT_GRID", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "LAYOUT_LAST", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "LAYOUT_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LED_BRIGHT_MAX", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "LED_BRIGHT_MIN", .type = SNI_CONST_INT, .value.i = 80},
+    {.name = "LGFX_USER_INCLUDE", .type = SNI_CONST_STRING, .value.s = "lv_lgfx_user.hpp"},
+    {.name = "LIBINPUT_BSD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LIBINPUT_XKB", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LIBINPUT_XKB_DISABLE_KEY_MAP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LIBINPUT_XKB_LAYOUT", .type = SNI_CONST_STRING, .value.s = "us"},
+    {.name = "LIBINPUT_XKB_MODEL", .type = SNI_CONST_STRING, .value.s = "pc101"},
+    {.name = "LIBINPUT_XKB_OPTIONS", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "LIBINPUT_XKB_RULES", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "LIBINPUT_XKB_VARIANT", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "LINUX_DRM_BACKEND_EGL", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "LINUX_DRM_BACKEND_FBDEV", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LINUX_DRM_BACKEND_GBM", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "LINUX_DRM_USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LINUX_FBDEV_BSD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LINUX_FBDEV_BUFFER_COUNT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "LINUX_FBDEV_BUFFER_SIZE", .type = SNI_CONST_INT, .value.i = 60},
+    {.name = "LINUX_FBDEV_VSYNC", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LIST_DEPRECATED_MSG",
+     .type = SNI_CONST_STRING,
+     .value.s =
+         "lv_list is deprecated; build a list from a flex column instead. See the lv_example_flex_list example."},
+    {.name = "LOG_LEVEL_ERROR", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_ERROR},
+    {.name = "LOG_LEVEL_INFO", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_INFO},
+    {.name = "LOG_LEVEL_NONE", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_NONE},
+    {.name = "LOG_LEVEL_NUM", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "LOG_LEVEL_TRACE", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_TRACE},
+    {.name = "LOG_LEVEL_USER", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_USER},
+    {.name = "LOG_LEVEL_WARN", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_WARN},
+    {.name = "LVGL_VERSION_INFO", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "LVGL_VERSION_MAJOR", .type = SNI_CONST_INT, .value.i = 9},
+    {.name = "LVGL_VERSION_MINOR", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "LVGL_VERSION_PATCH", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "MASK_ID_INV", .type = SNI_CONST_INT, .value.i = -1},
+    {.name = "MASK_MAX_NUM", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "MENU_DEPRECATED_MSG",
+     .type = SNI_CONST_STRING,
+     .value.s = "lv_menu is deprecated; build menu navigation from base widgets instead. See the "
+                "lv_example_menu_navigation example."},
     {.name = "MENU_HEADER_BOTTOM_FIXED", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "MENU_HEADER_TOP_FIXED", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "MENU_HEADER_TOP_UNFIXED", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "MENU_ROOT_BACK_BUTTON_DISABLED", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "MENU_ROOT_BACK_BUTTON_ENABLED", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "NANOVG_BACKEND_GL2", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "NANOVG_BACKEND_GL3", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "NANOVG_BACKEND_GLES2", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "NANOVG_BACKEND_GLES3", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "NANOVG_IMAGE_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 128},
+    {.name = "NANOVG_LETTER_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 512},
+    {.name = "NEMA_CACHE_HAL_INCLUDE", .type = SNI_CONST_STRING, .value.s = "stm32u5xx_hal.h"},
+    {.name = "NEMA_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "NEMA_GFX_MAX_RESX", .type = SNI_CONST_INT, .value.i = 800},
+    {.name = "NEMA_GFX_MAX_RESY", .type = SNI_CONST_INT, .value.i = 600},
+    {.name = "NEMA_HAL_CUSTOM", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NEMA_HAL_STM32", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "NEMA_LIB_M33_NEMAPVG", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "NEMA_LIB_M33_REVC", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "NEMA_LIB_M55", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "NEMA_LIB_M7", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "NEMA_LIB_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NEMA_STM32_HAL_INCLUDE", .type = SNI_CONST_STRING, .value.s = "stm32u5xx_hal.h"},
+    {.name = "NEMA_USE_CACHE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NEMA_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NO_TIMER_READY", .type = SNI_CONST_INT, .value.i = -1},
+    {.name = "NUTTX_DEFAULT_DRAW_BUF_USE_INDEPENDENT_IMAGE_HEAP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NUTTX_LCD_BUFFER_COUNT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NUTTX_LCD_BUFFER_SIZE", .type = SNI_CONST_INT, .value.i = 60},
+    {.name = "NUTTX_TOUCHSCREEN_CURSOR_SIZE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NUTTX_TRACE_FILE_PATH", .type = SNI_CONST_STRING, .value.s = "/data/lvgl-trace.log"},
     {.name = "OBJ_CLASS_EDITABLE_FALSE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "OBJ_CLASS_EDITABLE_INHERIT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "OBJ_CLASS_EDITABLE_TRUE", .type = SNI_CONST_INT, .value.i = 1},
@@ -29374,7 +35219,28 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "OPA_80", .type = SNI_CONST_INT, .value.i = 204},
     {.name = "OPA_90", .type = SNI_CONST_INT, .value.i = 229},
     {.name = "OPA_COVER", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "OPA_MAX", .type = SNI_CONST_INT, .value.i = 253},
+    {.name = "OPA_MIN", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "OPA_TRANSP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_CMSIS_RTOS2", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "OS_CUSTOM", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "OS_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "OS_FREERTOS", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "OS_IDLE_PERCENT_CUSTOM", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_MQX", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "OS_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_PTHREAD", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "OS_RTTHREAD", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "OS_SDL2", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "OS_USE_CMSIS_RTOS2", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_FREERTOS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_MQX", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_PTHREAD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_RTTHREAD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_SDL2", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_USE_WINDOWS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "OS_WINDOWS", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "PALETTE_AMBER", .type = SNI_CONST_INT, .value.i = 13},
     {.name = "PALETTE_BLUE", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "PALETTE_BLUE_GREY", .type = SNI_CONST_INT, .value.i = 17},
@@ -29405,12 +35271,111 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "PART_MAIN", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "PART_SCROLLBAR", .type = SNI_CONST_INT, .value.i = 65536},
     {.name = "PART_SELECTED", .type = SNI_CONST_INT, .value.i = 262144},
+    {.name = "PART_TEXTAREA_PLACEHOLDER", .type = SNI_CONST_INT, .value.i = LV_PART_TEXTAREA_PLACEHOLDER},
+    {.name = "PPA_BURST_LENGTH", .type = SNI_CONST_INT, .value.i = 128},
+    {.name = "PRIX32", .type = SNI_CONST_STRING, .value.s = "X"},
+    {.name = "PRIX64", .type = SNI_CONST_STRING, .value.s = "llX"},
+    {.name = "PRId32", .type = SNI_CONST_STRING, .value.s = "d"},
+    {.name = "PRId64", .type = SNI_CONST_STRING, .value.s = "lld"},
+    {.name = "PRIu32", .type = SNI_CONST_STRING, .value.s = "u"},
+    {.name = "PRIu64", .type = SNI_CONST_STRING, .value.s = "llu"},
+    {.name = "PRIx32", .type = SNI_CONST_STRING, .value.s = "x"},
+    {.name = "PRIx64", .type = SNI_CONST_STRING, .value.s = "llx"},
+    {.name = "PROFILER_BUILTIN_BUF_SIZE", .type = SNI_CONST_INT, .value.i = 16384},
+    {.name = "PROFILER_INCLUDE", .type = SNI_CONST_STRING, .value.s = "lvgl/debugging/profiler/lv_profiler_builtin.h"},
+    {.name = "PROFILER_STYLE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "QNX_BUF_COUNT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "QRCODE_UPDATE_MODE_DEFERRED", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "QRCODE_UPDATE_MODE_IMMEDIATE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "RADIUS_CIRCLE", .type = SNI_CONST_INT, .value.i = LV_RADIUS_CIRCLE},
+    {.name = "REG_CLOCK", .type = SNI_CONST_INT, .value.i = 3153928},
+    {.name = "REG_CMDB_SPACE", .type = SNI_CONST_INT, .value.i = 3155316},
+    {.name = "REG_CMDB_WRITE", .type = SNI_CONST_INT, .value.i = 3155320},
+    {.name = "REG_CMD_DL", .type = SNI_CONST_INT, .value.i = 3154176},
+    {.name = "REG_CMD_READ", .type = SNI_CONST_INT, .value.i = 3154168},
+    {.name = "REG_CMD_WRITE", .type = SNI_CONST_INT, .value.i = 3154172},
+    {.name = "REG_CPURESET", .type = SNI_CONST_INT, .value.i = 3153952},
+    {.name = "REG_CSPREAD", .type = SNI_CONST_INT, .value.i = 3154024},
+    {.name = "REG_CTOUCH_EXTENDED", .type = SNI_CONST_INT, .value.i = 3154184},
+    {.name = "REG_CTOUCH_TOUCH1_XY", .type = SNI_CONST_INT, .value.i = 3154204},
+    {.name = "REG_CTOUCH_TOUCH2_XY", .type = SNI_CONST_INT, .value.i = 3154316},
+    {.name = "REG_CTOUCH_TOUCH3_XY", .type = SNI_CONST_INT, .value.i = 3154320},
+    {.name = "REG_CTOUCH_TOUCH4_X", .type = SNI_CONST_INT, .value.i = 3154284},
+    {.name = "REG_CTOUCH_TOUCH4_Y", .type = SNI_CONST_INT, .value.i = 3154208},
+    {.name = "REG_DITHER", .type = SNI_CONST_INT, .value.i = 3154016},
+    {.name = "REG_DLSWAP", .type = SNI_CONST_INT, .value.i = 3154004},
+    {.name = "REG_FRAMES", .type = SNI_CONST_INT, .value.i = 3153924},
+    {.name = "REG_FREQUENCY", .type = SNI_CONST_INT, .value.i = 3153932},
+    {.name = "REG_GPIO", .type = SNI_CONST_INT, .value.i = 3154068},
+    {.name = "REG_GPIOX", .type = SNI_CONST_INT, .value.i = 3154076},
+    {.name = "REG_GPIOX_DIR", .type = SNI_CONST_INT, .value.i = 3154072},
+    {.name = "REG_GPIO_DIR", .type = SNI_CONST_INT, .value.i = 3154064},
+    {.name = "REG_HCYCLE", .type = SNI_CONST_INT, .value.i = 3153964},
+    {.name = "REG_HOFFSET", .type = SNI_CONST_INT, .value.i = 3153968},
+    {.name = "REG_HSIZE", .type = SNI_CONST_INT, .value.i = 3153972},
+    {.name = "REG_HSYNC0", .type = SNI_CONST_INT, .value.i = 3153976},
+    {.name = "REG_HSYNC1", .type = SNI_CONST_INT, .value.i = 3153980},
+    {.name = "REG_ID", .type = SNI_CONST_INT, .value.i = 3153920},
+    {.name = "REG_INT_EN", .type = SNI_CONST_INT, .value.i = 3154092},
+    {.name = "REG_INT_FLAGS", .type = SNI_CONST_INT, .value.i = 3154088},
+    {.name = "REG_INT_MASK", .type = SNI_CONST_INT, .value.i = 3154096},
+    {.name = "REG_MACRO_0", .type = SNI_CONST_INT, .value.i = 3154136},
+    {.name = "REG_MACRO_1", .type = SNI_CONST_INT, .value.i = 3154140},
+    {.name = "REG_OUTBITS", .type = SNI_CONST_INT, .value.i = 3154012},
+    {.name = "REG_PCLK", .type = SNI_CONST_INT, .value.i = 3154032},
+    {.name = "REG_PCLK_POL", .type = SNI_CONST_INT, .value.i = 3154028},
+    {.name = "REG_PLAY", .type = SNI_CONST_INT, .value.i = 3154060},
+    {.name = "REG_PLAYBACK_FORMAT", .type = SNI_CONST_INT, .value.i = 3154116},
+    {.name = "REG_PLAYBACK_FREQ", .type = SNI_CONST_INT, .value.i = 3154112},
+    {.name = "REG_PLAYBACK_LENGTH", .type = SNI_CONST_INT, .value.i = 3154104},
+    {.name = "REG_PLAYBACK_LOOP", .type = SNI_CONST_INT, .value.i = 3154120},
+    {.name = "REG_PLAYBACK_PLAY", .type = SNI_CONST_INT, .value.i = 3154124},
+    {.name = "REG_PLAYBACK_READPTR", .type = SNI_CONST_INT, .value.i = 3154108},
+    {.name = "REG_PLAYBACK_START", .type = SNI_CONST_INT, .value.i = 3154100},
+    {.name = "REG_PWM_DUTY", .type = SNI_CONST_INT, .value.i = 3154132},
+    {.name = "REG_PWM_HZ", .type = SNI_CONST_INT, .value.i = 3154128},
+    {.name = "REG_ROTATE", .type = SNI_CONST_INT, .value.i = 3154008},
+    {.name = "REG_SOUND", .type = SNI_CONST_INT, .value.i = 3154056},
+    {.name = "REG_SWIZZLE", .type = SNI_CONST_INT, .value.i = 3154020},
+    {.name = "REG_TAG", .type = SNI_CONST_INT, .value.i = 3154044},
+    {.name = "REG_TAG_X", .type = SNI_CONST_INT, .value.i = 3154036},
+    {.name = "REG_TAG_Y", .type = SNI_CONST_INT, .value.i = 3154040},
+    {.name = "REG_TOUCH_ADC_MODE", .type = SNI_CONST_INT, .value.i = 3154184},
+    {.name = "REG_TOUCH_CHARGE", .type = SNI_CONST_INT, .value.i = 3154188},
+    {.name = "REG_TOUCH_CONFIG", .type = SNI_CONST_INT, .value.i = 3154280},
+    {.name = "REG_TOUCH_DIRECT_XY", .type = SNI_CONST_INT, .value.i = 3154316},
+    {.name = "REG_TOUCH_DIRECT_Z1Z2", .type = SNI_CONST_INT, .value.i = 3154320},
+    {.name = "REG_TOUCH_MODE", .type = SNI_CONST_INT, .value.i = 3154180},
+    {.name = "REG_TOUCH_OVERSAMPLE", .type = SNI_CONST_INT, .value.i = 3154196},
+    {.name = "REG_TOUCH_RAW_XY", .type = SNI_CONST_INT, .value.i = 3154204},
+    {.name = "REG_TOUCH_RZ", .type = SNI_CONST_INT, .value.i = 3154208},
+    {.name = "REG_TOUCH_RZTHRESH", .type = SNI_CONST_INT, .value.i = 3154200},
+    {.name = "REG_TOUCH_SCREEN_XY", .type = SNI_CONST_INT, .value.i = 3154212},
+    {.name = "REG_TOUCH_SETTLE", .type = SNI_CONST_INT, .value.i = 3154192},
+    {.name = "REG_TOUCH_TAG", .type = SNI_CONST_INT, .value.i = 3154220},
+    {.name = "REG_TOUCH_TAG_XY", .type = SNI_CONST_INT, .value.i = 3154216},
+    {.name = "REG_TOUCH_TRANSFORM_A", .type = SNI_CONST_INT, .value.i = 3154256},
+    {.name = "REG_TOUCH_TRANSFORM_B", .type = SNI_CONST_INT, .value.i = 3154260},
+    {.name = "REG_TOUCH_TRANSFORM_C", .type = SNI_CONST_INT, .value.i = 3154264},
+    {.name = "REG_TOUCH_TRANSFORM_D", .type = SNI_CONST_INT, .value.i = 3154268},
+    {.name = "REG_TOUCH_TRANSFORM_E", .type = SNI_CONST_INT, .value.i = 3154272},
+    {.name = "REG_TOUCH_TRANSFORM_F", .type = SNI_CONST_INT, .value.i = 3154276},
+    {.name = "REG_TRIM", .type = SNI_CONST_INT, .value.i = 3154304},
+    {.name = "REG_VCYCLE", .type = SNI_CONST_INT, .value.i = 3153984},
+    {.name = "REG_VOFFSET", .type = SNI_CONST_INT, .value.i = 3153988},
+    {.name = "REG_VOL_PB", .type = SNI_CONST_INT, .value.i = 3154048},
+    {.name = "REG_VOL_SOUND", .type = SNI_CONST_INT, .value.i = 3154052},
+    {.name = "REG_VSIZE", .type = SNI_CONST_INT, .value.i = 3153992},
+    {.name = "REG_VSYNC0", .type = SNI_CONST_INT, .value.i = 3153996},
+    {.name = "REG_VSYNC1", .type = SNI_CONST_INT, .value.i = 3154000},
     {.name = "RESULT_INVALID", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "RESULT_OK", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "ROLLER_MODE_INFINITE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "ROLLER_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SCALE_LABEL_ENABLED_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ENABLED_DEFAULT},
+    {.name = "SCALE_LABEL_ROTATE_KEEP_UPRIGHT", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ROTATE_KEEP_UPRIGHT},
+    {.name = "SCALE_LABEL_ROTATE_MATCH_TICKS", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ROTATE_MATCH_TICKS},
+    {.name = "SCALE_MAJOR_TICK_EVERY_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_MAJOR_TICK_EVERY_DEFAULT},
     {.name = "SCALE_MODE_HORIZONTAL_BOTTOM", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SCALE_MODE_HORIZONTAL_TOP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SCALE_MODE_LAST", .type = SNI_CONST_INT, .value.i = 17},
@@ -29418,6 +35383,9 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SCALE_MODE_ROUND_OUTER", .type = SNI_CONST_INT, .value.i = 16},
     {.name = "SCALE_MODE_VERTICAL_LEFT", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SCALE_MODE_VERTICAL_RIGHT", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "SCALE_NONE", .type = SNI_CONST_INT, .value.i = LV_SCALE_NONE},
+    {.name = "SCALE_ROTATION_ANGLE_MASK", .type = SNI_CONST_INT, .value.i = LV_SCALE_ROTATION_ANGLE_MASK},
+    {.name = "SCALE_TOTAL_TICK_COUNT_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_TOTAL_TICK_COUNT_DEFAULT},
     {.name = "SCREEN_LOAD_ANIM_FADE_IN", .type = SNI_CONST_INT, .value.i = 9},
     {.name = "SCREEN_LOAD_ANIM_FADE_ON", .type = SNI_CONST_INT, .value.i = 9},
     {.name = "SCREEN_LOAD_ANIM_FADE_OUT", .type = SNI_CONST_INT, .value.i = 10},
@@ -29442,6 +35410,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SCROLL_SNAP_END", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SCROLL_SNAP_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SCROLL_SNAP_START", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SDL_BACKEND_EGL", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "SDL_BACKEND_SW", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SDL_BACKEND_TEXTURE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SDL_BUF_COUNT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SDL_FULLSCREEN", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SDL_INCLUDE_PATH", .type = SNI_CONST_STRING, .value.s = "SDL2/SDL.h"},
+    {.name = "SDL_MOUSEWHEEL_MODE_CROWN", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SDL_MOUSEWHEEL_MODE_ENCODER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SDL_USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SIZE_CONTENT", .type = SNI_CONST_INT, .value.i = LV_SIZE_CONTENT},
     {.name = "SLIDER_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SLIDER_MODE_RANGE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SLIDER_MODE_SYMMETRICAL", .type = SNI_CONST_INT, .value.i = 1},
@@ -29455,6 +35433,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SPAN_OVERFLOW_CLIP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SPAN_OVERFLOW_ELLIPSIS", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SPAN_OVERFLOW_LAST", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "SPINBOX_MAX_DIGIT_COUNT", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "SPI_WIDTH_DIO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SPI_WIDTH_QIO", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "SPI_WIDTH_SIO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STATE_ALT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "STATE_ANY", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "STATE_CHECKED", .type = SNI_CONST_INT, .value.i = 4},
@@ -29470,6 +35452,12 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STATE_USER_2", .type = SNI_CONST_INT, .value.i = 8192},
     {.name = "STATE_USER_3", .type = SNI_CONST_INT, .value.i = 16384},
     {.name = "STATE_USER_4", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "STDLIB_BUILTIN", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "STDLIB_CLIB", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "STDLIB_CUSTOM", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "STDLIB_MICROPYTHON", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "STDLIB_RTTHREAD", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "STRIDE_AUTO", .type = SNI_CONST_INT, .value.i = LV_STRIDE_AUTO},
     {.name = "STYLE_ALIGN", .type = SNI_CONST_INT, .value.i = 18},
     {.name = "STYLE_ANIM", .type = SNI_CONST_INT, .value.i = 116},
     {.name = "STYLE_ANIM_DURATION", .type = SNI_CONST_INT, .value.i = 117},
@@ -29565,6 +35553,8 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STYLE_PAD_TOP", .type = SNI_CONST_INT, .value.i = 24},
     {.name = "STYLE_PROP_ANY", .type = SNI_CONST_INT, .value.i = 255},
     {.name = "STYLE_PROP_CONST", .type = SNI_CONST_INT, .value.i = 255},
+    {.name = "STYLE_PROP_FLAG_ALL", .type = SNI_CONST_INT, .value.i = 63},
+    {.name = "STYLE_PROP_FLAG_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STYLE_PROP_INV", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STYLE_RADIAL_OFFSET", .type = SNI_CONST_INT, .value.i = 14},
     {.name = "STYLE_RADIUS", .type = SNI_CONST_INT, .value.i = 120},
@@ -29573,6 +35563,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STYLE_RES_FOUND", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "STYLE_RES_NOT_FOUND", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STYLE_ROTARY_SENSITIVITY", .type = SNI_CONST_INT, .value.i = 123},
+    {.name = "STYLE_SENTINEL_VALUE", .type = SNI_CONST_INT, .value.i = -1430532899},
     {.name = "STYLE_SHADOW_COLOR", .type = SNI_CONST_INT, .value.i = 88},
     {.name = "STYLE_SHADOW_OFFSET_X", .type = SNI_CONST_INT, .value.i = 97},
     {.name = "STYLE_SHADOW_OFFSET_Y", .type = SNI_CONST_INT, .value.i = 98},
@@ -29610,6 +35601,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STYLE_WIDTH", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "STYLE_X", .type = SNI_CONST_INT, .value.i = 16},
     {.name = "STYLE_Y", .type = SNI_CONST_INT, .value.i = 17},
+    {.name = "ST_LTDC_USE_DMA2D_FLUSH", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SUBJECT_TYPE_COLOR", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "SUBJECT_TYPE_FLOAT", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "SUBJECT_TYPE_GROUP", .type = SNI_CONST_INT, .value.i = 6},
@@ -29618,9 +35610,75 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SUBJECT_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SUBJECT_TYPE_POINTER", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "SUBJECT_TYPE_STRING", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "SWITCH_KNOB_EXT_AREA_CORRECTION", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SWITCH_ORIENTATION_AUTO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SWITCH_ORIENTATION_HORIZONTAL", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SWITCH_ORIENTATION_VERTICAL", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "SYMBOL_AUDIO", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x81"},
+    {.name = "SYMBOL_BACKSPACE", .type = SNI_CONST_STRING, .value.s = "\xEF\x95\x9A"},
+    {.name = "SYMBOL_BARS", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\x89"},
+    {.name = "SYMBOL_BATTERY_1", .type = SNI_CONST_STRING, .value.s = "\xEF\x89\x83"},
+    {.name = "SYMBOL_BATTERY_2", .type = SNI_CONST_STRING, .value.s = "\xEF\x89\x82"},
+    {.name = "SYMBOL_BATTERY_3", .type = SNI_CONST_STRING, .value.s = "\xEF\x89\x81"},
+    {.name = "SYMBOL_BATTERY_EMPTY", .type = SNI_CONST_STRING, .value.s = "\xEF\x89\x84"},
+    {.name = "SYMBOL_BATTERY_FULL", .type = SNI_CONST_STRING, .value.s = "\xEF\x89\x80"},
+    {.name = "SYMBOL_BELL", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\xB3"},
+    {.name = "SYMBOL_BLUETOOTH", .type = SNI_CONST_STRING, .value.s = "\xEF\x8a\x93"},
+    {.name = "SYMBOL_BULLET", .type = SNI_CONST_STRING, .value.s = "\xE2\x80\xA2"},
+    {.name = "SYMBOL_CALL", .type = SNI_CONST_STRING, .value.s = "\xEF\x82\x95"},
+    {.name = "SYMBOL_CHARGE", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\xA7"},
+    {.name = "SYMBOL_CLOSE", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x8D"},
+    {.name = "SYMBOL_COPY", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\x85"},
+    {.name = "SYMBOL_CUT", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\x84"},
+    {.name = "SYMBOL_DIRECTORY", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xBB"},
+    {.name = "SYMBOL_DOWN", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB8"},
+    {.name = "SYMBOL_DOWNLOAD", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x99"},
+    {.name = "SYMBOL_DRIVE", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x9C"},
+    {.name = "SYMBOL_DUMMY", .type = SNI_CONST_STRING, .value.s = "\xEF\xA3\xBF"},
+    {.name = "SYMBOL_EDIT", .type = SNI_CONST_STRING, .value.s = "\xEF\x8C\x84"},
+    {.name = "SYMBOL_EJECT", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x92"},
+    {.name = "SYMBOL_ENVELOPE", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\xA0"},
+    {.name = "SYMBOL_EYE_CLOSE", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB0"},
+    {.name = "SYMBOL_EYE_OPEN", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xAE"},
+    {.name = "SYMBOL_FILE", .type = SNI_CONST_STRING, .value.s = "\xEF\x85\x9B"},
+    {.name = "SYMBOL_GPS", .type = SNI_CONST_STRING, .value.s = "\xEF\x84\xA4"},
+    {.name = "SYMBOL_HOME", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x95"},
+    {.name = "SYMBOL_IMAGE", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\xBE"},
+    {.name = "SYMBOL_KEYBOARD", .type = SNI_CONST_STRING, .value.s = "\xEF\x84\x9C"},
+    {.name = "SYMBOL_LEFT", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x93"},
+    {.name = "SYMBOL_LIST", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x8B"},
+    {.name = "SYMBOL_LOOP", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB9"},
+    {.name = "SYMBOL_MINUS", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xA8"},
+    {.name = "SYMBOL_MUTE", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\xA6"},
+    {.name = "SYMBOL_NEW_LINE", .type = SNI_CONST_STRING, .value.s = "\xEF\xA2\xA2"},
+    {.name = "SYMBOL_NEXT", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x91"},
+    {.name = "SYMBOL_OK", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x8C"},
+    {.name = "SYMBOL_PASTE", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\xAA"},
+    {.name = "SYMBOL_PAUSE", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x8C"},
+    {.name = "SYMBOL_PLAY", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x8B"},
+    {.name = "SYMBOL_PLUS", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xA7"},
+    {.name = "SYMBOL_POWER", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x91"},
+    {.name = "SYMBOL_PREV", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x88"},
+    {.name = "SYMBOL_REFRESH", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\xA1"},
+    {.name = "SYMBOL_RIGHT", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x94"},
+    {.name = "SYMBOL_SAVE", .type = SNI_CONST_STRING, .value.s = "\xEF\x83\x87"},
+    {.name = "SYMBOL_SD_CARD", .type = SNI_CONST_STRING, .value.s = "\xEF\x9F\x82"},
+    {.name = "SYMBOL_SETTINGS", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x93"},
+    {.name = "SYMBOL_SHUFFLE", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB4"},
+    {.name = "SYMBOL_STOP", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x8D"},
+    {.name = "SYMBOL_TINT", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\x83"},
+    {.name = "SYMBOL_TRASH", .type = SNI_CONST_STRING, .value.s = "\xEF\x8B\xAD"},
+    {.name = "SYMBOL_UP", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB7"},
+    {.name = "SYMBOL_UPLOAD", .type = SNI_CONST_STRING, .value.s = "\xEF\x82\x93"},
+    {.name = "SYMBOL_USB", .type = SNI_CONST_STRING, .value.s = "\xEF\x8a\x87"},
+    {.name = "SYMBOL_VIDEO", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\x88"},
+    {.name = "SYMBOL_VOLUME_MAX", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\xA8"},
+    {.name = "SYMBOL_VOLUME_MID", .type = SNI_CONST_STRING, .value.s = "\xEF\x80\xA7"},
+    {.name = "SYMBOL_WARNING", .type = SNI_CONST_STRING, .value.s = "\xEF\x81\xB1"},
+    {.name = "SYMBOL_WIFI", .type = SNI_CONST_STRING, .value.s = "\xEF\x87\xAB"},
+    {.name = "SYSMON_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
+    {.name = "SYSMON_PROC_IDLE_AVAILABLE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SYSMON_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "TABLE_CELL_CTRL_CUSTOM_1", .type = SNI_CONST_INT, .value.i = 16},
     {.name = "TABLE_CELL_CTRL_CUSTOM_2", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "TABLE_CELL_CTRL_CUSTOM_3", .type = SNI_CONST_INT, .value.i = 64},
@@ -29628,6 +35686,8 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "TABLE_CELL_CTRL_MERGE_RIGHT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "TABLE_CELL_CTRL_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "TABLE_CELL_CTRL_TEXT_CROP", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "TABLE_CELL_NONE", .type = SNI_CONST_INT, .value.i = LV_TABLE_CELL_NONE},
+    {.name = "TEXTAREA_CURSOR_LAST", .type = SNI_CONST_INT, .value.i = LV_TEXTAREA_CURSOR_LAST},
     {.name = "TEXT_ALIGN_AUTO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "TEXT_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "TEXT_ALIGN_LEFT", .type = SNI_CONST_INT, .value.i = 1},
@@ -29645,6 +35705,79 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "TEXT_LEADING_TRIM_LOWER", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "TEXT_LEADING_TRIM_LOWER_BASELINE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "TEXT_LEADING_TRIM_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "TRIGO_SHIFT", .type = SNI_CONST_INT, .value.i = 15},
+    {.name = "TRIGO_SIN_MAX", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "TXT_ENC_ASCII", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "TXT_ENC_UTF8", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "TXT_LINE_BREAK_LONG_POST_MIN_LEN", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "TXT_LINE_BREAK_LONG_PRE_MIN_LEN", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "UEFI_USE_MEMORY_SERVICES", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_CHECK_OBJ_PARENT_LINK", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DEMO_GLTF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_DMA2D_INTERRUPT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_G2D_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_LINUX_DRM_GBM_BUFFERS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_LOTTIE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_MEM_MONITOR", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NANOVG_TEST_HEADLESS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NEMA_VG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_CUSTOM_INIT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_INDEPENDENT_IMAGE_HEAP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_LCD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_LIBUV", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_MOUSE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_MOUSE_MOVE_STEP", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "USE_NUTTX_TOUCHSCREEN", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NUTTX_TRACE_FILE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_OPENGLES_DEBUG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_OPENGLES_PBUFFER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PERF_MONITOR", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PERF_MONITOR_LOG_MODE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PPA_IMG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PROFILER_BUILTIN_POSIX", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PXP_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_ROTATE_PXP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_SIFLI_EPIC_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_SVG_ANIMATION", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_SVG_DEBUG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_TEST_SCREENSHOT_COMPARE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_TLSF", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "USE_UEFI_INCLUDE", .type = SNI_CONST_STRING, .value.s = "myefi.h"},
+    {.name = "USE_VG_LITE_DRIVER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_VG_LITE_THORVG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_WINDOWS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_BITMAP_FONT_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "VG_LITE_DISABLE_BLIT_RECT_OFFSET", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_DISABLE_LINEAR_GRADIENT_EXT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_DISABLE_VLC_OP_CLOSE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_FLUSH_MAX_COUNT", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "VG_LITE_GPU_GC255_0X40A", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_GPU_GC355_0X0_1215", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VG_LITE_GPU_GC355_0X0_1216", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VG_LITE_GPU_GC555_0X423", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "VG_LITE_GPU_GC555_0X423_ECO", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "VG_LITE_GPU_GCNANOULTRAV_0X1003", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "VG_LITE_GRAD_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "VG_LITE_HAL_GPU_BASE_ADDRESS", .type = SNI_CONST_INT, .value.i = 1076101120},
+    {.name = "VG_LITE_PATH_DUMP_MAX_LEN", .type = SNI_CONST_INT, .value.i = 1000},
+    {.name = "VG_LITE_STROKE_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "VG_LITE_THORVG_BUF_ADDR_ALIGN", .type = SNI_CONST_INT, .value.i = 64},
+    {.name = "VG_LITE_THORVG_LINEAR_GRADIENT_EXT_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_THORVG_LVGL_BLEND_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_THORVG_THREAD_RENDER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_THORVG_YUV_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_USE_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VG_LITE_USE_GPU_INIT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WAYLAND_USE_DMABUF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WAYLAND_USE_DMABUF_PROTOCOL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WAYLAND_USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WAYLAND_USE_G2D", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WIN_DEPRECATED_MSG",
+     .type = SNI_CONST_STRING,
+     .value.s =
+         "lv_win is deprecated; build a window from a flex column instead. See the lv_example_flex_win example."},
+    {.name = "ZERO_MEM_SENTINEL", .type = SNI_CONST_INT, .value.i = -1582119980},
     {.name = "_LV_IMAGE_ALIGN_AUTO_TRANSFORM", .type = SNI_CONST_INT, .value.i = 10},
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };

@@ -108,6 +108,8 @@ typedef struct
     char *version;
     uint16_t min_api_level;
     uint16_t target_api_level;
+    script_pkg_type_t manifest_type; /**< Type declared by manifest.json when present. */
+    bool has_manifest_type; /**< False for legacy packages; their Header remains authoritative. */
 } eos_pkg_manifest_info_t;
 
 /**

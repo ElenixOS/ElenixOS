@@ -725,6 +725,7 @@ static eos_result_t _parse_manifest_info(const uint8_t *manifest, uint32_t manif
     cJSON *description;
     cJSON *min_api;
     cJSON *target_api;
+    cJSON *type;
     double min_value;
     double target_value;
 
@@ -744,6 +745,7 @@ static eos_result_t _parse_manifest_info(const uint8_t *manifest, uint32_t manif
     description = cJSON_GetObjectItemCaseSensitive(root, "description");
     min_api = cJSON_GetObjectItemCaseSensitive(root, "minApiLevel");
     target_api = cJSON_GetObjectItemCaseSensitive(root, "targetApiLevel");
+    type = cJSON_GetObjectItemCaseSensitive(root, "type");
     if (!cJSON_IsString(id) || !id->valuestring || !cJSON_IsString(name) || !name->valuestring
         || !cJSON_IsString(version) || !version->valuestring || !cJSON_IsNumber(min_api) || !cJSON_IsNumber(target_api)
         || !cJSON_IsString(author) || !author->valuestring || !cJSON_IsString(description) || !description->valuestring
@@ -753,10 +755,33 @@ static eos_result_t _parse_manifest_info(const uint8_t *manifest, uint32_t manif
         return EOS_ERR_JSON_ERROR;
     }
 
+    if (type)
+    {
+        if (!cJSON_IsString(type) || !type->valuestring)
+        {
+            cJSON_Delete(root);
+            return EOS_ERR_JSON_ERROR;
+        }
+        if (strcmp(type->valuestring, "application") == 0)
+        {
+            info->manifest_type = SCRIPT_TYPE_APPLICATION;
+        }
+        else if (strcmp(type->valuestring, "watchface") == 0)
+        {
+            info->manifest_type = SCRIPT_TYPE_WATCHFACE;
+        }
+        else
+        {
+            cJSON_Delete(root);
+            return EOS_ERR_VALUE_MISMATCH;
+        }
+        info->has_manifest_type = true;
+    }
+
     min_value = cJSON_GetNumberValue(min_api);
     target_value = cJSON_GetNumberValue(target_api);
     if (min_value < 0.0 || min_value > 65535.0 || min_value != (double)(uint16_t)min_value || target_value < 0.0
-        || target_value > 65535.0 || target_value != (double)(uint16_t)target_value
+        || target_value > 65535.0 || target_value != (double)(uint16_t)target_value || min_value > target_value
         || !eos_storage_is_valid_filename(id->valuestring) || strchr(id->valuestring, '/')
         || strchr(id->valuestring, '\\'))
     {
@@ -795,6 +820,11 @@ eos_result_t eos_pkg_read_manifest_info(eos_pkg_t *package, eos_pkg_manifest_inf
         result = _parse_manifest_info(manifest, manifest_size, info);
     }
     eos_free(manifest);
+    if (result == EOS_OK && info->has_manifest_type && info->manifest_type != package->type)
+    {
+        eos_pkg_manifest_info_free(info);
+        result = EOS_ERR_VALUE_MISMATCH;
+    }
     return result;
 }
 

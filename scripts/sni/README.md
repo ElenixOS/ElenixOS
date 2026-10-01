@@ -50,7 +50,14 @@ The default analysis is summary-first. `--details` groups unsupported APIs by C 
 
 Every command supports `--format json`. Stdout is one JSON document with the command, success state, summary, progress events, structured diagnostics, and command result. JSON mode suppresses human progress, table markup, and colors. By default, `dump-ir` writes its full IR to the console (`result.ir` in JSON mode). Use `dump-ir --output-file PATH` to write the complete JSON snapshot to a file; the console then reports only the file path, size, and entry counts. With `--format json`, stdout contains the concise command envelope and output-file metadata while the file contains the full snapshot.
 
-To regenerate metadata from the current project configuration, use `generate --refresh-lvgl-json`; it invokes LVGL's `gen_json.py` with the repository's `lv_conf.h` and writes the metadata under `build/lvgl-api/`. The LVGL generator's Doxygen helper and Python requirements must be installed for this refresh step. Existing metadata can be passed with `--lvgl-json PATH`.
+The CLI resolves project paths at its boundary; SNI Core receives explicit paths and does not infer a Simulator or LVGL checkout. By default, the CLI uses `LVGL_ROOT` when set, otherwise it searches the current directory and its parents for `lv_conf.h` plus an `lvgl/` checkout. An alternate checkout can be selected explicitly:
+
+```sh
+python3 ElenixOS/scripts/sni/generate_sni.py analyze --lvgl-root /path/to/lvgl
+python3 ElenixOS/scripts/sni/generate_sni.py analyze --lvgl-root /path/to/lvgl --refresh-lvgl-json
+```
+
+`--refresh-lvgl-json` is available to every command. It invokes the selected checkout's `scripts/gen_json/gen_json.py` with the project's `lv_conf.h` and writes a refreshed snapshot under `build/lvgl-api/`. Override the config header with `--lvgl-config PATH`, or pass an existing/generated metadata file with `--lvgl-json PATH`. When an alternate LVGL checkout is selected, the CLI does not reuse a potentially stale project build snapshot unless `--lvgl-json` is supplied or metadata refresh is requested. The LVGL generator's Doxygen helper and Python requirements must be installed for refresh.
 
 Generation formats all C outputs with the repository's `.clang-format`; `clang-format` 20 must be available.
 

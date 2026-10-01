@@ -623,25 +623,6 @@ def add_exported_constants(
         constants[name] = ApiConstant(name=name, kind="int", value=name)
 
 
-def resolve_lvgl_version_header(lvgl_json_path: Path, configured_path: Optional[Path]) -> Path:
-    """Find the LVGL version header used by the generated API description."""
-    if configured_path is not None:
-        if configured_path.is_file():
-            return configured_path
-        raise SystemExit(f"[Error] LVGL version header not found: {configured_path}")
-
-    candidates = []
-    if len(lvgl_json_path.parents) > 3:
-        candidates.append(lvgl_json_path.parents[3] / "lv_version.h")
-    candidates.append(Path(__file__).resolve().parents[3] / "lvgl" / "lv_version.h")
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate
-
-    searched = ", ".join(str(candidate) for candidate in candidates)
-    raise SystemExit(f"[Error] unable to locate LVGL version header; searched: {searched}")
-
-
 def load_lvgl_version(version_header_path: Path) -> Tuple[int, int, int]:
     """Read the LVGL version directly from lv_version.h."""
     try:

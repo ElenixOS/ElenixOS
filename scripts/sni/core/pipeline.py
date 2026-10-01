@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,27 +44,9 @@ class PipelineResult:
     emitter_diagnostics: list[str] | None = None
 
 
-def default_paths(script_path: Path) -> dict[str, Path]:
-    sni_root = script_path.resolve().parent
-    repo_root = sni_root.parents[2]
-    elenix_root = sni_root.parents[1]
-    build_json = repo_root / "build" / "lvgl-api" / "lvgl.json"
-    tracked_json = repo_root / "lvgl" / "scripts" / "gen_json" / "output" / "lvgl.json"
-    return {
-        "repo_root": repo_root,
-        "elenix_root": elenix_root,
-        "sni_root": sni_root,
-        "lvgl_json": build_json if build_json.exists() else tracked_json,
-        "config": sni_root / "config" / "sni_lvgl_bindings.json",
-        "version_header": repo_root / "lvgl" / "include" / "lvgl" / "lv_version.h",
-        "type_ids": elenix_root / "src" / "script_engine" / "sni" / "sni_type_ids.h",
-        "lv_types": elenix_root / "src" / "script_engine" / "sni" / "sni_gen" / "sni_lv_types.c",
-        "api": elenix_root / "src" / "script_engine" / "sni" / "sni_api" / "lv" / "sni_api_lv.c",
-    }
-
-
-def scan_special_ids(sni_root: Path) -> set[str]:
-    source_root = sni_root.parent.parent / "src" / "script_engine" / "sni" / "sni_api"
+def scan_special_ids(source_root: Path) -> set[str]:
+    if not source_root.is_dir():
+        raise PipelineError("Loading SNI binding configuration", f"special API source directory not found: {source_root}")
     pattern = re.compile(r"\b(sni_api_[A-Za-z0-9_]+)\s*\(")
     result: set[str] = set()
     for path in sorted(source_root.rglob("*")):
@@ -75,35 +56,12 @@ def scan_special_ids(sni_root: Path) -> set[str]:
     return result
 
 
-def refresh_lvgl_json(repo_root: Path, output_json: Path) -> None:
-    gen_json = repo_root / "lvgl" / "scripts" / "gen_json" / "gen_json.py"
-    lv_conf = repo_root / "lv_conf.h"
-    if not gen_json.is_file():
-        raise PipelineError("Refresh LVGL metadata", f"LVGL gen_json.py not found: {gen_json}")
-    if not lv_conf.is_file():
-        raise PipelineError("Refresh LVGL metadata", f"project lv_conf.h not found: {lv_conf}")
-    output_dir = output_json.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
-    command = [sys.executable, str(gen_json), "--lvgl-config", str(lv_conf), "--output-path", str(output_dir)]
-    process = subprocess.run(command, cwd=repo_root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if process.returncode != 0:
-        raise PipelineError(
-            "Refresh LVGL metadata",
-            f"gen_json.py exited with status {process.returncode}; its failure output is suppressed because upstream currently includes the process environment",
-        )
-    if not output_json.is_file():
-        raise PipelineError("Refresh LVGL metadata", f"gen_json.py completed without writing {output_json}")
-
-
 def build_pipeline(
     paths: dict[str, Path],
     reporter: ProgressReporter,
-    refresh_metadata: bool = False,
     fail_on_validation_error: bool = False,
 ) -> PipelineResult:
     with reporter.stage("Loading LVGL metadata"):
-        if refresh_metadata:
-            refresh_lvgl_json(paths["repo_root"], paths["lvgl_json"])
         try:
             lvgl_data = json.loads(paths["lvgl_json"].read_text(encoding="utf-8"))
         except OSError as exc:
@@ -115,7 +73,7 @@ def build_pipeline(
         model = LVGLModel(lvgl_data)
 
     with reporter.stage("Loading SNI binding configuration"):
-        special_ids = scan_special_ids(paths["sni_root"])
+        special_ids = scan_special_ids(paths["special_api_source"])
         try:
             config = load_config(paths["config"], special_ids)
         except ValueError as exc:
@@ -182,15 +140,12 @@ def render_outputs(result: PipelineResult, paths: dict[str, Path], verbose: bool
         paths["lv_types"]: lv_types_source,
         paths["api"]: api_source,
     }
-    style_file = paths.get("style_file", paths.get("elenix_root", Path(__file__).resolve().parents[3]) / ".clang-format")
-    return format_generated_outputs(outputs, style_file)
+    return format_generated_outputs(outputs, paths["style_file"])
 
 
 def _clang_format_20() -> Path:
     candidates = [
         shutil.which("clang-format-20"),
-        "/opt/homebrew/opt/llvm@20/bin/clang-format",
-        "/usr/local/opt/llvm@20/bin/clang-format",
         shutil.which("clang-format"),
     ]
     for candidate in candidates:

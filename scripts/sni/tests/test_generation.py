@@ -7,7 +7,7 @@ from pathlib import Path
 from sni.core.config import BindingConfig, validate_config
 from sni.core.ir import ApiStatus, Diagnostic, Severity
 from sni.core.lvgl_model import LVGLModel
-from sni.core.pipeline import PipelineError, PipelineResult, generate_and_write, render_outputs
+from sni.core.pipeline import PipelineError, PipelineResult, _clang_format_20, generate_and_write, render_outputs
 from sni.core.resolver import TypeResolver
 from sni.core.selection import select_apis
 from sni.cli.reporters import TerminalReporter
@@ -22,6 +22,13 @@ def ptr(node: dict, quals: list[str] | None = None) -> dict:
 
 
 class GeneratorRenderingTests(unittest.TestCase):
+    def setUp(self) -> None:
+        if self._testMethodName != "test_validation_failure_does_not_touch_existing_generated_files":
+            try:
+                _clang_format_20()
+            except PipelineError as exc:
+                self.skipTest(str(exc))
+
     def make_fixture(self, temp_root: Path) -> tuple[PipelineResult, dict[str, Path]]:
         lvgl_data = {
             "functions": [
@@ -81,6 +88,7 @@ class GeneratorRenderingTests(unittest.TestCase):
             "lv_types": temp_root / "sni_lv_types.c",
             "api": temp_root / "sni_api_lv.c",
             "version_header": temp_root / "lv_version.h",
+            "style_file": Path(__file__).resolve().parents[3] / ".clang-format",
         }
         paths["version_header"].write_text(
             "#define LVGL_VERSION_MAJOR 9\n#define LVGL_VERSION_MINOR 6\n#define LVGL_VERSION_PATCH 0\n",
@@ -192,6 +200,7 @@ class GeneratorRenderingTests(unittest.TestCase):
                 "lv_types": root / "sni_lv_types.c",
                 "api": root / "sni_api_lv.c",
                 "version_header": root / "lv_version.h",
+                "style_file": Path(__file__).resolve().parents[3] / ".clang-format",
             }
             paths["version_header"].write_text("#define LVGL_VERSION_MAJOR 9\n#define LVGL_VERSION_MINOR 6\n#define LVGL_VERSION_PATCH 0\n", encoding="utf-8")
             pipeline = PipelineResult(model, config, selection, ir, {"analysis": {}}, set())

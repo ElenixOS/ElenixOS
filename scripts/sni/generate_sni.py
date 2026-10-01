@@ -12,8 +12,10 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sni.cli.reporters import JsonReporter, ProgressReporter, TerminalReporter
+from sni.cli.lvgl_metadata import MetadataRefreshError, refresh_lvgl_json
+from sni.cli.paths import resolve_paths
 from sni.core.ir import Diagnostic, Severity
-from sni.core.pipeline import PipelineError, PipelineResult, build_pipeline, default_paths, generate_and_write, write_outputs_atomically
+from sni.core.pipeline import PipelineError, PipelineResult, build_pipeline, generate_and_write, write_outputs_atomically
 from sni.core.result import CommandResult
 from sni.core.validation import has_errors
 
@@ -55,8 +57,10 @@ def _add_output_options(parser: argparse.ArgumentParser, child: bool = False) ->
     parser.add_argument("--no-color", action="store_true", default=default, help="Disable terminal colors")
 
 
-def add_command_arguments(parser: argparse.ArgumentParser, allow_refresh: bool = False) -> None:
+def add_command_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lvgl-json", type=Path, help="LVGL gen_json metadata file")
+    parser.add_argument("--lvgl-root", type=Path, help="LVGL source checkout (defaults to LVGL_ROOT or the current project's lvgl directory)")
+    parser.add_argument("--lvgl-config", type=Path, help="LVGL configuration header used when refreshing metadata")
     parser.add_argument("--config", type=Path, help="SNI binding configuration JSON")
     parser.add_argument("--lvgl-version-header", type=Path, help="LVGL version header")
     parser.add_argument("--output-dir", type=Path, help="Directory for generated SNI outputs")
@@ -66,8 +70,11 @@ def add_command_arguments(parser: argparse.ArgumentParser, allow_refresh: bool =
         help="Show one API status or diagnostic category",
     )
     _add_output_options(parser, child=True)
-    if allow_refresh:
-        parser.add_argument("--refresh-lvgl-json", action="store_true", help="Regenerate lvgl.json with the repository's lv_conf.h first")
+    parser.add_argument(
+        "--refresh-lvgl-json",
+        action="store_true",
+        help="Regenerate lvgl.json from the selected LVGL checkout before running",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -90,24 +97,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write the complete IR snapshot to this JSON file instead of the console",
     )
     generate = subparsers.add_parser("generate")
-    add_command_arguments(generate, allow_refresh=True)
+    add_command_arguments(generate)
     return parser
-
-
-def resolved_paths(args: argparse.Namespace) -> dict[str, Path]:
-    paths = default_paths(Path(__file__))
-    if args.lvgl_json:
-        paths["lvgl_json"] = args.lvgl_json.resolve()
-    if args.config:
-        paths["config"] = args.config.resolve()
-    if args.lvgl_version_header:
-        paths["version_header"] = args.lvgl_version_header.resolve()
-    if args.output_dir:
-        output_dir = args.output_dir.resolve()
-        paths["type_ids"] = output_dir / "sni_type_ids.h"
-        paths["lv_types"] = output_dir / "sni_lv_types.c"
-        paths["api"] = output_dir / "sni_api_lv.c"
-    return paths
 
 
 def _diagnostic_counts(diagnostics: list[Diagnostic]) -> dict[str, int]:
@@ -167,6 +158,8 @@ def _create_reporter(args: argparse.Namespace, stages: list[str]) -> ProgressRep
 
 def _stage_plan(args: argparse.Namespace) -> list[str]:
     stages = list(STAGE_PLANS[args.command])
+    if args.refresh_lvgl_json:
+        stages.insert(0, "Refreshing LVGL metadata")
     if args.command == "dump-ir" and args.output_file:
         stages.append("Writing IR snapshot")
     return stages
@@ -196,16 +189,19 @@ def _validate_category(command: str, category: str | None) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    paths = resolved_paths(args)
-    if getattr(args, "refresh_lvgl_json", False) and not args.lvgl_json:
-        paths["lvgl_json"] = paths["repo_root"] / "build" / "lvgl-api" / "lvgl.json"
+    paths = resolve_paths(args, Path(__file__))
     reporter = _create_reporter(args, _stage_plan(args))
     try:
         _validate_category(args.command, args.category)
+        if args.refresh_lvgl_json:
+            with reporter.stage("Refreshing LVGL metadata"):
+                try:
+                    refresh_lvgl_json(paths["lvgl_root"], paths["lvgl_config"], paths["lvgl_json"])
+                except MetadataRefreshError as exc:
+                    raise PipelineError(reporter.current, str(exc)) from exc
         pipeline = build_pipeline(
             paths,
             reporter,
-            refresh_metadata=bool(getattr(args, "refresh_lvgl_json", False)),
             fail_on_validation_error=args.command in {"validate", "generate"},
         )
         summary = _analysis_summary(pipeline)

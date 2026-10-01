@@ -271,6 +271,10 @@ static void sni_cb_event_dispatch(lv_event_t *e)
      * pointer test: it immediately dereferences obj->parent. */
     if (event_code == LV_EVENT_DELETE)
     {
+        if (ctx->dsc)
+        {
+            sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
+        }
         ctx->owner = NULL;
         ctx->dsc = NULL;
         sni_cb_event_free_ctx(ctx);
@@ -560,6 +564,7 @@ bool sni_cb_event_remove_dsc(lv_obj_t *obj, lv_event_dsc_t *dsc)
     {
         if (ctx && ctx->alive)
         {
+            sni_tb_remove_sub_resource(ctx->owner_ctx, dsc, SNI_H_LV_EVENT_DSC);
             ctx->owner = NULL;
             ctx->dsc = NULL;
             sni_cb_event_free_ctx(ctx);
@@ -595,6 +600,7 @@ bool sni_cb_event_remove_by_js_cb(lv_obj_t *obj, jerry_value_t js_cb)
         }
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
+        sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
         ctx->dsc = NULL;
         ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
@@ -638,6 +644,7 @@ uint32_t sni_cb_event_remove_by_js_cb_user_data(lv_obj_t *obj, jerry_value_t js_
         }
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
+        sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
         ctx->dsc = NULL;
         ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
@@ -1043,6 +1050,7 @@ void sni_cb_context_cleanup_events(sni_context_t *ctx)
              * before LVGL frees the object.  Do not call lv_obj_is_valid()
              * here: it dereferences the raw pointer and therefore cannot
              * validate an object that has already been freed. */
+            sni_tb_remove_sub_resource(ctx, event_ctx->dsc, SNI_H_LV_EVENT_DSC);
             lv_obj_remove_event_dsc(event_ctx->owner, event_ctx->dsc);
             event_ctx->dsc = NULL;
             event_ctx->owner = NULL;

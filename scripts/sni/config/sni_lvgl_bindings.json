@@ -1,0 +1,672 @@
+{
+  "$schema": "./sni_lvgl_bindings.schema.json",
+  "schema_version": 1,
+  "description": "ElenixOS decisions for exposing LVGL APIs and native types through SNI. C declaration facts come from lvgl.json.",
+  "api_selection": {
+    "classes": {
+      "obj": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_obj_create",
+        "base": null,
+        "methods": [
+          {
+            "name": "lv_obj_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "button": {
+        "c_type": "lv_button_t",
+        "constructor": "lv_button_create",
+        "base": "obj",
+        "methods": [],
+        "static_methods": [],
+        "constants": []
+      },
+      "label": {
+        "c_type": "lv_label_t",
+        "constructor": "lv_label_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_label_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "name": "obj",
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "arc": {
+        "c_type": "lv_arc_t",
+        "constructor": "lv_arc_create",
+        "base": "obj",
+        "methods": [],
+        "static_methods": [],
+        "constants": []
+      },
+      "bar": {
+        "c_type": "lv_bar_t",
+        "constructor": "lv_bar_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_bar_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "name": "obj",
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "screen": {
+        "c_type": "lv_obj_t",
+        "constructor": null,
+        "base": "obj",
+        "methods": [],
+        "static_methods": [
+          "lv_screen_active"
+        ],
+        "constants": []
+      },
+      "color": {
+        "c_type": "lv_color_t",
+        "constructor": null,
+        "base": null,
+        "methods": [],
+        "static_methods": [
+          "lv_color_hex"
+        ],
+        "constants": []
+      },
+      "timer": {
+        "c_type": "lv_timer_t",
+        "base": null,
+        "constructor": "lv_timer_create",
+        "methods": [
+          {
+            "name": "lv_timer_*",
+            "arg_match": [
+              {
+                "name": "timer",
+                "nth": 1,
+                "type": "lv_timer_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "anim": {
+        "c_type": "lv_anim_t",
+        "base": null,
+        "constructor": "lv_anim_init",
+        "methods": [
+          {
+            "name": "lv_anim_*",
+            "arg_match": [
+              {
+                "name": "a",
+                "nth": 1,
+                "type": "lv_anim_t*"
+              }
+            ],
+            "exclude": [
+              "lv_anim_init"
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "buttonmatrix": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_buttonmatrix_create",
+        "methods": [
+          {
+            "name": "lv_buttonmatrix_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": [
+          "LV_BUTTONMATRIX_CTRL_HIDDEN",
+          "LV_BUTTONMATRIX_CTRL_NO_REPEAT",
+          "LV_BUTTONMATRIX_CTRL_DISABLED",
+          "LV_BUTTONMATRIX_CTRL_CHECKABLE",
+          "LV_BUTTONMATRIX_CTRL_CHECKED",
+          "LV_BUTTONMATRIX_CTRL_CLICK_TRIG",
+          "LV_BUTTONMATRIX_CTRL_POPOVER",
+          "LV_BUTTONMATRIX_CTRL_RESERVED_1",
+          "LV_BUTTONMATRIX_CTRL_RESERVED_2",
+          "LV_BUTTONMATRIX_CTRL_CUSTOM_1",
+          "LV_BUTTONMATRIX_CTRL_CUSTOM_2"
+        ]
+      },
+      "calendar": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_calendar_create",
+        "methods": [
+          {
+            "name": "lv_calendar_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "chart": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_chart_create",
+        "methods": [
+          {
+            "name": "lv_chart_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "canvas": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_canvas_create",
+        "methods": [
+          {
+            "name": "lv_canvas_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "checkbox": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_checkbox_create",
+        "methods": [
+          {
+            "name": "lv_checkbox_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "dropdown": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_dropdown_create",
+        "methods": [
+          {
+            "name": "lv_dropdown_*",
+            "arg_match": [
+              {
+                "name": "obj",
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "image": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_image_create",
+        "methods": [
+          {
+            "name": "lv_image_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "imagebutton": {
+        "c_type": "lv_obj_t",
+        "base": "obj",
+        "constructor": "lv_imagebutton_create",
+        "methods": [
+          {
+            "name": "lv_imagebutton_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      }
+    },
+    "scan": {
+      "function": {
+        "blacklist": [
+          "*_fmt",
+          "*_id*",
+          "*_text_static",
+          "lv_anim_custom_*",
+          "lv_anim_get_user_data",
+          "lv_anim_set_exec_cb",
+          "lv_anim_set_user_data",
+          "lv_buttonmatrix_get_map",
+          "lv_buttonmatrix_set_button_draw_cb",
+          "lv_calendar_get_highlighted_dates",
+          "lv_calendar_get_pressed_date",
+          "lv_calendar_get_showed_date",
+          "lv_calendar_get_today_date",
+          "lv_canvas_get_image",
+          "lv_image_get_bitmap_map_src",
+          "lv_image_set_bitmap_map_src",
+          "lv_label_set_text_vfmt",
+          "lv_obj_add_delete_cb",
+          "lv_obj_add_play_timeline_event",
+          "lv_obj_add_screen_create_event",
+          "lv_obj_add_subject_increment_event",
+          "lv_obj_get_style_image_colorkey",
+          "lv_obj_get_transform",
+          "lv_obj_init_draw_*_dsc",
+          "lv_obj_remove_delete_cb",
+          "lv_obj_set_style_image_colorkey",
+          "lv_obj_set_subject_increment_event_max_value",
+          "lv_obj_set_subject_increment_event_min_value",
+          "lv_obj_set_subject_increment_event_rollover",
+          "lv_obj_set_transform",
+          "lv_timer_create_basic",
+          "lv_timer_get_user_data",
+          "lv_timer_set_auto_delete",
+          "lv_timer_set_user_data"
+        ]
+      },
+      "constant": {
+        "whitelist": [
+          "*"
+        ],
+        "blacklist": [
+          "STR_SYMBOL_*"
+        ]
+      }
+    }
+  },
+  "function_overrides": {
+    "lv_dropdown_get_selected_str": {
+      "output_string": {
+        "buffer_arg": "buf",
+        "size_arg": "buf_size",
+        "js_buffer_arg": "placeholder"
+      }
+    },
+    "lv_dropdown_set_options_static": {
+      "call": "lv_dropdown_set_options",
+      "string_ownership": "copy"
+    }
+  },
+  "type_declarations": {
+    "lv_timer_t": {
+      "kind": "managed_resource",
+      "category": "pure_managed",
+      "creator": "lv_timer_create",
+      "reason": "Only the SNI timer constructor creates and owns a timer instance."
+    },
+    "lv_chart_series_t": {
+      "kind": "managed_resource",
+      "category": "tree_dependent",
+      "creator": "lv_chart_add_series",
+      "reason": "LVGL chart owns series and destroys them with the parent chart."
+    },
+    "lv_chart_cursor_t": {
+      "kind": "managed_resource",
+      "category": "tree_dependent",
+      "creator": "lv_chart_add_cursor",
+      "reason": "LVGL chart owns cursors and destroys them with the parent chart."
+    },
+    "lv_event_dsc_t": {
+      "kind": "managed_resource",
+      "category": "tree_dependent",
+      "creator": "lv_obj_add_event_cb",
+      "reason": "Event descriptors are tied to their owning LVGL object; wrapper invalidation requires the special event binding."
+    }
+  },
+  "special_conversions": {
+    "void *": "SNI_T_PTR"
+  },
+  "special_bindings": {
+    "apis": {
+      "lv_anim_set_completed_cb": "sni_api_lv_anim_set_completed_cb",
+      "lv_anim_set_custom_exec_cb": "sni_api_lv_anim_set_custom_exec_cb",
+      "lv_anim_set_delay": "sni_api_lv_anim_set_delay",
+      "lv_anim_set_deleted_cb": "sni_api_lv_anim_set_deleted_cb",
+      "lv_anim_set_duration": "sni_api_lv_anim_set_duration",
+      "lv_anim_set_get_value_cb": "sni_api_lv_anim_set_get_value_cb",
+      "lv_anim_set_path_cb": "sni_api_lv_anim_set_path_cb",
+      "lv_anim_set_repeat_count": "sni_api_lv_anim_set_repeat_count",
+      "lv_anim_set_start_cb": "sni_api_lv_anim_set_start_cb",
+      "lv_anim_set_values": "sni_api_lv_anim_set_values",
+      "lv_anim_set_var": "sni_api_lv_anim_set_var",
+      "lv_anim_start": "sni_api_lv_anim_start",
+      "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
+      "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
+      "lv_calendar_set_day_names": "sni_api_lv_calendar_set_day_names",
+      "lv_calendar_set_highlighted_dates": "sni_api_lv_calendar_set_highlighted_dates",
+      "lv_canvas_get_px": "sni_api_lv_canvas_get_px",
+      "lv_canvas_set_px": "sni_api_lv_canvas_set_px",
+      "lv_dropdown_set_symbol": "sni_api_lv_dropdown_set_symbol",
+      "lv_image_set_src": "sni_api_lv_image_set_src",
+      "lv_imagebutton_get_src_left": "sni_api_lv_imagebutton_get_src_left",
+      "lv_imagebutton_get_src_middle": "sni_api_lv_imagebutton_get_src_middle",
+      "lv_imagebutton_get_src_right": "sni_api_lv_imagebutton_get_src_right",
+      "lv_imagebutton_set_src": "sni_api_lv_imagebutton_set_src",
+      "lv_obj_add_event_cb": "sni_api_lv_obj_add_event_cb",
+      "lv_obj_delete": "sni_api_lv_obj_delete",
+      "lv_obj_get_click_area": "sni_api_lv_obj_get_click_area",
+      "lv_obj_get_content_coords": "sni_api_lv_obj_get_content_coords",
+      "lv_obj_get_coords": "sni_api_lv_obj_get_coords",
+      "lv_obj_get_scroll_end": "sni_api_lv_obj_get_scroll_end",
+      "lv_obj_get_scrollbar_area": "sni_api_lv_obj_get_scrollbar_area",
+      "lv_obj_get_user_data": "sni_api_lv_obj_get_user_data",
+      "lv_obj_remove_event": "sni_api_lv_obj_remove_event",
+      "lv_obj_remove_event_cb": "sni_api_lv_obj_remove_event_cb",
+      "lv_obj_remove_event_cb_with_user_data": "sni_api_lv_obj_remove_event_cb_with_user_data",
+      "lv_obj_remove_event_dsc": "sni_api_lv_obj_remove_event_dsc",
+      "lv_obj_send_event": "sni_api_lv_obj_send_event",
+      "lv_obj_set_parent": "sni_api_lv_obj_set_parent",
+      "lv_obj_set_user_data": "sni_api_lv_obj_set_user_data",
+      "lv_timer_delete": "sni_api_lv_timer_delete",
+      "lv_timer_set_cb": "sni_api_lv_timer_set_cb"
+    },
+    "constructors": {
+      "lv_timer_create": "sni_api_ctor_timer",
+      "lv_anim_init": "sni_api_ctor_anim",
+      "lv_buttonmatrix_create": "sni_api_ctor_buttonmatrix"
+    },
+    "properties": [
+      {
+        "class": "anim",
+        "property": "completed_cb",
+        "function": "lv_anim_set_completed_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_completed_cb"
+      },
+      {
+        "class": "anim",
+        "property": "custom_exec_cb",
+        "function": "lv_anim_set_custom_exec_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_custom_exec_cb"
+      },
+      {
+        "class": "anim",
+        "property": "delay",
+        "function": "lv_anim_set_delay",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_delay"
+      },
+      {
+        "class": "anim",
+        "property": "deleted_cb",
+        "function": "lv_anim_set_deleted_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_deleted_cb"
+      },
+      {
+        "class": "anim",
+        "property": "duration",
+        "function": "lv_anim_set_duration",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_duration"
+      },
+      {
+        "class": "anim",
+        "property": "get_value_cb",
+        "function": "lv_anim_set_get_value_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_get_value_cb"
+      },
+      {
+        "class": "anim",
+        "property": "path_cb",
+        "function": "lv_anim_set_path_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_path_cb"
+      },
+      {
+        "class": "anim",
+        "property": "repeat_count",
+        "function": "lv_anim_set_repeat_count",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_repeat_count"
+      },
+      {
+        "class": "anim",
+        "property": "start_cb",
+        "function": "lv_anim_set_start_cb",
+        "accessor": "setter",
+        "binding": "sni_api_lv_anim_set_start_cb"
+      },
+      {
+        "class": "anim",
+        "property": "var",
+        "function": "lv_anim_set_var",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_anim_var"
+      },
+      {
+        "class": "buttonmatrix",
+        "property": "ctrl_map",
+        "function": "lv_buttonmatrix_set_ctrl_map",
+        "accessor": "setter",
+        "binding": "sni_api_lv_buttonmatrix_set_ctrl_map"
+      },
+      {
+        "class": "buttonmatrix",
+        "property": "map",
+        "function": "lv_buttonmatrix_set_map",
+        "accessor": "setter",
+        "binding": "sni_api_lv_buttonmatrix_set_map"
+      },
+      {
+        "class": "calendar",
+        "property": "day_names",
+        "function": "lv_calendar_set_day_names",
+        "accessor": "setter",
+        "binding": "sni_api_lv_calendar_set_day_names"
+      },
+      {
+        "class": "dropdown",
+        "property": "symbol",
+        "function": "lv_dropdown_set_symbol",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_dropdown_symbol"
+      },
+      {
+        "class": "image",
+        "property": "src",
+        "function": "lv_image_set_src",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_image_src"
+      },
+      {
+        "class": "obj",
+        "property": "parent",
+        "function": "lv_obj_set_parent",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_obj_parent"
+      },
+      {
+        "class": "obj",
+        "property": "user_data",
+        "function": "lv_obj_get_user_data",
+        "accessor": "getter",
+        "binding": "sni_api_prop_get_obj_user_data"
+      },
+      {
+        "class": "obj",
+        "property": "user_data",
+        "function": "lv_obj_set_user_data",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_obj_user_data"
+      },
+      {
+        "class": "timer",
+        "property": "cb",
+        "function": "lv_timer_set_cb",
+        "accessor": "setter",
+        "binding": "sni_api_prop_set_timer_cb"
+      }
+    ],
+    "class_extensions": {
+      "methods": {
+        "canvas": [
+          {
+            "name": "initBuffer",
+            "binding": "sni_api_lv_canvas_init_buffer"
+          },
+          {
+            "name": "freeBuffer",
+            "binding": "sni_api_lv_canvas_free_buffer"
+          }
+        ],
+        "obj": [
+          {
+            "name": "setFontSize",
+            "binding": "sni_api_eos_label_set_font_size"
+          }
+        ],
+        "timer": [
+          {
+            "name": "setAutoDelete",
+            "binding": "sni_api_lv_timer_set_auto_delete"
+          }
+        ]
+      },
+      "properties": {
+        "calendar": [
+          {
+            "name": "chineseMode",
+            "getter": null,
+            "setter": "sni_api_lv_calendar_set_chinese_mode"
+          }
+        ],
+        "timer": [
+          {
+            "name": "autoDelete",
+            "getter": null,
+            "setter": "sni_api_prop_set_timer_auto_delete"
+          }
+        ]
+      }
+    },
+    "type_dependencies": {
+      "sni_api_lv_canvas_get_px": [
+        "lv_color32_t"
+      ]
+    }
+  },
+  "runtime_type_ids": {
+    "tree_dependent": [
+      "SNI_H_LV_CHART_CURSOR",
+      "SNI_H_LV_CHART_SERIES",
+      "SNI_H_LV_EVENT_CB",
+      "SNI_H_LV_EVENT_DSC",
+      "SNI_H_EOS_ANALOG_HAND"
+    ],
+    "hybrid": [
+      "SNI_H_EOS_ACTIVITY",
+      "SNI_H_EOS_VIEW"
+    ],
+    "pure_managed": [
+      "SNI_H_LV_TIMER",
+      "SNI_H_LV_STYLE",
+      "SNI_H_LV_ANIM",
+      "SNI_H_LV_FONT",
+      "SNI_H_LV_GROUP",
+      "SNI_H_LV_LAYER",
+      "SNI_H_LV_OBSERVER",
+      "SNI_H_LV_DRAW_BUF",
+      "SNI_H_LV_SUBJECT",
+      "SNI_H_LV_COLOR_FILTER_DSC"
+    ],
+    "legacy_handles": [
+      "SNI_H_INT32",
+      "SNI_H_LV_DISPLAY",
+      "SNI_H_LV_DRAW_ARC_DSC",
+      "SNI_H_LV_DRAW_IMAGE_DSC",
+      "SNI_H_LV_DRAW_LABEL_DSC",
+      "SNI_H_LV_DRAW_LINE_DSC",
+      "SNI_H_LV_DRAW_RECT_DSC",
+      "SNI_H_LV_EVENT",
+      "SNI_H_LV_GRAD_DSC",
+      "SNI_H_LV_IMAGE_DSC",
+      "SNI_H_LV_OBJ_CLASS",
+      "SNI_H_LV_OBJ_TREE_WALK_CB",
+      "SNI_H_LV_STYLE_TRANSITION_DSC",
+      "SNI_H_LV_STYLE_VALUE"
+    ]
+  },
+  "api_rejection_reasons": {
+    "lv_canvas_get_image": "Returns a caller-managed image descriptor pointer whose ownership and invalidation are not integrated with SNI.",
+    "lv_image_get_bitmap_map_src": "Returns an image descriptor pointer without a proven SNI lifetime or external-owner invalidation path.",
+    "lv_image_set_bitmap_map_src": "Accepts an image descriptor pointer without a proven SNI lifetime contract."
+  }
+}

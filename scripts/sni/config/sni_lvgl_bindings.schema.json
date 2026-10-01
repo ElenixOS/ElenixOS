@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elenixos.com/schemas/sni-lvgl-bindings-v1.json",
+  "title": "ElenixOS LVGL to SNI bindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "api_selection"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "description": { "type": "string" },
+    "api_rejection_reasons": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "api_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classes"],
+      "properties": {
+        "classes": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/class" }
+        },
+        "scan": { "$ref": "#/$defs/scan" }
+      }
+    },
+    "function_overrides": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/functionOverride" }
+    },
+    "type_declarations": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/typeDeclaration" }
+    },
+    "special_conversions": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "special_bindings": { "$ref": "#/$defs/specialBindings" },
+    "runtime_type_ids": { "$ref": "#/$defs/runtimeTypeIds" }
+  },
+  "$defs": {
+    "selector": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "match": { "type": "string" },
+            "pattern": { "type": "string" },
+            "arg_match": { "$ref": "#/$defs/argRules" },
+            "args": { "$ref": "#/$defs/argRules" },
+            "arg": { "$ref": "#/$defs/argRules" },
+            "exclude": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+          }
+        }
+      ]
+    },
+    "argRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "nth": { "type": "integer", "minimum": 1 },
+        "n": { "type": "integer", "minimum": 1 },
+        "position": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "anyOf": [
+        { "required": ["index"] },
+        { "required": ["nth"] },
+        { "required": ["n"] },
+        { "required": ["position"] }
+      ]
+    },
+    "argRules": {
+      "oneOf": [
+        { "$ref": "#/$defs/argRule" },
+        { "type": "array", "items": { "$ref": "#/$defs/argRule" } }
+      ]
+    },
+    "class": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["c_type"],
+      "properties": {
+        "c_type": { "type": "string", "minLength": 1 },
+        "constructor": { "type": ["string", "null"] },
+        "base": { "type": ["string", "null"] },
+        "methods": { "oneOf": [{ "type": "array", "items": { "$ref": "#/$defs/selector" } }, { "$ref": "#/$defs/selector" }] },
+        "static_methods": { "oneOf": [{ "type": "array", "items": { "$ref": "#/$defs/selector" } }, { "$ref": "#/$defs/selector" }] },
+        "constants": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "scanPatterns": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "whitelist": { "type": "array", "items": { "type": "string" } },
+        "blacklist": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "function": { "$ref": "#/$defs/scanPatterns" },
+        "constant": { "$ref": "#/$defs/scanPatterns" }
+      }
+    },
+    "functionOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "call": { "type": "string" },
+        "string_ownership": { "const": "copy" },
+        "output_string": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["buffer_arg", "size_arg", "js_buffer_arg"],
+          "properties": {
+            "buffer_arg": { "type": "string" },
+            "size_arg": { "type": "string" },
+            "js_buffer_arg": { "const": "placeholder" }
+          }
+        }
+      }
+    },
+    "typeDeclaration": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "unknown" }, "reason": { "type": "string" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "category", "creator"],
+          "properties": {
+            "kind": { "const": "managed_resource" },
+            "category": { "enum": ["pure_managed", "tree_dependent", "hybrid"] },
+            "creator": { "type": "string", "minLength": 1 },
+            "reason": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "value_object" }, "reason": { "type": "string" } }
+        }
+      ]
+    },
+    "methodExtensions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "binding"],
+          "properties": { "name": { "type": "string" }, "binding": { "type": "string" } }
+        }
+      }
+    },
+    "propertyExtensions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "getter", "setter"],
+          "properties": {
+            "name": { "type": "string" },
+            "getter": { "type": ["string", "null"] },
+            "setter": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "specialBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apis": { "type": "object", "additionalProperties": { "type": "string" } },
+        "constructors": { "type": "object", "additionalProperties": { "type": "string" } },
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["class", "property", "function", "accessor", "binding"],
+            "properties": {
+              "class": { "type": "string" },
+              "property": { "type": "string" },
+              "function": { "type": "string" },
+              "accessor": { "enum": ["getter", "setter"] },
+              "binding": { "type": "string" }
+            }
+          }
+        },
+        "class_extensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "methods": { "$ref": "#/$defs/methodExtensions" },
+            "properties": { "$ref": "#/$defs/propertyExtensions" }
+          }
+        },
+        "type_dependencies": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+        }
+      }
+    },
+    "runtimeTypeIds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tree_dependent": { "$ref": "#/$defs/typeIdList" },
+        "hybrid": { "$ref": "#/$defs/typeIdList" },
+        "pure_managed": { "$ref": "#/$defs/typeIdList" },
+        "legacy_handles": { "$ref": "#/$defs/typeIdList" },
+        "value_objects": { "$ref": "#/$defs/typeIdList" }
+      }
+    },
+    "typeIdList": { "type": "array", "items": { "type": "string", "pattern": "^SNI_" }, "uniqueItems": true }
+  }
+}

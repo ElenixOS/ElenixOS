@@ -121,6 +121,28 @@ void sni_tb_link_sub_resource(void *parent_ptr, void *sub_ptr, sni_type_t sub_ty
  */
 void sni_tb_unlink_sub_resource(void *sub_ptr, sni_type_t sub_type);
 
+/**
+ * @brief Remove an explicitly destroyed Tree-Dependent handle from SNI.
+ * @param ctx Owning Realm context
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource(struct sni_context *ctx, void *sub_ptr, sni_type_t sub_type);
+
+/**
+ * @brief Remove a Tree-Dependent resource from the current Realm context.
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type);
+
+/**
+ * @brief Remove a Tree-Dependent resource from the current Realm context.
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type);
+
 void sni_tb_init(void);
 
 /**

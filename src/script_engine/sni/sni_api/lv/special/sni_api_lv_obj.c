@@ -95,7 +95,13 @@ jerry_value_t sni_api_lv_obj_add_event_cb(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Failed to register event callback");
     }
 
-    return sni_tb_c2js(&result, SNI_H_LV_EVENT_DSC);
+    jerry_value_t result_js = sni_tb_c2js(&result, SNI_H_LV_EVENT_DSC);
+    if (jerry_value_is_undefined(result_js) || jerry_value_is_exception(result_js))
+    {
+        return result_js;
+    }
+    sni_tb_link_sub_resource(self_obj, result, SNI_H_LV_EVENT_DSC);
+    return result_js;
 }
 
 jerry_value_t sni_api_lv_obj_remove_event_cb(const jerry_call_info_t *call_info_p,

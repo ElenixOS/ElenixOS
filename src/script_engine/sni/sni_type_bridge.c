@@ -1033,6 +1033,44 @@ void sni_tb_unlink_sub_resource(void *sub_ptr, sni_type_t sub_type)
     sub_node->parent_next = NULL;
 }
 
+void sni_tb_remove_sub_resource(sni_context_t *ctx, void *sub_ptr, sni_type_t sub_type)
+{
+    if (!ctx || !sub_ptr)
+    {
+        return;
+    }
+
+    sni_managed_resource_node_t *sub_node = sni_context_find_resource(ctx, sub_ptr, sub_type);
+    if (!sub_node)
+    {
+        return;
+    }
+
+    sni_control_block_t *parent_cb = sub_node->parent_cb;
+    if (parent_cb)
+    {
+        sni_managed_resource_node_t **prev = &parent_cb->sub_resource_head;
+        while (*prev)
+        {
+            if (*prev == sub_node)
+            {
+                *prev = sub_node->parent_next;
+                break;
+            }
+            prev = &(*prev)->parent_next;
+        }
+        sub_node->parent_cb = NULL;
+        sub_node->parent_next = NULL;
+    }
+
+    sni_context_remove_resource(ctx, sub_ptr, sub_type);
+}
+
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type)
+{
+    sni_tb_remove_sub_resource(sni_get_current_context(), sub_ptr, sub_type);
+}
+
 bool sni_tb_js2c_parent(jerry_value_t val, void **out)
 {
     if (sni_tb_js2c(val, SNI_H_LV_OBJ, out))

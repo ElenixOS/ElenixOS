@@ -20,7 +20,7 @@ from .diagnostics import build_analysis
 from .ir import Diagnostic
 from .lvgl_model import LVGLModel
 from .progress import ProgressReporter
-from .resolver import TypeResolver, legacy_type_maps
+from .resolver import TypeResolver
 from .selection import SelectionResult, select_apis
 from .validation import has_errors, validate_bindings
 
@@ -105,30 +105,13 @@ def build_pipeline(
 
 
 def render_outputs(result: PipelineResult, paths: dict[str, Path], verbose: bool = False) -> dict[Path, str]:
-    entries, lifecycle_map, type_ids_by_name = legacy_type_maps(result.ir, result.model, result.config.data)
-    type_ids_header, generated_type_ids, _ = build_type_ids(result.ir, result.config.data)
-    type_ids_by_name.update(generated_type_ids)
-    api_config = {
-        "classes": result.config.data["api_selection"]["classes"],
-        "scan": result.config.data["api_selection"].get("scan", {}),
-        "function_overrides": result.config.data.get("function_overrides", {}),
-    }
-    lv_api.configure_from_bindings(result.config.data, type_ids_by_name)
-    excluded = set(result.ir.rejected_names)
-    accepted_surface = sorted(set(result.ir.selected_names) - excluded)
-    api_source, emitter_result = lv_api.render_api_from_data(
-        api_config,
-        result.model.data,
-        entries,
-        lifecycle_map,
-        type_ids_by_name,
-        paths["version_header"],
-        excluded,
-        accepted_surface,
-        verbose=verbose,
-    )
+    if result.ir.api_surface is None:
+        raise PipelineError("Rendering generated sources", "Core did not produce a resolved API surface")
+    type_ids_header, _, _ = build_type_ids(result.ir, result.config.data)
+    lvgl_version = lv_api.load_lvgl_version(paths["version_header"])
+    api_source, emitter_result = lv_api.render_api(result.ir.api_surface, lvgl_version)
     result.emitter_diagnostics = list(emitter_result.get("diagnostics", []))
-    expected = set(accepted_surface)
+    expected = set(result.ir.api_surface.names)
     emitted = set(emitter_result["api_names"])
     if expected != emitted:
         missing = sorted(expected - emitted)

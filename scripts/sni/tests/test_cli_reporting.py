@@ -81,7 +81,11 @@ class SNICommandReportingTests(unittest.TestCase):
                     self.assertIn("types", snapshot)
                     self.assertIn("uses", snapshot)
                     self.assertIn("diagnostics", snapshot)
-                    self.assertEqual(len(snapshot["apis"]), 845)
+                    self.assertEqual(len(snapshot["apis"]), snapshot["summary"]["candidate_api_count"])
+                    self.assertEqual(
+                        sum(snapshot["summary"]["api_status_counts"].values()),
+                        len(snapshot["apis"]),
+                    )
                     if output_format == "text":
                         self.assertIn(str(output_file.resolve()), process.stdout)
                         self.assertNotIn('"apis": [', process.stdout)

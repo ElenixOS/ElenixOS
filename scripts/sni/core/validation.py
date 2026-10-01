@@ -47,6 +47,60 @@ def validate_bindings(
 
     api_names = set(selection.functions)
     special = config.get("special_bindings", {})
+    for function_name, override in config.get("function_overrides", {}).items():
+        if override.get("string_ownership") == "copy" and override.get("call", function_name) == function_name:
+            add(
+                "INVALID_STRING_OWNERSHIP_OVERRIDE",
+                Severity.ERROR,
+                f"Copying string override for {function_name} must name a different native call.",
+                subject_kind="api",
+                subject=function_name,
+                api=function_name,
+                suggested_action="Set function_overrides.call to the native function that copies the string.",
+            )
+
+        output_string = override.get("output_string")
+        selected = selection.functions.get(function_name)
+        if output_string is None or selected is None:
+            continue
+        raw_args = selected.item.get("args", [])
+        args_by_name = {
+            str(arg.get("name") or f"arg{index}"): (index, parse_type_node(arg.get("type")).use_site)
+            for index, arg in enumerate(raw_args)
+            if isinstance(arg, dict)
+        }
+        buffer = args_by_name.get(output_string["buffer_arg"])
+        size = args_by_name.get(output_string["size_arg"])
+        return_use = parse_type_node(selected.item.get("type")).use_site
+        valid_buffer = bool(
+            buffer
+            and buffer[0] > 0
+            and buffer[1].base_name == "char"
+            and buffer[1].pointer_depth == 1
+            and not buffer[1].is_const
+            and not buffer[1].array_shape
+        )
+        valid_size = bool(
+            size
+            and size[0] > 0
+            and size[1].base_name in {"uint32_t", "size_t"}
+            and size[1].pointer_depth == 0
+            and not size[1].array_shape
+        )
+        valid_method = "method" in selected.selection_kinds and "static_method" not in selected.selection_kinds
+        valid_return = return_use.base_name == "void" and return_use.pointer_depth == 0 and not return_use.array_shape
+        if not (valid_buffer and valid_size and valid_method and valid_return):
+            add(
+                "INVALID_OUTPUT_STRING_OVERRIDE",
+                Severity.ERROR,
+                f"output_string override for {function_name} must target a mutable char * buffer and uint32_t/size_t size on an instance method returning void.",
+                subject_kind="api",
+                subject=function_name,
+                api=function_name,
+                details={"buffer_valid": valid_buffer, "size_valid": valid_size, "instance_method": valid_method, "void_return": valid_return},
+                suggested_action="Correct the output_string arguments or remove the override.",
+            )
+
     for group in ("apis", "constructors"):
         for api_name, binding in special.get(group, {}).items():
             if api_name not in model.functions:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @file lv_api.py
-@brief Render LVGL SNI API wrappers from the validated binding IR
+@brief Render LVGL SNI API wrappers from the accepted resolved API surface
 """
 
 from __future__ import annotations
@@ -10,10 +10,11 @@ from __future__ import annotations
 import fnmatch
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from ..core.ir import ApiClassIR, ApiRecord, ApiStatus, ApiUse, ResolvedApiSurface
 from ..core.lvgl_model import normalize_c_type_node
 
 
@@ -47,48 +48,6 @@ static jerry_value_t lv_api_obj;
 """
 
 
-SPECIAL_CONSTRUCTOR_WRAPPERS: Dict[str, str] = {}
-SPECIAL_METHOD_WRAPPERS: Dict[str, str] = {}
-SPECIAL_PROPERTY_GETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {}
-SPECIAL_PROPERTY_SETTER_WRAPPERS: Dict[Tuple[str, str, str], str] = {}
-SPECIAL_EXTRA_PROPERTIES: Dict[str, List[Tuple[str, Optional[str], Optional[str]]]] = {}
-SPECIAL_EXTRA_METHODS: Dict[str, List[Tuple[str, str]]] = {}
-SNI_TYPE_ID_BY_C_NAME: Dict[str, str] = {}
-VERBOSE = False
-EMITTER_DIAGNOSTICS: List[str] = []
-
-
-def configure_from_bindings(config: Dict[str, Any], type_ids: Dict[str, str]) -> None:
-    """Load every special wrapper choice from the human-owned binding config."""
-    global SPECIAL_CONSTRUCTOR_WRAPPERS, SPECIAL_METHOD_WRAPPERS
-    global SPECIAL_PROPERTY_GETTER_WRAPPERS, SPECIAL_PROPERTY_SETTER_WRAPPERS
-    global SPECIAL_EXTRA_PROPERTIES, SPECIAL_EXTRA_METHODS, SNI_TYPE_ID_BY_C_NAME
-    bindings = config.get("special_bindings", {})
-    function_to_wrapper = dict(bindings.get("apis", {}))
-    SPECIAL_METHOD_WRAPPERS = function_to_wrapper
-    constructors = bindings.get("constructors", {})
-    SPECIAL_CONSTRUCTOR_WRAPPERS = {
-        name: constructors[cfg["constructor"]]
-        for name, cfg in config["api_selection"]["classes"].items()
-        if cfg.get("constructor") in constructors
-    }
-    SPECIAL_PROPERTY_GETTER_WRAPPERS = {}
-    SPECIAL_PROPERTY_SETTER_WRAPPERS = {}
-    for item in bindings.get("properties", []):
-        target = SPECIAL_PROPERTY_GETTER_WRAPPERS if item["accessor"] == "getter" else SPECIAL_PROPERTY_SETTER_WRAPPERS
-        target[(item["class"], item["property"], item["function"])] = item["binding"]
-    extensions = bindings.get("class_extensions", {})
-    SPECIAL_EXTRA_METHODS = {
-        name: [(item["name"], item["binding"]) for item in items]
-        for name, items in extensions.get("methods", {}).items()
-    }
-    SPECIAL_EXTRA_PROPERTIES = {
-        name: [(item["name"], item.get("getter"), item.get("setter")) for item in items]
-        for name, items in extensions.get("properties", {}).items()
-    }
-    SNI_TYPE_ID_BY_C_NAME = dict(type_ids)
-
-
 @dataclass
 class TypeBridge:
     c_type: str
@@ -108,6 +67,10 @@ class FuncArg:
     docstring: str = ""
     js_type: str = "unknown"
     lifecycle_class: str = ""
+    argument_mode: str = "value"
+    allow_null: bool = False
+    copy_back: bool = False
+    pointee_type: Optional[str] = None
 
 
 @dataclass
@@ -122,6 +85,8 @@ class ApiFunction:
     lifecycle_class: str = ""
     native_call_name: Optional[str] = None
     output_string: Optional[Tuple[str, str, str]] = None
+    result_owner: Optional[str] = None
+    cleanup_parameters: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -146,33 +111,6 @@ class FilterStats:
     skipped_by_user: int = 0
 
 
-class SkipFunctionError(Exception):
-    def __init__(self, func_name: str, reason: str, add_to_blacklist: bool = True):
-        super().__init__(reason)
-        self.func_name = func_name
-        self.reason = reason
-        self.add_to_blacklist = add_to_blacklist
-
-
-def should_skip_manual_signature_bridges(func_name: str, context: str) -> bool:
-    special_property_setters = {item[2] for item in SPECIAL_PROPERTY_SETTER_WRAPPERS.keys()}
-    if func_name in SPECIAL_METHOD_WRAPPERS or func_name in special_property_setters:
-        return True
-
-    match = re.fullmatch(r"classes\.([^.]+)\.constructor", context)
-    return bool(match and match.group(1) in SPECIAL_CONSTRUCTOR_WRAPPERS)
-
-
-def vlog(msg: str) -> None:
-    if VERBOSE:
-        EMITTER_DIAGNOSTICS.append(msg)
-
-
-def velog(msg: str) -> None:
-    if VERBOSE:
-        EMITTER_DIAGNOSTICS.append(msg)
-
-
 def normalize_c_type(type_info: Optional[Dict[str, Any]]) -> str:
     return normalize_c_type_node(type_info)
 
@@ -184,102 +122,8 @@ def normalize_type_key(c_type: str) -> str:
     return text
 
 
-def js_type_for_bridge(bridge: TypeBridge, c_type: str, lv_type_entries: Dict[str, str], return_value: bool) -> str:
-    """Return the JavaScript type accepted or produced by a bridge.
-
-    This is deliberately based on the SNI conversion contract, not the C
-    spelling.  In particular, ``SNI_T_PTR`` is a JavaScript number and
-    ``SNI_V_LV_COLOR`` accepts a number as an argument but produces a color
-    object when returned to JavaScript.
-    """
-    sni_type = bridge.sni_type
-    if sni_type == "SNI_T_STRING":
-        return "string"
-    if sni_type == "SNI_T_BOOL":
-        return "boolean"
-    if sni_type == "SNI_T_PTR":
-        return "number"
-    if sni_type in {
-        "SNI_T_UINT8",
-        "SNI_T_INT8",
-        "SNI_T_UINT16",
-        "SNI_T_INT16",
-        "SNI_T_UINT32",
-        "SNI_T_INT32",
-        "SNI_T_DOUBLE",
-        "SNI_T_FLOAT",
-    }:
-        return "number"
-    if sni_type == "SNI_V_LV_COLOR":
-        return "object" if return_value else "number"
-    if sni_type and (sni_type.startswith("SNI_H_") or sni_type.startswith("SNI_V_")):
-        return "object"
-
-    normalized = normalize_type_key(c_type)
-    default_map = make_default_type_map()
-    primitive_sni_type = default_map.get(normalized)
-    if primitive_sni_type:
-        return js_type_for_bridge(
-            TypeBridge(c_type, "", "none", None, primitive_sni_type, "none", None),
-            c_type,
-            lv_type_entries,
-            return_value,
-        )
-
-    object_type = lv_type_entries.get(normalized)
-    if object_type is None:
-        object_type = lv_type_entries.get(normalized.replace("*", ""), "")
-    if object_type in {"int", "uint", "int8", "uint8", "int16", "uint16"}:
-        return "number"
-    if object_type == "handle_object":
-        return "object"
-    if object_type == "value_object":
-        return "object"
-    if normalized == "void":
-        return "undefined"
-    if normalized.endswith("*"):
-        return "object"
-    return "unknown"
-
-
-def c_type_to_base_name(c_type: str) -> str:
-    base = normalize_type_key(c_type).replace("*", "")
-    base = re.sub(r"\bconst\b", "", base).strip()
-    if base.endswith("_t"):
-        base = base[:-2]
-    return base.upper()
-
-
-def is_const_pointer_type(c_type: str) -> bool:
-    normalized = normalize_type_key(c_type)
-    return normalized.startswith("const ") and normalized.endswith("*")
-
-
-def get_pointer_pointee_type(c_type: str) -> str:
-    normalized = normalize_type_key(c_type)
-    if not normalized.endswith("*"):
-        return normalized
-    pointee = normalized[:-1].strip()
-    if pointee.startswith("const "):
-        pointee = pointee[len("const "):].strip()
-    return pointee
-
-
 def is_value_pointer_arg(arg: FuncArg) -> bool:
-    return (
-        arg.bridge.js2c_mode == "bridge"
-        and arg.bridge.sni_type is not None
-        and arg.bridge.sni_type.startswith("SNI_V_")
-        and normalize_type_key(arg.c_type).endswith("*")
-    )
-
-
-def should_treat_as_output_only_value_arg(func: ApiFunction, arg: FuncArg) -> bool:
-    if not is_value_pointer_arg(arg):
-        return False
-    if is_const_pointer_type(arg.c_type):
-        return False
-    return "_get_" in func.name
+    return arg.argument_mode in {"value_pointer", "value_pointer_output"}
 
 
 def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str]]]:
@@ -647,7 +491,7 @@ def load_lvgl_version(version_header_path: Path) -> Tuple[int, int, int]:
 
 
 def render_lvgl_compatibility_guard(
-    lvgl_version: Tuple[int, int, int], lvgl_data: Dict[str, Any]
+    lvgl_version: Tuple[int, int, int], event_assertions: List[Tuple[str, str]]
 ) -> str:
     """Render compile-time guards for the generated LVGL descriptor."""
     major, minor, patch = lvgl_version
@@ -667,18 +511,7 @@ def render_lvgl_compatibility_guard(
         "#define SNI_LVGL_API_STATIC_ASSERT(expr, name) typedef char name[(expr) ? 1 : -1]",
     ]
 
-    event_members: List[Tuple[str, str]] = []
-    for enum in lvgl_data.get("enums", []):
-        if enum.get("name") != "lv_event_code_t":
-            continue
-        for member in enum.get("members", []):
-            name = str(member.get("name", "")).strip()
-            number = parse_numeric_constant(str(member.get("value", "")))
-            if name and number is not None and number[0] == "int":
-                event_members.append((name, number[1]))
-        break
-
-    for name, value in event_members:
+    for name, value in event_assertions:
         assert_name = f"sni_lvgl_api_assert_{name.lower()}"
         lines.append(f"SNI_LVGL_API_STATIC_ASSERT({name} == {value}, {assert_name});")
 
@@ -993,139 +826,6 @@ def discover_class_properties(
     return [props[name] for name in sorted(props.keys())]
 
 
-def build_api_function(
-    item: Dict[str, Any],
-    lv_type_entries: Dict[str, str],
-    context: str,
-    function_blacklist: Optional[List[str]] = None,
-    lifecycle_map: Optional[Dict[str, str]] = None,
-    function_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
-    is_constructor: bool = False,
-) -> ApiFunction:
-    name = str(item.get("name", "")).strip()
-    if not name:
-        raise SystemExit(f"[Error] {context} missing function name")
-
-    if function_blacklist and is_matched(name, function_blacklist):
-        raise SkipFunctionError(name, f"function matched scan.function.blacklist: {name}")
-
-    manual_signature = should_skip_manual_signature_bridges(name, context)
-    override = (function_overrides or {}).get(name, {})
-    native_call_name = str(override.get("call", name))
-    string_ownership = override.get("string_ownership")
-    if string_ownership is not None and string_ownership not in {"copy"}:
-        raise SystemExit(f"[Error] unsupported string_ownership for {name}: {string_ownership}")
-    if string_ownership == "copy" and native_call_name == name:
-        raise SystemExit(f"[Error] copy ownership override for {name} must name a copying native call")
-    output_string_override = override.get("output_string")
-    output_string: Optional[Tuple[str, str, str]] = None
-    if output_string_override is not None:
-        if not isinstance(output_string_override, dict):
-            raise SystemExit(f"[Error] function_overrides.{name}.output_string must be an object")
-        buffer_arg = str(output_string_override.get("buffer_arg", "")).strip()
-        size_arg = str(output_string_override.get("size_arg", "")).strip()
-        js_buffer_arg = str(output_string_override.get("js_buffer_arg", "placeholder")).strip()
-        if not buffer_arg or not size_arg or js_buffer_arg != "placeholder":
-            raise SystemExit(
-                f"[Error] function_overrides.{name}.output_string requires buffer_arg, size_arg, and placeholder js_buffer_arg"
-            )
-        output_string = (buffer_arg, size_arg, js_buffer_arg)
-    ret_type = normalize_c_type(item.get("type"))
-
-    # Pre-bridge lifecycle check: reject unsafe return types before rendering.
-    # Manual wrappers (SPECIAL_METHOD_WRAPPERS) already handle lifecycle internally.
-    if lifecycle_map and name not in SPECIAL_METHOD_WRAPPERS:
-        ret_normalized = normalize_type_key(ret_type)
-        ret_pointee = get_pointer_pointee_type(ret_normalized)
-        lc = lifecycle_map.get(ret_pointee) or lifecycle_map.get(ret_normalized) or ""
-
-        if lc == "no_lifecycle":
-            raise SkipFunctionError(
-                name,
-                f"type '{ret_pointee}' has no observable lifecycle boundary and must not be exported as handle; use a manual wrapper that returns a value object instead",
-                add_to_blacklist=True,
-            )
-        if lc == "controlled_resource" and not is_constructor:
-            raise SkipFunctionError(
-                name,
-                f"controlled resource '{ret_pointee}' can only be returned from constructors (not from {context})",
-                add_to_blacklist=True,
-            )
-
-    if manual_signature:
-        # The configured C wrapper owns the complete native signature and result conversion.
-        ret_bridge = TypeBridge(ret_type, "", "none", None, None, "void", None)
-    else:
-        ret_bridge = build_bridge_from_type(ret_type, lv_type_entries, f"{context} return value", name)
-
-    # Post-bridge lifecycle log: warn about sub_resources and unclassified handles
-    ret_lifecycle_class = ""
-    if lifecycle_map and ret_bridge.sni_type and ret_bridge.sni_type.startswith("SNI_H_"):
-        ret_normalized = normalize_type_key(ret_type)
-        ret_pointee = get_pointer_pointee_type(ret_normalized)
-        ret_lifecycle_class = lifecycle_map.get(ret_pointee) or lifecycle_map.get(ret_normalized) or ""
-
-        if ret_lifecycle_class == "sub_resource":
-            velog(f"[Lifecycle] sub_resource '{ret_pointee}' ({ret_bridge.sni_type}) returned by {name} — ensure cascade destroy is covered")
-        elif not ret_lifecycle_class:
-            velog(f"[Lifecycle] handle type '{ret_pointee}' ({ret_bridge.sni_type}) has no explicit lifecycle entry in the resolved binding model")
-
-    args_raw = normalize_args(item.get("args", []))
-    args: List[FuncArg] = []
-    for idx, arg in enumerate(args_raw):
-        arg_name = str(arg.get("name") or f"arg{idx}")
-        arg_type = normalize_c_type(arg.get("type"))
-        if arg_type in {"ellipsis", "..."} or arg_name == "...":
-            raise SkipFunctionError(name, f"variadic functions are not supported yet: {name}")
-
-        if manual_signature:
-            arg_bridge = TypeBridge(arg_type, "", "none", None, None, "none", None)
-        else:
-            arg_bridge = build_bridge_from_type(
-                arg_type,
-                lv_type_entries,
-                f"{context} argument #{idx} ({arg_name})",
-                name,
-            )
-        args.append(
-            FuncArg(
-                name=arg_name,
-                c_type=arg_type,
-                bridge=arg_bridge,
-                docstring=str(arg.get("docstring") or "").strip(),
-                js_type=js_type_for_bridge(arg_bridge, arg_type, lv_type_entries, False),
-                lifecycle_class=(
-                    (lifecycle_map or {}).get(get_pointer_pointee_type(normalize_type_key(arg_type)))
-                    or (lifecycle_map or {}).get(normalize_type_key(arg_type), "")
-                ),
-            )
-        )
-
-    if output_string is not None:
-        arg_by_name = {arg.name: arg for arg in args}
-        buffer_arg = arg_by_name.get(output_string[0])
-        size_arg = arg_by_name.get(output_string[1])
-        if not buffer_arg or normalize_type_key(buffer_arg.c_type) != "char*":
-            raise SystemExit(f"[Error] output string buffer for {name} must be a mutable char * argument")
-        if not size_arg or normalize_type_key(size_arg.c_type) not in {"uint32_t", "size_t"}:
-            raise SystemExit(f"[Error] output string size for {name} must be uint32_t or size_t")
-        if normalize_type_key(ret_type) != "void":
-            raise SystemExit(f"[Error] output string function {name} must return void")
-
-    return ApiFunction(
-        name=name,
-        return_type=ret_type,
-        return_bridge=ret_bridge,
-        args=args,
-        docstring=str(item.get("docstring") or "").strip(),
-        return_docstring=str((item.get("type") or {}).get("docstring") or "").strip(),
-        return_js_type=js_type_for_bridge(ret_bridge, ret_type, lv_type_entries, True),
-        lifecycle_class=ret_lifecycle_class,
-        native_call_name=native_call_name,
-        output_string=output_string,
-    )
-
-
 def fmt_var_decl(c_type: str, var_name: str) -> str:
     """Format a variable declaration with right-aligned pointer spacing.
 
@@ -1143,12 +843,11 @@ def render_arg_conversion(
     allow_null: bool = False,
     output_only_value_arg: bool = False,
 ) -> ArgRenderResult:
-    # Nullable pointer handle types (SNI_H_* or SNI_T_PTR) accept JS null → C NULL
     is_nullable_ptr = (
         allow_null
+        and arg.allow_null
         and arg.bridge.js2c_mode == "bridge"
         and arg.bridge.sni_type is not None
-        and (arg.bridge.sni_type.startswith("SNI_H_") or arg.bridge.sni_type == "SNI_T_PTR")
     )
     if is_nullable_ptr:
         post_lines: List[str] = []
@@ -1157,8 +856,9 @@ def render_arg_conversion(
         lines.append("    {")
         lines.append(f"        {c_var_name} = NULL;")
         lines.append("    }")
-        js_ptr_check = "jerry_value_is_number" if arg.bridge.sni_type == "SNI_T_PTR" else "jerry_value_is_object"
-        lines.append(f"    else if ({js_ptr_check}({arg_expr}))")
+        if not arg.bridge.js_check:
+            raise RuntimeError(f"Resolved nullable argument {arg.name} has no JavaScript type check")
+        lines.append(f"    else if ({arg.bridge.js_check}({arg_expr}))")
         lines.append("    {")
         lines.append(f"        if (!sni_tb_js2c({arg_expr}, {arg.bridge.sni_type}, &{c_var_name}))")
         lines.append("        {")
@@ -1181,7 +881,9 @@ def render_arg_conversion(
                 lines.append("    }")
 
         value_var = f"{c_var_name}_value"
-        value_c_type = get_pointer_pointee_type(arg.c_type)
+        if not arg.pointee_type:
+            raise RuntimeError(f"Resolved value-pointer argument {arg.name} has no pointee C type")
+        value_c_type = arg.pointee_type
         if output_only_value_arg:
             lines.append(f"    {fmt_var_decl(value_c_type, value_var)} = {{0}};")
         else:
@@ -1192,7 +894,7 @@ def render_arg_conversion(
             lines.append("    }")
 
         post_lines: List[str] = []
-        if not is_const_pointer_type(arg.c_type):
+        if arg.copy_back:
             post_lines.append(f"    if (!sni_tb_c2js_set_object(&{value_var}, {arg.bridge.sni_type}, {arg_expr}))")
             post_lines.append("    {")
             post_lines.append('        return sni_api_throw_error("Failed to convert return argument");')
@@ -1223,7 +925,10 @@ def render_arg_conversion(
         lines.append('        return sni_api_throw_error("Failed to convert argument");')
         lines.append("    }")
     else:
-        lines.append('    return sni_api_throw_error("Unsupported argument conversion");')
+        raise RuntimeError(
+            f"Resolved argument conversion is incomplete for {arg.name}: "
+            f"mode={arg.bridge.js2c_mode}, sni_type={arg.bridge.sni_type}"
+        )
 
     post_lines = []
     if arg.bridge.js2c_mode == "string_fn":
@@ -1248,7 +953,10 @@ def render_return_conversion(lines: List[str], func: ApiFunction, result_var: st
         lines.append(f"    return sni_tb_c2js(&{result_var}, {func.return_bridge.sni_type});")
         return
 
-    lines.append('    return sni_api_throw_error("Unsupported return conversion");')
+    raise RuntimeError(
+        f"Resolved return conversion is incomplete for {func.name}: "
+        f"mode={func.return_bridge.c2js_mode}, sni_type={func.return_bridge.sni_type}"
+    )
 
 
 def _doc_lines(text: str) -> List[str]:
@@ -1320,10 +1028,7 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
         # Use sni_tb_js2c_parent() for SNI_H_LV_OBJ parent args so that
         # both regular LVGL objects and Activity Views (SNI_H_EOS_VIEW)
         # are accepted.  Null/undefined parent is rejected.
-        use_parent_helper = (
-            arg.bridge.js2c_mode == "bridge"
-            and arg.bridge.sni_type == "SNI_H_LV_OBJ"
-        )
+        use_parent_helper = arg.argument_mode == "parent_handle"
         if use_parent_helper:
             lines.append(f"    {fmt_var_decl(arg.c_type, c_var)};")
             lines.append(f"    if (!sni_tb_js2c_parent(args_p[{idx}], (void**)&{c_var}))")
@@ -1340,11 +1045,10 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
 
     call_text = ", ".join(call_args)
     if ctor_func.return_bridge.sni_type is None or ctor_func.return_bridge.c2js_mode != "bridge":
-        lines.append('    return sni_api_throw_error("Constructor return type must be object handle/value");')
-        lines.append("}")
-        return "\n".join(lines)
+        raise RuntimeError(f"Resolved constructor {ctor_func.name} does not return an SNI object handle/value")
 
-    lines.append(f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {ctor_func.name}({call_text});" if call_text else f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {ctor_func.name}();")
+    native_call_name = ctor_func.native_call_name or ctor_func.name
+    lines.append(f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {native_call_name}({call_text});" if call_text else f"    {fmt_var_decl(ctor_func.return_type, 'native_obj')} = {native_call_name}();")
     if post_call_lines:
         lines.extend(post_call_lines)
     lines.append(f"    if (!sni_tb_c2js_set_object(&native_obj, {ctor_func.return_bridge.sni_type}, call_info_p->this_value))")
@@ -1356,37 +1060,21 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     return "\n".join(lines)
 
 
-def get_special_constructor_wrapper_name(cls: "ApiClass") -> "Optional[str]":
-    return SPECIAL_CONSTRUCTOR_WRAPPERS.get(cls.name)
-
-
-def get_special_method_wrapper_name(func: ApiFunction) -> Optional[str]:
-    return SPECIAL_METHOD_WRAPPERS.get(func.name)
-
-
-def get_special_property_setter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
-    return SPECIAL_PROPERTY_SETTER_WRAPPERS.get((cls.name, prop.name, func.name))
-
-
-def get_special_property_getter_wrapper_name(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> Optional[str]:
-    return SPECIAL_PROPERTY_GETTER_WRAPPERS.get((cls.name, prop.name, func.name))
-
-
 def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     if not func.args or func.output_string is None:
-        raise SystemExit(f"[Error] output string method {func.name} is missing metadata")
+        raise RuntimeError(f"Resolved output-string method {func.name} is missing metadata")
 
     buffer_name, size_name, _ = func.output_string
     arg_by_name = {arg.name: (index, arg) for index, arg in enumerate(func.args)}
     if buffer_name not in arg_by_name or size_name not in arg_by_name:
-        raise SystemExit(f"[Error] output string metadata for {func.name} references an unknown argument")
+        raise RuntimeError(f"Resolved output-string metadata for {func.name} references an unknown argument")
 
     buffer_index, _ = arg_by_name[buffer_name]
     size_index, _ = arg_by_name[size_name]
     js_buffer_index = buffer_index - 1
     js_size_index = size_index - 1
     if buffer_index == 0 or size_index == 0 or js_buffer_index < 0 or js_size_index < 0:
-        raise SystemExit(f"[Error] output string metadata for {func.name} cannot target the this argument")
+        raise RuntimeError(f"Resolved output-string metadata for {func.name} cannot target the receiver parameter")
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
@@ -1422,7 +1110,8 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
     lines.append("    if (!output_buf)")
     lines.append("        return sni_api_throw_error(\"Out of memory\");")
     lines.append("")
-    lines.append(f"    {func.name}({self_render.call_expr}, output_buf, output_size);")
+    native_call_name = func.native_call_name or func.name
+    lines.append(f"    {native_call_name}({self_render.call_expr}, output_buf, output_size);")
     lines.append("    jerry_value_t result = jerry_string_sz(output_buf);")
     lines.append("    eos_free(output_buf);")
     lines.append("    return result;")
@@ -1439,7 +1128,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     render_function_docstring(lines, func, skip_this=True)
 
     if not func.args:
-        raise SystemExit(f"[Error] instance method {func.name} missing this parameter")
+        raise RuntimeError(f"Resolved instance method {func.name} is missing its receiver parameter")
 
     this_arg = func.args[0]
     js_arg_count = len(func.args) - 1
@@ -1463,7 +1152,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     post_call_lines: List[str] = []
     for idx, arg in enumerate(func.args[1:]):
         c_var = f"arg_{arg.name}"
-        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        output_only_value_arg = arg.argument_mode == "value_pointer_output"
         render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
         call_args.append(render_result.call_expr)
         post_call_lines.extend(render_result.post_lines)
@@ -1473,10 +1162,10 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     native_call_name = func.native_call_name or func.name
     if func.return_bridge.c2js_mode == "void":
         lines.append(f"    {native_call_name}({call_text});")
-        if func.name.startswith("lv_chart_remove_"):
-            for arg in func.args[1:]:
-                if arg.lifecycle_class == "sub_resource" and arg.bridge.sni_type:
-                    lines.append(f"    sni_tb_remove_sub_resource_current(arg_{arg.name}, {arg.bridge.sni_type});")
+        args_by_name = {arg.name: arg for arg in func.args}
+        for name in func.cleanup_parameters:
+            arg = args_by_name[name]
+            lines.append(f"    sni_tb_remove_sub_resource_current(arg_{name}, {arg.bridge.sni_type});")
         if post_call_lines:
             lines.extend(post_call_lines)
         lines.append("    return jerry_undefined();")
@@ -1484,7 +1173,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
         return "\n".join(lines)
 
     lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}({call_text});")
-    if func.lifecycle_class == "sub_resource":
+    if func.result_owner == "this":
         lines.append(f"    sni_tb_link_sub_resource(self_obj, result, {func.return_bridge.sni_type});")
     if post_call_lines:
         lines.extend(post_call_lines)
@@ -1495,7 +1184,7 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
 
 def render_static_wrapper(func: ApiFunction) -> str:
     if func.output_string is not None:
-        raise SystemExit(f"[Error] output string static wrapper is not supported: {func.name}")
+        raise RuntimeError(f"Resolved output-string override is incompatible with static API {func.name}")
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
@@ -1519,7 +1208,7 @@ def render_static_wrapper(func: ApiFunction) -> str:
     post_call_lines: List[str] = []
     for idx, arg in enumerate(func.args):
         c_var = f"arg_{arg.name}"
-        output_only_value_arg = should_treat_as_output_only_value_arg(func, arg)
+        output_only_value_arg = arg.argument_mode == "value_pointer_output"
         render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
         call_args.append(render_result.call_expr)
         post_call_lines.extend(render_result.post_lines)
@@ -1536,11 +1225,11 @@ def render_static_wrapper(func: ApiFunction) -> str:
         return "\n".join(lines)
 
     lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}({call_text});" if call_text else f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}();")
-    if func.lifecycle_class == "sub_resource":
-        parent_arg = next((index for index, arg in enumerate(func.args) if arg.bridge.sni_type == "SNI_H_LV_OBJ"), None)
-        if parent_arg is None:
-            raise SystemExit(f"[Error] Tree-Dependent static result {func.name} has no parent object argument")
-        lines.append(f"    sni_tb_link_sub_resource({call_args[parent_arg]}, result, {func.return_bridge.sni_type});")
+    if func.result_owner:
+        parent_index = next((index for index, arg in enumerate(func.args) if arg.name == func.result_owner), None)
+        if parent_index is None:
+            raise RuntimeError(f"Resolved resource owner {func.result_owner} is missing from {func.name}")
+        lines.append(f"    sni_tb_link_sub_resource({call_args[parent_index]}, result, {func.return_bridge.sni_type});")
     if post_call_lines:
         lines.extend(post_call_lines)
     render_return_conversion(lines, func, "result")
@@ -1554,7 +1243,7 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     render_function_docstring(lines, func, skip_this=True)
 
     if len(func.args) != 1:
-        raise SystemExit(f"[Error] property getter {func.name} must only have a this parameter")
+        raise RuntimeError(f"Resolved property getter {func.name} must have only a receiver parameter")
 
     this_arg = func.args[0]
 
@@ -1575,9 +1264,10 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("")
 
     if func.return_bridge.c2js_mode == "void":
-        raise SystemExit(f"[Error] property getter {func.name} cannot return void")
+        raise RuntimeError(f"Resolved property getter {func.name} cannot return void")
 
-    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {func.name}({self_render.call_expr});")
+    native_call_name = func.native_call_name or func.name
+    lines.append(f"    {fmt_var_decl(func.return_type, 'result')} = {native_call_name}({self_render.call_expr});")
     render_return_conversion(lines, func, "result")
     lines.append("}")
     return "\n".join(lines)
@@ -1589,7 +1279,7 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     render_function_docstring(lines, func, skip_this=True)
 
     if len(func.args) != 2:
-        raise SystemExit(f"[Error] property setter {func.name} must have exactly two parameters: this and value")
+        raise RuntimeError(f"Resolved property setter {func.name} must have receiver and value parameters")
 
     this_arg = func.args[0]
     value_arg = func.args[1]
@@ -1610,6 +1300,7 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     lines.append("")
     value_render = render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
     lines.append("")
+    native_call_name = func.native_call_name or func.name
     native_call_name = func.native_call_name or func.name
     lines.append(f"    {native_call_name}({self_render.call_expr}, {value_render.call_expr});")
     if value_render.post_lines:
@@ -1666,7 +1357,7 @@ def render_constant_array(name: str, items: List[ApiConstant]) -> str:
 
 
 def render_class_block(
-    classes: List[ApiClass],
+    classes: List[ApiClassIR],
     constructor_wrapper_names: Dict[str, str],
     method_array_names: Dict[str, str],
     property_array_names: Dict[str, str],
@@ -1684,7 +1375,7 @@ def render_class_block(
 
         lines.append(f"const sni_class_desc_t {class_var} = {{")
         lines.append(f"    .name = \"{cls.name}\",")
-        is_static = cls.constructor is None
+        is_static = not cls.has_constructor
         lines.append(f"    .constructor = {constructor_wrapper_names[cls.name]},")
         lines.append(f"    .base_class = {'NULL' if is_static else base_expr},")
         methods_expr = "NULL" if is_static else method_array_names[cls.name]
@@ -1733,152 +1424,6 @@ void sni_api_lv_mount(jerry_value_t realm)
     return "\n".join(lines)
 
 
-def make_default_type_map() -> Dict[str, str]:
-    return {
-        "bool": "SNI_T_BOOL",
-        "char*": "SNI_T_STRING",
-        "char**": "SNI_T_PTR",
-        "char const*": "SNI_T_STRING",
-        "char const**": "SNI_T_PTR",
-        "const char*": "SNI_T_STRING",
-        "const char**": "SNI_T_PTR",
-        "double": "SNI_T_DOUBLE",
-        "float": "SNI_T_FLOAT",
-        "int": "SNI_T_INT32",
-        "int16_t": "SNI_T_INT16",
-        "int32_t": "SNI_T_INT32",
-        "int64_t": "SNI_T_INT32",
-        "int8_t": "SNI_T_INT8",
-        "long": "SNI_T_INT32",
-        "short": "SNI_T_INT32",
-        "size_t": "SNI_T_UINT32",
-        "uint16_t": "SNI_T_UINT16",
-        "uint32_t": "SNI_T_UINT32",
-        "uint64_t": "SNI_T_UINT32",
-        "uint8_t": "SNI_T_UINT8",
-        "unsigned": "SNI_T_UINT32",
-        "unsigned int": "SNI_T_UINT32",
-        "unsigned long": "SNI_T_UINT32",
-        "void*": "SNI_T_PTR",
-    }
-
-
-def add_function_to_blacklist(
-    func_name: str,
-    runtime_blacklist: List[str],
-) -> None:
-    if func_name not in runtime_blacklist:
-        runtime_blacklist.append(func_name)
-
-
-def handle_skip_exception(exc: SkipFunctionError, runtime_blacklist: List[str]) -> None:
-    if exc.add_to_blacklist:
-        add_function_to_blacklist(exc.func_name, runtime_blacklist)
-
-
-def build_bridge_from_type(
-    c_type: str,
-    lv_type_entries: Dict[str, str],
-    context: str,
-    func_name: str,
-) -> TypeBridge:
-    normalized = normalize_type_key(c_type)
-    base_name = normalized.replace("*", "")
-
-    if normalized == "void":
-        return TypeBridge(c_type, "", "none", None, None, "void", None)
-
-    default_map = make_default_type_map()
-    if normalized in default_map:
-        sni_type = default_map[normalized]
-
-        if sni_type == "SNI_T_STRING":
-            return TypeBridge(c_type, "jerry_value_is_string", "string_fn", "sni_tb_js2c_string", sni_type, "string", "sni_tb_c2js_string")
-        if sni_type == "SNI_T_BOOL":
-            return TypeBridge(c_type, "jerry_value_is_boolean", "macro", "sni_tb_js2c_boolean", sni_type, "macro", "sni_tb_c2js_boolean")
-        if sni_type in {"SNI_T_DOUBLE", "SNI_T_FLOAT"}:
-            return TypeBridge(c_type, "jerry_value_is_number", "bridge", None, sni_type, "bridge", None)
-        if sni_type == "SNI_T_INT32":
-            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", sni_type, "bridge", None)
-        if sni_type == "SNI_T_UINT32":
-            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", sni_type, "bridge", None)
-        if sni_type in {"SNI_T_INT8", "SNI_T_INT16"}:
-            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", sni_type, "bridge", None)
-        if sni_type in {"SNI_T_UINT8", "SNI_T_UINT16"}:
-            return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", sni_type, "bridge", None)
-        if sni_type == "SNI_T_PTR":
-            return TypeBridge(c_type, "jerry_value_is_number", "bridge", None, sni_type, "bridge", None)
-
-    # First try mapping by primitive base type, e.g. typedef int
-    if normalized.endswith("_t") and normalized in lv_type_entries:
-        object_type = lv_type_entries[normalized]
-    else:
-        object_type = lv_type_entries.get(base_name, lv_type_entries.get(normalized, ""))
-
-    if object_type == "":
-        raise SystemExit(f"[Error] Unresolved C type {normalized} at {context} in {func_name}; no interactive mapping is available")
-
-    if object_type.startswith("primitive(") and object_type.endswith(")"):
-        primitive_name = object_type[len("primitive("):-1].strip()
-        if not primitive_name:
-            raise SystemExit(f"[Error] Type '{normalized}': invalid object_type : {object_type}")
-        primitive_bridge = build_bridge_from_type(
-            primitive_name,
-            lv_type_entries,
-            context,
-            func_name,
-        )
-        return TypeBridge(c_type, primitive_bridge.js_check, primitive_bridge.js2c_mode, primitive_bridge.js2c_expr, primitive_bridge.sni_type, primitive_bridge.c2js_mode, primitive_bridge.c2js_expr)
-
-    # Resolver adapters may map a typedef directly to a primitive spelling.
-    if object_type in default_map:
-        primitive_bridge = build_bridge_from_type(
-            object_type,
-            lv_type_entries,
-            context,
-            func_name,
-        )
-        return TypeBridge(c_type, primitive_bridge.js_check, primitive_bridge.js2c_mode, primitive_bridge.js2c_expr, primitive_bridge.sni_type, primitive_bridge.c2js_mode, primitive_bridge.c2js_expr)
-
-    if object_type == "int8":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", "SNI_T_INT8", "bridge", None)
-
-    if object_type == "uint8":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", "SNI_T_UINT8", "bridge", None)
-
-    if object_type == "int16":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", "SNI_T_INT16", "bridge", None)
-
-    if object_type == "uint16":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", "SNI_T_UINT16", "bridge", None)
-
-    if object_type == "int":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_int32", "SNI_T_INT32", "bridge", None)
-
-    if object_type == "uint":
-        return TypeBridge(c_type, "jerry_value_is_number", "macro", "sni_tb_js2c_uint32", "SNI_T_UINT32", "bridge", None)
-
-    mapped_sni_type = SNI_TYPE_ID_BY_C_NAME.get(base_name)
-    if mapped_sni_type is None:
-        mapped_sni_type = SNI_TYPE_ID_BY_C_NAME.get(re.sub(r"\bconst\b", "", base_name).strip())
-
-    if object_type == "handle_object":
-        sni_type = mapped_sni_type or f"SNI_H_{c_type_to_base_name(normalized)}"
-        return TypeBridge(c_type, "jerry_value_is_object", "bridge", None, sni_type, "bridge", None)
-
-    if object_type == "value_object":
-        js_check = ""
-        if c_type_to_base_name(normalized) != "LV_COLOR":
-            js_check = "jerry_value_is_object"
-        sni_type = mapped_sni_type or f"SNI_V_{c_type_to_base_name(normalized)}"
-        return TypeBridge(c_type, js_check, "bridge", None, sni_type, "bridge", None)
-
-    if object_type:
-        raise SystemExit(f"[Error] Type '{normalized}': invalid object_type : {object_type}")
-
-    raise SystemExit(f"[Error] Cannot map type: {c_type}")
-
-
 def normalize_args(raw_args: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     cleaned: List[Dict[str, Any]] = []
     for item in raw_args:
@@ -1901,19 +1446,92 @@ def entry_name(func_name: str) -> str:
     return snake_to_camel(remaining)
 
 
-def render_entries(
-    classes: List[ApiClass],
-    class_constructors: Dict[str, Optional[ApiFunction]],
-    class_methods: Dict[str, List[ApiFunction]],
-    class_static_methods: Dict[str, List[ApiFunction]],
-    class_properties: Dict[str, List[ApiProperty]],
-    property_getters: Dict[Tuple[str, str], ApiFunction],
-    property_setters: Dict[Tuple[str, str], ApiFunction],
-    class_constants: Dict[str, List[ApiConstant]],
-    root_constants: List[ApiConstant],
-) -> str:
+def _api_function_from_ir(record: ApiRecord, uses: List[ApiUse]) -> ApiFunction:
+    if record.status != ApiStatus.ACCEPTED_GENERIC:
+        raise RuntimeError(f"API renderer received non-generic API {record.name}: {record.status.value}")
+    return_use = next((use for use in uses if use.position == "return"), None)
+    if return_use is None:
+        raise RuntimeError(f"Resolved API {record.name} has no return conversion")
+
+    def bridge_for(use: ApiUse) -> TypeBridge:
+        if use.status != ApiStatus.ACCEPTED_GENERIC:
+            raise RuntimeError(
+                f"Resolved generic API {record.name} contains unresolved {use.position}: {use.status.value}"
+            )
+        if use.position != "return" and use.sni_type is None:
+            raise RuntimeError(f"Resolved generic API {record.name} has no SNI type for {use.position}")
+        if use.position != "return" and use.js2c_mode not in {"macro", "string_fn", "bridge"}:
+            raise RuntimeError(
+                f"Resolved generic API {record.name} has invalid JS-to-C mode for {use.position}: {use.js2c_mode}"
+            )
+        if use.position == "return" and use.sni_type is None and use.c2js_mode != "void":
+            raise RuntimeError(f"Resolved generic API {record.name} has an unresolved return conversion")
+        if use.position == "return" and use.sni_type is not None and use.c2js_mode not in {"macro", "string", "bridge"}:
+            raise RuntimeError(f"Resolved generic API {record.name} has invalid C-to-JS mode: {use.c2js_mode}")
+        return TypeBridge(
+            use.use_site.spelling,
+            use.js_check,
+            use.js2c_mode,
+            use.js2c_expr,
+            use.sni_type,
+            use.c2js_mode,
+            use.c2js_expr,
+        )
+
+    args: List[FuncArg] = []
+    for use in uses:
+        if use.position == "return":
+            continue
+        args.append(
+            FuncArg(
+                name=use.name or use.position,
+                c_type=use.use_site.spelling,
+                bridge=bridge_for(use),
+                docstring=use.docstring,
+                js_type=use.js_type,
+                lifecycle_class=use.lifecycle_class,
+                argument_mode=use.argument_mode,
+                allow_null=use.allow_null,
+                copy_back=use.copy_back,
+                pointee_type=use.pointee_type,
+            )
+        )
+    return ApiFunction(
+        name=record.name,
+        return_type=return_use.use_site.spelling,
+        return_bridge=bridge_for(return_use),
+        args=args,
+        docstring=record.docstring,
+        return_docstring=record.return_docstring,
+        return_js_type=return_use.js_type,
+        lifecycle_class=return_use.lifecycle_class,
+        native_call_name=record.native_call_name,
+        output_string=record.output_string,
+        result_owner=record.result_owner,
+        cleanup_parameters=list(record.cleanup_parameters),
+    )
+
+
+def _render_entries(
+    ir: ResolvedApiSurface,
+) -> Tuple[str, Dict[str, Any]]:
     wrappers: List[str] = []
     blocks: List[str] = []
+
+    records = {record.name: record for record in ir.apis}
+    uses_by_api: Dict[str, List[ApiUse]] = {}
+    for use in ir.uses:
+        uses_by_api.setdefault(use.function, []).append(use)
+    functions: Dict[str, ApiFunction] = {}
+    rendered_names: set[str] = set()
+
+    def get_function(name: str) -> ApiFunction:
+        if name not in functions:
+            record = records.get(name)
+            if record is None:
+                raise RuntimeError(f"Resolved class surface references missing API {name}")
+            functions[name] = _api_function_from_ir(record, uses_by_api.get(name, []))
+        return functions[name]
 
     constructor_wrapper_names: Dict[str, str] = {}
     method_array_names: Dict[str, str] = {}
@@ -1921,81 +1539,85 @@ def render_entries(
     static_method_array_names: Dict[str, str] = {}
     constant_array_names: Dict[str, str] = {}
 
-    for cls in classes:
+    for cls in ir.classes:
         cls_id = sanitize_ident(cls.name)
 
-        ctor_func = class_constructors[cls.name]
-        if ctor_func is not None:
-            special_ctor = get_special_constructor_wrapper_name(cls)
-            if special_ctor is not None:
-                constructor_wrapper_names[cls.name] = special_ctor
+        ctor_name = cls.configured_constructor
+        ctor_func = None
+        if ctor_name is not None:
+            if cls.constructor_binding is not None:
+                constructor_wrapper_names[cls.name] = cls.constructor_binding
             else:
+                ctor_func = get_function(ctor_name)
                 ctor_wrapper = f"sni_api_ctor_{cls_id}"
                 constructor_wrapper_names[cls.name] = ctor_wrapper
                 wrappers.append(render_constructor_wrapper(cls, ctor_func))
+            rendered_names.add(ctor_name)
         else:
             constructor_wrapper_names[cls.name] = "NULL"
 
         instance_items: List[Tuple[str, str]] = []
-        for method_func in class_methods[cls.name]:
-            special_method = get_special_method_wrapper_name(method_func)
-            if special_method is not None:
-                instance_items.append((entry_name(method_func.name), special_method))
+        for ref in cls.methods:
+            if ref.special_binding is not None:
+                instance_items.append((entry_name(ref.function), ref.special_binding))
             else:
+                method_func = get_function(ref.function)
                 wrappers.append(render_method_wrapper(cls, method_func))
                 instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
+            rendered_names.add(ref.function)
 
-        extra_methods = SPECIAL_EXTRA_METHODS.get(cls.name, [])
-        if extra_methods:
-            existing_method_names = {name for name, _ in instance_items}
-            for extra_js_name, extra_c_name in extra_methods:
-                if extra_js_name not in existing_method_names:
-                    instance_items.append((extra_js_name, extra_c_name))
+        existing_method_names = {name for name, _ in instance_items}
+        for extra_js_name, extra_c_name in cls.extra_methods:
+            if extra_js_name not in existing_method_names:
+                instance_items.append((extra_js_name, extra_c_name))
 
         method_array_name = f"lv_class_methods_{cls_id}"
         method_array_names[cls.name] = method_array_name
         blocks.append(render_method_array(method_array_name, instance_items))
 
         static_items: List[Tuple[str, str]] = []
-        for static_func in class_static_methods[cls.name]:
-            wrappers.append(render_static_wrapper(static_func))
-            static_items.append((entry_name(static_func.name), f"sni_api_{static_func.name}"))
+        for ref in cls.static_methods:
+            if ref.special_binding is not None:
+                static_items.append((entry_name(ref.function), ref.special_binding))
+            else:
+                static_func = get_function(ref.function)
+                wrappers.append(render_static_wrapper(static_func))
+                static_items.append((entry_name(static_func.name), f"sni_api_{static_func.name}"))
+            rendered_names.add(ref.function)
 
         static_array_name = f"lv_class_static_methods_{cls_id}"
         static_method_array_names[cls.name] = static_array_name
         blocks.append(render_method_array(static_array_name, static_items))
 
         prop_items: List[Tuple[str, Optional[str], Optional[str]]] = []
-        for prop in class_properties[cls.name]:
+        for prop in cls.properties:
             getter_name = None
             setter_name = None
 
             if prop.getter:
-                getter_func = property_getters[(cls.name, prop.name)]
-                special_getter = get_special_property_getter_wrapper_name(cls, prop, getter_func)
-                if special_getter is not None:
-                    getter_name = special_getter
+                if prop.getter.special_binding is not None:
+                    getter_name = prop.getter.special_binding
                 else:
-                    wrappers.append(render_property_getter_wrapper(cls, prop, getter_func))
+                    getter_func = get_function(prop.getter.function)
+                    wrappers.append(render_property_getter_wrapper(cls, ApiProperty(prop.name, prop.getter.function, None), getter_func))
                     getter_name = f"sni_api_prop_get_{cls_id}_{sanitize_ident(prop.name)}"
+                rendered_names.add(prop.getter.function)
 
             if prop.setter:
-                setter_func = property_setters[(cls.name, prop.name)]
-                special_setter = get_special_property_setter_wrapper_name(cls, prop, setter_func)
-                if special_setter is not None:
-                    setter_name = special_setter
+                if prop.setter.special_binding is not None:
+                    setter_name = prop.setter.special_binding
                 else:
-                    wrappers.append(render_property_setter_wrapper(cls, prop, setter_func))
+                    setter_func = get_function(prop.setter.function)
+                    wrappers.append(render_property_setter_wrapper(cls, ApiProperty(prop.name, None, prop.setter.function), setter_func))
                     setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
+                rendered_names.add(prop.setter.function)
 
             prop_items.append((snake_to_camel(prop.name), getter_name, setter_name))
 
-        extra_props = SPECIAL_EXTRA_PROPERTIES.get(cls.name, [])
-        if extra_props:
-            existing_prop_names = {name for name, _, _ in prop_items}
-            for extra_name, extra_getter, extra_setter in extra_props:
-                if extra_name not in existing_prop_names:
-                    prop_items.append((extra_name, extra_getter, extra_setter))
+        existing_prop_names = {name for name, _, _ in prop_items}
+        for extra_name, extra_getter, extra_setter in cls.extra_properties:
+            if extra_name not in existing_prop_names:
+                prop_items.append((extra_name, extra_getter, extra_setter))
 
         prop_array_name = f"lv_class_properties_{cls_id}"
         property_array_names[cls.name] = prop_array_name
@@ -2003,14 +1625,14 @@ def render_entries(
 
         const_array_name = f"lv_class_constants_{cls_id}"
         constant_array_names[cls.name] = const_array_name
-        blocks.append(render_constant_array(const_array_name, class_constants[cls.name]))
+        blocks.append(render_constant_array(const_array_name, cls.constants))
 
     root_constant_array_name = "lv_root_constants"
-    blocks.append(render_constant_array(root_constant_array_name, root_constants))
+    blocks.append(render_constant_array(root_constant_array_name, ir.root_constants))
 
     blocks.append(
         render_class_block(
-            classes,
+            ir.classes,
             constructor_wrapper_names,
             method_array_names,
             property_array_names,
@@ -2020,292 +1642,70 @@ def render_entries(
         )
     )
 
-    return "\n\n".join(wrappers + blocks)
-
-
-def collect_encountered_sni_types(functions: List[ApiFunction]) -> List[str]:
-    encountered: set[str] = set()
-
-    for func in functions:
-        ret_sni = func.return_bridge.sni_type
-        if ret_sni and (ret_sni.startswith("SNI_H_") or ret_sni.startswith("SNI_V_")):
-            encountered.add(ret_sni)
-
-        for arg in func.args:
-            arg_sni = arg.bridge.sni_type
-            if arg_sni and (arg_sni.startswith("SNI_H_") or arg_sni.startswith("SNI_V_")):
-                encountered.add(arg_sni)
-
-    return sorted(encountered)
-
-
-def collect_encountered_sni_types_from_model(
-    class_methods: Dict[str, List[ApiFunction]],
-    class_static_methods: Dict[str, List[ApiFunction]],
-    property_getters: Dict[Tuple[str, str], ApiFunction],
-    property_setters: Dict[Tuple[str, str], ApiFunction],
-) -> List[str]:
-    all_funcs: List[ApiFunction] = []
-    for items in class_methods.values():
-        all_funcs.extend(items)
-    for items in class_static_methods.values():
-        all_funcs.extend(items)
-    all_funcs.extend(property_getters.values())
-    all_funcs.extend(property_setters.values())
-    return collect_encountered_sni_types(all_funcs)
-
-
-def render_api_from_data(
-    api_table_data: Dict[str, Any],
-    lvgl_data: Dict[str, Any],
-    lv_type_entries: Dict[str, str],
-    lifecycle_map: Dict[str, str],
-    type_id_by_name: Dict[str, str],
-    lvgl_version_header: Path,
-    excluded_api_names: Set[str],
-    api_surface_names: List[str],
-    verbose: bool = False,
-) -> Tuple[str, Dict[str, Any]]:
-    global VERBOSE, SNI_TYPE_ID_BY_C_NAME, EMITTER_DIAGNOSTICS
-    VERBOSE = verbose
-    EMITTER_DIAGNOSTICS = []
-    SNI_TYPE_ID_BY_C_NAME = dict(type_id_by_name)
-
-    lvgl_version = load_lvgl_version(lvgl_version_header)
-    filters = parse_api_filters(api_table_data)
-    function_overrides = parse_function_overrides(api_table_data)
-    classes_dict = parse_api_classes(api_table_data)
-    classes = topo_sort_classes(classes_dict)
-    function_index = build_function_index(lvgl_data)
-    constant_index = build_constant_index(lvgl_data)
-
-    func_stats = FilterStats()
-    const_stats = FilterStats()
-
-    class_methods: Dict[str, List[ApiFunction]] = {}
-    class_constructors: Dict[str, Optional[ApiFunction]] = {}
-    class_static_methods: Dict[str, List[ApiFunction]] = {}
-    class_properties: Dict[str, List[ApiProperty]] = {}
-    class_constants: Dict[str, List[ApiConstant]] = {}
-    property_getters: Dict[Tuple[str, str], ApiFunction] = {}
-    property_setters: Dict[Tuple[str, str], ApiFunction] = {}
-    func_blacklist = filters["function"]["blacklist"]
-
-    for cls in classes:
-        methods: List[ApiFunction] = []
-        ctor_func: Optional[ApiFunction] = None
-        method_names: Set[str] = set()
-
-        if cls.constructor is not None:
-            if cls.constructor not in excluded_api_names:
-                ctor_item = require_class_function(function_index, cls.name, cls.constructor, f"classes.{cls.name}.constructor")
-                try:
-                    ctor_func = build_api_function(
-                        ctor_item,
-                        lv_type_entries,
-                        f"classes.{cls.name}.constructor",
-                        func_blacklist,
-                        lifecycle_map=lifecycle_map,
-                        function_overrides=function_overrides,
-                        is_constructor=True,
-                    )
-                except SkipFunctionError as exc:
-                    handle_skip_exception(exc, func_blacklist)
-                    raise SystemExit(f"[Error] Class {cls.name} constructor cannot be safely generated: {exc.func_name}") from exc
-
-            for selector in cls.methods:
-                matched_items = resolve_class_selector_items(
-                    function_index,
-                    cls.name,
-                    selector,
-                    f"classes.{cls.name}.methods",
-                )
-                for method_item in matched_items:
-                    if str(method_item.get("name", "")) in excluded_api_names:
-                        continue
-                    try:
-                        method_func = build_api_function(
-                            method_item,
-                            lv_type_entries,
-                            f"classes.{cls.name}.methods",
-                            func_blacklist,
-                            lifecycle_map=lifecycle_map,
-                            function_overrides=function_overrides,
-                        )
-                    except SkipFunctionError as exc:
-                        handle_skip_exception(exc, func_blacklist)
-                        if exc.add_to_blacklist:
-                            velog(f"[Hint] instance method {exc.func_name} was skipped by user and added to blacklist, ignored")
-                        else:
-                            velog(f"[Hint] instance method {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
-                        continue
-
-                    if method_func.name not in method_names:
-                        methods.append(method_func)
-                        method_names.add(method_func.name)
-        else:
-            if cls.methods:
-                raise SystemExit(f"[Error] classes.{cls.name} is a static class, methods configuration is not allowed")
-
-        static_funcs: List[ApiFunction] = []
-        for selector in cls.static_methods:
-            matched_items = resolve_class_selector_items(
-                function_index,
-                cls.name,
-                selector,
-                f"classes.{cls.name}.static_methods",
-            )
-            for static_item in matched_items:
-                if str(static_item.get("name", "")) in excluded_api_names:
-                    continue
-                try:
-                    static_func = build_api_function(
-                        static_item,
-                        lv_type_entries,
-                        f"classes.{cls.name}.static_methods",
-                        func_blacklist,
-                        lifecycle_map=lifecycle_map,
-                        function_overrides=function_overrides,
-                    )
-                except SkipFunctionError as exc:
-                    handle_skip_exception(exc, func_blacklist)
-                    if exc.add_to_blacklist:
-                        velog(f"[Hint] static method {exc.func_name} was skipped by user and added to blacklist, ignored")
-                    else:
-                        velog(f"[Hint] static method {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
-                    continue
-                static_funcs.append(static_func)
-
-        props = discover_class_properties(cls, function_index, filters)
-        if cls.constructor is None:
-            props = []
-        validated_props: List[ApiProperty] = []
-
-        for prop in props:
-            valid_getter: Optional[str] = None
-            valid_setter: Optional[str] = None
-
-            if prop.getter:
-                if prop.getter in excluded_api_names:
-                    prop.getter = None
-            if prop.setter:
-                if prop.setter in excluded_api_names:
-                    prop.setter = None
-
-            if prop.getter:
-                getter_item = require_function(function_index, prop.getter, f"classes.{cls.name}.property_getter.{prop.name}")
-                try:
-                    getter_func = build_api_function(
-                        getter_item,
-                        lv_type_entries,
-                        f"classes.{cls.name}.property_getter.{prop.name}",
-                        func_blacklist,
-                        lifecycle_map=lifecycle_map,
-                        function_overrides=function_overrides,
-                    )
-                except SkipFunctionError as exc:
-                    handle_skip_exception(exc, func_blacklist)
-                    if exc.add_to_blacklist:
-                        velog(f"[Hint] property getter {exc.func_name} was skipped by user and added to blacklist, ignored")
-                    else:
-                        velog(f"[Hint] property getter {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
-                    getter_func = None
-
-                if getter_func is not None and len(getter_func.args) == 1 and getter_func.return_bridge.c2js_mode != "void":
-                    property_getters[(cls.name, prop.name)] = getter_func
-                    valid_getter = prop.getter
-                elif getter_func is not None:
-                    velog(
-                        f"[Hint] {prop.getter} does not match property getter signature (must be this-only with return value), ignored"
-                    )
-
-            if prop.setter:
-                setter_item = require_function(function_index, prop.setter, f"classes.{cls.name}.property_setter.{prop.name}")
-                try:
-                    setter_func = build_api_function(
-                        setter_item,
-                        lv_type_entries,
-                        f"classes.{cls.name}.property_setter.{prop.name}",
-                        func_blacklist,
-                        lifecycle_map=lifecycle_map,
-                        function_overrides=function_overrides,
-                    )
-                except SkipFunctionError as exc:
-                    handle_skip_exception(exc, func_blacklist)
-                    if exc.add_to_blacklist:
-                        velog(f"[Hint] property setter {exc.func_name} was skipped by user and added to blacklist, ignored")
-                    else:
-                        velog(f"[Hint] property setter {exc.func_name} was skipped by session policy (not added to blacklist), ignored")
-                    setter_func = None
-
-                if setter_func is not None and len(setter_func.args) == 2:
-                    property_setters[(cls.name, prop.name)] = setter_func
-                    valid_setter = prop.setter
-                elif setter_func is not None:
-                    velog(
-                        f"[Hint] {prop.setter} does not match property setter signature (must be this+value), ignored"
-                    )
-
-            if valid_getter or valid_setter:
-                validated_props.append(ApiProperty(name=prop.name, getter=valid_getter, setter=valid_setter))
-
-        const_items: List[ApiConstant] = []
-        for const_name in cls.constants:
-            if const_name not in constant_index:
-                raise SystemExit(f"[Error] classes.{cls.name}.constants references unknown constant: {const_name}")
-            const_items.append(constant_index[const_name])
-
-        class_constructors[cls.name] = ctor_func
-        class_methods[cls.name] = methods
-        class_static_methods[cls.name] = static_funcs
-        class_properties[cls.name] = validated_props
-        class_constants[cls.name] = const_items
-
-    constants = collect_constants(lvgl_data, filters["constant"], const_stats)
-    root_constants = build_root_constants_with_aliases(constants, filters["constant"].get("blacklist", []))
-    func_stats.included = sum(len(items) for items in class_methods.values()) + sum(len(items) for items in class_static_methods.values())
-    func_stats.total = len(function_index)
-    func_stats.blacklisted = 0
-    func_stats.whitelist_miss = 0
-
-    table_text = render_entries(
-        classes,
-        class_constructors,
-        class_methods,
-        class_static_methods,
-        class_properties,
-        property_getters,
-        property_setters,
-        class_constants,
-        root_constants,
-    )
-
-    generated = HEADER_TEXT + "\n" + render_lvgl_compatibility_guard(lvgl_version, lvgl_data) + "\n" + table_text + "\n"
-    generated += "\n/* SNI_API_SURFACE_BEGIN\n"
-    generated += "\n".join(sorted(set(api_surface_names)))
-    generated += "\nSNI_API_SURFACE_END */\n"
-    rendered_api_names = sorted(
+    encountered_types = sorted(
         {
-            func.name
-            for collection in (class_methods, class_static_methods)
-            for funcs in collection.values()
-            for func in funcs
+            use.sni_type
+            for name in rendered_names
+            for use in uses_by_api.get(name, [])
+            if use.sni_type and (use.sni_type.startswith("SNI_H_") or use.sni_type.startswith("SNI_V_"))
         }
-        | {func.name for func in class_constructors.values() if func is not None}
-        | {func.name for func in property_getters.values()}
-        | {func.name for func in property_setters.values()}
     )
-    encountered_sni_types = collect_encountered_sni_types_from_model(
-        class_methods, class_static_methods, property_getters, property_setters
-    )
-    return generated, {
-        "api_names": rendered_api_names,
-        "sni_types": encountered_sni_types,
-        "class_count": len(classes),
-        "constructor_count": sum(item is not None for item in class_constructors.values()),
-        "method_count": sum(map(len, class_methods.values())),
-        "static_method_count": sum(map(len, class_static_methods.values())),
-        "property_count": sum(map(len, class_properties.values())),
-        "global_constant_count": len(root_constants),
-        "diagnostics": list(EMITTER_DIAGNOSTICS),
+    return "\n\n".join(wrappers + blocks), {
+        "api_names": sorted(rendered_names),
+        "sni_types": encountered_types,
+        "class_count": len(ir.classes),
+        "constructor_count": sum(item.configured_constructor is not None for item in ir.classes),
+        "method_count": sum(len(item.methods) for item in ir.classes),
+        "static_method_count": sum(len(item.static_methods) for item in ir.classes),
+        "property_count": sum(len(item.properties) for item in ir.classes),
+        "global_constant_count": len(ir.root_constants),
+        "diagnostics": [],
     }
+
+
+def render_api(surface: ResolvedApiSurface, lvgl_version: Tuple[int, int, int]) -> Tuple[str, Dict[str, Any]]:
+    """Render only the accepted, fully resolved API surface to C."""
+    if not isinstance(surface, ResolvedApiSurface):
+        raise TypeError("API renderer requires the accepted-only ResolvedApiSurface")
+    records = {record.name: record for record in surface.apis}
+    required_names: set[str] = set()
+    for cls in surface.classes:
+        if cls.configured_constructor:
+            required_names.add(cls.configured_constructor)
+        required_names.update(ref.function for ref in cls.methods)
+        required_names.update(ref.function for ref in cls.static_methods)
+        required_names.update(
+            ref.function
+            for prop in cls.properties
+            for ref in (prop.getter, prop.setter)
+            if ref is not None
+        )
+    missing = sorted(required_names - records.keys())
+    if missing:
+        raise RuntimeError(f"Resolved class surface references missing API results: {missing[:12]}")
+    for name in sorted(required_names):
+        record = records[name]
+        if record.status not in {ApiStatus.ACCEPTED_GENERIC, ApiStatus.ACCEPTED_SPECIAL}:
+            raise RuntimeError(f"API renderer received rejected binding {name}: {record.status.value}")
+    for cls in surface.classes:
+        if cls.constructor_binding and cls.configured_constructor:
+            if records[cls.configured_constructor].status != ApiStatus.ACCEPTED_SPECIAL:
+                raise RuntimeError(f"Special constructor {cls.configured_constructor} is not resolved as accepted special")
+        for ref in cls.methods + cls.static_methods:
+            if records[ref.function].status == ApiStatus.ACCEPTED_SPECIAL and not ref.special_binding:
+                raise RuntimeError(f"Special API {ref.function} has no resolved wrapper symbol")
+        for prop in cls.properties:
+            for ref in (prop.getter, prop.setter):
+                if ref and records[ref.function].status == ApiStatus.ACCEPTED_SPECIAL and not ref.special_binding:
+                    raise RuntimeError(f"Special property API {ref.function} has no resolved wrapper symbol")
+
+    table_text, result = _render_entries(surface)
+    if set(result["api_names"]) != set(surface.names):
+        missing = sorted(set(surface.names) - set(result["api_names"]))
+        extra = sorted(set(result["api_names"]) - set(surface.names))
+        raise RuntimeError(f"Resolved API surface render mismatch; missing={missing[:12]}, extra={extra[:12]}")
+    generated = HEADER_TEXT + "\n" + render_lvgl_compatibility_guard(lvgl_version, surface.event_assertions) + "\n" + table_text + "\n"
+    generated += "\n/* SNI_API_SURFACE_BEGIN\n"
+    generated += "\n".join(sorted(set(surface.names)))
+    generated += "\nSNI_API_SURFACE_END */\n"
+    return generated, result

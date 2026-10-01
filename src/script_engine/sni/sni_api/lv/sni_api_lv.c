@@ -27,8 +27,8 @@ static jerry_value_t lv_api_obj;
 /* Function Implementations -----------------------------------*/
 
 /* Compile-time compatibility guard generated from lv_version.h. */
-#define SNI_LVGL_API_VERSION_MAJOR 9
-#define SNI_LVGL_API_VERSION_MINOR 6
+#define SNI_LVGL_API_VERSION_MAJOR 10
+#define SNI_LVGL_API_VERSION_MINOR 0
 #define SNI_LVGL_API_VERSION_PATCH 0
 
 #if LVGL_VERSION_MAJOR != SNI_LVGL_API_VERSION_MAJOR || LVGL_VERSION_MINOR != SNI_LVGL_API_VERSION_MINOR \
@@ -163,8 +163,6 @@ jerry_value_t sni_api_ctor_obj(const jerry_call_info_t *call_info_p,
  * @brief Set how the item should flow
  *
  * @param flow (number) an element of :ref:`lv_flex_flow_t` .
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_flex_flow(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -204,8 +202,6 @@ jerry_value_t sni_api_lv_obj_set_flex_flow(const jerry_call_info_t *call_info_p,
  * @param cross_place (number) where to place the item in their track on the cross axis. LV_FLEX_ALIGN_START/END/CENTER
  *
  * @param track_cross_place (number) where to place the tracks in the cross direction. Any value of :ref:`lv_flex_align_t` .
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_flex_align(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -255,8 +251,6 @@ jerry_value_t sni_api_lv_obj_set_flex_align(const jerry_call_info_t *call_info_p
  * @brief Sets the width or height (on main axis) to grow the object in order fill the free space
  *
  * @param grow (number) a value to set how much free space to take proportionally to other growing items.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_flex_grow(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -300,8 +294,6 @@ jerry_value_t sni_api_lv_obj_set_flex_grow(const jerry_call_info_t *call_info_p,
  * @param column_align (number) how to distribute the columns horizontally
  *
  * @param row_align (number) how to distribute the rows vertically
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_grid_align(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -354,8 +346,6 @@ jerry_value_t sni_api_lv_obj_set_grid_align(const jerry_call_info_t *call_info_p
  * @param row_pos (number) row ID
  *
  * @param row_span (number) number of rows to take (>= 1)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_grid_cell(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -430,8 +420,6 @@ jerry_value_t sni_api_lv_obj_set_grid_cell(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Delete all children of an object. Also remove the objects from their group and remove all animations (if any). Send LV_EVENT_DELETE to deleted objects.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_clean(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
@@ -460,8 +448,6 @@ jerry_value_t sni_api_lv_obj_clean(const jerry_call_info_t *call_info_p,
  * @brief Delete an object after some delay
  *
  * @param delay_ms (number) time to wait before delete in milliseconds
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_delete_delayed(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -495,8 +481,6 @@ jerry_value_t sni_api_lv_obj_delete_delayed(const jerry_call_info_t *call_info_p
 
 /**
  * @brief Helper function for asynchronously deleting objects. Useful for cases where you can't delete an object directly in an LV_EVENT_DELETE handler (i.e. parent). :ref:`lv_async_call`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_delete_async(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -525,8 +509,6 @@ jerry_value_t sni_api_lv_obj_delete_async(const jerry_call_info_t *call_info_p,
  * @brief Swap the positions of two objects. When used in listboxes, it can be used to sort the listbox items.
  *
  * @param obj2 (object) pointer to the second object
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_swap(const jerry_call_info_t *call_info_p,
                                   const jerry_value_t args_p[],
@@ -565,8 +547,6 @@ jerry_value_t sni_api_lv_obj_swap(const jerry_call_info_t *call_info_p,
  * @brief moves the object to the given index in its parent. When used in listboxes, it can be used to sort the listbox items. to move to the background: lv_obj_move_to_index(obj, 0)  to move forward (up): lv_obj_move_to_index(obj, lv_obj_get_index(obj) - 1)
  *
  * @param index (number) new index in parent. -1 to count from the back
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_move_to_index(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -786,8 +766,6 @@ jerry_value_t sni_api_lv_obj_get_index(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Iterate through all children of any object and print their ID.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_dump_tree(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -818,8 +796,6 @@ jerry_value_t sni_api_lv_obj_dump_tree(const jerry_call_info_t *call_info_p,
  * @param x (number) new x coordinate
  *
  * @param y (number) new y coordinate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -862,8 +838,6 @@ jerry_value_t sni_api_lv_obj_set_pos(const jerry_call_info_t *call_info_p,
  * @brief Set the x coordinate of an object With default alignment it's the distance from the top left corner  E.g. LV_ALIGN_CENTER alignment it's the offset from the center of the parent  The position is interpreted on the content area of the parent  The values can be set in pixel or in percentage of parent size with lv_pct(v)
  *
  * @param x (number) new x coordinate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_x(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
@@ -899,8 +873,6 @@ jerry_value_t sni_api_lv_obj_set_x(const jerry_call_info_t *call_info_p,
  * @brief Set the y coordinate of an object With default alignment it's the distance from the top left corner  E.g. LV_ALIGN_CENTER alignment it's the offset from the center of the parent  The position is interpreted on the content area of the parent  The values can be set in pixel or in percentage of parent size with lv_pct(v)
  *
  * @param y (number) new y coordinate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_y(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
@@ -938,8 +910,6 @@ jerry_value_t sni_api_lv_obj_set_y(const jerry_call_info_t *call_info_p,
  * @param w (number) the new width
  *
  * @param h (number) the new height
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_size(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -1010,8 +980,6 @@ jerry_value_t sni_api_lv_obj_refr_size(const jerry_call_info_t *call_info_p,
  * @brief Set the width of an object possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
  *
  * @param w (number) the new width
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_width(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -1047,8 +1015,6 @@ jerry_value_t sni_api_lv_obj_set_width(const jerry_call_info_t *call_info_p,
  * @brief Set the height of an object possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
  *
  * @param h (number) the new height
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_height(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -1084,8 +1050,6 @@ jerry_value_t sni_api_lv_obj_set_height(const jerry_call_info_t *call_info_p,
  * @brief Set the width reduced by the left and right padding and the border width.
  *
  * @param w (number) the width without paddings in pixels
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_content_width(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -1121,8 +1085,6 @@ jerry_value_t sni_api_lv_obj_set_content_width(const jerry_call_info_t *call_inf
  * @brief Set the height reduced by the top and bottom padding and the border width.
  *
  * @param h (number) the height without paddings in pixels
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_content_height(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -1158,8 +1120,6 @@ jerry_value_t sni_api_lv_obj_set_content_height(const jerry_call_info_t *call_in
  * @brief Set a layout for an object
  *
  * @param layout (number) pointer to a layout descriptor to set
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_layout(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -1221,8 +1181,6 @@ jerry_value_t sni_api_lv_obj_is_layout_positioned(const jerry_call_info_t *call_
 
 /**
  * @brief Mark the object for layout update.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_mark_layout_as_dirty(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -1249,8 +1207,6 @@ jerry_value_t sni_api_lv_obj_mark_layout_as_dirty(const jerry_call_info_t *call_
 
 /**
  * @brief Update the layout of an object.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_update_layout(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -1279,8 +1235,6 @@ jerry_value_t sni_api_lv_obj_update_layout(const jerry_call_info_t *call_info_p,
  * @brief Change the alignment of an object.
  *
  * @param align (number) type of alignment (see ' :ref:`lv_align_t` ' enum) LV_ALIGN_OUT_... can't be used.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_align(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -1320,8 +1274,6 @@ jerry_value_t sni_api_lv_obj_set_align(const jerry_call_info_t *call_info_p,
  * @param x_ofs (number) x coordinate offset after alignment
  *
  * @param y_ofs (number) y coordinate offset after alignment
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_align(const jerry_call_info_t *call_info_p,
                                    const jerry_value_t args_p[],
@@ -1377,8 +1329,6 @@ jerry_value_t sni_api_lv_obj_align(const jerry_call_info_t *call_info_p,
  * @param x_ofs (number) x coordinate offset after alignment
  *
  * @param y_ofs (number) y coordinate offset after alignment
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_align_to(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -1436,8 +1386,6 @@ jerry_value_t sni_api_lv_obj_align_to(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Align an object to the center on its parent. if the parent size changes obj needs to be aligned manually again
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_center(const jerry_call_info_t *call_info_p,
                                     const jerry_value_t args_p[],
@@ -1464,8 +1412,6 @@ jerry_value_t sni_api_lv_obj_center(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Reset the transform matrix of an object to identity matrix LV_DRAW_TRANSFORM_USE_MATRIX needs to be enabled.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_reset_transform(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -1885,7 +1831,7 @@ jerry_value_t sni_api_lv_obj_get_style_clamped_height(const jerry_call_info_t *c
 /**
  * @brief Determine if any of the object's width style properties are set to LV_SIZE_CONTENT . true At least one of the following width style properties is LV_SIZE_CONTENT : LV_STYLE_WIDTH , LV_STYLE_MIN_WIDTH , LV_STYLE_MAX_WIDTH .  false No width style properties are LV_SIZE_CONTENT .
  *
- * @return (boolean) false No width style properties are LV_SIZE_CONTENT .
+ * @return (boolean) true At least one of the following width style properties is LV_SIZE_CONTENT : LV_STYLE_WIDTH , LV_STYLE_MIN_WIDTH , LV_STYLE_MAX_WIDTH .  false No width style properties are LV_SIZE_CONTENT .
  */
 jerry_value_t sni_api_lv_obj_is_style_any_width_content(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -1913,7 +1859,7 @@ jerry_value_t sni_api_lv_obj_is_style_any_width_content(const jerry_call_info_t 
 /**
  * @brief Determine if any of the object's height style properties are set to LV_SIZE_CONTENT . true At least one of the following height style properties is LV_SIZE_CONTENT : LV_STYLE_HEIGHT , LV_STYLE_MIN_HEIGHT , LV_STYLE_MAX_HEIGHT .  false No height style properties are LV_SIZE_CONTENT .
  *
- * @return (boolean) false No height style properties are LV_SIZE_CONTENT .
+ * @return (boolean) true At least one of the following height style properties is LV_SIZE_CONTENT : LV_STYLE_HEIGHT , LV_STYLE_MIN_HEIGHT , LV_STYLE_MAX_HEIGHT .  false No height style properties are LV_SIZE_CONTENT .
  */
 jerry_value_t sni_api_lv_obj_is_style_any_height_content(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -1944,7 +1890,7 @@ jerry_value_t sni_api_lv_obj_is_style_any_height_content(const jerry_call_info_t
  * @details
  * true The computed width == the effective minimum width (i.e. it was clamped). false The width is larger than the minimum (not min‑clamped).
  *
- * @return (boolean) false The width is larger than the minimum (not min‑clamped).
+ * @return (boolean) true The computed width == the effective minimum width (i.e. it was clamped).  false The width is larger than the minimum (not min‑clamped).
  */
 jerry_value_t sni_api_lv_obj_is_width_min(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -1975,7 +1921,7 @@ jerry_value_t sni_api_lv_obj_is_width_min(const jerry_call_info_t *call_info_p,
  * @details
  * true The computed height == the effective minimum height (i.e. it was clamped). false The height is larger than the minimum (not min‑clamped).
  *
- * @return (boolean) false The height is larger than the minimum (not min‑clamped).
+ * @return (boolean) true The computed height == the effective minimum height (i.e. it was clamped).  false The height is larger than the minimum (not min‑clamped).
  */
 jerry_value_t sni_api_lv_obj_is_height_min(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -2006,7 +1952,7 @@ jerry_value_t sni_api_lv_obj_is_height_min(const jerry_call_info_t *call_info_p,
  * @details
  * true The computed width == the effective maximum width (i.e. it was clamped). false The width is smaller than the maximum (not min‑clamped).
  *
- * @return (boolean) false The width is smaller than the maximum (not min‑clamped).
+ * @return (boolean) true The computed width == the effective maximum width (i.e. it was clamped).  false The width is smaller than the maximum (not min‑clamped).
  */
 jerry_value_t sni_api_lv_obj_is_width_max(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -2037,7 +1983,7 @@ jerry_value_t sni_api_lv_obj_is_width_max(const jerry_call_info_t *call_info_p,
  * @details
  * true The computed height == the effective maximum height (i.e. it was clamped). false The height is smaller than the maximum (not min‑clamped).
  *
- * @return (boolean) false The height is smaller than the maximum (not min‑clamped).
+ * @return (boolean) true The computed height == the effective maximum height (i.e. it was clamped).  false The height is smaller than the maximum (not min‑clamped).
  */
 jerry_value_t sni_api_lv_obj_is_height_max(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -2092,8 +2038,6 @@ jerry_value_t sni_api_lv_obj_refresh_self_size(const jerry_call_info_t *call_inf
 
 /**
  * @brief JavaScript binding for lv_obj_refr_pos.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_refr_pos(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -2124,8 +2068,6 @@ jerry_value_t sni_api_lv_obj_refr_pos(const jerry_call_info_t *call_info_p,
  * @param x (number) JavaScript argument.
  *
  * @param y (number) JavaScript argument.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_move_to(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -2172,8 +2114,6 @@ jerry_value_t sni_api_lv_obj_move_to(const jerry_call_info_t *call_info_p,
  * @param y_diff (number) JavaScript argument.
  *
  * @param ignore_floating (boolean) JavaScript argument.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_move_children_by(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -2225,8 +2165,6 @@ jerry_value_t sni_api_lv_obj_move_children_by(const jerry_call_info_t *call_info
  * @param p (object) a point to transform, the result will be written back here too
  *
  * @param flags (number) OR-ed valued of :cpp:enum: :ref:`lv_obj_point_transform_flag_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_transform_point(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -2278,8 +2216,6 @@ jerry_value_t sni_api_lv_obj_transform_point(const jerry_call_info_t *call_info_
  * @param area (object) an area to transform, the result will be written back here too
  *
  * @param flags (number) OR-ed valued of :cpp:enum: :ref:`lv_obj_point_transform_flag_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_get_transformed_area(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -2354,10 +2290,6 @@ jerry_value_t sni_api_lv_obj_invalidate_area(const jerry_call_info_t *call_info_
     }
 
     lv_result_t result = lv_obj_invalidate_area(self_obj, &arg_area_value);
-    if (!sni_tb_c2js_set_object(&arg_area_value, SNI_V_LV_AREA, args_p[0]))
-    {
-        return sni_api_throw_error("Failed to convert return argument");
-    }
     return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
@@ -2465,8 +2397,6 @@ jerry_value_t sni_api_lv_obj_is_visible(const jerry_call_info_t *call_info_p,
  * @brief Set the size of an extended clickable area
  *
  * @param size (number) extended clickable area in all 4 directions [px]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_ext_click_area(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -2535,10 +2465,6 @@ jerry_value_t sni_api_lv_obj_hit_test(const jerry_call_info_t *call_info_p,
     }
 
     bool result = lv_obj_hit_test(self_obj, &arg_point_value);
-    if (!sni_tb_c2js_set_object(&arg_point_value, SNI_V_LV_POINT, args_p[0]))
-    {
-        return sni_api_throw_error("Failed to convert return argument");
-    }
     return sni_tb_c2js_boolean(result);
 }
 
@@ -2620,8 +2546,6 @@ jerry_value_t sni_api_lv_obj_calc_dynamic_height(const jerry_call_info_t *call_i
  * @brief Set how the scrollbars should behave.
  *
  * @param mode (number) LV_SCROLL_MODE_ON/OFF/AUTO/ACTIVE
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -2657,8 +2581,6 @@ jerry_value_t sni_api_lv_obj_set_scrollbar_mode(const jerry_call_info_t *call_in
  * @brief Set direction Widget can be scrolled
  *
  * @param dir (number) one or more bit-wise OR-ed values of :ref:`lv_dir_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -2694,8 +2616,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_dir(const jerry_call_info_t *call_info_p
  * @brief Set where to snap the children when scrolling ends horizontally
  *
  * @param align (number) value from :ref:`lv_scroll_snap_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -2731,8 +2651,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_snap_x(const jerry_call_info_t *call_inf
  * @brief Set where to snap the children when scrolling ends vertically
  *
  * @param align (number) value from :ref:`lv_scroll_snap_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -3052,8 +2970,6 @@ jerry_value_t sni_api_lv_obj_get_scroll_right(const jerry_call_info_t *call_info
  * @param dy (number) pixels to scroll vertically
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_by(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -3107,8 +3023,6 @@ jerry_value_t sni_api_lv_obj_scroll_by(const jerry_call_info_t *call_info_p,
  * @param dy (number) pixels to scroll vertically
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_by_bounded(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -3162,8 +3076,6 @@ jerry_value_t sni_api_lv_obj_scroll_by_bounded(const jerry_call_info_t *call_inf
  * @param y (number) pixels to scroll vertically
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_to(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -3215,8 +3127,6 @@ jerry_value_t sni_api_lv_obj_scroll_to(const jerry_call_info_t *call_info_p,
  * @param x (number) pixels to scroll horizontally
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_to_x(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -3261,8 +3171,6 @@ jerry_value_t sni_api_lv_obj_scroll_to_x(const jerry_call_info_t *call_info_p,
  * @param y (number) pixels to scroll vertically
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_to_y(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -3305,8 +3213,6 @@ jerry_value_t sni_api_lv_obj_scroll_to_y(const jerry_call_info_t *call_info_p,
  * @brief Scroll obj 's parent Widget until obj becomes visible.
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_to_view(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -3342,8 +3248,6 @@ jerry_value_t sni_api_lv_obj_scroll_to_view(const jerry_call_info_t *call_info_p
  * @brief Scroll obj 's parent Widgets recursively until obj becomes visible. Widget will be scrolled into view even it has nested scrollable parents.
  *
  * @param anim_en (boolean) LV_ANIM_ON: scroll with animation; LV_ANIM_OFF: scroll immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scroll_to_view_recursive(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -3405,8 +3309,6 @@ jerry_value_t sni_api_lv_obj_is_scrolling(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Stop scrolling the current object
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_stop_scroll_anim(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -3435,8 +3337,6 @@ jerry_value_t sni_api_lv_obj_stop_scroll_anim(const jerry_call_info_t *call_info
  * @brief Check children of obj and scroll obj to fulfill scroll_snap settings.
  *
  * @param anim_en (boolean) LV_ANIM_ON/OFF
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_update_snap(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -3470,8 +3370,6 @@ jerry_value_t sni_api_lv_obj_update_snap(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Invalidate the area of the scrollbars
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_scrollbar_invalidate(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -3500,8 +3398,6 @@ jerry_value_t sni_api_lv_obj_scrollbar_invalidate(const jerry_call_info_t *call_
  * @brief Checks if the content is scrolled "in" and adjusts it to a normal position.
  *
  * @param anim_en (boolean) LV_ANIM_ON/OFF
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_readjust_scroll(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -3537,8 +3433,6 @@ jerry_value_t sni_api_lv_obj_readjust_scroll(const jerry_call_info_t *call_info_
  * @brief Remove all styles added by a theme from a widget
  *
  * @param selector (number) OR-ed values of states and a part to remove only styles with matching selectors. LV_STATE_ANY and LV_PART_ANY can be used
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_remove_theme(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -3572,8 +3466,6 @@ jerry_value_t sni_api_lv_obj_remove_theme(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Remove all styles from an object
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_remove_style_all(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -3604,8 +3496,6 @@ jerry_value_t sni_api_lv_obj_remove_style_all(const jerry_call_info_t *call_info
  * @param part (number) the part whose style was changed. E.g. LV_PART_ANY , LV_PART_MAIN
  *
  * @param prop (number) LV_STYLE_PROP_ANY or an LV_STYLE_... property. It is used to optimize what needs to be refreshed. LV_STYLE_PROP_INV to perform only a style cache update
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_refresh_style(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -3742,8 +3632,6 @@ jerry_value_t sni_api_lv_obj_remove_local_style_prop(const jerry_call_info_t *ca
  * @param time (number) time of fade
  *
  * @param delay (number) delay to start the animation
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_fade_in(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -3788,8 +3676,6 @@ jerry_value_t sni_api_lv_obj_fade_in(const jerry_call_info_t *call_info_p,
  * @param time (number) time of fade
  *
  * @param delay (number) delay to start the animation
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_fade_out(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -8644,8 +8530,6 @@ jerry_value_t sni_api_lv_obj_get_style_grid_cell_row_span(const jerry_call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_width(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -8690,8 +8574,6 @@ jerry_value_t sni_api_lv_obj_set_style_width(const jerry_call_info_t *call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_min_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -8736,8 +8618,6 @@ jerry_value_t sni_api_lv_obj_set_style_min_width(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_max_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -8782,8 +8662,6 @@ jerry_value_t sni_api_lv_obj_set_style_max_width(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_height(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -8828,8 +8706,6 @@ jerry_value_t sni_api_lv_obj_set_style_height(const jerry_call_info_t *call_info
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_min_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -8874,8 +8750,6 @@ jerry_value_t sni_api_lv_obj_set_style_min_height(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_max_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -8920,8 +8794,6 @@ jerry_value_t sni_api_lv_obj_set_style_max_height(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_length(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -8966,8 +8838,6 @@ jerry_value_t sni_api_lv_obj_set_style_length(const jerry_call_info_t *call_info
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_x(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -9012,8 +8882,6 @@ jerry_value_t sni_api_lv_obj_set_style_x(const jerry_call_info_t *call_info_p,
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_y(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -9058,8 +8926,6 @@ jerry_value_t sni_api_lv_obj_set_style_y(const jerry_call_info_t *call_info_p,
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_align(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -9104,8 +8970,6 @@ jerry_value_t sni_api_lv_obj_set_style_align(const jerry_call_info_t *call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -9150,8 +9014,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_width(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_height(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -9196,8 +9058,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_height(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_translate_x(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -9242,8 +9102,6 @@ jerry_value_t sni_api_lv_obj_set_style_translate_x(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_translate_y(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -9288,8 +9146,6 @@ jerry_value_t sni_api_lv_obj_set_style_translate_y(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_translate_radial(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -9334,8 +9190,6 @@ jerry_value_t sni_api_lv_obj_set_style_translate_radial(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -9380,8 +9234,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_scale_x(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -9426,8 +9278,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_scale_y(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_rotation(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -9472,8 +9322,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_rotation(const jerry_call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_pivot_x(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -9518,8 +9366,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_pivot_x(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_pivot_y(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -9564,8 +9410,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_pivot_y(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_skew_x(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -9610,8 +9454,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_skew_x(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_skew_y(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -9656,8 +9498,6 @@ jerry_value_t sni_api_lv_obj_set_style_transform_skew_y(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_top(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -9702,8 +9542,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_top(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_bottom(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -9748,8 +9586,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_bottom(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_left(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -9794,8 +9630,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_left(const jerry_call_info_t *call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_right(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -9840,8 +9674,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_right(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_row(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -9886,8 +9718,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_row(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_column(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -9932,8 +9762,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_column(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_radial(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -9978,8 +9806,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_radial(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_top(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -10024,8 +9850,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_top(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_bottom(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -10070,8 +9894,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_bottom(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_left(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10116,8 +9938,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_left(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_right(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10162,8 +9982,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_right(const jerry_call_info_t *cal
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_color(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -10207,8 +10025,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_color(const jerry_call_info_t *call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_opa(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -10253,8 +10069,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_opa(const jerry_call_info_t *call_info
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -10298,8 +10112,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_color(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10344,8 +10156,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_dir(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_main_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10390,8 +10200,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_main_stop(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10436,8 +10244,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_stop(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_main_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10482,8 +10288,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_main_opa(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10528,8 +10332,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_grad_opa(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_opa(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10574,8 +10376,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_opa(const jerry_call_info_t *cal
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -10619,8 +10419,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -10665,8 +10463,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_recolor_opa(const jerry_call_inf
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -10711,8 +10507,6 @@ jerry_value_t sni_api_lv_obj_set_style_bg_image_tiled(const jerry_call_info_t *c
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_border_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10756,8 +10550,6 @@ jerry_value_t sni_api_lv_obj_set_style_border_color(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_border_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -10802,8 +10594,6 @@ jerry_value_t sni_api_lv_obj_set_style_border_opa(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_border_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -10848,8 +10638,6 @@ jerry_value_t sni_api_lv_obj_set_style_border_width(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_border_side(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10894,8 +10682,6 @@ jerry_value_t sni_api_lv_obj_set_style_border_side(const jerry_call_info_t *call
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_border_post(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -10940,8 +10726,6 @@ jerry_value_t sni_api_lv_obj_set_style_border_post(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_outline_width(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -10986,8 +10770,6 @@ jerry_value_t sni_api_lv_obj_set_style_outline_width(const jerry_call_info_t *ca
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_outline_color(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -11031,8 +10813,6 @@ jerry_value_t sni_api_lv_obj_set_style_outline_color(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_outline_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -11077,8 +10857,6 @@ jerry_value_t sni_api_lv_obj_set_style_outline_opa(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_outline_pad(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -11123,8 +10901,6 @@ jerry_value_t sni_api_lv_obj_set_style_outline_pad(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_width(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -11169,8 +10945,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_width(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -11215,8 +10989,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_offset_x(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -11261,8 +11033,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_offset_y(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_spread(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -11307,8 +11077,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_spread(const jerry_call_info_t *ca
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_color(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -11352,8 +11120,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_color(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_shadow_opa(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -11398,8 +11164,6 @@ jerry_value_t sni_api_lv_obj_set_style_shadow_opa(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_image_opa(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -11444,8 +11208,6 @@ jerry_value_t sni_api_lv_obj_set_style_image_opa(const jerry_call_info_t *call_i
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_image_recolor(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -11489,8 +11251,6 @@ jerry_value_t sni_api_lv_obj_set_style_image_recolor(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_image_recolor_opa(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -11535,8 +11295,6 @@ jerry_value_t sni_api_lv_obj_set_style_image_recolor_opa(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_width(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -11581,8 +11339,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_width(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_dash_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -11627,8 +11383,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_dash_width(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_dash_gap(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -11673,8 +11427,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_dash_gap(const jerry_call_info_t *ca
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_rounded(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -11719,8 +11471,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_rounded(const jerry_call_info_t *cal
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -11764,8 +11514,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_color(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_line_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -11810,8 +11558,6 @@ jerry_value_t sni_api_lv_obj_set_style_line_opa(const jerry_call_info_t *call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_arc_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -11856,8 +11602,6 @@ jerry_value_t sni_api_lv_obj_set_style_arc_width(const jerry_call_info_t *call_i
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_arc_rounded(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -11902,8 +11646,6 @@ jerry_value_t sni_api_lv_obj_set_style_arc_rounded(const jerry_call_info_t *call
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_arc_color(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -11947,8 +11689,6 @@ jerry_value_t sni_api_lv_obj_set_style_arc_color(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_arc_opa(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -11993,8 +11733,6 @@ jerry_value_t sni_api_lv_obj_set_style_arc_opa(const jerry_call_info_t *call_inf
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_color(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -12038,8 +11776,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_color(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_opa(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -12084,8 +11820,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_opa(const jerry_call_info_t *call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_letter_space(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -12130,8 +11864,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_letter_space(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_line_space(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -12176,8 +11908,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_line_space(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_decor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -12222,8 +11952,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_decor(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_align(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -12268,8 +11996,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_align(const jerry_call_info_t *call_
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_color(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
@@ -12313,8 +12039,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_color(const jerry_cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_width(const jerry_call_info_t *call_info_p,
                                                                  const jerry_value_t args_p[],
@@ -12359,8 +12083,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_width(const jerry_cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_opa(const jerry_call_info_t *call_info_p,
                                                                const jerry_value_t args_p[],
@@ -12405,8 +12127,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_outline_stroke_opa(const jerry_call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_text_leading_trim(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -12451,8 +12171,6 @@ jerry_value_t sni_api_lv_obj_set_style_text_leading_trim(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_blur_radius(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -12497,8 +12215,6 @@ jerry_value_t sni_api_lv_obj_set_style_blur_radius(const jerry_call_info_t *call
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_blur_backdrop(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -12543,8 +12259,6 @@ jerry_value_t sni_api_lv_obj_set_style_blur_backdrop(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_blur_quality(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -12589,8 +12303,6 @@ jerry_value_t sni_api_lv_obj_set_style_blur_quality(const jerry_call_info_t *cal
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_radius(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -12635,8 +12347,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_radius(const jerry_call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_x(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -12681,8 +12391,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_x(const jerry_call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_y(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -12727,8 +12435,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_offset_y(const jerry_call_inf
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_color(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -12772,8 +12478,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_color(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_opa(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -12818,8 +12522,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_opa(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_drop_shadow_quality(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
@@ -12864,8 +12566,6 @@ jerry_value_t sni_api_lv_obj_set_style_drop_shadow_quality(const jerry_call_info
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_radius(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -12910,8 +12610,6 @@ jerry_value_t sni_api_lv_obj_set_style_radius(const jerry_call_info_t *call_info
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_radial_offset(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -12956,8 +12654,6 @@ jerry_value_t sni_api_lv_obj_set_style_radial_offset(const jerry_call_info_t *ca
  * @param value (boolean) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_clip_corner(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -13002,8 +12698,6 @@ jerry_value_t sni_api_lv_obj_set_style_clip_corner(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_opa(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -13048,8 +12742,6 @@ jerry_value_t sni_api_lv_obj_set_style_opa(const jerry_call_info_t *call_info_p,
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_opa_layered(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -13094,8 +12786,6 @@ jerry_value_t sni_api_lv_obj_set_style_opa_layered(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_color_filter_opa(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -13140,8 +12830,6 @@ jerry_value_t sni_api_lv_obj_set_style_color_filter_opa(const jerry_call_info_t 
  * @param value (number) Color to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_recolor(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -13185,8 +12873,6 @@ jerry_value_t sni_api_lv_obj_set_style_recolor(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_recolor_opa(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -13231,8 +12917,6 @@ jerry_value_t sni_api_lv_obj_set_style_recolor_opa(const jerry_call_info_t *call
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_anim_duration(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -13277,8 +12961,6 @@ jerry_value_t sni_api_lv_obj_set_style_anim_duration(const jerry_call_info_t *ca
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_blend_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -13323,8 +13005,6 @@ jerry_value_t sni_api_lv_obj_set_style_blend_mode(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_layout(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -13369,8 +13049,6 @@ jerry_value_t sni_api_lv_obj_set_style_layout(const jerry_call_info_t *call_info
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_base_dir(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -13415,8 +13093,6 @@ jerry_value_t sni_api_lv_obj_set_style_base_dir(const jerry_call_info_t *call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_rotary_sensitivity(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -13461,8 +13137,6 @@ jerry_value_t sni_api_lv_obj_set_style_rotary_sensitivity(const jerry_call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_flex_flow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -13507,8 +13181,6 @@ jerry_value_t sni_api_lv_obj_set_style_flex_flow(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_flex_main_place(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -13553,8 +13225,6 @@ jerry_value_t sni_api_lv_obj_set_style_flex_main_place(const jerry_call_info_t *
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_flex_cross_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -13599,8 +13269,6 @@ jerry_value_t sni_api_lv_obj_set_style_flex_cross_place(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_flex_track_place(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -13645,8 +13313,6 @@ jerry_value_t sni_api_lv_obj_set_style_flex_track_place(const jerry_call_info_t 
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_flex_grow(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -13691,8 +13357,6 @@ jerry_value_t sni_api_lv_obj_set_style_flex_grow(const jerry_call_info_t *call_i
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_column_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -13737,8 +13401,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_column_align(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_row_align(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -13783,8 +13445,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_row_align(const jerry_call_info_t *c
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_pos(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -13829,8 +13489,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_pos(const jerry_call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_x_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -13875,8 +13533,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_x_align(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_span(const jerry_call_info_t *call_info_p,
                                                              const jerry_value_t args_p[],
@@ -13921,8 +13577,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_column_span(const jerry_call_in
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -13967,8 +13621,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_pos(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_y_align(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -14013,8 +13665,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_y_align(const jerry_call_info_t
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_span(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -14059,8 +13709,6 @@ jerry_value_t sni_api_lv_obj_set_style_grid_cell_row_span(const jerry_call_info_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_all(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -14105,8 +13753,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_all(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_hor(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -14151,8 +13797,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_hor(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_ver(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -14197,8 +13841,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_ver(const jerry_call_info_t *call_inf
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_all(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -14243,8 +13885,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_all(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_hor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -14289,8 +13929,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_hor(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_margin_ver(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -14335,8 +13973,6 @@ jerry_value_t sni_api_lv_obj_set_style_margin_ver(const jerry_call_info_t *call_
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_pad_gap(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -14383,8 +14019,6 @@ jerry_value_t sni_api_lv_obj_set_style_pad_gap(const jerry_call_info_t *call_inf
  * @param height (number) Height value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_size(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -14436,8 +14070,6 @@ jerry_value_t sni_api_lv_obj_set_style_size(const jerry_call_info_t *call_info_p
  * @param value (number) Value to submit
  *
  * @param selector (number) A joint type for :ref:`lv_part_t` and :ref:`lv_state_t` . Example values: 0 : means LV_PART_MAIN | LV_STATE_DEFAULT LV_STATE_PRESSED LV_PART_KNOB LV_PART_KNOB | LV_STATE_PRESSED | LV_STATE_CHECKED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_style_transform_scale(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -14876,8 +14508,6 @@ jerry_value_t sni_api_lv_obj_get_style_recolor_recursive(const jerry_call_info_t
  * @brief Set a custom extra draw area (around the widget) to draw shadow, outline, or children etc. LV_OBJ_FLAG_OVERFLOW_VISIBLE should be set on obj to allow the children overflowing the parent.
  *
  * @param size (number) the extra size to allow around the object
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -14948,8 +14578,6 @@ jerry_value_t sni_api_lv_obj_calculate_ext_draw_size(const jerry_call_info_t *ca
 
 /**
  * @brief Send a 'LV_EVENT_REFR_EXT_DRAW_SIZE' Call the ancestor's event handler to the object to refresh the value of the extended draw size. The result will be saved in obj .
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_refresh_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -14976,8 +14604,6 @@ jerry_value_t sni_api_lv_obj_refresh_ext_draw_size(const jerry_call_info_t *call
 
 /**
  * @brief JavaScript binding for lv_obj_class_init_obj.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_class_init_obj(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -15156,8 +14782,6 @@ jerry_value_t sni_api_lv_obj_create(const jerry_call_info_t *call_info_p,
  * @brief Set one or more flags Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj, true) .
  *
  * @param f (number) OR-ed values from :ref:`lv_obj_flag_t` to set.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -15193,8 +14817,6 @@ jerry_value_t sni_api_lv_obj_add_flag(const jerry_call_info_t *call_info_p,
  * @brief Remove one or more flags Deprecated Use the dedicated per-flag setter instead, e.g. lv_obj_set_hidden(obj, false) .
  *
  * @param f (number) OR-ed values from :ref:`lv_obj_flag_t` to clear.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_remove_flag(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -15232,8 +14854,6 @@ jerry_value_t sni_api_lv_obj_remove_flag(const jerry_call_info_t *call_info_p,
  * @param f (number) OR-ed values from :ref:`lv_obj_flag_t` to update.
  *
  * @param v (boolean) true: add the flags; false: remove the flags
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_flag(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -15276,8 +14896,6 @@ jerry_value_t sni_api_lv_obj_set_flag(const jerry_call_info_t *call_info_p,
  * @brief Make the object hidden. (Like it wasn't there at all)
  *
  * @param en (boolean) enable or disable the hidden property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_hidden(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -15313,8 +14931,6 @@ jerry_value_t sni_api_lv_obj_set_hidden(const jerry_call_info_t *call_info_p,
  * @brief Make the object clickable by the input devices
  *
  * @param en (boolean) enable or disable the clickable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_clickable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -15350,8 +14966,6 @@ jerry_value_t sni_api_lv_obj_set_clickable(const jerry_call_info_t *call_info_p,
  * @brief Add focused state to the object when clicked
  *
  * @param en (boolean) enable or disable the click focusable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_click_focusable(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -15387,8 +15001,6 @@ jerry_value_t sni_api_lv_obj_set_click_focusable(const jerry_call_info_t *call_i
  * @brief Toggle checked state when the object is clicked
  *
  * @param en (boolean) enable or disable the checkable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_checkable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -15424,8 +15036,6 @@ jerry_value_t sni_api_lv_obj_set_checkable(const jerry_call_info_t *call_info_p,
  * @brief Make the object scrollable
  *
  * @param en (boolean) enable or disable the scrollable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scrollable(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -15461,8 +15071,6 @@ jerry_value_t sni_api_lv_obj_set_scrollable(const jerry_call_info_t *call_info_p
  * @brief Allow scrolling inside but with slower speed
  *
  * @param en (boolean) enable or disable the scroll elastic property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_elastic(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -15498,8 +15106,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_elastic(const jerry_call_info_t *call_in
  * @brief Make the object scroll further when "thrown"
  *
  * @param en (boolean) enable or disable the scroll momentum property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_momentum(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -15535,8 +15141,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_momentum(const jerry_call_info_t *call_i
  * @brief Allow scrolling only one snappable child
  *
  * @param en (boolean) enable or disable the scroll one property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_one(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -15572,8 +15176,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_one(const jerry_call_info_t *call_info_p
  * @brief Allow propagating the scrolling in any directions to a parent
  *
  * @param en (boolean) enable or disable scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_chain(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -15609,8 +15211,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain(const jerry_call_info_t *call_info
  * @brief Allow propagating the horizontal scroll to a parent
  *
  * @param en (boolean) enable or disable horizontal scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_chain_hor(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -15646,8 +15246,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain_hor(const jerry_call_info_t *call_
  * @brief Allow propagating the vertical scroll to a parent
  *
  * @param en (boolean) enable or disable vertical scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_chain_ver(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -15683,8 +15281,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_chain_ver(const jerry_call_info_t *call_
  * @brief Automatically scroll object to make it visible when focused
  *
  * @param en (boolean) enable or disable scroll on focus
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_on_focus(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -15720,8 +15316,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_on_focus(const jerry_call_info_t *call_i
  * @brief Allow scrolling the focused object with arrow keys
  *
  * @param en (boolean) enable or disable scroll with arrow keys
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scroll_with_arrow(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -15757,8 +15351,6 @@ jerry_value_t sni_api_lv_obj_set_scroll_with_arrow(const jerry_call_info_t *call
  * @brief Allow snapping to this object if scroll snap is enabled on the parent
  *
  * @param en (boolean) enable or disable the snappable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_snappable(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -15794,8 +15386,6 @@ jerry_value_t sni_api_lv_obj_set_snappable(const jerry_call_info_t *call_info_p,
  * @brief Keep the object pressed even if the press slid from the object
  *
  * @param en (boolean) enable or disable the press lock property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_press_lock(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -15831,8 +15421,6 @@ jerry_value_t sni_api_lv_obj_set_press_lock(const jerry_call_info_t *call_info_p
  * @brief Propagate the events to the parent too
  *
  * @param en (boolean) enable or disable event bubbling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_event_bubble(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -15868,8 +15456,6 @@ jerry_value_t sni_api_lv_obj_set_event_bubble(const jerry_call_info_t *call_info
  * @brief Propagate the gestures to the parent
  *
  * @param en (boolean) enable or disable gesture bubbling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_gesture_bubble(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -15905,8 +15491,6 @@ jerry_value_t sni_api_lv_obj_set_gesture_bubble(const jerry_call_info_t *call_in
  * @brief Allow performing more accurate hit test
  *
  * @param en (boolean) enable or disable advanced hit testing
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_adv_hittest(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -15942,8 +15526,6 @@ jerry_value_t sni_api_lv_obj_set_adv_hittest(const jerry_call_info_t *call_info_
  * @brief Make the object not positioned by layouts
  *
  * @param en (boolean) enable or disable ignoring layout
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_ignore_layout(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -15979,8 +15561,6 @@ jerry_value_t sni_api_lv_obj_set_ignore_layout(const jerry_call_info_t *call_inf
  * @brief Do not scroll the object when the parent scrolls and ignore layout
  *
  * @param en (boolean) enable or disable floating mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_floating(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -16016,8 +15596,6 @@ jerry_value_t sni_api_lv_obj_set_floating(const jerry_call_info_t *call_info_p,
  * @brief Send LV_EVENT_DRAW_TASK_ADDED events
  *
  * @param en (boolean) enable or disable draw task events
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_send_draw_task_events(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -16053,8 +15631,6 @@ jerry_value_t sni_api_lv_obj_set_send_draw_task_events(const jerry_call_info_t *
  * @brief Do not clip the children to the parent's extended draw size
  *
  * @param en (boolean) enable or disable overflow visibility
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_overflow_visible(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -16090,8 +15666,6 @@ jerry_value_t sni_api_lv_obj_set_overflow_visible(const jerry_call_info_t *call_
  * @brief Propagate the events to the children too
  *
  * @param en (boolean) enable or disable event trickling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_event_trickle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -16127,8 +15701,6 @@ jerry_value_t sni_api_lv_obj_set_event_trickle(const jerry_call_info_t *call_inf
  * @brief Propagate the states to the children too
  *
  * @param en (boolean) enable or disable state trickling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state_trickle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -16164,8 +15736,6 @@ jerry_value_t sni_api_lv_obj_set_state_trickle(const jerry_call_info_t *call_inf
  * @brief Allow only one RADIO_BUTTON sibling to be checked
  *
  * @param en (boolean) enable or disable radio button behavior
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_radio_button(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -16201,8 +15771,6 @@ jerry_value_t sni_api_lv_obj_set_radio_button(const jerry_call_info_t *call_info
  * @brief Start a new flex track on this item
  *
  * @param en (boolean) enable or disable new flex track
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_flex_in_new_track(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -16238,8 +15806,6 @@ jerry_value_t sni_api_lv_obj_set_flex_in_new_track(const jerry_call_info_t *call
  * @brief Add one or more states to the object. The other state bits will remain unchanged. If specified in the styles, transition animation will be started from the previous state to the current.
  *
  * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_add_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -16275,8 +15841,6 @@ jerry_value_t sni_api_lv_obj_add_state(const jerry_call_info_t *call_info_p,
  * @brief Remove one or more states to the object. The other state bits will remain unchanged. If specified in the styles, transition animation will be started from the previous state to the current.
  *
  * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_remove_state(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -16314,8 +15878,6 @@ jerry_value_t sni_api_lv_obj_remove_state(const jerry_call_info_t *call_info_p,
  * @param state (number) the states to add. E.g LV_STATE_PRESSED | LV_STATE_FOCUSED
  *
  * @param v (boolean) true: add the states; false: remove the states
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -16358,8 +15920,6 @@ jerry_value_t sni_api_lv_obj_set_state(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_ALT . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_alt(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -16395,8 +15955,6 @@ jerry_value_t sni_api_lv_obj_set_alt(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_CHECKED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_checked(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -16432,8 +15990,6 @@ jerry_value_t sni_api_lv_obj_set_checked(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_FOCUSED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_focused(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -16469,8 +16025,6 @@ jerry_value_t sni_api_lv_obj_set_focused(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_FOCUS_KEY . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_focus_key(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -16506,8 +16060,6 @@ jerry_value_t sni_api_lv_obj_set_focus_key(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_EDITED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_edited(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -16543,8 +16095,6 @@ jerry_value_t sni_api_lv_obj_set_edited(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_HOVERED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_hovered(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -16580,8 +16130,6 @@ jerry_value_t sni_api_lv_obj_set_hovered(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_PRESSED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_pressed(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -16617,8 +16165,6 @@ jerry_value_t sni_api_lv_obj_set_pressed(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_SCROLLED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_scrolled(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -16654,8 +16200,6 @@ jerry_value_t sni_api_lv_obj_set_scrolled(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_DISABLED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_disabled(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -16691,8 +16235,6 @@ jerry_value_t sni_api_lv_obj_set_disabled(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_USER_1 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state_user_1(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -16728,8 +16270,6 @@ jerry_value_t sni_api_lv_obj_set_state_user_1(const jerry_call_info_t *call_info
  * @brief Add or remove LV_STATE_USER_2 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state_user_2(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -16765,8 +16305,6 @@ jerry_value_t sni_api_lv_obj_set_state_user_2(const jerry_call_info_t *call_info
  * @brief Add or remove LV_STATE_USER_3 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state_user_3(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -16802,8 +16340,6 @@ jerry_value_t sni_api_lv_obj_set_state_user_3(const jerry_call_info_t *call_info
  * @brief Add or remove LV_STATE_USER_4 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_state_user_4(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -16841,8 +16377,6 @@ jerry_value_t sni_api_lv_obj_set_state_user_4(const jerry_call_info_t *call_info
  * @param bit (number) the index of the bit (0..3)
  *
  * @param v (boolean) the value of the bit, true or false
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_set_user_flag(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -18165,8 +17699,6 @@ jerry_value_t sni_api_lv_obj_is_in_widget_tree(const jerry_call_info_t *call_inf
  * @param duration (number) duration of the animation in milliseconds
  *
  * @param delay (number) delay before the screen load in milliseconds
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_add_screen_load_event(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -18231,8 +17763,6 @@ jerry_value_t sni_api_lv_obj_add_screen_load_event(const jerry_call_info_t *call
 
 /**
  * @brief Move the object to the foreground. It will look like if it was created as the last child of its parent. It also means it can cover any of the siblings.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_move_foreground(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -18259,8 +17789,6 @@ jerry_value_t sni_api_lv_obj_move_foreground(const jerry_call_info_t *call_info_
 
 /**
  * @brief Move the object to the background. It will look like if it was created as the first child of its parent. It also means any of the siblings can cover the object.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_obj_move_background(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -18289,8 +17817,6 @@ jerry_value_t sni_api_lv_obj_move_background(const jerry_call_info_t *call_info_
  * @brief Allow performing more accurate hit test
  *
  * @param en (boolean) enable or disable advanced hit testing
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_adv_hittest(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -18326,8 +17852,6 @@ jerry_value_t sni_api_prop_set_obj_adv_hittest(const jerry_call_info_t *call_inf
  * @brief Change the alignment of an object.
  *
  * @param align (number) type of alignment (see ' :ref:`lv_align_t` ' enum) LV_ALIGN_OUT_... can't be used.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_align(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -18363,8 +17887,6 @@ jerry_value_t sni_api_prop_set_obj_align(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_ALT . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_alt(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -18400,8 +17922,6 @@ jerry_value_t sni_api_prop_set_obj_alt(const jerry_call_info_t *call_info_p,
  * @brief Toggle checked state when the object is clicked
  *
  * @param en (boolean) enable or disable the checkable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_checkable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -18437,8 +17957,6 @@ jerry_value_t sni_api_prop_set_obj_checkable(const jerry_call_info_t *call_info_
  * @brief Add or remove LV_STATE_CHECKED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_checked(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -18503,8 +18021,6 @@ jerry_value_t sni_api_prop_get_obj_child_count(const jerry_call_info_t *call_inf
  * @brief Add focused state to the object when clicked
  *
  * @param en (boolean) enable or disable the click focusable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_click_focusable(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -18540,8 +18056,6 @@ jerry_value_t sni_api_prop_set_obj_click_focusable(const jerry_call_info_t *call
  * @brief Make the object clickable by the input devices
  *
  * @param en (boolean) enable or disable the clickable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_clickable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -18606,8 +18120,6 @@ jerry_value_t sni_api_prop_get_obj_content_height(const jerry_call_info_t *call_
  * @brief Set the height reduced by the top and bottom padding and the border width.
  *
  * @param h (number) the height without paddings in pixels
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_content_height(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -18672,8 +18184,6 @@ jerry_value_t sni_api_prop_get_obj_content_width(const jerry_call_info_t *call_i
  * @brief Set the width reduced by the left and right padding and the border width.
  *
  * @param w (number) the width without paddings in pixels
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_content_width(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -18709,8 +18219,6 @@ jerry_value_t sni_api_prop_set_obj_content_width(const jerry_call_info_t *call_i
  * @brief Add or remove LV_STATE_DISABLED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_disabled(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -18746,8 +18254,6 @@ jerry_value_t sni_api_prop_set_obj_disabled(const jerry_call_info_t *call_info_p
  * @brief Add or remove LV_STATE_EDITED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_edited(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -18783,8 +18289,6 @@ jerry_value_t sni_api_prop_set_obj_edited(const jerry_call_info_t *call_info_p,
  * @brief Propagate the events to the parent too
  *
  * @param en (boolean) enable or disable event bubbling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_event_bubble(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -18849,8 +18353,6 @@ jerry_value_t sni_api_prop_get_obj_event_count(const jerry_call_info_t *call_inf
  * @brief Propagate the events to the children too
  *
  * @param en (boolean) enable or disable event trickling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_event_trickle(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -18886,8 +18388,6 @@ jerry_value_t sni_api_prop_set_obj_event_trickle(const jerry_call_info_t *call_i
  * @brief Set the size of an extended clickable area
  *
  * @param size (number) extended clickable area in all 4 directions [px]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_ext_click_area(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -18923,8 +18423,6 @@ jerry_value_t sni_api_prop_set_obj_ext_click_area(const jerry_call_info_t *call_
  * @brief Set a custom extra draw area (around the widget) to draw shadow, outline, or children etc. LV_OBJ_FLAG_OVERFLOW_VISIBLE should be set on obj to allow the children overflowing the parent.
  *
  * @param size (number) the extra size to allow around the object
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_ext_draw_size(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -18960,8 +18458,6 @@ jerry_value_t sni_api_prop_set_obj_ext_draw_size(const jerry_call_info_t *call_i
  * @brief Set how the item should flow
  *
  * @param flow (number) an element of :ref:`lv_flex_flow_t` .
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_flex_flow(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -18997,8 +18493,6 @@ jerry_value_t sni_api_prop_set_obj_flex_flow(const jerry_call_info_t *call_info_
  * @brief Sets the width or height (on main axis) to grow the object in order fill the free space
  *
  * @param grow (number) a value to set how much free space to take proportionally to other growing items.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_flex_grow(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -19034,8 +18528,6 @@ jerry_value_t sni_api_prop_set_obj_flex_grow(const jerry_call_info_t *call_info_
  * @brief Start a new flex track on this item
  *
  * @param en (boolean) enable or disable new flex track
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_flex_in_new_track(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -19071,8 +18563,6 @@ jerry_value_t sni_api_prop_set_obj_flex_in_new_track(const jerry_call_info_t *ca
  * @brief Do not scroll the object when the parent scrolls and ignore layout
  *
  * @param en (boolean) enable or disable floating mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_floating(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -19108,8 +18598,6 @@ jerry_value_t sni_api_prop_set_obj_floating(const jerry_call_info_t *call_info_p
  * @brief Add or remove LV_STATE_FOCUS_KEY . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_focus_key(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -19145,8 +18633,6 @@ jerry_value_t sni_api_prop_set_obj_focus_key(const jerry_call_info_t *call_info_
  * @brief Add or remove LV_STATE_FOCUSED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_focused(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -19182,8 +18668,6 @@ jerry_value_t sni_api_prop_set_obj_focused(const jerry_call_info_t *call_info_p,
  * @brief Propagate the gestures to the parent
  *
  * @param en (boolean) enable or disable gesture bubbling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_gesture_bubble(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -19248,8 +18732,6 @@ jerry_value_t sni_api_prop_get_obj_height(const jerry_call_info_t *call_info_p,
  * @brief Set the height of an object possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
  *
  * @param h (number) the new height
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_height(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -19285,8 +18767,6 @@ jerry_value_t sni_api_prop_set_obj_height(const jerry_call_info_t *call_info_p,
  * @brief Make the object hidden. (Like it wasn't there at all)
  *
  * @param en (boolean) enable or disable the hidden property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_hidden(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -19322,8 +18802,6 @@ jerry_value_t sni_api_prop_set_obj_hidden(const jerry_call_info_t *call_info_p,
  * @brief Add or remove LV_STATE_HOVERED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_hovered(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -19359,8 +18837,6 @@ jerry_value_t sni_api_prop_set_obj_hovered(const jerry_call_info_t *call_info_p,
  * @brief Make the object not positioned by layouts
  *
  * @param en (boolean) enable or disable ignoring layout
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_ignore_layout(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -19425,8 +18901,6 @@ jerry_value_t sni_api_prop_get_obj_index(const jerry_call_info_t *call_info_p,
  * @brief Set a layout for an object
  *
  * @param layout (number) pointer to a layout descriptor to set
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_layout(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -19462,8 +18936,6 @@ jerry_value_t sni_api_prop_set_obj_layout(const jerry_call_info_t *call_info_p,
  * @brief Do not clip the children to the parent's extended draw size
  *
  * @param en (boolean) enable or disable overflow visibility
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_overflow_visible(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -19528,8 +19000,6 @@ jerry_value_t sni_api_prop_get_obj_parent(const jerry_call_info_t *call_info_p,
  * @brief Keep the object pressed even if the press slid from the object
  *
  * @param en (boolean) enable or disable the press lock property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_press_lock(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -19565,8 +19035,6 @@ jerry_value_t sni_api_prop_set_obj_press_lock(const jerry_call_info_t *call_info
  * @brief Add or remove LV_STATE_PRESSED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_pressed(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -19602,8 +19070,6 @@ jerry_value_t sni_api_prop_set_obj_pressed(const jerry_call_info_t *call_info_p,
  * @brief Allow only one RADIO_BUTTON sibling to be checked
  *
  * @param en (boolean) enable or disable radio button behavior
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_radio_button(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -19697,8 +19163,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_bottom(const jerry_call_info_t *call_i
  * @brief Allow propagating the scrolling in any directions to a parent
  *
  * @param en (boolean) enable or disable scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_chain(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -19734,8 +19198,6 @@ jerry_value_t sni_api_prop_set_obj_scroll_chain(const jerry_call_info_t *call_in
  * @brief Allow propagating the horizontal scroll to a parent
  *
  * @param en (boolean) enable or disable horizontal scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_chain_hor(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -19771,8 +19233,6 @@ jerry_value_t sni_api_prop_set_obj_scroll_chain_hor(const jerry_call_info_t *cal
  * @brief Allow propagating the vertical scroll to a parent
  *
  * @param en (boolean) enable or disable vertical scroll chaining
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_chain_ver(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -19837,8 +19297,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_dir(const jerry_call_info_t *call_info
  * @brief Set direction Widget can be scrolled
  *
  * @param dir (number) one or more bit-wise OR-ed values of :ref:`lv_dir_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_dir(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -19874,8 +19332,6 @@ jerry_value_t sni_api_prop_set_obj_scroll_dir(const jerry_call_info_t *call_info
  * @brief Allow scrolling inside but with slower speed
  *
  * @param en (boolean) enable or disable the scroll elastic property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_elastic(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -19940,8 +19396,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_left(const jerry_call_info_t *call_inf
  * @brief Make the object scroll further when "thrown"
  *
  * @param en (boolean) enable or disable the scroll momentum property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_momentum(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -19977,8 +19431,6 @@ jerry_value_t sni_api_prop_set_obj_scroll_momentum(const jerry_call_info_t *call
  * @brief Automatically scroll object to make it visible when focused
  *
  * @param en (boolean) enable or disable scroll on focus
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_on_focus(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -20014,8 +19466,6 @@ jerry_value_t sni_api_prop_set_obj_scroll_on_focus(const jerry_call_info_t *call
  * @brief Allow scrolling only one snappable child
  *
  * @param en (boolean) enable or disable the scroll one property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_one(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -20109,8 +19559,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_snap_x(const jerry_call_info_t *call_i
  * @brief Set where to snap the children when scrolling ends horizontally
  *
  * @param align (number) value from :ref:`lv_scroll_snap_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_snap_x(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -20175,8 +19623,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_snap_y(const jerry_call_info_t *call_i
  * @brief Set where to snap the children when scrolling ends vertically
  *
  * @param align (number) value from :ref:`lv_scroll_snap_t` enumeration
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_snap_y(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -20241,8 +19687,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_top(const jerry_call_info_t *call_info
  * @brief Allow scrolling the focused object with arrow keys
  *
  * @param en (boolean) enable or disable scroll with arrow keys
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scroll_with_arrow(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -20336,8 +19780,6 @@ jerry_value_t sni_api_prop_get_obj_scroll_y(const jerry_call_info_t *call_info_p
  * @brief Make the object scrollable
  *
  * @param en (boolean) enable or disable the scrollable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scrollable(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -20402,8 +19844,6 @@ jerry_value_t sni_api_prop_get_obj_scrollbar_mode(const jerry_call_info_t *call_
  * @brief Set how the scrollbars should behave.
  *
  * @param mode (number) LV_SCROLL_MODE_ON/OFF/AUTO/ACTIVE
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scrollbar_mode(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -20439,8 +19879,6 @@ jerry_value_t sni_api_prop_set_obj_scrollbar_mode(const jerry_call_info_t *call_
  * @brief Add or remove LV_STATE_SCROLLED . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_scrolled(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -20534,8 +19972,6 @@ jerry_value_t sni_api_prop_get_obj_self_width(const jerry_call_info_t *call_info
  * @brief Send LV_EVENT_DRAW_TASK_ADDED events
  *
  * @param en (boolean) enable or disable draw task events
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_send_draw_task_events(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -20571,8 +20007,6 @@ jerry_value_t sni_api_prop_set_obj_send_draw_task_events(const jerry_call_info_t
  * @brief Allow snapping to this object if scroll snap is enabled on the parent
  *
  * @param en (boolean) enable or disable the snappable property
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_snappable(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -20637,8 +20071,6 @@ jerry_value_t sni_api_prop_get_obj_state(const jerry_call_info_t *call_info_p,
  * @brief Propagate the states to the children too
  *
  * @param en (boolean) enable or disable state trickling
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_state_trickle(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -20674,8 +20106,6 @@ jerry_value_t sni_api_prop_set_obj_state_trickle(const jerry_call_info_t *call_i
  * @brief Add or remove LV_STATE_USER_1 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_state_user_1(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -20711,8 +20141,6 @@ jerry_value_t sni_api_prop_set_obj_state_user_1(const jerry_call_info_t *call_in
  * @brief Add or remove LV_STATE_USER_2 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_state_user_2(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -20748,8 +20176,6 @@ jerry_value_t sni_api_prop_set_obj_state_user_2(const jerry_call_info_t *call_in
  * @brief Add or remove LV_STATE_USER_3 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_state_user_3(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -20785,8 +20211,6 @@ jerry_value_t sni_api_prop_set_obj_state_user_3(const jerry_call_info_t *call_in
  * @brief Add or remove LV_STATE_USER_4 . The other states remain unchanged.
  *
  * @param en (boolean) true: add the state; false: remove the state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_state_user_4(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -20909,8 +20333,6 @@ jerry_value_t sni_api_prop_get_obj_width(const jerry_call_info_t *call_info_p,
  * @brief Set the width of an object possible values are: pixel simple set the size accordingly LV_SIZE_CONTENT set the size to involve all children in the given direction lv_pct(x) to set size in percentage of the parent's content area size (the size without paddings). x should be in [0..1000]% range
  *
  * @param w (number) the new width
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_width(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -20975,8 +20397,6 @@ jerry_value_t sni_api_prop_get_obj_x(const jerry_call_info_t *call_info_p,
  * @brief Set the x coordinate of an object With default alignment it's the distance from the top left corner  E.g. LV_ALIGN_CENTER alignment it's the offset from the center of the parent  The position is interpreted on the content area of the parent  The values can be set in pixel or in percentage of parent size with lv_pct(v)
  *
  * @param x (number) new x coordinate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_x(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -21099,8 +20519,6 @@ jerry_value_t sni_api_prop_get_obj_y(const jerry_call_info_t *call_info_p,
  * @brief Set the y coordinate of an object With default alignment it's the distance from the top left corner  E.g. LV_ALIGN_CENTER alignment it's the offset from the center of the parent  The position is interpreted on the content area of the parent  The values can be set in pixel or in percentage of parent size with lv_pct(v)
  *
  * @param y (number) new y coordinate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_obj_y(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -21264,8 +20682,6 @@ jerry_value_t sni_api_ctor_label(const jerry_call_info_t *call_info_p,
  * @brief Set a new text for a label. Memory will be allocated to store the text by the label. If LV_USE_ARABIC_PERSIAN_CHARS is enabled the text will be modified to have the correct Arabic characters in it.
  *
  * @param text (string) '\0' terminated character string. May be NULL . When NULL the label is refreshed with its current text.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -21306,8 +20722,6 @@ jerry_value_t sni_api_lv_label_set_text(const jerry_call_info_t *call_info_p,
  * @brief Set the behavior of the label with text longer than the object size
  *
  * @param long_mode (number) the new mode from 'lv_label_long_mode' enum. In LV_LONG_WRAP/DOT/SCROLL/SCROLL_CIRC the size of the label should be set AFTER this function
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_long_mode(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -21343,8 +20757,6 @@ jerry_value_t sni_api_lv_label_set_long_mode(const jerry_call_info_t *call_info_
  * @brief Set the maximum number of lines that the label should display in LV_LABEL_LONG_MODE_WRAP and LV_LABEL_LONG_MODE_DOTS mode.
  *
  * @param lines (number) number of lines to display (unlimited if not positive)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_max_lines(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -21380,8 +20792,6 @@ jerry_value_t sni_api_lv_label_set_max_lines(const jerry_call_info_t *call_info_
  * @brief Set where text selection should start
  *
  * @param index (number) character index from where selection should start. LV_LABEL_TEXT_SELECTION_OFF for no selection
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_text_selection_start(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -21417,8 +20827,6 @@ jerry_value_t sni_api_lv_label_set_text_selection_start(const jerry_call_info_t 
  * @brief Set where text selection should end
  *
  * @param index (number) character index where selection should end. LV_LABEL_TEXT_SELECTION_OFF for no selection
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_text_selection_end(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -21454,8 +20862,6 @@ jerry_value_t sni_api_lv_label_set_text_selection_end(const jerry_call_info_t *c
  * @brief Enable the recoloring by in-line commands
  *
  * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_set_recolor(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -21577,8 +20983,6 @@ jerry_value_t sni_api_lv_label_get_max_lines(const jerry_call_info_t *call_info_
  * @param char_id (number) index of the character [0 ... text length - 1]. Expressed in character index, not byte index (different in UTF-8)
  *
  * @param pos (object) store the result here (E.g. index = 0 gives 0;0 coordinates if the text if aligned to the left)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_get_letter_pos(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -21795,8 +21199,6 @@ jerry_value_t sni_api_lv_label_get_recolor(const jerry_call_info_t *call_info_p,
  * @param pos (number) character index to insert. Expressed in character index and not byte index. 0: before first char. LV_LABEL_POS_LAST: after last char.
  *
  * @param txt (string) pointer to the text to insert
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -21846,8 +21248,6 @@ jerry_value_t sni_api_lv_label_ins_text(const jerry_call_info_t *call_info_p,
  * @param pos (number) character index from where to cut. Expressed in character index and not byte index. 0: start in front of the first character
  *
  * @param cnt (number) number of characters to cut
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_label_cut_text(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -21919,8 +21319,6 @@ jerry_value_t sni_api_prop_get_label_long_mode(const jerry_call_info_t *call_inf
  * @brief Set the behavior of the label with text longer than the object size
  *
  * @param long_mode (number) the new mode from 'lv_label_long_mode' enum. In LV_LONG_WRAP/DOT/SCROLL/SCROLL_CIRC the size of the label should be set AFTER this function
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_long_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -21985,8 +21383,6 @@ jerry_value_t sni_api_prop_get_label_max_lines(const jerry_call_info_t *call_inf
  * @brief Set the maximum number of lines that the label should display in LV_LABEL_LONG_MODE_WRAP and LV_LABEL_LONG_MODE_DOTS mode.
  *
  * @param lines (number) number of lines to display (unlimited if not positive)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_max_lines(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -22051,8 +21447,6 @@ jerry_value_t sni_api_prop_get_label_recolor(const jerry_call_info_t *call_info_
  * @brief Enable the recoloring by in-line commands
  *
  * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_recolor(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -22117,8 +21511,6 @@ jerry_value_t sni_api_prop_get_label_text(const jerry_call_info_t *call_info_p,
  * @brief Set a new text for a label. Memory will be allocated to store the text by the label. If LV_USE_ARABIC_PERSIAN_CHARS is enabled the text will be modified to have the correct Arabic characters in it.
  *
  * @param text (string) '\0' terminated character string. May be NULL . When NULL the label is refreshed with its current text.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_text(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -22188,8 +21580,6 @@ jerry_value_t sni_api_prop_get_label_text_selection_end(const jerry_call_info_t 
  * @brief Set where text selection should end
  *
  * @param index (number) character index where selection should end. LV_LABEL_TEXT_SELECTION_OFF for no selection
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_text_selection_end(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -22254,8 +21644,6 @@ jerry_value_t sni_api_prop_get_label_text_selection_start(const jerry_call_info_
  * @brief Set where text selection should start
  *
  * @param index (number) character index from where selection should start. LV_LABEL_TEXT_SELECTION_OFF for no selection
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_label_text_selection_start(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -22442,8 +21830,6 @@ jerry_value_t sni_api_prop_get_arc_bg_angle_start(const jerry_call_info_t *call_
  * @brief Set the start angle of an arc background. 0 deg: right, 90 bottom etc.
  *
  * @param end (number) the end angle (if LV_USE_FLOAT is enabled it can be fractional too.)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_bg_end_angle(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -22482,8 +21868,6 @@ jerry_value_t sni_api_prop_set_arc_bg_end_angle(const jerry_call_info_t *call_in
  * @brief Set the start angle of an arc background. 0 deg: right, 90 bottom, etc.
  *
  * @param start (number) the start angle (if LV_USE_FLOAT is enabled it can be fractional too.)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_bg_start_angle(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -22551,8 +21935,6 @@ jerry_value_t sni_api_prop_get_arc_change_rate(const jerry_call_info_t *call_inf
  * @brief Set a change rate to limit the speed how fast the arc should reach the pressed point.
  *
  * @param rate (number) the change rate
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_change_rate(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -22588,8 +21970,6 @@ jerry_value_t sni_api_prop_set_arc_change_rate(const jerry_call_info_t *call_inf
  * @brief Set the end angle of an arc. 0 deg: right, 90 bottom, etc.
  *
  * @param end (number) the end angle (if LV_USE_FLOAT is enabled it can be fractional too.)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_end_angle(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -22657,8 +22037,6 @@ jerry_value_t sni_api_prop_get_arc_knob_offset(const jerry_call_info_t *call_inf
  * @brief Set an offset angle for the knob
  *
  * @param offset (number) knob offset from main arc in degrees
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_knob_offset(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -22723,8 +22101,6 @@ jerry_value_t sni_api_prop_get_arc_max_value(const jerry_call_info_t *call_info_
  * @brief Set the maximum values of an arc
  *
  * @param max (number) maximum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -22789,8 +22165,6 @@ jerry_value_t sni_api_prop_get_arc_min_value(const jerry_call_info_t *call_info_
  * @brief Set the minimum values of an arc
  *
  * @param min (number) minimum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -22855,8 +22229,6 @@ jerry_value_t sni_api_prop_get_arc_mode(const jerry_call_info_t *call_info_p,
  * @brief Set in which direction the indicator should grow.
  *
  * @param type (number) arc's mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -22921,8 +22293,6 @@ jerry_value_t sni_api_prop_get_arc_rotation(const jerry_call_info_t *call_info_p
  * @brief Set the rotation for the whole arc
  *
  * @param rotation (number) rotation angle
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -22958,8 +22328,6 @@ jerry_value_t sni_api_prop_set_arc_rotation(const jerry_call_info_t *call_info_p
  * @brief Set the start angle of an arc. 0 deg: right, 90 bottom, etc.
  *
  * @param start (number) the start angle. (if LV_USE_FLOAT is enabled it can be fractional too.)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_start_angle(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -23027,8 +22395,6 @@ jerry_value_t sni_api_prop_get_arc_value(const jerry_call_info_t *call_info_p,
  * @brief Set a new value on the arc
  *
  * @param value (number) new value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_arc_value(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -23101,8 +22467,6 @@ jerry_value_t sni_api_ctor_bar(const jerry_call_info_t *call_info_p,
  * @param value (number) new value
  *
  * @param anim (boolean) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_value(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -23147,8 +22511,6 @@ jerry_value_t sni_api_lv_bar_set_value(const jerry_call_info_t *call_info_p,
  * @param start_value (number) new start value
  *
  * @param anim (boolean) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_start_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -23193,8 +22555,6 @@ jerry_value_t sni_api_lv_bar_set_start_value(const jerry_call_info_t *call_info_
  * @param min (number) minimum value
  *
  * @param max (number) maximum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_range(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -23237,8 +22597,6 @@ jerry_value_t sni_api_lv_bar_set_range(const jerry_call_info_t *call_info_p,
  * @brief Set minimum value of a bar
  *
  * @param min (number) minimum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_min_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -23274,8 +22632,6 @@ jerry_value_t sni_api_lv_bar_set_min_value(const jerry_call_info_t *call_info_p,
  * @brief Set maximum value of a bar
  *
  * @param max (number) maximum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_max_value(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -23311,8 +22667,6 @@ jerry_value_t sni_api_lv_bar_set_max_value(const jerry_call_info_t *call_info_p,
  * @brief Set the type of bar.
  *
  * @param mode (number) bar type from :ref:`lv_bar_mode_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_mode(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -23348,8 +22702,6 @@ jerry_value_t sni_api_lv_bar_set_mode(const jerry_call_info_t *call_info_p,
  * @brief Set the orientation of bar.
  *
  * @param orientation (number) bar orientation from :ref:`lv_bar_orientation_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_bar_set_orientation(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -23610,8 +22962,6 @@ jerry_value_t sni_api_prop_get_bar_max_value(const jerry_call_info_t *call_info_
  * @brief Set maximum value of a bar
  *
  * @param max (number) maximum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_bar_max_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -23676,8 +23026,6 @@ jerry_value_t sni_api_prop_get_bar_min_value(const jerry_call_info_t *call_info_
  * @brief Set minimum value of a bar
  *
  * @param min (number) minimum value
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_bar_min_value(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -23742,8 +23090,6 @@ jerry_value_t sni_api_prop_get_bar_mode(const jerry_call_info_t *call_info_p,
  * @brief Set the type of bar.
  *
  * @param mode (number) bar type from :ref:`lv_bar_mode_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_bar_mode(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -23808,8 +23154,6 @@ jerry_value_t sni_api_prop_get_bar_orientation(const jerry_call_info_t *call_inf
  * @brief Set the orientation of bar.
  *
  * @param orientation (number) bar orientation from :ref:`lv_bar_orientation_t`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_bar_orientation(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -23950,8 +23294,6 @@ jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Pause a timer. It is typically safe to call from an interrupt handler or a different thread.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -23978,8 +23320,6 @@ jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Resume a timer.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_resume(const jerry_call_info_t *call_info_p,
                                       const jerry_value_t args_p[],
@@ -24008,8 +23348,6 @@ jerry_value_t sni_api_lv_timer_resume(const jerry_call_info_t *call_info_p,
  * @brief Set new period for a lv_timer
  *
  * @param period (number) the new period
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_set_period(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -24043,8 +23381,6 @@ jerry_value_t sni_api_lv_timer_set_period(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Make a lv_timer ready. It will not wait its period.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_ready(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -24073,8 +23409,6 @@ jerry_value_t sni_api_lv_timer_ready(const jerry_call_info_t *call_info_p,
  * @brief Set the number of times a timer will repeat.
  *
  * @param repeat_count (number) -1 : infinity; 0 : stop ; n>0: residual times
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_set_repeat_count(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -24108,8 +23442,6 @@ jerry_value_t sni_api_lv_timer_set_repeat_count(const jerry_call_info_t *call_in
 
 /**
  * @brief Reset a lv_timer. It will be called the previously set period milliseconds later.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_timer_reset(const jerry_call_info_t *call_info_p,
                                      const jerry_value_t args_p[],
@@ -24195,8 +23527,6 @@ jerry_value_t sni_api_prop_get_timer_paused(const jerry_call_info_t *call_info_p
  * @brief Set new period for a lv_timer
  *
  * @param period (number) the new period
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_timer_period(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -24232,8 +23562,6 @@ jerry_value_t sni_api_prop_set_timer_period(const jerry_call_info_t *call_info_p
  * @brief Set the number of times a timer will repeat.
  *
  * @param repeat_count (number) -1 : infinity; 0 : stop ; n>0: residual times
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -24269,8 +23597,6 @@ jerry_value_t sni_api_prop_set_timer_repeat_count(const jerry_call_info_t *call_
  * @brief Set the selected buttons
  *
  * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_set_selected_button(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -24308,8 +23634,6 @@ jerry_value_t sni_api_lv_buttonmatrix_set_selected_button(const jerry_call_info_
  * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
  *
  * @param ctrl (number) OR-ed attributes. E.g. LV_BUTTONMATRIX_CTRL_NO_REPEAT | LV_BUTTONMATRIX_CTRL_CHECKABLE
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -24354,8 +23678,6 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl(const jerry_call_info_t *c
  * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
  *
  * @param ctrl (number) OR-ed attributes. E.g. LV_BUTTONMATRIX_CTRL_NO_REPEAT | LV_BUTTONMATRIX_CTRL_CHECKABLE
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -24398,8 +23720,6 @@ jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl(const jerry_call_info_t 
  * @brief Set attributes of all buttons of a button matrix
  *
  * @param ctrl (number) attribute(s) to set from :ref:`lv_buttonmatrix_ctrl_t` . Values can be ORed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                           const jerry_value_t args_p[],
@@ -24435,8 +23755,6 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_ctrl_all(const jerry_call_info_
  * @brief Clear the attributes of all buttons of a button matrix
  *
  * @param ctrl (number) attribute(s) to set from :ref:`lv_buttonmatrix_ctrl_t` . Values can be ORed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -24474,8 +23792,6 @@ jerry_value_t sni_api_lv_buttonmatrix_clear_button_ctrl_all(const jerry_call_inf
  * @param btn_id (number) 0 based index of the button to modify.
  *
  * @param width (number) relative width compared to the buttons in the same row. [1..15]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_set_button_width(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -24518,8 +23834,6 @@ jerry_value_t sni_api_lv_buttonmatrix_set_button_width(const jerry_call_info_t *
  * @brief Make the button matrix like a selector widget (only one button may be checked at a time). LV_BUTTONMATRIX_CTRL_CHECKABLE must be enabled on the buttons to be selected using lv_buttonmatrix_set_ctrl() or :ref:`lv_buttonmatrix_set_button_ctrl_all()` .
  *
  * @param en (boolean) whether "one check" mode is enabled
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_buttonmatrix_set_one_checked(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -24694,8 +24008,6 @@ jerry_value_t sni_api_lv_buttonmatrix_get_one_checked(const jerry_call_info_t *c
  * @brief Set attributes of all buttons of a button matrix
  *
  * @param ctrl (number) attribute(s) to set from :ref:`lv_buttonmatrix_ctrl_t` . Values can be ORed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_buttonmatrix_button_ctrl_all(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -24760,8 +24072,6 @@ jerry_value_t sni_api_prop_get_buttonmatrix_one_checked(const jerry_call_info_t 
  * @brief Make the button matrix like a selector widget (only one button may be checked at a time). LV_BUTTONMATRIX_CTRL_CHECKABLE must be enabled on the buttons to be selected using lv_buttonmatrix_set_ctrl() or :ref:`lv_buttonmatrix_set_button_ctrl_all()` .
  *
  * @param en (boolean) whether "one check" mode is enabled
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_buttonmatrix_one_checked(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -24826,8 +24136,6 @@ jerry_value_t sni_api_prop_get_buttonmatrix_selected_button(const jerry_call_inf
  * @brief Set the selected buttons
  *
  * @param btn_id (number) 0 based index of the button to modify. (Not counting new lines)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_buttonmatrix_selected_button(const jerry_call_info_t *call_info_p,
                                                             const jerry_value_t args_p[],
@@ -24902,8 +24210,6 @@ jerry_value_t sni_api_ctor_calendar(const jerry_call_info_t *call_info_p,
  * @param month (number) today's month [1..12]
  *
  * @param day (number) today's day [1..31]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_today_date(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -24953,8 +24259,6 @@ jerry_value_t sni_api_lv_calendar_set_today_date(const jerry_call_info_t *call_i
  * @brief Set the today's year
  *
  * @param year (number) today's year
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_today_year(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -24990,8 +24294,6 @@ jerry_value_t sni_api_lv_calendar_set_today_year(const jerry_call_info_t *call_i
  * @brief Set the today's year
  *
  * @param month (number) today's month [1..12]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_today_month(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25027,8 +24329,6 @@ jerry_value_t sni_api_lv_calendar_set_today_month(const jerry_call_info_t *call_
  * @brief Set the today's year
  *
  * @param day (number) today's day [1..31]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_today_day(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -25066,8 +24366,6 @@ jerry_value_t sni_api_lv_calendar_set_today_day(const jerry_call_info_t *call_in
  * @param year (number) shown year
  *
  * @param month (number) shown month [1..12]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_month_shown(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25110,8 +24408,6 @@ jerry_value_t sni_api_lv_calendar_set_month_shown(const jerry_call_info_t *call_
  * @brief Set the currently shown year
  *
  * @param year (number) shown year
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_shown_year(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -25147,8 +24443,6 @@ jerry_value_t sni_api_lv_calendar_set_shown_year(const jerry_call_info_t *call_i
  * @brief Set the currently shown month
  *
  * @param month (number) shown month [1..12]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_calendar_set_shown_month(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25237,6 +24531,41 @@ jerry_value_t sni_api_lv_calendar_get_highlighted_dates_num(const jerry_call_inf
 }
 
 /**
+ * @brief Enable the chinese calendar.
+ *
+ * @param en (boolean) true: enable chinese calendar; false: disable
+ */
+jerry_value_t sni_api_lv_calendar_set_chinese_mode(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_calendar_set_chinese_mode(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
  * @brief Get the button matrix object of the calendar. It shows the dates and day names. pointer to a the button matrix
  *
  * @return (object) pointer to a the button matrix
@@ -25263,6 +24592,70 @@ jerry_value_t sni_api_prop_get_calendar_btnmatrix(const jerry_call_info_t *call_
 
     lv_obj_t *result = lv_calendar_get_btnmatrix(self_obj);
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Enable the chinese calendar.
+ *
+ * @param en (boolean) true: enable chinese calendar; false: disable
+ */
+jerry_value_t sni_api_prop_set_calendar_chinese_mode(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_calendar_set_chinese_mode(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the name of the day return the name of the day
+ *
+ * @return (string) return the name of the day
+ */
+jerry_value_t sni_api_prop_get_calendar_day_name(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_calendar_date_t self_obj_value;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_V_LV_CALENDAR_DATE, &self_obj_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_calendar_get_day_name(&self_obj_value);
+    return sni_tb_c2js_string(result);
 }
 
 /**
@@ -25298,8 +24691,6 @@ jerry_value_t sni_api_prop_get_calendar_highlighted_dates_num(const jerry_call_i
  * @brief Set the currently shown month
  *
  * @param month (number) shown month [1..12]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_calendar_shown_month(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -25335,8 +24726,6 @@ jerry_value_t sni_api_prop_set_calendar_shown_month(const jerry_call_info_t *cal
  * @brief Set the currently shown year
  *
  * @param year (number) shown year
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_calendar_shown_year(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -25372,8 +24761,6 @@ jerry_value_t sni_api_prop_set_calendar_shown_year(const jerry_call_info_t *call
  * @brief Set the today's year
  *
  * @param day (number) today's day [1..31]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_calendar_today_day(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25409,8 +24796,6 @@ jerry_value_t sni_api_prop_set_calendar_today_day(const jerry_call_info_t *call_
  * @brief Set the today's year
  *
  * @param month (number) today's month [1..12]
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_calendar_today_month(const jerry_call_info_t *call_info_p,
                                                     const jerry_value_t args_p[],
@@ -25446,8 +24831,6 @@ jerry_value_t sni_api_prop_set_calendar_today_month(const jerry_call_info_t *cal
  * @brief Set the today's year
  *
  * @param year (number) today's year
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_calendar_today_year(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -25518,8 +24901,6 @@ jerry_value_t sni_api_ctor_chart(const jerry_call_info_t *call_info_p,
  * @brief Set a new type for a chart
  *
  * @param type (number) new type of the chart (from ' :ref:`lv_chart_type_t` ' enum)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_type(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -25555,8 +24936,6 @@ jerry_value_t sni_api_lv_chart_set_type(const jerry_call_info_t *call_info_p,
  * @brief Set the number of points on a data line on a chart
  *
  * @param cnt (number) new number of points on the data lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_point_count(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -25596,8 +24975,6 @@ jerry_value_t sni_api_lv_chart_set_point_count(const jerry_call_info_t *call_inf
  * @param min (number) minimum value of the y axis
  *
  * @param max (number) maximum value of the y axis
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_axis_range(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -25649,8 +25026,6 @@ jerry_value_t sni_api_lv_chart_set_axis_range(const jerry_call_info_t *call_info
  * @param axis (number) LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y
  *
  * @param min (number) minimal value of the y axis
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_axis_min_value(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25695,8 +25070,6 @@ jerry_value_t sni_api_lv_chart_set_axis_min_value(const jerry_call_info_t *call_
  * @param axis (number) LV_CHART_AXIS_PRIMARY_Y or LV_CHART_AXIS_SECONDARY_Y
  *
  * @param max (number) maximum value of the y axis
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_axis_max_value(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25739,8 +25112,6 @@ jerry_value_t sni_api_lv_chart_set_axis_max_value(const jerry_call_info_t *call_
  * @brief Set update mode of the chart object. Affects
  *
  * @param update_mode (number) the update mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_update_mode(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -25778,8 +25149,6 @@ jerry_value_t sni_api_lv_chart_set_update_mode(const jerry_call_info_t *call_inf
  * @param hdiv (number) number of horizontal division lines
  *
  * @param vdiv (number) number of vertical division lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_div_line_count(const jerry_call_info_t *call_info_p,
                                                   const jerry_value_t args_p[],
@@ -25822,8 +25191,6 @@ jerry_value_t sni_api_lv_chart_set_div_line_count(const jerry_call_info_t *call_
  * @brief Set the number of horizontal division lines
  *
  * @param cnt (number) number of horizontal division lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -25859,8 +25226,6 @@ jerry_value_t sni_api_lv_chart_set_hor_div_line_count(const jerry_call_info_t *c
  * @brief Set the number of vertical division lines
  *
  * @param cnt (number) number of vertical division lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                       const jerry_value_t args_p[],
@@ -26074,8 +25439,6 @@ jerry_value_t sni_api_lv_chart_get_x_start_point(const jerry_call_info_t *call_i
 
 /**
  * @brief Refresh a chart if its data line has changed
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_refresh(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
@@ -26150,8 +25513,6 @@ jerry_value_t sni_api_lv_chart_add_series(const jerry_call_info_t *call_info_p,
  * @brief Deallocate and remove a data series from a chart
  *
  * @param series (object) pointer to a data series on 'chart'
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_remove_series(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -26193,8 +25554,6 @@ jerry_value_t sni_api_lv_chart_remove_series(const jerry_call_info_t *call_info_
  * @param ser (object) pointer to a data series on 'chart'
  *
  * @param id (number) the index of the x point in the data array
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_x_start_point(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -26327,8 +25686,6 @@ jerry_value_t sni_api_lv_chart_add_cursor(const jerry_call_info_t *call_info_p,
  * @brief Remove a cursor
  *
  * @param cursor (object) pointer to the cursor
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_remove_cursor(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -26370,8 +25727,6 @@ jerry_value_t sni_api_lv_chart_remove_cursor(const jerry_call_info_t *call_info_
  * @param ser (object) pointer to a data series on 'chart'
  *
  * @param value (number) the new value for all points. LV_CHART_POINT_NONE can be used to hide the points.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_all_values(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -26419,8 +25774,6 @@ jerry_value_t sni_api_lv_chart_set_all_values(const jerry_call_info_t *call_info
  * @param ser (object) pointer to a data series on 'chart'
  *
  * @param value (number) the new value of the next data
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_next_value(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -26470,8 +25823,6 @@ jerry_value_t sni_api_lv_chart_set_next_value(const jerry_call_info_t *call_info
  * @param x_value (number) the new X value of the next data
  *
  * @param y_value (number) the new Y value of the next data
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_chart_set_next_value2(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -26638,8 +25989,6 @@ jerry_value_t sni_api_prop_get_chart_hor_div_line_count(const jerry_call_info_t 
  * @brief Set the number of horizontal division lines
  *
  * @param cnt (number) number of horizontal division lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_chart_hor_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -26704,8 +26053,6 @@ jerry_value_t sni_api_prop_get_chart_point_count(const jerry_call_info_t *call_i
  * @brief Set the number of points on a data line on a chart
  *
  * @param cnt (number) new number of points on the data lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_chart_point_count(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -26799,8 +26146,6 @@ jerry_value_t sni_api_prop_get_chart_type(const jerry_call_info_t *call_info_p,
  * @brief Set a new type for a chart
  *
  * @param type (number) new type of the chart (from ' :ref:`lv_chart_type_t` ' enum)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_chart_type(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -26865,8 +26210,6 @@ jerry_value_t sni_api_prop_get_chart_update_mode(const jerry_call_info_t *call_i
  * @brief Set update mode of the chart object. Affects
  *
  * @param update_mode (number) the update mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_chart_update_mode(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -26931,8 +26274,6 @@ jerry_value_t sni_api_prop_get_chart_ver_div_line_count(const jerry_call_info_t 
  * @brief Set the number of vertical division lines
  *
  * @param cnt (number) number of vertical division lines
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_chart_ver_div_line_count(const jerry_call_info_t *call_info_p,
                                                         const jerry_value_t args_p[],
@@ -27012,8 +26353,6 @@ jerry_value_t sni_api_ctor_canvas(const jerry_call_info_t *call_info_p,
  * @param h (number) height of canvas
  *
  * @param cf (number) color format. LV_COLOR_FORMAT...
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_canvas_set_buffer(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -27075,8 +26414,6 @@ jerry_value_t sni_api_lv_canvas_set_buffer(const jerry_call_info_t *call_info_p,
  * @param index (number) the palette color to set: for LV_COLOR_FORMAT_I1 : 0..1 for LV_COLOR_FORMAT_I2 : 0..3 for LV_COLOR_FORMAT_I4 : 0..15 for LV_COLOR_FORMAT_I8 : 0..255
  *
  * @param color (object) the color to set
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_canvas_set_palette(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -27124,8 +26461,6 @@ jerry_value_t sni_api_lv_canvas_set_palette(const jerry_call_info_t *call_info_p
  * @param color (number) the background color
  *
  * @param opa (number) the desired opacity
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_canvas_fill_bg(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -27202,8 +26537,6 @@ jerry_value_t sni_api_ctor_checkbox(const jerry_call_info_t *call_info_p,
  * @brief Set the text of a check box. txt will be copied and may be deallocated after this function returns.
  *
  * @param txt (string) the text of the check box. May be NULL . When NULL the widget is only refreshed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_checkbox_set_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -27301,8 +26634,6 @@ jerry_value_t sni_api_prop_get_checkbox_text(const jerry_call_info_t *call_info_
  * @brief Set the text of a check box. txt will be copied and may be deallocated after this function returns.
  *
  * @param txt (string) the text of the check box. May be NULL . When NULL the widget is only refreshed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -27378,8 +26709,6 @@ jerry_value_t sni_api_ctor_dropdown(const jerry_call_info_t *call_info_p,
  * @brief Set text of the drop-down list's button. If set to NULL the selected option's text will be displayed on the button. If set to a specific text then that text will be shown regardless of the selected option.
  *
  * @param text (string) the text as a string (Copy is saved). May be NULL . When NULL the selected option's text is displayed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -27420,8 +26749,6 @@ jerry_value_t sni_api_lv_dropdown_set_text(const jerry_call_info_t *call_info_p,
  * @brief Set the options in a drop-down list from a string. The options will be copied and saved in the object so the options can be destroyed after calling this function
  *
  * @param options (string) a string with ' ' separated options. E.g. "One\nTwo\nThree"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -27462,8 +26789,6 @@ jerry_value_t sni_api_lv_dropdown_set_options(const jerry_call_info_t *call_info
  * @brief Set the options in a drop-down list from a static string (global, static or dynamically allocated). Only the pointer of the option string will be saved.
  *
  * @param options (string) a static string with ' ' separated options. E.g. "One\nTwo\nThree"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *call_info_p,
                                                      const jerry_value_t args_p[],
@@ -27506,8 +26831,6 @@ jerry_value_t sni_api_lv_dropdown_set_options_static(const jerry_call_info_t *ca
  * @param option (string) a string without ' '. E.g. "Four"
  *
  * @param pos (number) the insert position, indexed from 0, LV_DROPDOWN_POS_LAST = end of string
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -27553,8 +26876,6 @@ jerry_value_t sni_api_lv_dropdown_add_option(const jerry_call_info_t *call_info_
 
 /**
  * @brief Clear all options in a drop-down list. Works with both static and dynamic options.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_clear_options(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -27583,8 +26904,6 @@ jerry_value_t sni_api_lv_dropdown_clear_options(const jerry_call_info_t *call_in
  * @brief Set the selected option
  *
  * @param sel_opt (number) id of the selected option (0 ... number of option - 1);
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_selected(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -27620,8 +26939,6 @@ jerry_value_t sni_api_lv_dropdown_set_selected(const jerry_call_info_t *call_inf
  * @brief Set the direction of the a drop-down list
  *
  * @param dir (number) LV_DIR_LEFT/RIGHT/TOP/BOTTOM
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_dir(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
@@ -27657,8 +26974,6 @@ jerry_value_t sni_api_lv_dropdown_set_dir(const jerry_call_info_t *call_info_p,
  * @brief Set whether the selected option in the list should be highlighted or not
  *
  * @param en (boolean) true: highlight enabled; false: disabled
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_set_selected_highlight(const jerry_call_info_t *call_info_p,
                                                          const jerry_value_t args_p[],
@@ -27836,8 +27151,6 @@ jerry_value_t sni_api_lv_dropdown_get_option_count(const jerry_call_info_t *call
  * @param buf (string) pointer to an array to store the string
  *
  * @param buf_size (number) size of buf in bytes. 0: to ignore it.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_get_selected_str(const jerry_call_info_t *call_info_p,
                                                    const jerry_value_t args_p[],
@@ -28008,8 +27321,6 @@ jerry_value_t sni_api_lv_dropdown_get_dir(const jerry_call_info_t *call_info_p,
 
 /**
  * @brief Close (Collapse) the drop-down list
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_dropdown_close(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
@@ -28095,8 +27406,6 @@ jerry_value_t sni_api_prop_get_dropdown_dir(const jerry_call_info_t *call_info_p
  * @brief Set the direction of the a drop-down list
  *
  * @param dir (number) LV_DIR_LEFT/RIGHT/TOP/BOTTOM
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_dir(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -28219,8 +27528,6 @@ jerry_value_t sni_api_prop_get_dropdown_options(const jerry_call_info_t *call_in
  * @brief Set the options in a drop-down list from a string. The options will be copied and saved in the object so the options can be destroyed after calling this function
  *
  * @param options (string) a string with ' ' separated options. E.g. "One\nTwo\nThree"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -28261,8 +27568,6 @@ jerry_value_t sni_api_prop_set_dropdown_options(const jerry_call_info_t *call_in
  * @brief Set the options in a drop-down list from a static string (global, static or dynamically allocated). Only the pointer of the option string will be saved.
  *
  * @param options (string) a static string with ' ' separated options. E.g. "One\nTwo\nThree"
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_options_static(const jerry_call_info_t *call_info_p,
                                                        const jerry_value_t args_p[],
@@ -28332,8 +27637,6 @@ jerry_value_t sni_api_prop_get_dropdown_selected(const jerry_call_info_t *call_i
  * @brief Set the selected option
  *
  * @param sel_opt (number) id of the selected option (0 ... number of option - 1);
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_selected(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -28398,8 +27701,6 @@ jerry_value_t sni_api_prop_get_dropdown_selected_highlight(const jerry_call_info
  * @brief Set whether the selected option in the list should be highlighted or not
  *
  * @param en (boolean) true: highlight enabled; false: disabled
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_selected_highlight(const jerry_call_info_t *call_info_p,
                                                            const jerry_value_t args_p[],
@@ -28493,8 +27794,6 @@ jerry_value_t sni_api_prop_get_dropdown_text(const jerry_call_info_t *call_info_
  * @brief Set text of the drop-down list's button. If set to NULL the selected option's text will be displayed on the button. If set to a specific text then that text will be shown regardless of the selected option.
  *
  * @param text (string) the text as a string (Copy is saved). May be NULL . When NULL the selected option's text is displayed.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_dropdown_text(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -28598,8 +27897,6 @@ jerry_value_t sni_api_lv_image_create(const jerry_call_info_t *call_info_p,
  * @brief Set an offset for the source of an image so the image will be displayed from the new origin.
  *
  * @param x (number) the new offset along x axis.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_offset_x(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -28635,8 +27932,6 @@ jerry_value_t sni_api_lv_image_set_offset_x(const jerry_call_info_t *call_info_p
  * @brief Set an offset for the source of an image. so the image will be displayed from the new origin.
  *
  * @param y (number) the new offset along y axis.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_offset_y(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -28672,8 +27967,6 @@ jerry_value_t sni_api_lv_image_set_offset_y(const jerry_call_info_t *call_info_p
  * @brief Set the rotation angle of the image. The image will be rotated around the set pivot set by :ref:`lv_image_set_pivot()` Note that indexed and alpha only images can't be transformed. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation will be set to 0 automatically.
  *
  * @param angle (number) rotation in degree with 0.1 degree resolution (0..3600: clock wise)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_rotation(const jerry_call_info_t *call_info_p,
                                             const jerry_value_t args_p[],
@@ -28711,8 +28004,6 @@ jerry_value_t sni_api_lv_image_set_rotation(const jerry_call_info_t *call_info_p
  * @param x (number) rotation center x of the image
  *
  * @param y (number) rotation center y of the image
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_pivot(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -28755,8 +28046,6 @@ jerry_value_t sni_api_lv_image_set_pivot(const jerry_call_info_t *call_info_p,
  * @brief Set the rotation horizontal center of the image.
  *
  * @param x (number) rotation center x of the image, or :ref:`lv_pct()`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_pivot_x(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -28792,8 +28081,6 @@ jerry_value_t sni_api_lv_image_set_pivot_x(const jerry_call_info_t *call_info_p,
  * @brief Set the rotation vertical center of the image.
  *
  * @param y (number) rotation center y of the image, or :ref:`lv_pct()`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_pivot_y(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -28829,8 +28116,6 @@ jerry_value_t sni_api_lv_image_set_pivot_y(const jerry_call_info_t *call_info_p,
  * @brief Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_scale(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -28866,8 +28151,6 @@ jerry_value_t sni_api_lv_image_set_scale(const jerry_call_info_t *call_info_p,
  * @brief Set the horizontal zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_scale_x(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -28903,8 +28186,6 @@ jerry_value_t sni_api_lv_image_set_scale_x(const jerry_call_info_t *call_info_p,
  * @brief Set the vertical zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_scale_y(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -28940,8 +28221,6 @@ jerry_value_t sni_api_lv_image_set_scale_y(const jerry_call_info_t *call_info_p,
  * @brief Set the blend mode of an image.
  *
  * @param blend_mode (number) the new blend mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_blend_mode(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -28977,8 +28256,6 @@ jerry_value_t sni_api_lv_image_set_blend_mode(const jerry_call_info_t *call_info
  * @brief Enable/disable anti-aliasing for the transformations (rotate, zoom) or not. The quality is better with anti-aliasing looks better but slower.
  *
  * @param antialias (boolean) true: anti-aliased; false: not anti-aliased
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_antialias(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -29014,8 +28291,6 @@ jerry_value_t sni_api_lv_image_set_antialias(const jerry_call_info_t *call_info_
  * @brief Set the image object size mode. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation, scale and pivot will be overwritten and controlled internally.
  *
  * @param align (number) the new align mode.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_set_inner_align(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -29135,8 +28410,6 @@ jerry_value_t sni_api_lv_image_get_rotation(const jerry_call_info_t *call_info_p
  * @brief Get the pivot (rotation center) of the image. If pivot is set with LV_PCT, convert it to px before return.
  *
  * @param pivot (object) store the rotation center here
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_image_get_pivot(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
@@ -29480,8 +28753,6 @@ jerry_value_t sni_api_prop_get_image_antialias(const jerry_call_info_t *call_inf
  * @brief Enable/disable anti-aliasing for the transformations (rotate, zoom) or not. The quality is better with anti-aliasing looks better but slower.
  *
  * @param antialias (boolean) true: anti-aliased; false: not anti-aliased
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_antialias(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -29546,8 +28817,6 @@ jerry_value_t sni_api_prop_get_image_blend_mode(const jerry_call_info_t *call_in
  * @brief Set the blend mode of an image.
  *
  * @param blend_mode (number) the new blend mode
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_blend_mode(const jerry_call_info_t *call_info_p,
                                                 const jerry_value_t args_p[],
@@ -29612,8 +28881,6 @@ jerry_value_t sni_api_prop_get_image_inner_align(const jerry_call_info_t *call_i
  * @brief Set the image object size mode. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation, scale and pivot will be overwritten and controlled internally.
  *
  * @param align (number) the new align mode.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_inner_align(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -29678,8 +28945,6 @@ jerry_value_t sni_api_prop_get_image_offset_x(const jerry_call_info_t *call_info
  * @brief Set an offset for the source of an image so the image will be displayed from the new origin.
  *
  * @param x (number) the new offset along x axis.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_offset_x(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -29744,8 +29009,6 @@ jerry_value_t sni_api_prop_get_image_offset_y(const jerry_call_info_t *call_info
  * @brief Set an offset for the source of an image. so the image will be displayed from the new origin.
  *
  * @param y (number) the new offset along y axis.
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_offset_y(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -29781,8 +29044,6 @@ jerry_value_t sni_api_prop_set_image_offset_y(const jerry_call_info_t *call_info
  * @brief Set the rotation horizontal center of the image.
  *
  * @param x (number) rotation center x of the image, or :ref:`lv_pct()`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_pivot_x(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -29818,8 +29079,6 @@ jerry_value_t sni_api_prop_set_image_pivot_x(const jerry_call_info_t *call_info_
  * @brief Set the rotation vertical center of the image.
  *
  * @param y (number) rotation center y of the image, or :ref:`lv_pct()`
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_pivot_y(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -29884,8 +29143,6 @@ jerry_value_t sni_api_prop_get_image_rotation(const jerry_call_info_t *call_info
  * @brief Set the rotation angle of the image. The image will be rotated around the set pivot set by :ref:`lv_image_set_pivot()` Note that indexed and alpha only images can't be transformed. if image_align is LV_IMAGE_ALIGN_STRETCH or LV_IMAGE_ALIGN_FIT rotation will be set to 0 automatically.
  *
  * @param angle (number) rotation in degree with 0.1 degree resolution (0..3600: clock wise)
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_rotation(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
@@ -29950,8 +29207,6 @@ jerry_value_t sni_api_prop_get_image_scale(const jerry_call_info_t *call_info_p,
  * @brief Set the zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_scale(const jerry_call_info_t *call_info_p,
                                            const jerry_value_t args_p[],
@@ -30016,8 +29271,6 @@ jerry_value_t sni_api_prop_get_image_scale_x(const jerry_call_info_t *call_info_
  * @brief Set the horizontal zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_scale_x(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -30082,8 +29335,6 @@ jerry_value_t sni_api_prop_get_image_scale_y(const jerry_call_info_t *call_info_
  * @brief Set the vertical zoom factor of the image. Note that indexed and alpha only images can't be transformed.
  *
  * @param zoom (number) the zoom factor. Example values: 256 or LV_SCALE_NONE: no zoom <256: scale down >256: scale up 128: half size 512: double size
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_image_scale_y(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
@@ -30298,8 +29549,6 @@ jerry_value_t sni_api_lv_imagebutton_create(const jerry_call_info_t *call_info_p
  * @brief Use this function instead of lv_obj_add/remove_state to set a state manually
  *
  * @param state (number) the new state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_lv_imagebutton_set_state(const jerry_call_info_t *call_info_p,
                                                const jerry_value_t args_p[],
@@ -30335,8 +29584,6 @@ jerry_value_t sni_api_lv_imagebutton_set_state(const jerry_call_info_t *call_inf
  * @brief Use this function instead of lv_obj_add/remove_state to set a state manually
  *
  * @param state (number) the new state
- *
- * @return (number) JavaScript return value.
  */
 jerry_value_t sni_api_prop_set_imagebutton_state(const jerry_call_info_t *call_info_p,
                                                  const jerry_value_t args_p[],
@@ -30939,7 +30186,7 @@ const sni_property_desc_t lv_class_properties_obj[] = {
     {.name = "stateUser4", .getter = NULL, .setter = sni_api_prop_set_obj_state_user_4},
     {.name = "styleClampedHeight", .getter = sni_api_prop_get_obj_style_clamped_height, .setter = NULL},
     {.name = "styleClampedWidth", .getter = sni_api_prop_get_obj_style_clamped_width, .setter = NULL},
-    {.name = "userData", .getter = NULL, .setter = sni_api_prop_set_obj_user_data},
+    {.name = "userData", .getter = sni_api_prop_get_obj_user_data, .setter = sni_api_prop_set_obj_user_data},
     {.name = "width", .getter = sni_api_prop_get_obj_width, .setter = sni_api_prop_set_obj_width},
     {.name = "x", .getter = sni_api_prop_get_obj_x, .setter = sni_api_prop_set_obj_x},
     {.name = "x2", .getter = sni_api_prop_get_obj_x2, .setter = NULL},
@@ -31244,6 +30491,7 @@ const sni_method_desc_t lv_class_methods_calendar[] = {
     {.name = "setDayNames", .handler = sni_api_lv_calendar_set_day_names},
     {.name = "getBtnmatrix", .handler = sni_api_lv_calendar_get_btnmatrix},
     {.name = "getHighlightedDatesNum", .handler = sni_api_lv_calendar_get_highlighted_dates_num},
+    {.name = "setChineseMode", .handler = sni_api_lv_calendar_set_chinese_mode},
     {.name = NULL, .handler = NULL},
 };
 
@@ -31253,6 +30501,8 @@ const sni_method_desc_t lv_class_static_methods_calendar[] = {
 
 const sni_property_desc_t lv_class_properties_calendar[] = {
     {.name = "btnmatrix", .getter = sni_api_prop_get_calendar_btnmatrix, .setter = NULL},
+    {.name = "chineseMode", .getter = NULL, .setter = sni_api_prop_set_calendar_chinese_mode},
+    {.name = "dayName", .getter = sni_api_prop_get_calendar_day_name, .setter = NULL},
     {.name = "dayNames", .getter = NULL, .setter = sni_api_lv_calendar_set_day_names},
     {.name = "highlightedDatesNum", .getter = sni_api_prop_get_calendar_highlighted_dates_num, .setter = NULL},
     {.name = "shownMonth", .getter = NULL, .setter = sni_api_prop_set_calendar_shown_month},
@@ -31260,7 +30510,6 @@ const sni_property_desc_t lv_class_properties_calendar[] = {
     {.name = "todayDay", .getter = NULL, .setter = sni_api_prop_set_calendar_today_day},
     {.name = "todayMonth", .getter = NULL, .setter = sni_api_prop_set_calendar_today_month},
     {.name = "todayYear", .getter = NULL, .setter = sni_api_prop_set_calendar_today_year},
-    {.name = "chineseMode", .getter = NULL, .setter = sni_api_lv_calendar_set_chinese_mode},
     {.name = NULL, .getter = NULL, .setter = NULL},
 };
 
@@ -31520,9 +30769,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "ALIGN_TOP_RIGHT", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "ANIM_IMAGE_PART_MAIN", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "ANIM_PAUSE_FOREVER", .type = SNI_CONST_INT, .value.i = -1},
-    {.name = "ANIM_PLAYTIME_INFINITE", .type = SNI_CONST_INT, .value.i = LV_ANIM_PLAYTIME_INFINITE},
-    {.name = "ANIM_REPEAT_INFINITE", .type = SNI_CONST_INT, .value.i = LV_ANIM_REPEAT_INFINITE},
+    {.name = "ANIM_PLAYTIME_INFINITE", .type = SNI_CONST_INT, .value.i = -1},
+    {.name = "ANIM_REPEAT_INFINITE", .type = SNI_CONST_INT, .value.i = -1},
     {.name = "ANIM_TIMELINE_PROGRESS_MAX", .type = SNI_CONST_INT, .value.i = 65535},
+    {.name = "APRIL_STR", .type = SNI_CONST_STRING, .value.s = "April"},
     {.name = "ARCLABEL_DEFAULT_TEXT", .type = SNI_CONST_STRING, .value.s = "Arced Text"},
     {.name = "ARCLABEL_DIR_CLOCKWISE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "ARCLABEL_DIR_COUNTER_CLOCKWISE", .type = SNI_CONST_INT, .value.i = 1},
@@ -31537,11 +30787,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "ARC_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "ARC_MODE_REVERSE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "ARC_MODE_SYMMETRICAL", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "ARRAY_DEFAULT_CAPACITY", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "ARRAY_DEFAULT_SHRINK_RATIO", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "ASSERT_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "ATTRIBUTE_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "ATTRIBUTE_FAST_MEM_USE_IRAM", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "ATTRIBUTE_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "AUGUST_STR", .type = SNI_CONST_STRING, .value.s = "August"},
     {.name = "BARCODE_ENCODING_CODE128_GS1", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "BARCODE_ENCODING_CODE128_RAW", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "BARCODE_UPDATE_MODE_DEFERRED", .type = SNI_CONST_INT, .value.i = 1},
@@ -31575,7 +30824,8 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BORDER_SIDE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "BORDER_SIDE_RIGHT", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "BORDER_SIDE_TOP", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "BUTTONMATRIX_BUTTON_NONE", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_BUTTON_NONE},
+    {.name = "BUILD_DEMOS", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "BUTTONMATRIX_BUTTON_NONE", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "BUTTONMATRIX_CTRL_CHECKABLE", .type = SNI_CONST_INT, .value.i = 128},
     {.name = "BUTTONMATRIX_CTRL_CHECKED", .type = SNI_CONST_INT, .value.i = 256},
     {.name = "BUTTONMATRIX_CTRL_CLICK_TRIG", .type = SNI_CONST_INT, .value.i = 512},
@@ -31604,14 +30854,13 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BUTTONMATRIX_CTRL_WIDTH_7", .type = SNI_CONST_INT, .value.i = 7},
     {.name = "BUTTONMATRIX_CTRL_WIDTH_8", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "BUTTONMATRIX_CTRL_WIDTH_9", .type = SNI_CONST_INT, .value.i = 9},
-    {.name = "CALENDAR_DISABLE_DEFAULT_DAY_NAMES", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "CALENDAR_DISABLE_DEFAULT_MONTH_NAMES", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "CALENDAR_DISABLE_DEFAULT_DAY_NAMES", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "CALENDAR_DISABLE_DEFAULT_MONTH_NAMES", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "CHART_AXIS_LAST", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "CHART_AXIS_PRIMARY_X", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "CHART_AXIS_PRIMARY_Y", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "CHART_AXIS_SECONDARY_X", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "CHART_AXIS_SECONDARY_Y", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "CHART_POINT_NONE", .type = SNI_CONST_INT, .value.i = LV_CHART_POINT_NONE},
     {.name = "CHART_TYPE_BAR", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "CHART_TYPE_CURVE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "CHART_TYPE_LINE", .type = SNI_CONST_INT, .value.i = 1},
@@ -31620,69 +30869,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "CHART_TYPE_STACKED", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "CHART_UPDATE_MODE_CIRCULAR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "CHART_UPDATE_MODE_SHIFT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "CHECK_ARG_ASSERT_ON_FAIL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "CHECK_ARG_LOG_MODE_MINIMAL", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "CHECK_ARG_LOG_MODE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "CHECK_ARG_LOG_MODE_VERBOSE", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "CLR_COL", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "CLR_STN", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "CLR_TAG", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "CMD_APPEND", .type = SNI_CONST_INT, .value.i = -226},
-    {.name = "CMD_BGCOLOR", .type = SNI_CONST_INT, .value.i = -247},
-    {.name = "CMD_BUTTON", .type = SNI_CONST_INT, .value.i = -243},
-    {.name = "CMD_CALIBRATE", .type = SNI_CONST_INT, .value.i = -235},
-    {.name = "CMD_CLOCK", .type = SNI_CONST_INT, .value.i = -236},
-    {.name = "CMD_COLDSTART", .type = SNI_CONST_INT, .value.i = -206},
-    {.name = "CMD_DIAL", .type = SNI_CONST_INT, .value.i = -211},
-    {.name = "CMD_DLSTART", .type = SNI_CONST_INT, .value.i = -256},
-    {.name = "CMD_FGCOLOR", .type = SNI_CONST_INT, .value.i = -246},
-    {.name = "CMD_GAUGE", .type = SNI_CONST_INT, .value.i = -237},
-    {.name = "CMD_GETMATRIX", .type = SNI_CONST_INT, .value.i = -205},
-    {.name = "CMD_GETPROPS", .type = SNI_CONST_INT, .value.i = -219},
-    {.name = "CMD_GETPTR", .type = SNI_CONST_INT, .value.i = -221},
-    {.name = "CMD_GRADCOLOR", .type = SNI_CONST_INT, .value.i = -204},
-    {.name = "CMD_GRADIENT", .type = SNI_CONST_INT, .value.i = -245},
-    {.name = "CMD_INFLATE", .type = SNI_CONST_INT, .value.i = -222},
-    {.name = "CMD_INTERRUPT", .type = SNI_CONST_INT, .value.i = -254},
-    {.name = "CMD_KEYS", .type = SNI_CONST_INT, .value.i = -242},
-    {.name = "CMD_LOADIDENTITY", .type = SNI_CONST_INT, .value.i = -218},
-    {.name = "CMD_LOADIMAGE", .type = SNI_CONST_INT, .value.i = -220},
-    {.name = "CMD_LOGO", .type = SNI_CONST_INT, .value.i = -207},
-    {.name = "CMD_MEDIAFIFO", .type = SNI_CONST_INT, .value.i = -199},
-    {.name = "CMD_MEMCPY", .type = SNI_CONST_INT, .value.i = -227},
-    {.name = "CMD_MEMCRC", .type = SNI_CONST_INT, .value.i = -232},
-    {.name = "CMD_MEMSET", .type = SNI_CONST_INT, .value.i = -229},
-    {.name = "CMD_MEMWRITE", .type = SNI_CONST_INT, .value.i = -230},
-    {.name = "CMD_MEMZERO", .type = SNI_CONST_INT, .value.i = -228},
-    {.name = "CMD_NUMBER", .type = SNI_CONST_INT, .value.i = -210},
-    {.name = "CMD_PLAYVIDEO", .type = SNI_CONST_INT, .value.i = -198},
-    {.name = "CMD_PROGRESS", .type = SNI_CONST_INT, .value.i = -241},
-    {.name = "CMD_REGREAD", .type = SNI_CONST_INT, .value.i = -231},
-    {.name = "CMD_ROMFONT", .type = SNI_CONST_INT, .value.i = -193},
-    {.name = "CMD_ROTATE", .type = SNI_CONST_INT, .value.i = -215},
-    {.name = "CMD_SCALE", .type = SNI_CONST_INT, .value.i = -216},
-    {.name = "CMD_SCREENSAVER", .type = SNI_CONST_INT, .value.i = -209},
-    {.name = "CMD_SCROLLBAR", .type = SNI_CONST_INT, .value.i = -239},
-    {.name = "CMD_SETBASE", .type = SNI_CONST_INT, .value.i = -200},
-    {.name = "CMD_SETBITMAP", .type = SNI_CONST_INT, .value.i = -189},
-    {.name = "CMD_SETFONT", .type = SNI_CONST_INT, .value.i = -213},
-    {.name = "CMD_SETFONT2", .type = SNI_CONST_INT, .value.i = -197},
-    {.name = "CMD_SETMATRIX", .type = SNI_CONST_INT, .value.i = -214},
-    {.name = "CMD_SETROTATE", .type = SNI_CONST_INT, .value.i = -202},
-    {.name = "CMD_SETSCRATCH", .type = SNI_CONST_INT, .value.i = -196},
-    {.name = "CMD_SKETCH", .type = SNI_CONST_INT, .value.i = -208},
-    {.name = "CMD_SLIDER", .type = SNI_CONST_INT, .value.i = -240},
-    {.name = "CMD_SNAPSHOT", .type = SNI_CONST_INT, .value.i = -225},
-    {.name = "CMD_SNAPSHOT2", .type = SNI_CONST_INT, .value.i = -201},
-    {.name = "CMD_SPINNER", .type = SNI_CONST_INT, .value.i = -234},
-    {.name = "CMD_STOP", .type = SNI_CONST_INT, .value.i = -233},
-    {.name = "CMD_SWAP", .type = SNI_CONST_INT, .value.i = -255},
-    {.name = "CMD_TEXT", .type = SNI_CONST_INT, .value.i = -244},
-    {.name = "CMD_TOGGLE", .type = SNI_CONST_INT, .value.i = -238},
-    {.name = "CMD_TRACK", .type = SNI_CONST_INT, .value.i = -212},
-    {.name = "CMD_TRANSLATE", .type = SNI_CONST_INT, .value.i = -217},
-    {.name = "CMD_VIDEOFRAME", .type = SNI_CONST_INT, .value.i = -191},
-    {.name = "CMD_VIDEOSTART", .type = SNI_CONST_INT, .value.i = -192},
-    {.name = "COLOR_DEPTH", .type = SNI_CONST_INT, .value.i = LV_COLOR_DEPTH},
     {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_ARGB8888", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_ARGB8888_PREMULTIPLIED", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "COLOR_DEPTH_OF_LV_COLOR_FORMAT_I1", .type = SNI_CONST_INT, .value.i = 1},
@@ -31734,13 +30924,12 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "COLOR_FORMAT_YUV_END", .type = SNI_CONST_INT, .value.i = 39},
     {.name = "COLOR_FORMAT_YUV_START", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "COLOR_FORMAT_YUY2", .type = SNI_CONST_INT, .value.i = 38},
-    {.name = "COLOR_NATIVE_WITH_ALPHA_SIZE", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "COORD_MAX", .type = SNI_CONST_INT, .value.i = LV_COORD_MAX},
-    {.name = "COORD_MIN", .type = SNI_CONST_INT, .value.i = LV_COORD_MIN},
+    {.name = "COLOR_NATIVE_WITH_ALPHA_SIZE", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "COORD_TYPE_SHIFT", .type = SNI_CONST_INT, .value.i = 29},
     {.name = "COVER_RES_COVER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "COVER_RES_MASKED", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "COVER_RES_NOT_COVER", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "DECEMBER_STR", .type = SNI_CONST_STRING, .value.s = "December"},
     {.name = "DEMO_BENCHMARK_ALIGNED_FONTS", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DEMO_EBIKE_PORTRAIT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DEMO_MUSIC_AUTO_PLAY", .type = SNI_CONST_INT, .value.i = 0},
@@ -31756,25 +30945,18 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DIR_RIGHT", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "DIR_TOP", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "DIR_VER", .type = SNI_CONST_INT, .value.i = 12},
+    {.name = "DISABLE_ASSERT_HANDLER_INCLUDE_WARNING", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DISPLAY_RENDER_MODE_DIRECT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "DISPLAY_RENDER_MODE_FULL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "DISPLAY_RENDER_MODE_PARTIAL", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DISPLAY_ROTATION_0", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DISPLAY_ROTATION_180", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "DISPLAY_ROTATION_270", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "DISPLAY_ROTATION_90", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "DL_DISPLAY", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DL_END", .type = SNI_CONST_INT, .value.i = 553648128},
-    {.name = "DPI_DEF", .type = SNI_CONST_INT, .value.i = LV_DPI_DEF},
-    {.name = "DRAW_BUF_ALIGN", .type = SNI_CONST_INT, .value.i = LV_DRAW_BUF_ALIGN},
-    {.name = "DRAW_BUF_STRIDE_ALIGN", .type = SNI_CONST_INT, .value.i = LV_DRAW_BUF_STRIDE_ALIGN},
     {.name = "DRAW_DISABLE_TILED_RENDERING", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_DMA2D_HAL_INCLUDE", .type = SNI_CONST_STRING, .value.s = "stm32h7xx_hal.h"},
     {.name = "DRAW_EVE_EVE_GENERATION", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "DRAW_EVE_WRITE_BUFFER_SIZE", .type = SNI_CONST_INT, .value.i = 2048},
     {.name = "DRAW_HAS_3D_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DRAW_HAS_VECTOR_SUPPORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "DRAW_HAS_VECTOR_SUPPORT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "DRAW_LABEL_NO_TXT_SEL", .type = SNI_CONST_INT, .value.i = 65535},
+    {.name = "DRAW_LAYER_MAX_MEMORY", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_OPENGLES_TEXTURE_CACHE_COUNT", .type = SNI_CONST_INT, .value.i = 64},
     {.name = "DRAW_SW_ASM_CUSTOM", .type = SNI_CONST_INT, .value.i = 255},
     {.name = "DRAW_SW_ASM_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = ""},
@@ -31784,7 +30966,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DRAW_SW_ASM_RISCV_V", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "DRAW_SW_ASM_SVE2", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "DRAW_SW_ASM_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DRAW_SW_DRAW_UNIT_CNT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "DRAW_SW_I1_LUM_THRESHOLD", .type = SNI_CONST_INT, .value.i = 127},
     {.name = "DRAW_TASK_STATE_BLOCKED", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_TASK_STATE_FAILED", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "DRAW_TASK_STATE_FINISHED", .type = SNI_CONST_INT, .value.i = 4},
@@ -31805,12 +30987,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DRAW_TASK_TYPE_MASK_RECTANGLE", .type = SNI_CONST_INT, .value.i = 11},
     {.name = "DRAW_TASK_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_TASK_TYPE_TRIANGLE", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "DRAW_TASK_TYPE_VECTOR", .type = SNI_CONST_INT, .value.i = 14},
     {.name = "DRAW_THREAD_PRIO", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "DRAW_THREAD_STACK_SIZE", .type = SNI_CONST_INT, .value.i = 8192},
-    {.name = "DRAW_TRANSFORM_USE_MATRIX", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "DRAW_UNIT_IDLE", .type = SNI_CONST_INT, .value.i = -1},
     {.name = "DRAW_UNIT_NONE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "DROPDOWN_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_DROPDOWN_POS_LAST},
+    {.name = "DROPDOWN_POS_LAST", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "EVENT_ALL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "EVENT_CANCEL", .type = SNI_CONST_INT, .value.i = 43},
     {.name = "EVENT_CHECKED", .type = SNI_CONST_INT, .value.i = 45},
@@ -31894,217 +31075,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "EVENT_VALUE_CHANGED", .type = SNI_CONST_INT, .value.i = 39},
     {.name = "EVENT_VSYNC", .type = SNI_CONST_INT, .value.i = 77},
     {.name = "EVENT_VSYNC_REQUEST", .type = SNI_CONST_INT, .value.i = 78},
-    {.name = "EVE_ADC_DIFFERENTIAL", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_ADC_SINGLE_ENDED", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_ALARM", .type = SNI_CONST_INT, .value.i = 6},
-    {.name = "EVE_ALWAYS", .type = SNI_CONST_INT, .value.i = 7},
-    {.name = "EVE_ARGB1555", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_ARGB2", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_ARGB4", .type = SNI_CONST_INT, .value.i = 6},
-    {.name = "EVE_BARGRAPH", .type = SNI_CONST_INT, .value.i = 11},
-    {.name = "EVE_BEEPING", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_BELL", .type = SNI_CONST_INT, .value.i = 73},
-    {.name = "EVE_BILINEAR", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_BITMAPS", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_BORDER", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_CAROUSEL", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "EVE_CHACK", .type = SNI_CONST_INT, .value.i = 88},
-    {.name = "EVE_CHIMES", .type = SNI_CONST_INT, .value.i = 71},
-    {.name = "EVE_CLACK", .type = SNI_CONST_INT, .value.i = 87},
-    {.name = "EVE_CLICK", .type = SNI_CONST_INT, .value.i = 80},
-    {.name = "EVE_COWBELL", .type = SNI_CONST_INT, .value.i = 82},
-    {.name = "EVE_DECR", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_DLSWAP_DONE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_DLSWAP_FRAME", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_DLSWAP_LINE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_DST_ALPHA", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_EDGE_STRIP_A", .type = SNI_CONST_INT, .value.i = 7},
-    {.name = "EVE_EDGE_STRIP_B", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "EVE_EDGE_STRIP_L", .type = SNI_CONST_INT, .value.i = 6},
-    {.name = "EVE_EDGE_STRIP_R", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_EQUAL", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_GEQUAL", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_GLOCKENSPIEL", .type = SNI_CONST_INT, .value.i = 67},
-    {.name = "EVE_GPIO0", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_GREATER", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_HARP", .type = SNI_CONST_INT, .value.i = 64},
-    {.name = "EVE_HIHAT", .type = SNI_CONST_INT, .value.i = 84},
-    {.name = "EVE_INCR", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_INT_CMDEMPTY", .type = SNI_CONST_INT, .value.i = 32},
-    {.name = "EVE_INT_CMDFLAG", .type = SNI_CONST_INT, .value.i = 64},
-    {.name = "EVE_INT_CONVCOMPLETE", .type = SNI_CONST_INT, .value.i = 128},
-    {.name = "EVE_INT_G8", .type = SNI_CONST_INT, .value.i = 18},
-    {.name = "EVE_INT_L8C", .type = SNI_CONST_INT, .value.i = 12},
-    {.name = "EVE_INT_PLAYBACK", .type = SNI_CONST_INT, .value.i = 16},
-    {.name = "EVE_INT_SOUND", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "EVE_INT_SWAP", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_INT_TAG", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_INT_TOUCH", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_INT_VGA", .type = SNI_CONST_INT, .value.i = 13},
-    {.name = "EVE_INVERT", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_KEEP", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_KICKDRUM", .type = SNI_CONST_INT, .value.i = 85},
-    {.name = "EVE_L1", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_L2", .type = SNI_CONST_INT, .value.i = 17},
-    {.name = "EVE_L4", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_L8", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_LEQUAL", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_LESS", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_LINES", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_LINE_STRIP", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_MIDI_A0", .type = SNI_CONST_INT, .value.i = 21},
-    {.name = "EVE_MIDI_A1", .type = SNI_CONST_INT, .value.i = 33},
-    {.name = "EVE_MIDI_A2", .type = SNI_CONST_INT, .value.i = 45},
-    {.name = "EVE_MIDI_A3", .type = SNI_CONST_INT, .value.i = 57},
-    {.name = "EVE_MIDI_A4", .type = SNI_CONST_INT, .value.i = 69},
-    {.name = "EVE_MIDI_A5", .type = SNI_CONST_INT, .value.i = 81},
-    {.name = "EVE_MIDI_A6", .type = SNI_CONST_INT, .value.i = 93},
-    {.name = "EVE_MIDI_A7", .type = SNI_CONST_INT, .value.i = 105},
-    {.name = "EVE_MIDI_A_0", .type = SNI_CONST_INT, .value.i = 22},
-    {.name = "EVE_MIDI_A_1", .type = SNI_CONST_INT, .value.i = 34},
-    {.name = "EVE_MIDI_A_2", .type = SNI_CONST_INT, .value.i = 46},
-    {.name = "EVE_MIDI_A_3", .type = SNI_CONST_INT, .value.i = 58},
-    {.name = "EVE_MIDI_A_4", .type = SNI_CONST_INT, .value.i = 70},
-    {.name = "EVE_MIDI_A_5", .type = SNI_CONST_INT, .value.i = 82},
-    {.name = "EVE_MIDI_A_6", .type = SNI_CONST_INT, .value.i = 94},
-    {.name = "EVE_MIDI_A_7", .type = SNI_CONST_INT, .value.i = 106},
-    {.name = "EVE_MIDI_B0", .type = SNI_CONST_INT, .value.i = 23},
-    {.name = "EVE_MIDI_B1", .type = SNI_CONST_INT, .value.i = 35},
-    {.name = "EVE_MIDI_B2", .type = SNI_CONST_INT, .value.i = 47},
-    {.name = "EVE_MIDI_B3", .type = SNI_CONST_INT, .value.i = 59},
-    {.name = "EVE_MIDI_B4", .type = SNI_CONST_INT, .value.i = 71},
-    {.name = "EVE_MIDI_B5", .type = SNI_CONST_INT, .value.i = 83},
-    {.name = "EVE_MIDI_B6", .type = SNI_CONST_INT, .value.i = 95},
-    {.name = "EVE_MIDI_B7", .type = SNI_CONST_INT, .value.i = 107},
-    {.name = "EVE_MIDI_C1", .type = SNI_CONST_INT, .value.i = 24},
-    {.name = "EVE_MIDI_C2", .type = SNI_CONST_INT, .value.i = 36},
-    {.name = "EVE_MIDI_C3", .type = SNI_CONST_INT, .value.i = 48},
-    {.name = "EVE_MIDI_C4", .type = SNI_CONST_INT, .value.i = 60},
-    {.name = "EVE_MIDI_C5", .type = SNI_CONST_INT, .value.i = 72},
-    {.name = "EVE_MIDI_C6", .type = SNI_CONST_INT, .value.i = 84},
-    {.name = "EVE_MIDI_C7", .type = SNI_CONST_INT, .value.i = 96},
-    {.name = "EVE_MIDI_C8", .type = SNI_CONST_INT, .value.i = 108},
-    {.name = "EVE_MIDI_C_1", .type = SNI_CONST_INT, .value.i = 25},
-    {.name = "EVE_MIDI_C_2", .type = SNI_CONST_INT, .value.i = 37},
-    {.name = "EVE_MIDI_C_3", .type = SNI_CONST_INT, .value.i = 49},
-    {.name = "EVE_MIDI_C_4", .type = SNI_CONST_INT, .value.i = 61},
-    {.name = "EVE_MIDI_C_5", .type = SNI_CONST_INT, .value.i = 73},
-    {.name = "EVE_MIDI_C_6", .type = SNI_CONST_INT, .value.i = 85},
-    {.name = "EVE_MIDI_C_7", .type = SNI_CONST_INT, .value.i = 97},
-    {.name = "EVE_MIDI_D1", .type = SNI_CONST_INT, .value.i = 26},
-    {.name = "EVE_MIDI_D2", .type = SNI_CONST_INT, .value.i = 38},
-    {.name = "EVE_MIDI_D3", .type = SNI_CONST_INT, .value.i = 50},
-    {.name = "EVE_MIDI_D4", .type = SNI_CONST_INT, .value.i = 62},
-    {.name = "EVE_MIDI_D5", .type = SNI_CONST_INT, .value.i = 74},
-    {.name = "EVE_MIDI_D6", .type = SNI_CONST_INT, .value.i = 86},
-    {.name = "EVE_MIDI_D7", .type = SNI_CONST_INT, .value.i = 98},
-    {.name = "EVE_MIDI_D_1", .type = SNI_CONST_INT, .value.i = 27},
-    {.name = "EVE_MIDI_D_2", .type = SNI_CONST_INT, .value.i = 39},
-    {.name = "EVE_MIDI_D_3", .type = SNI_CONST_INT, .value.i = 51},
-    {.name = "EVE_MIDI_D_4", .type = SNI_CONST_INT, .value.i = 63},
-    {.name = "EVE_MIDI_D_5", .type = SNI_CONST_INT, .value.i = 75},
-    {.name = "EVE_MIDI_D_6", .type = SNI_CONST_INT, .value.i = 87},
-    {.name = "EVE_MIDI_D_7", .type = SNI_CONST_INT, .value.i = 99},
-    {.name = "EVE_MIDI_E1", .type = SNI_CONST_INT, .value.i = 28},
-    {.name = "EVE_MIDI_E2", .type = SNI_CONST_INT, .value.i = 40},
-    {.name = "EVE_MIDI_E3", .type = SNI_CONST_INT, .value.i = 52},
-    {.name = "EVE_MIDI_E4", .type = SNI_CONST_INT, .value.i = 64},
-    {.name = "EVE_MIDI_E5", .type = SNI_CONST_INT, .value.i = 76},
-    {.name = "EVE_MIDI_E6", .type = SNI_CONST_INT, .value.i = 88},
-    {.name = "EVE_MIDI_E7", .type = SNI_CONST_INT, .value.i = 100},
-    {.name = "EVE_MIDI_F1", .type = SNI_CONST_INT, .value.i = 29},
-    {.name = "EVE_MIDI_F2", .type = SNI_CONST_INT, .value.i = 41},
-    {.name = "EVE_MIDI_F3", .type = SNI_CONST_INT, .value.i = 53},
-    {.name = "EVE_MIDI_F4", .type = SNI_CONST_INT, .value.i = 65},
-    {.name = "EVE_MIDI_F5", .type = SNI_CONST_INT, .value.i = 77},
-    {.name = "EVE_MIDI_F6", .type = SNI_CONST_INT, .value.i = 89},
-    {.name = "EVE_MIDI_F7", .type = SNI_CONST_INT, .value.i = 101},
-    {.name = "EVE_MIDI_F_1", .type = SNI_CONST_INT, .value.i = 30},
-    {.name = "EVE_MIDI_F_2", .type = SNI_CONST_INT, .value.i = 42},
-    {.name = "EVE_MIDI_F_3", .type = SNI_CONST_INT, .value.i = 54},
-    {.name = "EVE_MIDI_F_4", .type = SNI_CONST_INT, .value.i = 66},
-    {.name = "EVE_MIDI_F_5", .type = SNI_CONST_INT, .value.i = 78},
-    {.name = "EVE_MIDI_F_6", .type = SNI_CONST_INT, .value.i = 90},
-    {.name = "EVE_MIDI_F_7", .type = SNI_CONST_INT, .value.i = 102},
-    {.name = "EVE_MIDI_G1", .type = SNI_CONST_INT, .value.i = 31},
-    {.name = "EVE_MIDI_G2", .type = SNI_CONST_INT, .value.i = 43},
-    {.name = "EVE_MIDI_G3", .type = SNI_CONST_INT, .value.i = 55},
-    {.name = "EVE_MIDI_G4", .type = SNI_CONST_INT, .value.i = 67},
-    {.name = "EVE_MIDI_G5", .type = SNI_CONST_INT, .value.i = 79},
-    {.name = "EVE_MIDI_G6", .type = SNI_CONST_INT, .value.i = 91},
-    {.name = "EVE_MIDI_G7", .type = SNI_CONST_INT, .value.i = 103},
-    {.name = "EVE_MIDI_G_1", .type = SNI_CONST_INT, .value.i = 32},
-    {.name = "EVE_MIDI_G_2", .type = SNI_CONST_INT, .value.i = 44},
-    {.name = "EVE_MIDI_G_3", .type = SNI_CONST_INT, .value.i = 56},
-    {.name = "EVE_MIDI_G_4", .type = SNI_CONST_INT, .value.i = 68},
-    {.name = "EVE_MIDI_G_5", .type = SNI_CONST_INT, .value.i = 80},
-    {.name = "EVE_MIDI_G_6", .type = SNI_CONST_INT, .value.i = 92},
-    {.name = "EVE_MIDI_G_7", .type = SNI_CONST_INT, .value.i = 104},
-    {.name = "EVE_MUSICBOX", .type = SNI_CONST_INT, .value.i = 72},
-    {.name = "EVE_MUTE", .type = SNI_CONST_INT, .value.i = 96},
-    {.name = "EVE_NEAREST", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_NEVER", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_NOTCH", .type = SNI_CONST_INT, .value.i = 83},
-    {.name = "EVE_NOTEQUAL", .type = SNI_CONST_INT, .value.i = 6},
-    {.name = "EVE_ONE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_ONE_MINUS_DST_ALPHA", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "EVE_ONE_MINUS_SRC_ALPHA", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_OPT_CENTERX", .type = SNI_CONST_INT, .value.i = 512},
-    {.name = "EVE_OPT_CENTERY", .type = SNI_CONST_INT, .value.i = 1024},
-    {.name = "EVE_OPT_FLAT", .type = SNI_CONST_INT, .value.i = 256},
-    {.name = "EVE_OPT_FULLSCREEN", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "EVE_OPT_MEDIAFIFO", .type = SNI_CONST_INT, .value.i = 16},
-    {.name = "EVE_OPT_MONO", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_OPT_NOBACK", .type = SNI_CONST_INT, .value.i = 4096},
-    {.name = "EVE_OPT_NODL", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_OPT_NOHANDS", .type = SNI_CONST_INT, .value.i = 49152},
-    {.name = "EVE_OPT_NOHM", .type = SNI_CONST_INT, .value.i = 16384},
-    {.name = "EVE_OPT_NOPOINTER", .type = SNI_CONST_INT, .value.i = 16384},
-    {.name = "EVE_OPT_NOSECS", .type = SNI_CONST_INT, .value.i = 32768},
-    {.name = "EVE_OPT_NOTEAR", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_OPT_NOTICKS", .type = SNI_CONST_INT, .value.i = 8192},
-    {.name = "EVE_OPT_RIGHTX", .type = SNI_CONST_INT, .value.i = 2048},
-    {.name = "EVE_OPT_SIGNED", .type = SNI_CONST_INT, .value.i = 256},
-    {.name = "EVE_OPT_SOUND", .type = SNI_CONST_INT, .value.i = 32},
-    {.name = "EVE_ORGAN", .type = SNI_CONST_INT, .value.i = 68},
-    {.name = "EVE_PALETTED", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "EVE_PALETTED4444", .type = SNI_CONST_INT, .value.i = 15},
-    {.name = "EVE_PALETTED565", .type = SNI_CONST_INT, .value.i = 14},
-    {.name = "EVE_PALETTED8", .type = SNI_CONST_INT, .value.i = 16},
-    {.name = "EVE_PIANO", .type = SNI_CONST_INT, .value.i = 70},
-    {.name = "EVE_POINTS", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_POP", .type = SNI_CONST_INT, .value.i = 86},
-    {.name = "EVE_RAM_CMD", .type = SNI_CONST_INT, .value.i = 3178496},
-    {.name = "EVE_RAM_DL", .type = SNI_CONST_INT, .value.i = 3145728},
-    {.name = "EVE_RAM_G", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_RAM_REG", .type = SNI_CONST_INT, .value.i = 3153920},
-    {.name = "EVE_RECTS", .type = SNI_CONST_INT, .value.i = 9},
-    {.name = "EVE_REPEAT", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_REPLACE", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_RGB332", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_RGB565", .type = SNI_CONST_INT, .value.i = 7},
-    {.name = "EVE_ROM_CHIPID", .type = SNI_CONST_INT, .value.i = 786432},
-    {.name = "EVE_ROM_FONT", .type = SNI_CONST_INT, .value.i = 1966080},
-    {.name = "EVE_ROM_FONT_ADDR", .type = SNI_CONST_INT, .value.i = 3145724},
-    {.name = "EVE_SAWTOOTH", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_SILENCE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_SINEWAVE", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_SQUAREWAVE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_SRC_ALPHA", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_SWITCH", .type = SNI_CONST_INT, .value.i = 81},
-    {.name = "EVE_TEXT8X8", .type = SNI_CONST_INT, .value.i = 9},
-    {.name = "EVE_TEXTVGA", .type = SNI_CONST_INT, .value.i = 10},
-    {.name = "EVE_TMODE_CONTINUOUS", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "EVE_TMODE_FRAME", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "EVE_TMODE_OFF", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "EVE_TMODE_ONESHOT", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "EVE_TRIANGLE", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "EVE_TRUMPET", .type = SNI_CONST_INT, .value.i = 69},
-    {.name = "EVE_TUBA", .type = SNI_CONST_INT, .value.i = 66},
-    {.name = "EVE_UNMUTE", .type = SNI_CONST_INT, .value.i = 97},
-    {.name = "EVE_WARBLE", .type = SNI_CONST_INT, .value.i = 7},
-    {.name = "EVE_XYLOPHONE", .type = SNI_CONST_INT, .value.i = 65},
-    {.name = "EVE_ZERO", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FEBRUARY_STR", .type = SNI_CONST_STRING, .value.s = "February"},
     {.name = "FFMPEG_DUMP_FORMAT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FFMPEG_PLAYER_USE_LV_FS", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FILE_EXPLORER_PATH_MAX_LEN", .type = SNI_CONST_INT, .value.i = 128},
@@ -32143,20 +31114,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FONT_KERNING_NONE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FONT_KERNING_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FONT_MANAGER_NAME_MAX_LEN", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "FONT_SOURCE_HAN_SANS_SC_14_CJK", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FONT_SOURCE_HAN_SANS_SC_16_CJK", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FONT_SUBPX_BOTH", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "FONT_SUBPX_HOR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FONT_SUBPX_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FONT_SUBPX_VER", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "FREETYPE_FONT_RENDER_MODE_BITMAP", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FREETYPE_FONT_RENDER_MODE_OUTLINE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "FREETYPE_FONT_STYLE_BOLD", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "FREETYPE_FONT_STYLE_ITALIC", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "FREETYPE_FONT_STYLE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FREETYPE_OUTLINE_CONIC_TO", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "FREETYPE_OUTLINE_CUBIC_TO", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "FREETYPE_OUTLINE_END", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FREETYPE_OUTLINE_LINE_TO", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "FREETYPE_OUTLINE_MOVE_TO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "FONT_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FREETYPE_CACHE_FT_GLYPH_CNT", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "FREETYPE_USE_LVGL_PORT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "FRIDAY_STR", .type = SNI_CONST_STRING, .value.s = "Fr"},
     {.name = "FS_ARDUINO_ESP_LITTLEFS_LETTER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FS_ARDUINO_ESP_LITTLEFS_PATH", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "FS_ARDUINO_SD_LETTER", .type = SNI_CONST_INT, .value.i = 0},
@@ -32193,14 +31160,14 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "FS_SEEK_CUR", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "FS_SEEK_END", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "FS_SEEK_SET", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FS_STDIO_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FS_STDIO_LETTER", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "FS_STDIO_PATH", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "FS_UEFI_LETTER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FS_WIN32_CACHE_SIZE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FS_WIN32_LETTER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "FS_WIN32_PATH", .type = SNI_CONST_STRING, .value.s = ""},
     {.name = "G2D_HASH_TABLE_SIZE", .type = SNI_CONST_INT, .value.i = 50},
+    {.name = "GIF_CACHE_DECODE_DATA", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "GIF_MAX_HEIGHT", .type = SNI_CONST_INT, .value.i = 32768},
+    {.name = "GIF_MAX_WIDTH", .type = SNI_CONST_INT, .value.i = 480},
     {.name = "GLOBAL_CUSTOM_INCLUDE", .type = SNI_CONST_STRING, .value.s = "lv_global.h"},
     {.name = "GLOBAL_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GRAD_DIR_CONICAL", .type = SNI_CONST_INT, .value.i = 5},
@@ -32212,11 +31179,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "GRAD_EXTEND_PAD", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GRAD_EXTEND_REFLECT", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "GRAD_EXTEND_REPEAT", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "GRIDNAV_CTRL_HORIZONTAL_MOVE_ONLY", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "GRIDNAV_CTRL_NONE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "GRIDNAV_CTRL_ROLLOVER", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "GRIDNAV_CTRL_SCROLL_FIRST", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "GRIDNAV_CTRL_VERTICAL_MOVE_ONLY", .type = SNI_CONST_INT, .value.i = 8},
     {.name = "GRID_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "GRID_ALIGN_END", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "GRID_ALIGN_SPACE_AROUND", .type = SNI_CONST_INT, .value.i = 5},
@@ -32224,8 +31186,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "GRID_ALIGN_SPACE_EVENLY", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "GRID_ALIGN_START", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GRID_ALIGN_STRETCH", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "GRID_CONTENT", .type = SNI_CONST_INT, .value.i = LV_GRID_CONTENT},
-    {.name = "GRID_TEMPLATE_LAST", .type = SNI_CONST_INT, .value.i = LV_GRID_TEMPLATE_LAST},
     {.name = "GROUP_REFOCUS_POLICY_NEXT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "GROUP_REFOCUS_POLICY_PREV", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "IMAGEBUTTON_STATE_CHECKED_DISABLED", .type = SNI_CONST_INT, .value.i = 5},
@@ -32269,17 +31229,28 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "IMAGE_FLAGS_USER_MASK", .type = SNI_CONST_INT, .value.i = 65280},
     {.name = "IMAGE_HEADER_DEADBEEF", .type = SNI_CONST_INT, .value.i = 29},
     {.name = "IMAGE_HEADER_LEGACY", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "IMAGE_HEADER_MAGIC", .type = SNI_CONST_INT, .value.i = LV_IMAGE_HEADER_MAGIC},
+    {.name = "IMAGE_HEADER_MAGIC", .type = SNI_CONST_INT, .value.i = 25},
     {.name = "IMAGE_SRC_FILE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "IMAGE_SRC_SYMBOL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "IMAGE_SRC_UNKNOWN", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "IMAGE_SRC_VARIABLE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "IME_PINYIN_CAND_TEXT_NUM", .type = SNI_CONST_INT, .value.i = 6},
-    {.name = "IME_PINYIN_K9_CAND_TEXT_NUM", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "IME_PINYIN_K9_MAX_INPUT", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "IME_PINYIN_MODE_K26", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "IME_PINYIN_MODE_K9", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "IME_PINYIN_MODE_K9_NUMBER", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "INDEV_DEF_DOUBLE_CLICK_TIME", .type = SNI_CONST_INT, .value.i = 400},
+    {.name = "INDEV_DEF_GESTURE_LIMIT", .type = SNI_CONST_INT, .value.i = 50},
+    {.name = "INDEV_DEF_GESTURE_MIN_VELOCITY", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "INDEV_DEF_GESTURE_PINCH_DOWN_THRESHOLD", .type = SNI_CONST_INT, .value.i = 75},
     {.name = "INDEV_DEF_GESTURE_PINCH_MAX_INITIAL_SCALE", .type = SNI_CONST_INT, .value.i = 250},
     {.name = "INDEV_DEF_GESTURE_PINCH_UP_THRESHOLD", .type = SNI_CONST_INT, .value.i = 150},
     {.name = "INDEV_DEF_GESTURE_ROTATION_THRESHOLD", .type = SNI_CONST_INT, .value.i = 200},
+    {.name = "INDEV_DEF_LONG_PRESS_REP_TIME", .type = SNI_CONST_INT, .value.i = 100},
+    {.name = "INDEV_DEF_LONG_PRESS_TIME", .type = SNI_CONST_INT, .value.i = 400},
+    {.name = "INDEV_DEF_ROTARY_SENSITIVITY", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "INDEV_DEF_SCROLL_ELASTIC_FACTOR", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "INDEV_DEF_SCROLL_LIMIT", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "INDEV_DEF_SCROLL_THROW", .type = SNI_CONST_INT, .value.i = 10},
     {.name = "INDEV_GESTURE_CNT", .type = SNI_CONST_INT, .value.i = 6},
     {.name = "INDEV_GESTURE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "INDEV_GESTURE_PINCH", .type = SNI_CONST_INT, .value.i = 1},
@@ -32297,8 +31268,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "INDEV_TYPE_KEYPAD", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "INDEV_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "INDEV_TYPE_POINTER", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "INDEV_VECT_HIST_SIZE", .type = SNI_CONST_INT, .value.i = 8},
-    {.name = "INV_BUF_SIZE", .type = SNI_CONST_INT, .value.i = 32},
+    {.name = "JANUARY_STR", .type = SNI_CONST_STRING, .value.s = "January"},
+    {.name = "JULY_STR", .type = SNI_CONST_STRING, .value.s = "July"},
+    {.name = "JUNE_STR", .type = SNI_CONST_STRING, .value.s = "June"},
+    {.name = "KEYBOARD_BUFFER_SIZE", .type = SNI_CONST_INT, .value.i = 32},
     {.name = "KEYBOARD_MODE_NUMBER", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "KEYBOARD_MODE_SPECIAL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "KEYBOARD_MODE_TEXT_LOWER", .type = SNI_CONST_INT, .value.i = 0},
@@ -32320,14 +31293,13 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "KEY_RIGHT", .type = SNI_CONST_INT, .value.i = 19},
     {.name = "KEY_UP", .type = SNI_CONST_INT, .value.i = 17},
     {.name = "LABEL_DEFAULT_TEXT", .type = SNI_CONST_STRING, .value.s = "Text"},
-    {.name = "LABEL_DOT_NUM", .type = SNI_CONST_INT, .value.i = LV_LABEL_DOT_NUM},
+    {.name = "LABEL_DOT_NUM", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "LABEL_LONG_MODE_CLIP", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "LABEL_LONG_MODE_DOTS", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "LABEL_LONG_MODE_SCROLL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "LABEL_LONG_MODE_SCROLL_CIRCULAR", .type = SNI_CONST_INT, .value.i = 3},
     {.name = "LABEL_LONG_MODE_WRAP", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "LABEL_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_LABEL_POS_LAST},
-    {.name = "LABEL_TEXT_SELECTION_OFF", .type = SNI_CONST_INT, .value.i = LV_LABEL_TEXT_SELECTION_OFF},
+    {.name = "LABEL_POS_LAST", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "LAYER_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "LAYER_TYPE_SIMPLE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "LAYER_TYPE_TRANSFORM", .type = SNI_CONST_INT, .value.i = 2},
@@ -32358,19 +31330,19 @@ const sni_constant_desc_t lv_root_constants[] = {
      .type = SNI_CONST_STRING,
      .value.s =
          "lv_list is deprecated; build a list from a flex column instead. See the lv_example_flex_list example."},
-    {.name = "LOG_LEVEL_ERROR", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_ERROR},
-    {.name = "LOG_LEVEL_INFO", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_INFO},
-    {.name = "LOG_LEVEL_NONE", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_NONE},
+    {.name = "LOG_LEVEL_ERROR", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "LOG_LEVEL_INFO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "LOG_LEVEL_NONE", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "LOG_LEVEL_NUM", .type = SNI_CONST_INT, .value.i = 5},
-    {.name = "LOG_LEVEL_TRACE", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_TRACE},
-    {.name = "LOG_LEVEL_USER", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_USER},
-    {.name = "LOG_LEVEL_WARN", .type = SNI_CONST_INT, .value.i = LV_LOG_LEVEL_WARN},
-    {.name = "LVGL_VERSION_INFO", .type = SNI_CONST_STRING, .value.s = ""},
-    {.name = "LVGL_VERSION_MAJOR", .type = SNI_CONST_INT, .value.i = 9},
-    {.name = "LVGL_VERSION_MINOR", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "LOG_LEVEL_TRACE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "LOG_LEVEL_USER", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "LOG_LEVEL_WARN", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "LVGL_VERSION_INFO", .type = SNI_CONST_STRING, .value.s = "dev"},
+    {.name = "LVGL_VERSION_MAJOR", .type = SNI_CONST_INT, .value.i = 10},
+    {.name = "LVGL_VERSION_MINOR", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "LVGL_VERSION_PATCH", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "MASK_ID_INV", .type = SNI_CONST_INT, .value.i = -1},
-    {.name = "MASK_MAX_NUM", .type = SNI_CONST_INT, .value.i = 16},
+    {.name = "MARCH_STR", .type = SNI_CONST_STRING, .value.s = "March"},
+    {.name = "MAY_STR", .type = SNI_CONST_STRING, .value.s = "May"},
     {.name = "MENU_DEPRECATED_MSG",
      .type = SNI_CONST_STRING,
      .value.s = "lv_menu is deprecated; build menu navigation from base widgets instead. See the "
@@ -32380,6 +31352,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "MENU_HEADER_TOP_UNFIXED", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "MENU_ROOT_BACK_BUTTON_DISABLED", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "MENU_ROOT_BACK_BUTTON_ENABLED", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "MONDAY_STR", .type = SNI_CONST_STRING, .value.s = "Mo"},
     {.name = "NANOVG_BACKEND_GL2", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "NANOVG_BACKEND_GL3", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "NANOVG_BACKEND_GLES2", .type = SNI_CONST_INT, .value.i = 3},
@@ -32400,6 +31373,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "NEMA_STM32_HAL_INCLUDE", .type = SNI_CONST_STRING, .value.s = "stm32u5xx_hal.h"},
     {.name = "NEMA_USE_CACHE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "NEMA_USE_CUSTOM_INCLUDE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "NOVEMBER_STR", .type = SNI_CONST_STRING, .value.s = "November"},
     {.name = "NO_TIMER_READY", .type = SNI_CONST_INT, .value.i = -1},
     {.name = "NUTTX_DEFAULT_DRAW_BUF_USE_INDEPENDENT_IMAGE_HEAP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "NUTTX_LCD_BUFFER_COUNT", .type = SNI_CONST_INT, .value.i = 0},
@@ -32454,6 +31428,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "OBJ_TREE_WALK_END", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "OBJ_TREE_WALK_NEXT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "OBJ_TREE_WALK_SKIP_CHILDREN", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "OCTOBER_STR", .type = SNI_CONST_STRING, .value.s = "October"},
     {.name = "OPA_0", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "OPA_10", .type = SNI_CONST_INT, .value.i = 25},
     {.name = "OPA_100", .type = SNI_CONST_INT, .value.i = 255},
@@ -32518,7 +31493,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "PART_MAIN", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "PART_SCROLLBAR", .type = SNI_CONST_INT, .value.i = 65536},
     {.name = "PART_SELECTED", .type = SNI_CONST_INT, .value.i = 262144},
-    {.name = "PART_TEXTAREA_PLACEHOLDER", .type = SNI_CONST_INT, .value.i = LV_PART_TEXTAREA_PLACEHOLDER},
     {.name = "PPA_BURST_LENGTH", .type = SNI_CONST_INT, .value.i = 128},
     {.name = "PRIX32", .type = SNI_CONST_STRING, .value.s = "X"},
     {.name = "PRIX64", .type = SNI_CONST_STRING, .value.s = "llX"},
@@ -32534,95 +31508,22 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "QNX_BUF_COUNT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "QRCODE_UPDATE_MODE_DEFERRED", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "QRCODE_UPDATE_MODE_IMMEDIATE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "RADIUS_CIRCLE", .type = SNI_CONST_INT, .value.i = LV_RADIUS_CIRCLE},
-    {.name = "REG_CLOCK", .type = SNI_CONST_INT, .value.i = 3153928},
-    {.name = "REG_CMDB_SPACE", .type = SNI_CONST_INT, .value.i = 3155316},
-    {.name = "REG_CMDB_WRITE", .type = SNI_CONST_INT, .value.i = 3155320},
-    {.name = "REG_CMD_DL", .type = SNI_CONST_INT, .value.i = 3154176},
-    {.name = "REG_CMD_READ", .type = SNI_CONST_INT, .value.i = 3154168},
-    {.name = "REG_CMD_WRITE", .type = SNI_CONST_INT, .value.i = 3154172},
-    {.name = "REG_CPURESET", .type = SNI_CONST_INT, .value.i = 3153952},
-    {.name = "REG_CSPREAD", .type = SNI_CONST_INT, .value.i = 3154024},
-    {.name = "REG_CTOUCH_EXTENDED", .type = SNI_CONST_INT, .value.i = 3154184},
-    {.name = "REG_CTOUCH_TOUCH1_XY", .type = SNI_CONST_INT, .value.i = 3154204},
-    {.name = "REG_CTOUCH_TOUCH2_XY", .type = SNI_CONST_INT, .value.i = 3154316},
-    {.name = "REG_CTOUCH_TOUCH3_XY", .type = SNI_CONST_INT, .value.i = 3154320},
-    {.name = "REG_CTOUCH_TOUCH4_X", .type = SNI_CONST_INT, .value.i = 3154284},
-    {.name = "REG_CTOUCH_TOUCH4_Y", .type = SNI_CONST_INT, .value.i = 3154208},
-    {.name = "REG_DITHER", .type = SNI_CONST_INT, .value.i = 3154016},
-    {.name = "REG_DLSWAP", .type = SNI_CONST_INT, .value.i = 3154004},
-    {.name = "REG_FRAMES", .type = SNI_CONST_INT, .value.i = 3153924},
-    {.name = "REG_FREQUENCY", .type = SNI_CONST_INT, .value.i = 3153932},
-    {.name = "REG_GPIO", .type = SNI_CONST_INT, .value.i = 3154068},
-    {.name = "REG_GPIOX", .type = SNI_CONST_INT, .value.i = 3154076},
-    {.name = "REG_GPIOX_DIR", .type = SNI_CONST_INT, .value.i = 3154072},
-    {.name = "REG_GPIO_DIR", .type = SNI_CONST_INT, .value.i = 3154064},
-    {.name = "REG_HCYCLE", .type = SNI_CONST_INT, .value.i = 3153964},
-    {.name = "REG_HOFFSET", .type = SNI_CONST_INT, .value.i = 3153968},
-    {.name = "REG_HSIZE", .type = SNI_CONST_INT, .value.i = 3153972},
-    {.name = "REG_HSYNC0", .type = SNI_CONST_INT, .value.i = 3153976},
-    {.name = "REG_HSYNC1", .type = SNI_CONST_INT, .value.i = 3153980},
-    {.name = "REG_ID", .type = SNI_CONST_INT, .value.i = 3153920},
-    {.name = "REG_INT_EN", .type = SNI_CONST_INT, .value.i = 3154092},
-    {.name = "REG_INT_FLAGS", .type = SNI_CONST_INT, .value.i = 3154088},
-    {.name = "REG_INT_MASK", .type = SNI_CONST_INT, .value.i = 3154096},
-    {.name = "REG_MACRO_0", .type = SNI_CONST_INT, .value.i = 3154136},
-    {.name = "REG_MACRO_1", .type = SNI_CONST_INT, .value.i = 3154140},
-    {.name = "REG_OUTBITS", .type = SNI_CONST_INT, .value.i = 3154012},
-    {.name = "REG_PCLK", .type = SNI_CONST_INT, .value.i = 3154032},
-    {.name = "REG_PCLK_POL", .type = SNI_CONST_INT, .value.i = 3154028},
-    {.name = "REG_PLAY", .type = SNI_CONST_INT, .value.i = 3154060},
-    {.name = "REG_PLAYBACK_FORMAT", .type = SNI_CONST_INT, .value.i = 3154116},
-    {.name = "REG_PLAYBACK_FREQ", .type = SNI_CONST_INT, .value.i = 3154112},
-    {.name = "REG_PLAYBACK_LENGTH", .type = SNI_CONST_INT, .value.i = 3154104},
-    {.name = "REG_PLAYBACK_LOOP", .type = SNI_CONST_INT, .value.i = 3154120},
-    {.name = "REG_PLAYBACK_PLAY", .type = SNI_CONST_INT, .value.i = 3154124},
-    {.name = "REG_PLAYBACK_READPTR", .type = SNI_CONST_INT, .value.i = 3154108},
-    {.name = "REG_PLAYBACK_START", .type = SNI_CONST_INT, .value.i = 3154100},
-    {.name = "REG_PWM_DUTY", .type = SNI_CONST_INT, .value.i = 3154132},
-    {.name = "REG_PWM_HZ", .type = SNI_CONST_INT, .value.i = 3154128},
-    {.name = "REG_ROTATE", .type = SNI_CONST_INT, .value.i = 3154008},
-    {.name = "REG_SOUND", .type = SNI_CONST_INT, .value.i = 3154056},
-    {.name = "REG_SWIZZLE", .type = SNI_CONST_INT, .value.i = 3154020},
-    {.name = "REG_TAG", .type = SNI_CONST_INT, .value.i = 3154044},
-    {.name = "REG_TAG_X", .type = SNI_CONST_INT, .value.i = 3154036},
-    {.name = "REG_TAG_Y", .type = SNI_CONST_INT, .value.i = 3154040},
-    {.name = "REG_TOUCH_ADC_MODE", .type = SNI_CONST_INT, .value.i = 3154184},
-    {.name = "REG_TOUCH_CHARGE", .type = SNI_CONST_INT, .value.i = 3154188},
-    {.name = "REG_TOUCH_CONFIG", .type = SNI_CONST_INT, .value.i = 3154280},
-    {.name = "REG_TOUCH_DIRECT_XY", .type = SNI_CONST_INT, .value.i = 3154316},
-    {.name = "REG_TOUCH_DIRECT_Z1Z2", .type = SNI_CONST_INT, .value.i = 3154320},
-    {.name = "REG_TOUCH_MODE", .type = SNI_CONST_INT, .value.i = 3154180},
-    {.name = "REG_TOUCH_OVERSAMPLE", .type = SNI_CONST_INT, .value.i = 3154196},
-    {.name = "REG_TOUCH_RAW_XY", .type = SNI_CONST_INT, .value.i = 3154204},
-    {.name = "REG_TOUCH_RZ", .type = SNI_CONST_INT, .value.i = 3154208},
-    {.name = "REG_TOUCH_RZTHRESH", .type = SNI_CONST_INT, .value.i = 3154200},
-    {.name = "REG_TOUCH_SCREEN_XY", .type = SNI_CONST_INT, .value.i = 3154212},
-    {.name = "REG_TOUCH_SETTLE", .type = SNI_CONST_INT, .value.i = 3154192},
-    {.name = "REG_TOUCH_TAG", .type = SNI_CONST_INT, .value.i = 3154220},
-    {.name = "REG_TOUCH_TAG_XY", .type = SNI_CONST_INT, .value.i = 3154216},
-    {.name = "REG_TOUCH_TRANSFORM_A", .type = SNI_CONST_INT, .value.i = 3154256},
-    {.name = "REG_TOUCH_TRANSFORM_B", .type = SNI_CONST_INT, .value.i = 3154260},
-    {.name = "REG_TOUCH_TRANSFORM_C", .type = SNI_CONST_INT, .value.i = 3154264},
-    {.name = "REG_TOUCH_TRANSFORM_D", .type = SNI_CONST_INT, .value.i = 3154268},
-    {.name = "REG_TOUCH_TRANSFORM_E", .type = SNI_CONST_INT, .value.i = 3154272},
-    {.name = "REG_TOUCH_TRANSFORM_F", .type = SNI_CONST_INT, .value.i = 3154276},
-    {.name = "REG_TRIM", .type = SNI_CONST_INT, .value.i = 3154304},
-    {.name = "REG_VCYCLE", .type = SNI_CONST_INT, .value.i = 3153984},
-    {.name = "REG_VOFFSET", .type = SNI_CONST_INT, .value.i = 3153988},
-    {.name = "REG_VOL_PB", .type = SNI_CONST_INT, .value.i = 3154048},
-    {.name = "REG_VOL_SOUND", .type = SNI_CONST_INT, .value.i = 3154052},
-    {.name = "REG_VSIZE", .type = SNI_CONST_INT, .value.i = 3153992},
-    {.name = "REG_VSYNC0", .type = SNI_CONST_INT, .value.i = 3153996},
-    {.name = "REG_VSYNC1", .type = SNI_CONST_INT, .value.i = 3154000},
+    {.name = "RADIUS_CIRCLE", .type = SNI_CONST_INT, .value.i = 32767},
     {.name = "RESULT_INVALID", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "RESULT_OK", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "ROLLER_MODE_INFINITE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "ROLLER_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "SCALE_LABEL_ENABLED_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ENABLED_DEFAULT},
-    {.name = "SCALE_LABEL_ROTATE_KEEP_UPRIGHT", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ROTATE_KEEP_UPRIGHT},
-    {.name = "SCALE_LABEL_ROTATE_MATCH_TICKS", .type = SNI_CONST_INT, .value.i = LV_SCALE_LABEL_ROTATE_MATCH_TICKS},
-    {.name = "SCALE_MAJOR_TICK_EVERY_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_MAJOR_TICK_EVERY_DEFAULT},
+    {.name = "ROTATION_0", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "ROTATION_180", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "ROTATION_270", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "ROTATION_90", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "ROTATION_DIR_CCW", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "ROTATION_DIR_CW", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "SATURDAY_STR", .type = SNI_CONST_STRING, .value.s = "Sa"},
+    {.name = "SCALE_LABEL_ENABLED_DEFAULT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "SCALE_LABEL_ROTATE_KEEP_UPRIGHT", .type = SNI_CONST_INT, .value.i = 524288},
+    {.name = "SCALE_LABEL_ROTATE_MATCH_TICKS", .type = SNI_CONST_INT, .value.i = 1048576},
+    {.name = "SCALE_MAJOR_TICK_EVERY_DEFAULT", .type = SNI_CONST_INT, .value.i = 5},
     {.name = "SCALE_MODE_HORIZONTAL_BOTTOM", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SCALE_MODE_HORIZONTAL_TOP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SCALE_MODE_LAST", .type = SNI_CONST_INT, .value.i = 17},
@@ -32630,9 +31531,9 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SCALE_MODE_ROUND_OUTER", .type = SNI_CONST_INT, .value.i = 16},
     {.name = "SCALE_MODE_VERTICAL_LEFT", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SCALE_MODE_VERTICAL_RIGHT", .type = SNI_CONST_INT, .value.i = 4},
-    {.name = "SCALE_NONE", .type = SNI_CONST_INT, .value.i = LV_SCALE_NONE},
-    {.name = "SCALE_ROTATION_ANGLE_MASK", .type = SNI_CONST_INT, .value.i = LV_SCALE_ROTATION_ANGLE_MASK},
-    {.name = "SCALE_TOTAL_TICK_COUNT_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_SCALE_TOTAL_TICK_COUNT_DEFAULT},
+    {.name = "SCALE_NONE", .type = SNI_CONST_INT, .value.i = 256},
+    {.name = "SCALE_ROTATION_ANGLE_MASK", .type = SNI_CONST_INT, .value.i = 524287},
+    {.name = "SCALE_TOTAL_TICK_COUNT_DEFAULT", .type = SNI_CONST_INT, .value.i = 11},
     {.name = "SCREEN_LOAD_ANIM_FADE_IN", .type = SNI_CONST_INT, .value.i = 9},
     {.name = "SCREEN_LOAD_ANIM_FADE_ON", .type = SNI_CONST_INT, .value.i = 9},
     {.name = "SCREEN_LOAD_ANIM_FADE_OUT", .type = SNI_CONST_INT, .value.i = 10},
@@ -32660,13 +31561,10 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SDL_BACKEND_EGL", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SDL_BACKEND_SW", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SDL_BACKEND_TEXTURE", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "SDL_BUF_COUNT", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "SDL_FULLSCREEN", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "SDL_INCLUDE_PATH", .type = SNI_CONST_STRING, .value.s = "SDL2/SDL.h"},
     {.name = "SDL_MOUSEWHEEL_MODE_CROWN", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SDL_MOUSEWHEEL_MODE_ENCODER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SDL_USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "SIZE_CONTENT", .type = SNI_CONST_INT, .value.i = LV_SIZE_CONTENT},
+    {.name = "SEPTEMBER_STR", .type = SNI_CONST_STRING, .value.s = "September"},
     {.name = "SLIDER_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SLIDER_MODE_RANGE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SLIDER_MODE_SYMMETRICAL", .type = SNI_CONST_INT, .value.i = 1},
@@ -32681,9 +31579,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SPAN_OVERFLOW_ELLIPSIS", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SPAN_OVERFLOW_LAST", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SPINBOX_MAX_DIGIT_COUNT", .type = SNI_CONST_INT, .value.i = 10},
-    {.name = "SPI_WIDTH_DIO", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "SPI_WIDTH_QIO", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "SPI_WIDTH_SIO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STATE_ALT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "STATE_ANY", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "STATE_CHECKED", .type = SNI_CONST_INT, .value.i = 4},
@@ -32704,7 +31599,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STDLIB_CUSTOM", .type = SNI_CONST_INT, .value.i = 255},
     {.name = "STDLIB_MICROPYTHON", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "STDLIB_RTTHREAD", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "STRIDE_AUTO", .type = SNI_CONST_INT, .value.i = LV_STRIDE_AUTO},
+    {.name = "STRIDE_AUTO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "STYLE_ALIGN", .type = SNI_CONST_INT, .value.i = 18},
     {.name = "STYLE_ANIM", .type = SNI_CONST_INT, .value.i = 116},
     {.name = "STYLE_ANIM_DURATION", .type = SNI_CONST_INT, .value.i = 117},
@@ -32857,6 +31752,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SUBJECT_TYPE_NONE", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "SUBJECT_TYPE_POINTER", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "SUBJECT_TYPE_STRING", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "SUNDAY_STR", .type = SNI_CONST_STRING, .value.s = "Su"},
     {.name = "SWITCH_KNOB_EXT_AREA_CORRECTION", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "SWITCH_ORIENTATION_AUTO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "SWITCH_ORIENTATION_HORIZONTAL", .type = SNI_CONST_INT, .value.i = 1},
@@ -32933,8 +31829,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "TABLE_CELL_CTRL_MERGE_RIGHT", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "TABLE_CELL_CTRL_NONE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "TABLE_CELL_CTRL_TEXT_CROP", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "TABLE_CELL_NONE", .type = SNI_CONST_INT, .value.i = LV_TABLE_CELL_NONE},
-    {.name = "TEXTAREA_CURSOR_LAST", .type = SNI_CONST_INT, .value.i = LV_TEXTAREA_CURSOR_LAST},
+    {.name = "TABLE_CELL_NONE", .type = SNI_CONST_INT, .value.i = 65535},
     {.name = "TEXT_ALIGN_AUTO", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "TEXT_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "TEXT_ALIGN_LEFT", .type = SNI_CONST_INT, .value.i = 1},
@@ -32952,22 +31847,51 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "TEXT_LEADING_TRIM_LOWER", .type = SNI_CONST_INT, .value.i = 4},
     {.name = "TEXT_LEADING_TRIM_LOWER_BASELINE", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "TEXT_LEADING_TRIM_NONE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "THURSDAY_STR", .type = SNI_CONST_STRING, .value.s = "Th"},
+    {.name = "TINY_TTF_CACHE_KERNING_CNT", .type = SNI_CONST_INT, .value.i = 256},
     {.name = "TRIGO_SHIFT", .type = SNI_CONST_INT, .value.i = 15},
     {.name = "TRIGO_SIN_MAX", .type = SNI_CONST_INT, .value.i = 32768},
-    {.name = "TXT_ENC_ASCII", .type = SNI_CONST_INT, .value.i = 2},
-    {.name = "TXT_ENC_UTF8", .type = SNI_CONST_INT, .value.i = 1},
-    {.name = "TXT_LINE_BREAK_LONG_POST_MIN_LEN", .type = SNI_CONST_INT, .value.i = 3},
-    {.name = "TXT_LINE_BREAK_LONG_PRE_MIN_LEN", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "TUESDAY_STR", .type = SNI_CONST_STRING, .value.s = "Tu"},
+    {.name = "TXT_COLOR_CMD", .type = SNI_CONST_STRING, .value.s = "#"},
     {.name = "UEFI_USE_MEMORY_SERVICES", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_3DTEXTURE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_ARCLABEL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "USE_CHECK_ARG", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "USE_CHECK_OBJ_CLASSTYPE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_CHECK_OBJ_PARENT_LINK", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_CHECK_OBJ_VALIDITY", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_COLOR_FILTER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_CUSTOM_FONT_DEFAULT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DEMO_EBIKE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_DEMO_GLTF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DEMO_HIGH_RES", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DEMO_SMARTWATCH", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_DMA2D", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_DRAW_DMA2D_INTERRUPT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_EVE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_G2D", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_NANOVG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_OPENGLES", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_DRAW_PXP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_EXT_DATA", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_FONT_MANAGER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_FS_FROGFS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_FS_UEFI", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_FT81X", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_G2D", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_G2D_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_GESTURE_RECOGNITION", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_GLFW", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_GLTF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_GSTREAMER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_LIBWEBP", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_LINUX_DRM_GBM_BUFFERS", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "USE_LOTTIE", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "USE_MEM_MONITOR", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_LOVYAN_GFX", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_LZ4", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NANOVG", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_NANOVG_TEST_HEADLESS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NEMA_GFX", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_NEMA_VG", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_NUTTX_CUSTOM_INIT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_NUTTX_INDEPENDENT_IMAGE_HEAP", .type = SNI_CONST_INT, .value.i = 0},
@@ -32977,23 +31901,67 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "USE_NUTTX_MOUSE_MOVE_STEP", .type = SNI_CONST_INT, .value.i = 1},
     {.name = "USE_NUTTX_TOUCHSCREEN", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_NUTTX_TRACE_FILE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NV3007", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_NXP_ELCDIF", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_OBJ_NAME", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_OPENGLES_DEBUG", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_OPENGLES_PBUFFER", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_PERF_MONITOR", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_PERF_MONITOR_LOG_MODE", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PPA", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_PPA_IMG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_PROFILER_BUILTIN", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_PROFILER_BUILTIN_POSIX", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_PXP_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_ROTATE_PXP", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_SIFLI_EPIC", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_SIFLI_EPIC_ASSERT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_ST_LTDC", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_SVG", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_SVG_ANIMATION", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_SVG_DEBUG", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_TEST", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_TEST_SCREENSHOT_COMPARE", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_TLSF", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "USE_TRANSLATION", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "USE_UEFI", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "USE_UEFI_INCLUDE", .type = SNI_CONST_STRING, .value.s = "myefi.h"},
     {.name = "USE_VG_LITE_DRIVER", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "USE_VG_LITE_THORVG", .type = SNI_CONST_INT, .value.i = 0},
-    {.name = "USE_WINDOWS", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_BLEND_ADDITIVE", .type = SNI_CONST_INT, .value.i = 7},
+    {.name = "VECTOR_BLEND_DST_IN", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "VECTOR_BLEND_DST_OVER", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_BLEND_MULTIPLY", .type = SNI_CONST_INT, .value.i = 5},
+    {.name = "VECTOR_BLEND_NONE", .type = SNI_CONST_INT, .value.i = 6},
+    {.name = "VECTOR_BLEND_SCREEN", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "VECTOR_BLEND_SRC_IN", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_BLEND_SRC_OVER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_BLEND_SUBTRACTIVE", .type = SNI_CONST_INT, .value.i = 8},
+    {.name = "VECTOR_DRAW_STYLE_GRADIENT", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_DRAW_STYLE_PATTERN", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_DRAW_STYLE_SOLID", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_FILL_EVENODD", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_FILL_NONZERO", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_FILL_UNITS_OBJECT_BOUNDING_BOX", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_FILL_UNITS_USER_SPACE_ON_USE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_GRADIENT_SPREAD_PAD", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_GRADIENT_SPREAD_REFLECT", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_GRADIENT_SPREAD_REPEAT", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_GRADIENT_STYLE_LINEAR", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_GRADIENT_STYLE_RADIAL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_PATH_OP_CLOSE", .type = SNI_CONST_INT, .value.i = 4},
+    {.name = "VECTOR_PATH_OP_CUBIC_TO", .type = SNI_CONST_INT, .value.i = 3},
+    {.name = "VECTOR_PATH_OP_LINE_TO", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_PATH_OP_MOVE_TO", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_PATH_OP_QUAD_TO", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_PATH_QUALITY_HIGH", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_PATH_QUALITY_LOW", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_PATH_QUALITY_MEDIUM", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_STROKE_CAP_BUTT", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_STROKE_CAP_ROUND", .type = SNI_CONST_INT, .value.i = 2},
+    {.name = "VECTOR_STROKE_CAP_SQUARE", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_STROKE_JOIN_BEVEL", .type = SNI_CONST_INT, .value.i = 1},
+    {.name = "VECTOR_STROKE_JOIN_MITER", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "VECTOR_STROKE_JOIN_ROUND", .type = SNI_CONST_INT, .value.i = 2},
     {.name = "VG_LITE_BITMAP_FONT_CACHE_CNT", .type = SNI_CONST_INT, .value.i = 256},
     {.name = "VG_LITE_DISABLE_BLIT_RECT_OFFSET", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "VG_LITE_DISABLE_LINEAR_GRADIENT_EXT", .type = SNI_CONST_INT, .value.i = 0},
@@ -33020,11 +31988,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "WAYLAND_USE_DMABUF_PROTOCOL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "WAYLAND_USE_EGL", .type = SNI_CONST_INT, .value.i = 0},
     {.name = "WAYLAND_USE_G2D", .type = SNI_CONST_INT, .value.i = 0},
+    {.name = "WEDNESDAY_STR", .type = SNI_CONST_STRING, .value.s = "We"},
     {.name = "WIN_DEPRECATED_MSG",
      .type = SNI_CONST_STRING,
      .value.s =
          "lv_win is deprecated; build a window from a flex column instead. See the lv_example_flex_win example."},
-    {.name = "ZERO_MEM_SENTINEL", .type = SNI_CONST_INT, .value.i = -1582119980},
     {.name = "_LV_IMAGE_ALIGN_AUTO_TRANSFORM", .type = SNI_CONST_INT, .value.i = 10},
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
@@ -33312,7 +32280,9 @@ lv_buttonmatrix_set_one_checked
 lv_buttonmatrix_set_selected_button
 lv_calendar_create
 lv_calendar_get_btnmatrix
+lv_calendar_get_day_name
 lv_calendar_get_highlighted_dates_num
+lv_calendar_set_chinese_mode
 lv_calendar_set_day_names
 lv_calendar_set_highlighted_dates
 lv_calendar_set_month_shown

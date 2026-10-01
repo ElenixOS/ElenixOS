@@ -139,6 +139,19 @@ class ApiUse:
     status: ApiStatus = ApiStatus.REJECTED_UNRESOLVED
     reason: str = ""
     reason_code: str = ""
+    name: str | None = None
+    docstring: str = ""
+    js_type: str = "unknown"
+    js_check: str = ""
+    js2c_mode: str = "none"
+    js2c_expr: str | None = None
+    c2js_mode: str = "none"
+    c2js_expr: str | None = None
+    argument_mode: str = "value"
+    allow_null: bool = False
+    copy_back: bool = False
+    pointee_type: str | None = None
+    lifecycle_class: str = ""
 
 
 @dataclass
@@ -151,6 +164,61 @@ class ApiRecord:
     reason: str = ""
     reason_code: str = ""
     issues: list[dict[str, str]] = field(default_factory=list)
+    is_constructor: bool = False
+    docstring: str = ""
+    return_docstring: str = ""
+    native_call_name: str = ""
+    output_string: tuple[str, str, str] | None = None
+    result_owner: str | None = None
+    cleanup_parameters: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ApiExportRef:
+    function: str
+    special_binding: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiPropertyIR:
+    name: str
+    getter: ApiExportRef | None = None
+    setter: ApiExportRef | None = None
+
+
+@dataclass(frozen=True)
+class ApiConstantIR:
+    name: str
+    kind: str
+    value: str
+
+
+@dataclass
+class ApiClassIR:
+    name: str
+    c_type: str
+    configured_constructor: str | None
+    has_constructor: bool
+    constructor_binding: str | None
+    base: str | None
+    methods: list[ApiExportRef] = field(default_factory=list)
+    static_methods: list[ApiExportRef] = field(default_factory=list)
+    properties: list[ApiPropertyIR] = field(default_factory=list)
+    constants: list[ApiConstantIR] = field(default_factory=list)
+    extra_methods: list[tuple[str, str]] = field(default_factory=list)
+    extra_properties: list[tuple[str, str | None, str | None]] = field(default_factory=list)
+
+
+@dataclass
+class ResolvedApiSurface:
+    """Accepted-only API payload consumed by generated C renderers."""
+
+    apis: list[ApiRecord] = field(default_factory=list)
+    uses: list[ApiUse] = field(default_factory=list)
+    classes: list[ApiClassIR] = field(default_factory=list)
+    root_constants: list[ApiConstantIR] = field(default_factory=list)
+    event_assertions: list[tuple[str, str]] = field(default_factory=list)
+    names: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -164,6 +232,7 @@ class BindingIR:
     rejected_names: list[str] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
     output_texts: dict[str, str] = field(default_factory=dict)
+    api_surface: ResolvedApiSurface | None = None
 
 
 def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
@@ -231,6 +300,13 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                 "reason": api.reason,
                 "reason_code": api.reason_code,
                 "issues": api.issues,
+                "is_constructor": api.is_constructor,
+                "docstring": api.docstring,
+                "return_docstring": api.return_docstring,
+                "native_call_name": api.native_call_name,
+                "output_string": list(api.output_string) if api.output_string else None,
+                "result_owner": api.result_owner,
+                "cleanup_parameters": api.cleanup_parameters,
             }
             for api in sorted(ir.apis, key=lambda entry: (entry.name, entry.status.value))
         ],
@@ -249,7 +325,65 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                 "status": use.status.value,
                 "reason": use.reason,
                 "reason_code": use.reason_code,
+                "name": use.name,
+                "docstring": use.docstring,
+                "js_type": use.js_type,
+                "js_check": use.js_check,
+                "js_to_c": {"mode": use.js2c_mode, "helper": use.js2c_expr},
+                "c_to_js": {"mode": use.c2js_mode, "helper": use.c2js_expr},
+                "argument_mode": use.argument_mode,
+                "allow_null": use.allow_null,
+                "copy_back": use.copy_back,
+                "pointee_type": use.pointee_type,
+                "lifecycle_class": use.lifecycle_class,
             }
             for use in sorted(ir.uses, key=lambda entry: (entry.function, entry.position))
         ],
+        "api_surface": {
+            "names": ir.api_surface.names if ir.api_surface else [],
+            "classes": [
+                {
+                    "name": cls.name,
+                    "c_type": cls.c_type,
+                    "constructor": cls.configured_constructor,
+                    "has_constructor": cls.has_constructor,
+                    "constructor_binding": cls.constructor_binding,
+                    "base": cls.base,
+                    "methods": [
+                        {"function": ref.function, "special_binding": ref.special_binding}
+                        for ref in cls.methods
+                    ],
+                    "static_methods": [
+                        {"function": ref.function, "special_binding": ref.special_binding}
+                        for ref in cls.static_methods
+                    ],
+                    "properties": [
+                        {
+                            "name": prop.name,
+                            "getter": None if prop.getter is None else {
+                                "function": prop.getter.function,
+                                "special_binding": prop.getter.special_binding,
+                            },
+                            "setter": None if prop.setter is None else {
+                                "function": prop.setter.function,
+                                "special_binding": prop.setter.special_binding,
+                            },
+                        }
+                        for prop in cls.properties
+                    ],
+                    "constants": [
+                        {"name": value.name, "kind": value.kind, "value": value.value}
+                        for value in cls.constants
+                    ],
+                    "extra_methods": [list(value) for value in cls.extra_methods],
+                    "extra_properties": [list(value) for value in cls.extra_properties],
+                }
+                for cls in (ir.api_surface.classes if ir.api_surface else [])
+            ],
+            "root_constants": [
+                {"name": value.name, "kind": value.kind, "value": value.value}
+                for value in (ir.api_surface.root_constants if ir.api_surface else [])
+            ],
+            "event_assertions": [list(item) for item in (ir.api_surface.event_assertions if ir.api_surface else [])],
+        },
     }

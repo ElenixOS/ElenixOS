@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .ir import ApiRecord, ApiStatus, ApiUse, BindingIR, CCategory, CUseSite, Diagnostic, Representation, Severity, TypeInfo
+from .ir import ApiClassIR, ApiRecord, ApiStatus, ApiUse, BindingIR, CCategory, CUseSite, Diagnostic, Representation, ResolvedApiSurface, Severity, TypeInfo
 from .lvgl_model import BUILTIN_C_TYPES, LVGLModel, parse_type_node
 from .selection import SelectionResult
 
@@ -221,6 +221,7 @@ class TypeResolver:
         for api_name in sorted(api_map):
             selected = api_map[api_name]
             is_special = selected.special_binding is not None
+            override = self.config.get("function_overrides", {}).get(api_name, {})
             is_special_property_only = (
                 api_name in special_property_functions
                 and set(selected.selection_kinds) <= {"property_getter", "property_setter"}
@@ -228,7 +229,16 @@ class TypeResolver:
             uses: list[ApiUse] = []
             raw_return = selected.item.get("type")
             return_node = parse_type_node(raw_return)
-            uses.append(self._resolve_use(api_name, "return", return_node.use_site, is_special or is_special_property_only, selected.is_constructor, selected.item))
+            uses.append(
+                self._resolve_use(
+                    api_name,
+                    "return",
+                    return_node.use_site,
+                    is_special or is_special_property_only,
+                    selected.is_constructor,
+                    selected.item,
+                )
+            )
             args = selected.item.get("args", [])
             if isinstance(args, list):
                 for index, arg in enumerate(args):
@@ -237,7 +247,18 @@ class TypeResolver:
                     node = parse_type_node(arg.get("type"))
                     if node.use_site.base_name == "void" and node.use_site.pointer_depth == 0 and not node.use_site.array_shape and not arg.get("name"):
                         continue
-                    uses.append(self._resolve_use(api_name, f"parameter:{index}:{arg.get('name') or f'arg{index}'}", node.use_site, is_special or is_special_property_only, selected.is_constructor, selected.item))
+                    arg_name = str(arg.get("name") or f"arg{index}")
+                    use = self._resolve_use(
+                        api_name,
+                        f"parameter:{index}:{arg_name}",
+                        node.use_site,
+                        is_special or is_special_property_only,
+                        selected.is_constructor,
+                        selected.item,
+                    )
+                    use.name = arg_name
+                    use.docstring = str(arg.get("docstring") or "").strip()
+                    uses.append(use)
 
             statuses = {use.status for use in uses}
             failures = [use for use in uses if use.status not in {ApiStatus.ACCEPTED_GENERIC, ApiStatus.ACCEPTED_SPECIAL}]
@@ -260,6 +281,48 @@ class TypeResolver:
                 status = ApiStatus.ACCEPTED_GENERIC
                 reason = ""
                 reason_code = ""
+
+            if selected.is_constructor and not is_special:
+                for use in uses[1:]:
+                    if use.sni_type == "SNI_H_LV_OBJ" and use.use_site.pointer_depth == 1:
+                        use.argument_mode = "parent_handle"
+                        use.allow_null = False
+
+            return_use = uses[0]
+            parameters = uses[1:]
+            result_owner = None
+            if return_use.lifecycle_class == "sub_resource":
+                if "method" in selected.selection_kinds:
+                    result_owner = "this"
+                elif "static_method" in selected.selection_kinds:
+                    parent = next((use.name for use in parameters if use.sni_type == "SNI_H_LV_OBJ"), None)
+                    result_owner = parent
+
+            cleanup_parameters = []
+            if api_name.startswith("lv_chart_remove_"):
+                cleanup_parameters = [
+                    use.name for use in parameters
+                    if use.name and use.lifecycle_class == "sub_resource"
+                ]
+
+            output_string_config = override.get("output_string")
+            output_string = None
+            if isinstance(output_string_config, dict):
+                output_string = (
+                    str(output_string_config.get("buffer_arg", "")),
+                    str(output_string_config.get("size_arg", "")),
+                    str(output_string_config.get("js_buffer_arg", "placeholder")),
+                )
+            special_binding = selected.special_binding
+            if is_special_property_only and special_binding is None:
+                special_binding = next(
+                    (
+                        item["binding"]
+                        for item in self.config.get("special_bindings", {}).get("properties", [])
+                        if item.get("function") == api_name
+                    ),
+                    None,
+                )
             issues = [
                 {
                     "position": use.position,
@@ -276,10 +339,19 @@ class TypeResolver:
                     status,
                     selected.class_name,
                     ",".join(selected.selection_kinds),
-                    selected.special_binding,
+                    special_binding,
                     reason,
                     reason_code,
                     issues,
+                    is_constructor=selected.is_constructor,
+                    docstring=str(selected.item.get("docstring") or "").strip(),
+                    return_docstring=str((selected.item.get("type") or {}).get("docstring") or "").strip()
+                    if isinstance(selected.item.get("type"), dict)
+                    else "",
+                    native_call_name=str(override.get("call", api_name)),
+                    output_string=output_string,
+                    result_owner=result_owner,
+                    cleanup_parameters=cleanup_parameters,
                 )
             )
             ir.uses.extend(uses)
@@ -303,6 +375,20 @@ class TypeResolver:
                 self.resolve_type(configured_name)
 
         ir.types = self.types
+        accepted = {
+            api.name: api
+            for api in ir.apis
+            if api.status in {ApiStatus.ACCEPTED_GENERIC, ApiStatus.ACCEPTED_SPECIAL}
+        }
+        accepted_names = sorted(accepted)
+        ir.api_surface = ResolvedApiSurface(
+            apis=[accepted[name] for name in accepted_names],
+            uses=[use for use in ir.uses if use.function in accepted],
+            classes=self._resolved_classes(accepted),
+            root_constants=list(self.selection.root_constants),
+            event_assertions=list(self.selection.event_assertions),
+            names=accepted_names,
+        )
         ir.selected_names = sorted(set(self.selection.candidate_names) | set(api_map))
         ir.accepted_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.ACCEPTED_GENERIC)
         ir.special_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.ACCEPTED_SPECIAL)
@@ -372,7 +458,11 @@ class TypeResolver:
             refs.append(function)
 
         if info.canonical_name == "void" and use.pointer_depth == 0 and not use.array_shape:
-            return ApiUse(function, position, use, conversion="void", status=ApiStatus.ACCEPTED_SPECIAL if special else ApiStatus.ACCEPTED_GENERIC, reason="void has no JavaScript value" if not special else "configured special wrapper owns this signature")
+            result = ApiUse(function, position, use, conversion="void", status=ApiStatus.ACCEPTED_SPECIAL if special else ApiStatus.ACCEPTED_GENERIC, reason="void has no JavaScript value" if not special else "configured special wrapper owns this signature")
+            if not special:
+                result.js_type = "undefined"
+                result.c2js_mode = "void"
+            return result
 
         if special and info.representation == Representation.UNKNOWN:
             return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNRESOLVED, reason=info.rejection_reason, reason_code="UNRESOLVED_TYPE")
@@ -390,7 +480,7 @@ class TypeResolver:
         if use.array_shape:
             conversion = self.config.get("special_conversions", {}).get(use.spelling)
             if conversion:
-                return ApiUse(function, position, use, conversion=conversion, status=ApiStatus.ACCEPTED_GENERIC, reason="explicit use-site conversion")
+                return self._accepted_use(function, position, use, info, conversion_id=conversion, conversion="explicit", is_constructor=is_constructor)
             return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason=f"array shape {list(use.array_shape)} requires a configured special binding", reason_code="SPECIAL_BINDING_REQUIRED")
         if use.is_function_pointer or info.category == CCategory.FUNCTION_POINTER:
             return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="callback requires a configured special binding", reason_code="SPECIAL_BINDING_REQUIRED")
@@ -416,7 +506,7 @@ class TypeResolver:
             if use.pointer_depth:
                 conversion_id = self.config.get("special_conversions", {}).get(use.spelling)
                 if conversion_id:
-                    return ApiUse(function, position, use, sni_type=conversion_id, conversion="explicit", status=ApiStatus.ACCEPTED_GENERIC, reason="explicit use-site conversion")
+                    return self._accepted_use(function, position, use, info, conversion_id=conversion_id, conversion="explicit", is_constructor=is_constructor)
                 if canonical == "char" and use.pointer_depth == 1:
                     sni_type, conversion = "SNI_T_STRING", "string"
                 else:
@@ -448,7 +538,129 @@ class TypeResolver:
             return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNRESOLVED, reason=f"no SNI primitive mapping for {canonical}", reason_code="NO_SNI_MAPPING")
         if use.pointer_depth and info.representation not in {Representation.VALUE_OBJECT, Representation.OBJECT_TREE_NODE, Representation.MANAGED_RESOURCE} and not (info.representation == Representation.PRIMITIVE and sni_type == "SNI_T_STRING"):
             return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="pointer form has no safe generic SNI representation", reason_code="SPECIAL_BINDING_REQUIRED")
-        return ApiUse(function, position, use, sni_type=sni_type, conversion=conversion, status=ApiStatus.ACCEPTED_GENERIC)
+        return self._accepted_use(function, position, use, info, conversion_id=sni_type, conversion=conversion, is_constructor=is_constructor)
+
+    def _accepted_use(
+        self,
+        function: str,
+        position: str,
+        use: CUseSite,
+        info: TypeInfo,
+        conversion_id: str | None,
+        conversion: str,
+        is_constructor: bool,
+    ) -> ApiUse:
+        """Freeze the Core's conversion decision into the resolved API-use IR."""
+        result = ApiUse(
+            function,
+            position,
+            use,
+            sni_type=conversion_id,
+            conversion=conversion,
+            status=ApiStatus.ACCEPTED_GENERIC,
+            lifecycle_class={
+                "pure_managed": "controlled_resource",
+                "tree_dependent": "sub_resource",
+                "hybrid": "hybrid",
+            }.get(info.resource_category or "", "tree_node" if info.representation == Representation.OBJECT_TREE_NODE else ""),
+        )
+        if conversion_id is None:
+            return result
+
+        result.js_type = self._js_type_for_sni(conversion_id, position == "return")
+        if conversion_id == "SNI_T_STRING":
+            result.js_check = "jerry_value_is_string"
+            result.js2c_mode = "string_fn"
+            result.js2c_expr = "sni_tb_js2c_string"
+            result.c2js_mode = "string"
+            result.c2js_expr = "sni_tb_c2js_string"
+        elif conversion_id == "SNI_T_BOOL":
+            result.js_check = "jerry_value_is_boolean"
+            result.js2c_mode = "macro"
+            result.js2c_expr = "sni_tb_js2c_boolean"
+            result.c2js_mode = "macro"
+            result.c2js_expr = "sni_tb_c2js_boolean"
+        elif conversion_id in {"SNI_T_DOUBLE", "SNI_T_FLOAT", "SNI_T_PTR"}:
+            result.js_check = "jerry_value_is_number"
+            result.js2c_mode = "bridge"
+            result.c2js_mode = "bridge"
+        elif conversion_id in {"SNI_T_INT8", "SNI_T_INT16", "SNI_T_INT32"}:
+            result.js_check = "jerry_value_is_number"
+            result.js2c_mode = "macro"
+            result.js2c_expr = "sni_tb_js2c_int32"
+            result.c2js_mode = "bridge"
+        elif conversion_id in {"SNI_T_UINT8", "SNI_T_UINT16", "SNI_T_UINT32"}:
+            result.js_check = "jerry_value_is_number"
+            result.js2c_mode = "macro"
+            result.js2c_expr = "sni_tb_js2c_uint32"
+            result.c2js_mode = "bridge"
+        else:
+            result.js_check = "" if conversion_id == "SNI_V_LV_COLOR" else "jerry_value_is_object"
+            result.js2c_mode = "bridge"
+            result.c2js_mode = "bridge"
+
+        if conversion_id.startswith("SNI_V_") and use.pointer_depth:
+            result.argument_mode = "value_pointer_output" if "_get_" in function and not use.is_const else "value_pointer"
+            result.copy_back = not use.is_const
+            result.pointee_type = use.base_name
+        if is_constructor and use.pointer_depth and (conversion_id.startswith("SNI_H_") or conversion_id == "SNI_T_PTR"):
+            result.allow_null = conversion_id != "SNI_H_LV_OBJ"
+        return result
+
+    @staticmethod
+    def _js_type_for_sni(sni_type: str, return_value: bool) -> str:
+        if sni_type == "SNI_T_STRING":
+            return "string"
+        if sni_type == "SNI_T_BOOL":
+            return "boolean"
+        if sni_type == "SNI_T_PTR":
+            return "number"
+        if sni_type in {
+            "SNI_T_UINT8", "SNI_T_INT8", "SNI_T_UINT16", "SNI_T_INT16",
+            "SNI_T_UINT32", "SNI_T_INT32", "SNI_T_DOUBLE", "SNI_T_FLOAT",
+        }:
+            return "number"
+        if sni_type == "SNI_V_LV_COLOR":
+            return "object" if return_value else "number"
+        if sni_type.startswith("SNI_H_") or sni_type.startswith("SNI_V_"):
+            return "object"
+        return "unknown"
+
+    def _resolved_classes(self, accepted: dict[str, ApiRecord]) -> list[ApiClassIR]:
+        """Copy the class surface selected by Core, retaining accepted members only."""
+        result: list[ApiClassIR] = []
+        for source in self.selection.render_classes:
+            constructor = source.configured_constructor
+            constructor_api = accepted.get(constructor or "")
+            if constructor_api is None:
+                constructor = None
+            constructor_binding = constructor_api.special_binding if constructor_api is not None else None
+            result.append(
+                ApiClassIR(
+                    name=source.name,
+                    c_type=source.c_type,
+                    configured_constructor=constructor,
+                    has_constructor=source.has_constructor,
+                    constructor_binding=constructor_binding if constructor else None,
+                    base=source.base,
+                    methods=[ref for ref in source.methods if ref.function in accepted],
+                    static_methods=[ref for ref in source.static_methods if ref.function in accepted],
+                    properties=[
+                        type(prop)(
+                            prop.name,
+                            prop.getter if prop.getter and prop.getter.function in accepted else None,
+                            prop.setter if prop.setter and prop.setter.function in accepted else None,
+                        )
+                        for prop in source.properties
+                        if (prop.getter and prop.getter.function in accepted)
+                        or (prop.setter and prop.setter.function in accepted)
+                    ],
+                    constants=list(source.constants),
+                    extra_methods=list(source.extra_methods),
+                    extra_properties=list(source.extra_properties),
+                )
+            )
+        return result
 
     def _has_object_parent(self, function_item: dict[str, Any]) -> bool:
         args = function_item.get("args", [])
@@ -471,55 +683,3 @@ class TypeResolver:
         probe_config["type_declarations"].pop(name, None)
         probe = TypeResolver(self.model, probe_config, self.selection)
         return probe.resolve_type(name).representation == Representation.VALUE_OBJECT
-
-
-def legacy_type_maps(ir: BindingIR, model: LVGLModel, config: dict[str, Any]) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """Adapt the typed resolver result to the mature wrapper emitter's narrow inputs."""
-    entries: dict[str, str] = {}
-    lifecycle: dict[str, str] = {}
-    sni_ids: dict[str, str] = {}
-    for info in ir.types.values():
-        name = info.name
-        canonical = info.canonical_name
-        if info.representation in {Representation.PRIMITIVE, Representation.ENUM}:
-            target = PRIMITIVE_SNI.get(canonical, "SNI_T_INT32")
-            entries[name] = {
-                "SNI_T_BOOL": "bool", "SNI_T_INT8": "int8", "SNI_T_UINT8": "uint8",
-                "SNI_T_INT16": "int16", "SNI_T_UINT16": "uint16", "SNI_T_INT32": "int",
-                "SNI_T_UINT32": "uint", "SNI_T_FLOAT": "float", "SNI_T_DOUBLE": "double",
-            }.get(target, "")
-            sni_ids[name] = target
-        elif info.representation == Representation.VALUE_OBJECT:
-            entries[name] = "value_object"
-            sni_ids[name] = _sni_name(canonical)
-        elif info.representation == Representation.OBJECT_TREE_NODE:
-            entries[name] = "handle_object"
-            sni_ids[name] = "SNI_H_LV_OBJ"
-            lifecycle[name] = "tree_node"
-        elif info.representation == Representation.MANAGED_RESOURCE:
-            entries[name] = "handle_object"
-            sni_ids[name] = "SNI_H_" + (canonical[:-2] if canonical.endswith("_t") else canonical).upper()
-            lifecycle[name] = {"pure_managed": "controlled_resource", "tree_dependent": "sub_resource", "hybrid": "hybrid"}.get(info.resource_category, "")
-        else:
-            entries[name] = ""
-        entries.setdefault(canonical, entries[name])
-        if name not in sni_ids and canonical in sni_ids:
-            sni_ids[name] = sni_ids[canonical]
-        if name not in lifecycle and canonical in lifecycle:
-            lifecycle[name] = lifecycle[canonical]
-
-    for use in ir.uses:
-        base = use.use_site.base_name
-        info = ir.types.get(base)
-        if not info:
-            continue
-        entries.setdefault(base, "value_object" if info.representation == Representation.VALUE_OBJECT else "handle_object" if info.representation in {Representation.OBJECT_TREE_NODE, Representation.MANAGED_RESOURCE} else "")
-        sni_id = use.sni_type or sni_ids.get(base)
-        if sni_id:
-            # Existing emitter uses the pointee spelling after stripping pointer stars and const.
-            entries[base] = entries.get(base, "")
-            sni_ids[base] = sni_id
-            sni_ids["const " + base] = sni_id
-            entries["const " + base] = entries[base]
-
-    return entries, lifecycle, sni_ids

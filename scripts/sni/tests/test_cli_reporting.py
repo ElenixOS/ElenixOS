@@ -60,6 +60,38 @@ class SNICommandReportingTests(unittest.TestCase):
                     self.assertTrue(all(item["total"] == expected_totals[command[0]] for item in result["progress"]))
                     self.assertEqual([item["index"] for item in result["progress"]], list(range(1, len(result["progress"]) + 1)))
 
+    def test_dump_ir_file_output_keeps_console_short_and_writes_full_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            for output_format in ("text", "json"):
+                with self.subTest(format=output_format):
+                    output_file = Path(folder) / f"sni-ir-{output_format}.json"
+                    process = run_cli(
+                        "dump-ir",
+                        "--output-file",
+                        str(output_file),
+                        "--quiet",
+                        "--format",
+                        output_format,
+                    )
+                    self.assertEqual(process.returncode, 0, process.stderr)
+                    self.assertEqual(process.stderr, "")
+                    self.assertTrue(output_file.is_file())
+                    snapshot = json.loads(output_file.read_text(encoding="utf-8"))
+                    self.assertIn("apis", snapshot)
+                    self.assertIn("types", snapshot)
+                    self.assertIn("uses", snapshot)
+                    self.assertIn("diagnostics", snapshot)
+                    self.assertEqual(len(snapshot["apis"]), 845)
+                    if output_format == "text":
+                        self.assertIn(str(output_file.resolve()), process.stdout)
+                        self.assertNotIn('"apis": [', process.stdout)
+                    else:
+                        response = json.loads(process.stdout)
+                        self.assertEqual(Path(response["result"]["file"]).resolve(), output_file.resolve())
+                        self.assertNotIn("ir", response["result"])
+                        self.assertEqual(len(response["progress"]), 9)
+                        self.assertTrue(all(item["total"] == 9 for item in response["progress"]))
+
     def test_category_and_api_type_drilldowns(self) -> None:
         blacklist = run_cli("analyze", "--category", "blacklist", "--quiet")
         self.assertEqual(blacklist.returncode, 0, blacklist.stderr)

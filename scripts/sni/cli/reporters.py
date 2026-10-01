@@ -340,6 +340,13 @@ class TerminalReporter(ProgressReporter):
             print("No new unresolved types to add.")
 
     def _report_dump_ir(self, result: CommandResult) -> None:
+        if result.result.get("file"):
+            print(
+                f"IR snapshot written to {result.result['file']} "
+                f"({result.result['size_bytes']} bytes; {result.result['api_count']} APIs, "
+                f"{result.result['type_count']} types)."
+            )
+            return
         snapshot = dict(result.result.get("ir", {}))
         snapshot["diagnostics"] = [item.to_dict() for item in result.diagnostics]
         print(json.dumps(snapshot, ensure_ascii=False, sort_keys=True, indent=2))

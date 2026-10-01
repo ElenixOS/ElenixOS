@@ -32,6 +32,7 @@ python3 ElenixOS/scripts/sni/generate_sni.py analyze
 python3 ElenixOS/scripts/sni/generate_sni.py analyze --format json
 python3 ElenixOS/scripts/sni/generate_sni.py validate
 python3 ElenixOS/scripts/sni/generate_sni.py dump-ir
+python3 ElenixOS/scripts/sni/generate_sni.py dump-ir --output-file sni-ir.json
 python3 ElenixOS/scripts/sni/generate_sni.py update-config
 python3 ElenixOS/scripts/sni/generate_sni.py generate
 ```
@@ -45,9 +46,9 @@ The API result status is independent of diagnostic severity:
 - `REJECTED_UNSUPPORTED_TYPE`, `REJECTED_SPECIAL_REQUIRED`, and `REJECTED_LIFECYCLE` explain why an API is not exported.
 - `REJECTED_UNRESOLVED` means the binding decision is missing and blocks validation and generation.
 
-The default analysis is summary-first. `--details` groups unsupported APIs by C type and shows special-required and lifecycle groups. Use `--category blacklist` to list intentional exclusions, `--api lv_timer_get_next` to inspect one API, or `--type lv_grad_dsc_t` to inspect a C type and its affected APIs. Shared output options are `--quiet`, `--verbose`, `--details`, `--format text|json`, and `--no-color`; they work before or after the subcommand. `NO_COLOR` is also honored.
+The default analysis is summary-first. `--details` groups unsupported APIs by C type and shows special-required and lifecycle groups. This is the main way to inspect Needs attention; use `--category unsupported`, `--category special-required`, `--category lifecycle`, or `--category unresolved` to narrow the group. Then use `--type TYPE` or `--api NAME` to inspect an individual entry. Blacklisted APIs are excluded from Needs attention; list them separately with `--category blacklist`. Shared output options are `--quiet`, `--verbose`, `--details`, `--format text|json`, and `--no-color`; they work before or after the subcommand. `NO_COLOR` is also honored.
 
-Every command supports `--format json`. Stdout is one JSON document with the command, success state, summary, progress events, structured diagnostics, and command result. JSON mode suppresses human progress, table markup, and colors. `dump-ir` keeps its full IR in `result.ir`.
+Every command supports `--format json`. Stdout is one JSON document with the command, success state, summary, progress events, structured diagnostics, and command result. JSON mode suppresses human progress, table markup, and colors. By default, `dump-ir` writes its full IR to the console (`result.ir` in JSON mode). Use `dump-ir --output-file PATH` to write the complete JSON snapshot to a file; the console then reports only the file path, size, and entry counts. With `--format json`, stdout contains the concise command envelope and output-file metadata while the file contains the full snapshot.
 
 To regenerate metadata from the current project configuration, use `generate --refresh-lvgl-json`; it invokes LVGL's `gen_json.py` with the repository's `lv_conf.h` and writes the metadata under `build/lvgl-api/`. The LVGL generator's Doxygen helper and Python requirements must be installed for this refresh step. Existing metadata can be passed with `--lvgl-json PATH`.
 

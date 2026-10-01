@@ -81,6 +81,14 @@ def build_parser() -> argparse.ArgumentParser:
     drilldown = analyze.add_mutually_exclusive_group()
     drilldown.add_argument("--api", help="Show one selected API and its signature resolution")
     drilldown.add_argument("--type", dest="type_name", help="Show one resolved C type and its affected APIs")
+    subparsers.choices["dump-ir"].add_argument(
+        "--output-file",
+        "--output",
+        "-o",
+        dest="output_file",
+        type=Path,
+        help="Write the complete IR snapshot to this JSON file instead of the console",
+    )
     generate = subparsers.add_parser("generate")
     add_command_arguments(generate, allow_refresh=True)
     return parser
@@ -157,6 +165,13 @@ def _create_reporter(args: argparse.Namespace, stages: list[str]) -> ProgressRep
     return TerminalReporter(stages, quiet=args.quiet, verbose=args.verbose, no_color=args.no_color)
 
 
+def _stage_plan(args: argparse.Namespace) -> list[str]:
+    stages = list(STAGE_PLANS[args.command])
+    if args.command == "dump-ir" and args.output_file:
+        stages.append("Writing IR snapshot")
+    return stages
+
+
 def _failure_result(command: str, phase: str, error: str, diagnostics: list[Diagnostic] | None = None) -> CommandResult:
     items = diagnostics or [
         Diagnostic(
@@ -184,7 +199,7 @@ def run(args: argparse.Namespace) -> int:
     paths = resolved_paths(args)
     if getattr(args, "refresh_lvgl_json", False) and not args.lvgl_json:
         paths["lvgl_json"] = paths["repo_root"] / "build" / "lvgl-api" / "lvgl.json"
-    reporter = _create_reporter(args, STAGE_PLANS[args.command])
+    reporter = _create_reporter(args, _stage_plan(args))
     try:
         _validate_category(args.command, args.category)
         pipeline = build_pipeline(
@@ -210,8 +225,27 @@ def run(args: argparse.Namespace) -> int:
             )
         elif args.command == "dump-ir":
             with reporter.stage("Preparing IR snapshot"):
-                ir_snapshot = analysis
-            command_result = CommandResult("dump-ir", True, summary, list(pipeline.ir.diagnostics), {"ir": ir_snapshot})
+                ir_snapshot = dict(analysis)
+                ir_snapshot["diagnostics"] = [item.to_dict() for item in pipeline.ir.diagnostics]
+            if args.output_file:
+                output_file = args.output_file.expanduser().resolve()
+                with reporter.stage("Writing IR snapshot"):
+                    content = json.dumps(ir_snapshot, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+                    write_outputs_atomically({output_file: content})
+                command_result = CommandResult(
+                    "dump-ir",
+                    True,
+                    summary,
+                    list(pipeline.ir.diagnostics),
+                    {
+                        "file": str(output_file),
+                        "size_bytes": len(content.encode("utf-8")),
+                        "api_count": len(ir_snapshot["apis"]),
+                        "type_count": len(ir_snapshot["types"]),
+                    },
+                )
+            else:
+                command_result = CommandResult("dump-ir", True, summary, list(pipeline.ir.diagnostics), {"ir": ir_snapshot})
         elif args.command == "validate":
             valid = not has_errors(pipeline.ir.diagnostics)
             command_result = CommandResult(

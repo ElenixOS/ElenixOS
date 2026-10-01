@@ -10,7 +10,6 @@ from __future__ import annotations
 import fnmatch
 import json
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -56,6 +55,7 @@ SPECIAL_EXTRA_PROPERTIES: Dict[str, List[Tuple[str, Optional[str], Optional[str]
 SPECIAL_EXTRA_METHODS: Dict[str, List[Tuple[str, str]]] = {}
 SNI_TYPE_ID_BY_C_NAME: Dict[str, str] = {}
 VERBOSE = False
+EMITTER_DIAGNOSTICS: List[str] = []
 
 
 def configure_from_bindings(config: Dict[str, Any], type_ids: Dict[str, str]) -> None:
@@ -165,12 +165,12 @@ def should_skip_manual_signature_bridges(func_name: str, context: str) -> bool:
 
 def vlog(msg: str) -> None:
     if VERBOSE:
-        print(msg, file=sys.stderr)
+        EMITTER_DIAGNOSTICS.append(msg)
 
 
 def velog(msg: str) -> None:
     if VERBOSE:
-        print(msg, file=sys.stderr)
+        EMITTER_DIAGNOSTICS.append(msg)
 
 
 def normalize_c_type(type_info: Optional[Dict[str, Any]]) -> str:
@@ -2085,8 +2085,9 @@ def render_api_from_data(
     api_surface_names: List[str],
     verbose: bool = False,
 ) -> Tuple[str, Dict[str, Any]]:
-    global VERBOSE, SNI_TYPE_ID_BY_C_NAME
+    global VERBOSE, SNI_TYPE_ID_BY_C_NAME, EMITTER_DIAGNOSTICS
     VERBOSE = verbose
+    EMITTER_DIAGNOSTICS = []
     SNI_TYPE_ID_BY_C_NAME = dict(type_id_by_name)
 
     lvgl_version = load_lvgl_version(lvgl_version_header)
@@ -2325,4 +2326,5 @@ def render_api_from_data(
         "static_method_count": sum(map(len, class_static_methods.values())),
         "property_count": sum(map(len, class_properties.values())),
         "global_constant_count": len(root_constants),
+        "diagnostics": list(EMITTER_DIAGNOSTICS),
     }

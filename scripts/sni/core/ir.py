@@ -29,11 +29,67 @@ class Representation(str, Enum):
     REJECTED = "rejected"
 
 
+class Severity(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
 class ApiStatus(str, Enum):
-    CANDIDATE = "candidate"
-    ACCEPTED = "accepted"
-    SPECIAL = "special"
-    REJECTED = "rejected"
+    ACCEPTED_GENERIC = "ACCEPTED_GENERIC"
+    ACCEPTED_SPECIAL = "ACCEPTED_SPECIAL"
+    EXCLUDED_BLACKLIST = "EXCLUDED_BLACKLIST"
+    REJECTED_UNSUPPORTED_TYPE = "REJECTED_UNSUPPORTED_TYPE"
+    REJECTED_SPECIAL_REQUIRED = "REJECTED_SPECIAL_REQUIRED"
+    REJECTED_LIFECYCLE = "REJECTED_LIFECYCLE"
+    REJECTED_UNRESOLVED = "REJECTED_UNRESOLVED"
+
+
+def type_status(representation: Representation) -> str:
+    if representation == Representation.UNKNOWN:
+        return ApiStatus.REJECTED_UNRESOLVED.value
+    if representation == Representation.REJECTED:
+        return ApiStatus.REJECTED_UNSUPPORTED_TYPE.value
+    if representation == Representation.SPECIAL_REQUIRED:
+        return ApiStatus.REJECTED_SPECIAL_REQUIRED.value
+    return "RESOLVED"
+
+
+@dataclass(frozen=True)
+class Diagnostic:
+    """One structured issue, independent of terminal or machine presentation."""
+
+    code: str
+    severity: Severity
+    category: str
+    reason: str
+    status: str | None = None
+    subject_kind: str | None = None
+    subject: str | None = None
+    api: str | None = None
+    type_name: str | None = None
+    parameter_position: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
+    references: tuple[str, ...] = ()
+    suggested_action: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "code": self.code,
+            "category": self.category,
+            "status": self.status,
+            "severity": self.severity.value,
+            "subject_kind": self.subject_kind,
+            "subject": self.subject,
+            "api": self.api,
+            "type": self.type_name,
+            "parameter_position": self.parameter_position,
+            "reason_code": self.code,
+            "reason": self.reason,
+            "details": self.details,
+            "references": list(self.references),
+            "suggested_action": self.suggested_action,
+        }
 
 
 @dataclass(frozen=True)
@@ -80,8 +136,9 @@ class ApiUse:
     use_site: CUseSite
     sni_type: Optional[str] = None
     conversion: str = "unresolved"
-    status: ApiStatus = ApiStatus.CANDIDATE
+    status: ApiStatus = ApiStatus.REJECTED_UNRESOLVED
     reason: str = ""
+    reason_code: str = ""
 
 
 @dataclass
@@ -92,6 +149,8 @@ class ApiRecord:
     selection_kind: str = ""
     special_binding: Optional[str] = None
     reason: str = ""
+    reason_code: str = ""
+    issues: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -103,12 +162,16 @@ class BindingIR:
     accepted_names: list[str] = field(default_factory=list)
     special_names: list[str] = field(default_factory=list)
     rejected_names: list[str] = field(default_factory=list)
-    diagnostics: list[dict[str, Any]] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
     output_texts: dict[str, str] = field(default_factory=dict)
 
 
 def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
     """Return stable JSON-compatible diagnostics without copying the C AST."""
+    api_status_counts = {
+        status.value: sum(api.status == status for api in ir.apis)
+        for status in ApiStatus
+    }
     types: list[dict[str, Any]] = []
     for name in sorted(ir.types):
         item = ir.types[name]
@@ -132,6 +195,7 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                     for field in item.fields
                 ],
                 "sni_representation": item.representation.value,
+                "status": type_status(item.representation),
                 "resolution_source": item.resolution_source,
                 "inference_reason": item.inference_reason,
                 "rejection_reason": item.rejection_reason,
@@ -144,8 +208,18 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
             "selected_api_count": len(ir.selected_names),
             "accepted_api_count": len(ir.accepted_names),
             "special_api_count": len(ir.special_names),
-            "rejected_api_count": len(ir.rejected_names),
-            "candidate_api_count": sum(api.status == ApiStatus.CANDIDATE for api in ir.apis),
+            "excluded_api_count": api_status_counts[ApiStatus.EXCLUDED_BLACKLIST.value],
+            "rejected_api_count": sum(
+                api_status_counts[status.value]
+                for status in (
+                    ApiStatus.REJECTED_UNSUPPORTED_TYPE,
+                    ApiStatus.REJECTED_SPECIAL_REQUIRED,
+                    ApiStatus.REJECTED_LIFECYCLE,
+                    ApiStatus.REJECTED_UNRESOLVED,
+                )
+            ),
+            "candidate_api_count": len(ir.selected_names),
+            "api_status_counts": api_status_counts,
         },
         "apis": [
             {
@@ -155,6 +229,8 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                 "selection_kind": api.selection_kind,
                 "special_binding": api.special_binding,
                 "reason": api.reason,
+                "reason_code": api.reason_code,
+                "issues": api.issues,
             }
             for api in sorted(ir.apis, key=lambda entry: (entry.name, entry.status.value))
         ],
@@ -172,11 +248,8 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                 "sni_type": use.sni_type,
                 "status": use.status.value,
                 "reason": use.reason,
+                "reason_code": use.reason_code,
             }
             for use in sorted(ir.uses, key=lambda entry: (entry.function, entry.position))
         ],
-        "diagnostics": sorted(
-            ir.diagnostics,
-            key=lambda item: (item.get("severity", ""), item.get("code", ""), item.get("message", "")),
-        ),
     }

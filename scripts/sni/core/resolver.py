@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .ir import ApiRecord, ApiStatus, ApiUse, BindingIR, CCategory, CUseSite, Representation, TypeInfo
+from .ir import ApiRecord, ApiStatus, ApiUse, BindingIR, CCategory, CUseSite, Diagnostic, Representation, Severity, TypeInfo
 from .lvgl_model import BUILTIN_C_TYPES, LVGLModel, parse_type_node
 from .selection import SelectionResult
 
@@ -153,25 +153,28 @@ class TypeResolver:
             for field in info.fields:
                 if field.unsupported_reason:
                     eligible = False
-                    reasons.append(f"{field.unsupported_reason} member {field.name}")
+                    if field.unsupported_reason == "inline struct/union":
+                        reasons.append(f"inline struct/union member `{field.name}`")
+                    else:
+                        reasons.append(f"member `{field.name}`: {field.unsupported_reason}")
                     continue
                 child = self.resolve_type(field.type_name)
                 info.dependencies.append(child.name)
                 if field.pointer_depth:
                     eligible = False
-                    reasons.append(f"pointer member {field.name}")
+                    reasons.append(f"pointer member `{field.name}`")
                 elif field.is_function_pointer:
                     eligible = False
-                    reasons.append(f"callback member {field.name}")
+                    reasons.append(f"callback member `{field.name}`")
                 elif field.array_shape:
                     eligible = False
-                    reasons.append(f"array member {field.name}")
+                    reasons.append(f"array {list(field.array_shape)} member `{field.name}`")
                 elif field.bitsize is not None:
                     eligible = False
-                    reasons.append(f"bitfield {field.name} needs explicit layout review")
+                    reasons.append(f"bitfield `{field.name}` needs explicit layout review")
                 elif child.representation not in {Representation.PRIMITIVE, Representation.ENUM, Representation.VALUE_OBJECT}:
                     eligible = False
-                    reasons.append(f"field {field.name} uses {child.representation.value} type {field.type_name}")
+                    reasons.append(f"member `{field.name}` uses {child.representation.value} type `{field.type_name}`")
             self._resolving.remove(name)
             if eligible:
                 info.representation = Representation.VALUE_OBJECT
@@ -179,7 +182,7 @@ class TypeResolver:
                 info.inference_reason = "all fields recursively resolve to primitive, enum, or confirmed value-object types"
             else:
                 info.representation = Representation.REJECTED
-                info.rejection_reason = "; ".join(reasons) or "empty or unsupported struct layout"
+                info.rejection_reason = "; ".join(reasons) or "no public struct fields are available for generic value-object inference"
             return info
         if category == CCategory.TYPEDEF:
             # resolve_declaration() normally removes typedef wrappers; reaching this branch means the alias target is unknown.
@@ -190,13 +193,31 @@ class TypeResolver:
         info.rejection_reason = f"no resolver rule for {category.value} type {name}"
         return info
 
-    def resolve_all(self) -> BindingIR:
+    @staticmethod
+    def collect_referenced_type_names(selection: SelectionResult, config: dict[str, Any]) -> list[str]:
+        """Collect signature and special-wrapper type references before resolution."""
+        names: set[str] = set()
+        for selected in selection.functions.values():
+            names.add(parse_type_node(selected.item.get("type")).use_site.base_name)
+            args = selected.item.get("args", [])
+            if not isinstance(args, list):
+                continue
+            for arg in args:
+                if not isinstance(arg, dict):
+                    continue
+                use = parse_type_node(arg.get("type")).use_site
+                if use.base_name == "void" and use.pointer_depth == 0 and not use.array_shape and not arg.get("name"):
+                    continue
+                names.add(use.base_name)
+        for type_names in config.get("special_bindings", {}).get("type_dependencies", {}).values():
+            names.update(type_names)
+        return sorted(names)
+
+    def resolve_all(self, expected_type_names: list[str] | None = None) -> BindingIR:
         ir = BindingIR()
         api_map = self.selection.functions
         properties = self.config.get("special_bindings", {}).get("properties", [])
         special_property_functions = {item["function"] for item in properties}
-        function_overrides = self.config.get("function_overrides", {})
-
         for api_name in sorted(api_map):
             selected = api_map[api_name]
             is_special = selected.special_binding is not None
@@ -218,17 +239,49 @@ class TypeResolver:
                         continue
                     uses.append(self._resolve_use(api_name, f"parameter:{index}:{arg.get('name') or f'arg{index}'}", node.use_site, is_special or is_special_property_only, selected.is_constructor, selected.item))
 
-            reason = next((use.reason for use in uses if use.status in {ApiStatus.REJECTED, ApiStatus.CANDIDATE} and use.reason), "")
             statuses = {use.status for use in uses}
-            if ApiStatus.CANDIDATE in statuses:
-                status = ApiStatus.CANDIDATE
-            elif ApiStatus.REJECTED in statuses:
-                status = ApiStatus.REJECTED
+            failures = [use for use in uses if use.status not in {ApiStatus.ACCEPTED_GENERIC, ApiStatus.ACCEPTED_SPECIAL}]
+            if failures:
+                priority = (
+                    ApiStatus.REJECTED_UNRESOLVED,
+                    ApiStatus.REJECTED_LIFECYCLE,
+                    ApiStatus.REJECTED_UNSUPPORTED_TYPE,
+                    ApiStatus.REJECTED_SPECIAL_REQUIRED,
+                )
+                status = next((candidate for candidate in priority if candidate in statuses), failures[0].status)
+                primary_issue = next(use for use in failures if use.status == status)
+                reason = primary_issue.reason
+                reason_code = primary_issue.reason_code
             elif is_special or is_special_property_only:
-                status = ApiStatus.SPECIAL
+                status = ApiStatus.ACCEPTED_SPECIAL
+                reason = ""
+                reason_code = ""
             else:
-                status = ApiStatus.ACCEPTED
-            ir.apis.append(ApiRecord(api_name, status, selected.class_name, ",".join(selected.selection_kinds), selected.special_binding, reason))
+                status = ApiStatus.ACCEPTED_GENERIC
+                reason = ""
+                reason_code = ""
+            issues = [
+                {
+                    "position": use.position,
+                    "type": use.use_site.spelling,
+                    "status": use.status.value,
+                    "reason_code": use.reason_code,
+                    "reason": use.reason,
+                }
+                for use in failures
+            ]
+            ir.apis.append(
+                ApiRecord(
+                    api_name,
+                    status,
+                    selected.class_name,
+                    ",".join(selected.selection_kinds),
+                    selected.special_binding,
+                    reason,
+                    reason_code,
+                    issues,
+                )
+            )
             ir.uses.extend(uses)
 
         ir.apis.extend(self.selection.pre_rejected)
@@ -240,6 +293,10 @@ class TypeResolver:
                 if reference not in info.referenced_by:
                     info.referenced_by.append(reference)
 
+        missing_references = sorted(set(expected_type_names or ()) - set(self.types))
+        if missing_references:
+            raise ValueError(f"collected signature types were not resolved: {', '.join(missing_references)}")
+
         # Types named by config but not used in this selected surface remain diagnostics only.
         for configured_name in self.declarations:
             if configured_name not in self.types:
@@ -247,29 +304,64 @@ class TypeResolver:
 
         ir.types = self.types
         ir.selected_names = sorted(set(self.selection.candidate_names) | set(api_map))
-        ir.accepted_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.ACCEPTED)
-        ir.special_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.SPECIAL)
-        ir.rejected_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.REJECTED)
+        ir.accepted_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.ACCEPTED_GENERIC)
+        ir.special_names = sorted(api.name for api in ir.apis if api.status == ApiStatus.ACCEPTED_SPECIAL)
+        ir.rejected_names = sorted(
+            api.name
+            for api in ir.apis
+            if api.status not in {ApiStatus.ACCEPTED_GENERIC, ApiStatus.ACCEPTED_SPECIAL}
+        )
         ir.diagnostics.extend(self.selection.messages)
 
         for info in sorted(ir.types.values(), key=lambda entry: entry.name):
             if info.name in self.declarations and not info.referenced_by:
-                ir.diagnostics.append({"severity": "warning", "code": "UNUSED_EXPLICIT_DECLARATION", "message": f"explicit declaration for {info.name} is unused by selected APIs"})
+                ir.diagnostics.append(
+                    Diagnostic(
+                        code="UNUSED_EXPLICIT_DECLARATION",
+                        severity=Severity.WARNING,
+                        category="configuration",
+                        subject_kind="type",
+                        subject=info.name,
+                        type_name=info.name,
+                        reason=f"Explicit declaration for {info.name} is unused by selected APIs.",
+                        references=tuple(info.referenced_by),
+                        suggested_action="Remove the declaration if it is no longer needed.",
+                    )
+                )
             if info.resolution_source == "explicit" and info.representation == Representation.VALUE_OBJECT:
                 inferred = self._can_infer_value_object(info.name)
                 if inferred:
-                    ir.diagnostics.append({"severity": "info", "code": "REDUNDANT_EXPLICIT_DECLARATION", "message": f"{info.name} is a value object that current LVGL facts can safely infer"})
+                    ir.diagnostics.append(
+                        Diagnostic(
+                            code="REDUNDANT_EXPLICIT_DECLARATION",
+                            severity=Severity.INFO,
+                            category="configuration",
+                            subject_kind="type",
+                            subject=info.name,
+                            type_name=info.name,
+                            reason=f"{info.name} is a value object that current LVGL facts can safely infer.",
+                            suggested_action="Remove the redundant declaration if it has no review note to preserve.",
+                        )
+                    )
             if info.representation == Representation.UNKNOWN:
-                refs = sorted(set(info.referenced_by) | {use.function for use in ir.uses if use.use_site.base_name == info.name and use.status == ApiStatus.CANDIDATE})
+                refs = sorted(set(info.referenced_by) | {use.function for use in ir.uses if use.use_site.base_name == info.name and use.status == ApiStatus.REJECTED_UNRESOLVED})
                 is_unknown_todo = self.declarations.get(info.name, {}).get("kind") == "unknown"
                 if refs or is_unknown_todo:
-                    ir.diagnostics.append({"severity": "error", "code": "UNRESOLVED_TYPE", "message": f"{info.name} is unresolved; referenced by {', '.join(refs)}"})
-            elif info.representation == Representation.REJECTED:
-                ir.diagnostics.append({"severity": "warning", "code": "UNREPRESENTABLE_TYPE", "message": f"{info.name}: {info.rejection_reason}"})
-
-        for api in ir.apis:
-            if api.status == ApiStatus.REJECTED:
-                ir.diagnostics.append({"severity": "warning", "code": "API_REJECTED", "message": f"{api.name}: {api.reason}"})
+                    ir.diagnostics.append(
+                        Diagnostic(
+                            code="UNRESOLVED_TYPE",
+                            severity=Severity.ERROR,
+                            category="resolution",
+                            status=ApiStatus.REJECTED_UNRESOLVED.value,
+                            subject_kind="type",
+                            subject=info.name,
+                            type_name=info.name,
+                            reason=f"{info.name} has no explicit binding resolution.",
+                            details={"rejection_reason": info.rejection_reason},
+                            references=tuple(refs),
+                            suggested_action="Add a deliberate type declaration or special binding, then validate again.",
+                        )
+                    )
 
         return ir
 
@@ -280,32 +372,42 @@ class TypeResolver:
             refs.append(function)
 
         if info.canonical_name == "void" and use.pointer_depth == 0 and not use.array_shape:
-            return ApiUse(function, position, use, conversion="void", status=ApiStatus.SPECIAL if special else ApiStatus.ACCEPTED, reason="void has no JavaScript value" if not special else "configured special wrapper owns this signature")
+            return ApiUse(function, position, use, conversion="void", status=ApiStatus.ACCEPTED_SPECIAL if special else ApiStatus.ACCEPTED_GENERIC, reason="void has no JavaScript value" if not special else "configured special wrapper owns this signature")
 
         if special and info.representation == Representation.UNKNOWN:
-            return ApiUse(function, position, use, status=ApiStatus.CANDIDATE, reason=info.rejection_reason)
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNRESOLVED, reason=info.rejection_reason, reason_code="UNRESOLVED_TYPE")
         if special:
             if position == "return" and info.representation == Representation.MANAGED_RESOURCE:
                 declaration = self.declarations.get(use.base_name) or self.declarations.get(info.canonical_name, {})
                 creator = declaration.get("creator")
                 if info.resource_category == "pure_managed" and not (is_constructor and function == creator):
-                    return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"Pure Managed {info.canonical_name} may only enter through configured creator {creator}")
+                    return ApiUse(function, position, use, status=ApiStatus.REJECTED_LIFECYCLE, reason=f"Pure Managed {info.canonical_name} may only enter through configured creator `{creator}`.", reason_code="PURE_MANAGED_ENTRY_VIOLATION")
                 if info.resource_category == "tree_dependent" and function == creator and not self._has_object_parent(function_item):
-                    return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"Tree-Dependent creator {function} has no lv_obj_t * parent argument")
-            return ApiUse(function, position, use, conversion="special_binding", status=ApiStatus.SPECIAL, reason="the configured C wrapper owns conversion and lifecycle handling")
+                    return ApiUse(function, position, use, status=ApiStatus.REJECTED_LIFECYCLE, reason=f"Tree-Dependent creator {function} has no lv_obj_t * parent argument.", reason_code="TREE_RESOURCE_PARENT_MISSING")
+            return ApiUse(function, position, use, conversion="special_binding", status=ApiStatus.ACCEPTED_SPECIAL, reason="the configured C wrapper owns conversion and lifecycle handling")
         if info.representation == Representation.UNKNOWN:
-            return ApiUse(function, position, use, status=ApiStatus.CANDIDATE, reason=info.rejection_reason)
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNRESOLVED, reason=info.rejection_reason, reason_code="UNRESOLVED_TYPE")
         if use.array_shape:
             conversion = self.config.get("special_conversions", {}).get(use.spelling)
             if conversion:
-                return ApiUse(function, position, use, conversion=conversion, status=ApiStatus.ACCEPTED, reason="explicit use-site conversion")
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"array shape {list(use.array_shape)} requires a configured special binding")
+                return ApiUse(function, position, use, conversion=conversion, status=ApiStatus.ACCEPTED_GENERIC, reason="explicit use-site conversion")
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason=f"array shape {list(use.array_shape)} requires a configured special binding", reason_code="SPECIAL_BINDING_REQUIRED")
         if use.is_function_pointer or info.category == CCategory.FUNCTION_POINTER:
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason="callback requires a configured special binding")
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="callback requires a configured special binding", reason_code="SPECIAL_BINDING_REQUIRED")
         if use.pointer_depth > 1:
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason="pointer depth greater than one requires a special binding")
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="pointer depth greater than one requires a special binding", reason_code="SPECIAL_BINDING_REQUIRED")
         if info.representation in {Representation.REJECTED, Representation.SPECIAL_REQUIRED, Representation.UNKNOWN}:
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=info.rejection_reason)
+            status = {
+                Representation.REJECTED: ApiStatus.REJECTED_UNSUPPORTED_TYPE,
+                Representation.SPECIAL_REQUIRED: ApiStatus.REJECTED_SPECIAL_REQUIRED,
+                Representation.UNKNOWN: ApiStatus.REJECTED_UNRESOLVED,
+            }[info.representation]
+            reason_code = {
+                ApiStatus.REJECTED_UNSUPPORTED_TYPE: "UNSUPPORTED_TYPE_LAYOUT",
+                ApiStatus.REJECTED_SPECIAL_REQUIRED: "SPECIAL_BINDING_REQUIRED",
+                ApiStatus.REJECTED_UNRESOLVED: "UNRESOLVED_TYPE",
+            }[status]
+            return ApiUse(function, position, use, status=status, reason=info.rejection_reason, reason_code=reason_code)
 
         canonical = info.canonical_name
         sni_type = None
@@ -314,11 +416,11 @@ class TypeResolver:
             if use.pointer_depth:
                 conversion_id = self.config.get("special_conversions", {}).get(use.spelling)
                 if conversion_id:
-                    return ApiUse(function, position, use, sni_type=conversion_id, conversion="explicit", status=ApiStatus.ACCEPTED, reason="explicit use-site conversion")
+                    return ApiUse(function, position, use, sni_type=conversion_id, conversion="explicit", status=ApiStatus.ACCEPTED_GENERIC, reason="explicit use-site conversion")
                 if canonical == "char" and use.pointer_depth == 1:
                     sni_type, conversion = "SNI_T_STRING", "string"
                 else:
-                    return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason="primitive pointer is an output/buffer form and requires a special binding")
+                    return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="primitive pointer is an output/buffer form and requires a special binding", reason_code="SPECIAL_BINDING_REQUIRED")
             else:
                 sni_type = "SNI_T_INT32" if info.representation == Representation.ENUM else PRIMITIVE_SNI.get(canonical)
         elif info.representation == Representation.VALUE_OBJECT:
@@ -331,22 +433,22 @@ class TypeResolver:
             creator = declaration.get("creator")
             if position == "return":
                 if info.resource_category == "pure_managed" and not (is_constructor and function == creator):
-                    return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"Pure Managed {canonical} may only enter through configured creator {creator}")
+                    return ApiUse(function, position, use, status=ApiStatus.REJECTED_LIFECYCLE, reason=f"Pure Managed {canonical} may only enter through configured creator `{creator}`.", reason_code="PURE_MANAGED_ENTRY_VIOLATION")
                 if info.resource_category == "tree_dependent":
                     has_parent = self._has_object_parent(function_item)
                     if not has_parent:
-                        return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"Tree-Dependent result {function} has no lv_obj_t * parent argument")
+                        return ApiUse(function, position, use, status=ApiStatus.REJECTED_LIFECYCLE, reason=f"Tree-Dependent result {function} has no lv_obj_t * parent argument", reason_code="TREE_RESOURCE_PARENT_MISSING")
             elif position.startswith("parameter:") and info.resource_category == "pure_managed":
                 # Passing an existing, live SNI-created instance is valid; it does not create a new one.
                 pass
         else:
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason=f"no generic conversion for {info.representation.value}")
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNSUPPORTED_TYPE, reason=f"no generic conversion for {info.representation.value}", reason_code="UNSUPPORTED_TYPE")
 
         if sni_type is None:
-            return ApiUse(function, position, use, status=ApiStatus.CANDIDATE, reason=f"no SNI primitive mapping for {canonical}")
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_UNRESOLVED, reason=f"no SNI primitive mapping for {canonical}", reason_code="NO_SNI_MAPPING")
         if use.pointer_depth and info.representation not in {Representation.VALUE_OBJECT, Representation.OBJECT_TREE_NODE, Representation.MANAGED_RESOURCE} and not (info.representation == Representation.PRIMITIVE and sni_type == "SNI_T_STRING"):
-            return ApiUse(function, position, use, status=ApiStatus.REJECTED, reason="pointer form has no safe generic SNI representation")
-        return ApiUse(function, position, use, sni_type=sni_type, conversion=conversion, status=ApiStatus.ACCEPTED)
+            return ApiUse(function, position, use, status=ApiStatus.REJECTED_SPECIAL_REQUIRED, reason="pointer form has no safe generic SNI representation", reason_code="SPECIAL_BINDING_REQUIRED")
+        return ApiUse(function, position, use, sni_type=sni_type, conversion=conversion, status=ApiStatus.ACCEPTED_GENERIC)
 
     def _has_object_parent(self, function_item: dict[str, Any]) -> bool:
         args = function_item.get("args", [])

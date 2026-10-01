@@ -5,11 +5,12 @@ import unittest
 from pathlib import Path
 
 from sni.core.config import BindingConfig, validate_config
-from sni.core.ir import ApiStatus
+from sni.core.ir import ApiStatus, Diagnostic, Severity
 from sni.core.lvgl_model import LVGLModel
-from sni.core.pipeline import PipelineError, PipelineResult, ProgressReporter, generate_and_write, render_outputs
+from sni.core.pipeline import PipelineError, PipelineResult, generate_and_write, render_outputs
 from sni.core.resolver import TypeResolver
 from sni.core.selection import select_apis
+from sni.cli.reporters import TerminalReporter
 
 
 def primitive(name: str, kind: str = "stdlib_type", quals: list[str] | None = None) -> dict:
@@ -74,7 +75,7 @@ class GeneratorRenderingTests(unittest.TestCase):
         config = validate_config(config_data, temp_root / "sni_lvgl_bindings.json", set())
         selection = select_apis(lvgl_data, config.data)
         ir = TypeResolver(model, config.data, selection).resolve_all()
-        self.assertEqual({api.status for api in ir.apis}, {ApiStatus.ACCEPTED})
+        self.assertEqual({api.status for api in ir.apis}, {ApiStatus.ACCEPTED_GENERIC})
         paths = {
             "type_ids": temp_root / "sni_type_ids.h",
             "lv_types": temp_root / "sni_lv_types.c",
@@ -112,9 +113,10 @@ class GeneratorRenderingTests(unittest.TestCase):
             result, paths = self.make_fixture(root)
             sentinel = b"existing generated output\n"
             paths["type_ids"].write_bytes(sentinel)
-            result.ir.diagnostics.append({"severity": "error", "code": "UNRESOLVED_TYPE", "message": "hold"})
-            reporter = ProgressReporter(quiet=True)
-            reporter.start(10)
+            result.ir.diagnostics.append(
+                Diagnostic("UNRESOLVED_TYPE", Severity.ERROR, "resolution", "hold")
+            )
+            reporter = TerminalReporter(["stage"] * 10, quiet=True)
             with self.assertRaises(PipelineError):
                 generate_and_write(result, paths, reporter)
             self.assertEqual(paths["type_ids"].read_bytes(), sentinel)
@@ -125,8 +127,7 @@ class GeneratorRenderingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             result, paths = self.make_fixture(root)
-            reporter = ProgressReporter(quiet=True)
-            reporter.start(10)
+            reporter = TerminalReporter(["stage"] * 10, quiet=True)
             outputs = generate_and_write(result, paths, reporter)
             for path, content in outputs.items():
                 self.assertEqual(path.read_text(encoding="utf-8"), content)
@@ -185,7 +186,7 @@ class GeneratorRenderingTests(unittest.TestCase):
             config = validate_config(config_data, root / "config.json", set())
             selection = select_apis(lvgl_data, config.data)
             ir = TypeResolver(model, config.data, selection).resolve_all()
-            self.assertFalse(any(item["severity"] == "error" for item in ir.diagnostics))
+            self.assertFalse(any(item.severity == Severity.ERROR for item in ir.diagnostics))
             paths = {
                 "type_ids": root / "sni_type_ids.h",
                 "lv_types": root / "sni_lv_types.c",

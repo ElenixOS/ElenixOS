@@ -102,7 +102,7 @@ class TypeResolverTests(unittest.TestCase):
         self.assertTrue(use.is_const)
         selected = SelectedAPI("lv_use_array", {"name": "lv_use_array", "type": scalar("void", "primitive_type"), "args": [{"name": "points", "type": node}]}, "fixture", ["method"])
         result = TypeResolver(self.model, self.config, SelectionResult([], {selected.name: selected}, [], {}, [])).resolve_all()
-        self.assertEqual(result.apis[0].status, ApiStatus.REJECTED)
+        self.assertEqual(result.apis[0].status, ApiStatus.REJECTED_SPECIAL_REQUIRED)
         self.assertIn("array shape", result.apis[0].reason)
 
     def test_explicit_value_object_allows_reviewed_bitfield_layout(self) -> None:
@@ -115,8 +115,8 @@ class TypeResolverTests(unittest.TestCase):
         selected = SelectedAPI("lv_use_unknown", {"name": "lv_use_unknown", "type": scalar("lv_missing_t", "lvgl_type"), "args": []}, "fixture", ["static_method"])
         selection = SelectionResult([], {selected.name: selected}, [], {}, [])
         ir = TypeResolver(self.model, self.config, selection).resolve_all()
-        self.assertEqual(ir.apis[0].status, ApiStatus.CANDIDATE)
-        self.assertTrue(any(item["code"] == "UNRESOLVED_TYPE" for item in ir.diagnostics))
+        self.assertEqual(ir.apis[0].status, ApiStatus.REJECTED_UNRESOLVED)
+        self.assertTrue(any(item.code == "UNRESOLVED_TYPE" for item in ir.diagnostics))
 
     def test_explicit_override_redundancy_and_unused_diagnostics(self) -> None:
         config = {
@@ -128,7 +128,7 @@ class TypeResolverTests(unittest.TestCase):
             },
         }
         ir = TypeResolver(self.model, config, empty_selection()).resolve_all()
-        codes = {item["code"] for item in ir.diagnostics}
+        codes = {item.code for item in ir.diagnostics}
         self.assertIn("REDUNDANT_EXPLICIT_DECLARATION", codes)
         self.assertIn("UNUSED_EXPLICIT_DECLARATION", codes)
 
@@ -142,7 +142,7 @@ class TypeResolverTests(unittest.TestCase):
             for name, item in funcs.items()
         }
         ir = TypeResolver(self.model, self.config, SelectionResult([], apis, [], {}, [])).resolve_all()
-        self.assertEqual(ir.apis[0].status, ApiStatus.ACCEPTED)
+        self.assertEqual(ir.apis[0].status, ApiStatus.ACCEPTED_GENERIC)
         self.assertTrue(all(use.sni_type == "SNI_H_LV_OBJ" for use in ir.uses if use.use_site.base_name == "lv_obj_t"))
 
     def test_pure_managed_constructor_allowed_but_getter_rejected(self) -> None:
@@ -154,8 +154,8 @@ class TypeResolverTests(unittest.TestCase):
         getter = SelectedAPI("lv_timer_get_next", {"name": "lv_timer_get_next", "type": pointer(scalar("lv_timer_t", "lvgl_type")), "args": []}, "timer", ["static_method"])
         result = TypeResolver(self.model, config, SelectionResult([], {ctor.name: ctor, getter.name: getter}, [], {}, [])).resolve_all()
         statuses = {item.name: item.status for item in result.apis}
-        self.assertEqual(statuses["lv_timer_create"], ApiStatus.ACCEPTED)
-        self.assertEqual(statuses["lv_timer_get_next"], ApiStatus.REJECTED)
+        self.assertEqual(statuses["lv_timer_create"], ApiStatus.ACCEPTED_GENERIC)
+        self.assertEqual(statuses["lv_timer_get_next"], ApiStatus.REJECTED_LIFECYCLE)
 
     def test_tree_dependent_creator_requires_parent_node(self) -> None:
         config = {
@@ -165,7 +165,7 @@ class TypeResolverTests(unittest.TestCase):
         item = {"name": "lv_chart_add_series", "type": pointer(scalar("lv_chart_series_t", "lvgl_type")), "args": [{"name": "chart", "type": pointer(scalar("lv_obj_t", "lvgl_type"))}]}
         selected = SelectedAPI(item["name"], item, "chart", ["method"])
         result = TypeResolver(self.model, config, SelectionResult([], {selected.name: selected}, [], {}, [])).resolve_all()
-        self.assertEqual(result.apis[0].status, ApiStatus.ACCEPTED)
+        self.assertEqual(result.apis[0].status, ApiStatus.ACCEPTED_GENERIC)
 
     def test_tree_dependent_getter_keeps_category_when_parent_is_known(self) -> None:
         config = {
@@ -175,14 +175,14 @@ class TypeResolverTests(unittest.TestCase):
         item = {"name": "lv_chart_get_series_next", "type": pointer(scalar("lv_chart_series_t", "lvgl_type")), "args": [{"name": "chart", "type": pointer(scalar("lv_obj_t", "lvgl_type"))}]}
         selected = SelectedAPI(item["name"], item, "chart", ["method"])
         result = TypeResolver(self.model, config, SelectionResult([], {selected.name: selected}, [], {}, [])).resolve_all()
-        self.assertEqual(result.apis[0].status, ApiStatus.ACCEPTED)
+        self.assertEqual(result.apis[0].status, ApiStatus.ACCEPTED_GENERIC)
         self.assertEqual(result.uses[0].sni_type, "SNI_H_LV_CHART_SERIES")
 
     def test_unmanaged_native_pointer_is_rejected(self) -> None:
         item = {"name": "lv_external_get", "type": pointer(scalar("lv_external_t", "lvgl_type")), "args": []}
         selected = SelectedAPI(item["name"], item, "fixture", ["static_method"])
         result = TypeResolver(self.model, self.config, SelectionResult([], {selected.name: selected}, [], {}, [])).resolve_all()
-        self.assertEqual(result.apis[0].status, ApiStatus.REJECTED)
+        self.assertEqual(result.apis[0].status, ApiStatus.REJECTED_UNSUPPORTED_TYPE)
 
 
 if __name__ == "__main__":

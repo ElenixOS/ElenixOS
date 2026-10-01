@@ -36,13 +36,26 @@ python3 ElenixOS/scripts/sni/generate_sni.py update-config
 python3 ElenixOS/scripts/sni/generate_sni.py generate
 ```
 
+All commands use the same progress, result, diagnostic, and presentation layer. The core resolver and renderers return structured data; only `sni/cli/reporters.py` writes human output. The CLI renderer uses the Python standard library, so running SNI commands does not require Rich or another terminal package.
+
+The API result status is independent of diagnostic severity:
+
+- `ACCEPTED_GENERIC` and `ACCEPTED_SPECIAL` are exported APIs.
+- `EXCLUDED_BLACKLIST` is an intentional exclusion and is not a warning or generation failure.
+- `REJECTED_UNSUPPORTED_TYPE`, `REJECTED_SPECIAL_REQUIRED`, and `REJECTED_LIFECYCLE` explain why an API is not exported.
+- `REJECTED_UNRESOLVED` means the binding decision is missing and blocks validation and generation.
+
+The default analysis is summary-first. `--details` groups unsupported APIs by C type and shows special-required and lifecycle groups. Use `--category blacklist` to list intentional exclusions, `--api lv_timer_get_next` to inspect one API, or `--type lv_grad_dsc_t` to inspect a C type and its affected APIs. Shared output options are `--quiet`, `--verbose`, `--details`, `--format text|json`, and `--no-color`; they work before or after the subcommand. `NO_COLOR` is also honored.
+
+Every command supports `--format json`. Stdout is one JSON document with the command, success state, summary, progress events, structured diagnostics, and command result. JSON mode suppresses human progress, table markup, and colors. `dump-ir` keeps its full IR in `result.ir`.
+
 To regenerate metadata from the current project configuration, use `generate --refresh-lvgl-json`; it invokes LVGL's `gen_json.py` with the repository's `lv_conf.h` and writes the metadata under `build/lvgl-api/`. The LVGL generator's Doxygen helper and Python requirements must be installed for this refresh step. Existing metadata can be passed with `--lvgl-json PATH`.
 
 Generation formats all C outputs with the repository's `.clang-format`; `clang-format` 20 must be available.
 
 `update-config` is the only command that persists newly discovered unresolved types, as `{ "kind": "unknown" }` review items. Their presence makes validation and generation fail until a human resolves them. `analyze`, `validate`, and `generate` never edit the binding configuration.
 
-Normal progress and diagnostics go to stderr. In `--format json` mode, stdout contains one JSON document and no progress text. The output records each type's canonical name, typedef chain, dependencies, representation, resolution source, inference reason, rejection reason, and API references.
+Text-mode progress goes to stderr and command summaries go to stdout. A progress event is emitted only when its stage completes; stage totals are declared per command, and failure/warning states are recorded. Non-TTY and CI output stays static. JSON mode records those stage results in its `progress` array without writing progress text to stderr. The IR retains each type's canonical name, typedef chain, dependencies, representation, resolution source, inference reason, rejection reason, fields, and API references.
 
 ## Validation
 

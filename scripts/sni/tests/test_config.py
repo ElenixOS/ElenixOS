@@ -121,7 +121,8 @@ class BindingConfigTests(unittest.TestCase):
             )
             self.assertEqual(process.returncode, 0, process.stderr)
             result = json.loads(process.stdout)
-            self.assertEqual(result["added_unknown_types"], ["lv_new_type_t"])
+            self.assertEqual(result["command"], "update-config")
+            self.assertEqual(result["result"]["added_unknown_types"], ["lv_new_type_t"])
             updated = json.loads(config_path.read_text(encoding="utf-8"))
             self.assertEqual(updated["type_declarations"]["lv_new_type_t"]["kind"], "unknown")
 

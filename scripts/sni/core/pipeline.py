@@ -11,45 +11,26 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from ..render import lv_api
 from ..render.lv_types import render_lv_types
 from ..render.type_ids import build_type_ids
 from .config import BindingConfig, load_config
 from .diagnostics import build_analysis
+from .ir import Diagnostic
 from .lvgl_model import LVGLModel
+from .progress import ProgressReporter
 from .resolver import TypeResolver, legacy_type_maps
 from .selection import SelectionResult, select_apis
 from .validation import has_errors, validate_bindings
 
 
 class PipelineError(RuntimeError):
-    def __init__(self, phase: str, message: str, diagnostics: list[dict[str, Any]] | None = None):
+    def __init__(self, phase: str, message: str, diagnostics: list[Diagnostic] | None = None):
         super().__init__(message)
         self.phase = phase
         self.diagnostics = diagnostics or []
-
-
-@dataclass
-class ProgressReporter:
-    quiet: bool = False
-    current: str = "Starting"
-    index: int = 0
-    total: int = 0
-
-    def start(self, total: int) -> None:
-        self.index = 0
-        self.total = total
-
-    def stage(self, label: str) -> None:
-        self.index += 1
-        self.current = label
-        if not self.quiet:
-            print(f"[{self.index}/{self.total}] {label}", file=sys.stderr)
-
-    def detail(self, message: str) -> None:
-        print(f"  {message}", file=sys.stderr)
 
 
 @dataclass
@@ -60,6 +41,8 @@ class PipelineResult:
     ir: Any
     analysis: dict[str, Any]
     special_ids: set[str]
+    artifact_status: dict[Path, str] | None = None
+    emitter_diagnostics: list[str] | None = None
 
 
 def default_paths(script_path: Path) -> dict[str, Path]:
@@ -116,50 +99,50 @@ def build_pipeline(
     paths: dict[str, Path],
     reporter: ProgressReporter,
     refresh_metadata: bool = False,
-    validation_stages: int = 7,
+    fail_on_validation_error: bool = False,
 ) -> PipelineResult:
-    reporter.start(validation_stages)
-    reporter.stage("Loading LVGL metadata")
-    if refresh_metadata:
-        refresh_lvgl_json(paths["repo_root"], paths["lvgl_json"])
-    try:
-        lvgl_data = json.loads(paths["lvgl_json"].read_text(encoding="utf-8"))
-    except OSError as exc:
-        raise PipelineError(reporter.current, f"Cannot read {paths['lvgl_json']}: {exc}") from exc
-    except json.JSONDecodeError as exc:
-        raise PipelineError(reporter.current, f"Invalid LVGL JSON at {paths['lvgl_json']}:{exc.lineno}:{exc.colno}: {exc.msg}") from exc
-    if not isinstance(lvgl_data, dict) or not isinstance(lvgl_data.get("functions"), list):
-        raise PipelineError(reporter.current, "lvgl.json must contain a functions array")
-    model = LVGLModel(lvgl_data)
+    with reporter.stage("Loading LVGL metadata"):
+        if refresh_metadata:
+            refresh_lvgl_json(paths["repo_root"], paths["lvgl_json"])
+        try:
+            lvgl_data = json.loads(paths["lvgl_json"].read_text(encoding="utf-8"))
+        except OSError as exc:
+            raise PipelineError(reporter.current, f"Cannot read {paths['lvgl_json']}: {exc}") from exc
+        except json.JSONDecodeError as exc:
+            raise PipelineError(reporter.current, f"Invalid LVGL JSON at {paths['lvgl_json']}:{exc.lineno}:{exc.colno}: {exc.msg}") from exc
+        if not isinstance(lvgl_data, dict) or not isinstance(lvgl_data.get("functions"), list):
+            raise PipelineError(reporter.current, "lvgl.json must contain a functions array")
+        model = LVGLModel(lvgl_data)
 
-    reporter.stage("Loading SNI binding configuration")
-    special_ids = scan_special_ids(paths["sni_root"])
-    try:
-        config = load_config(paths["config"], special_ids)
-    except ValueError as exc:
-        raise PipelineError(reporter.current, str(exc)) from exc
+    with reporter.stage("Loading SNI binding configuration"):
+        special_ids = scan_special_ids(paths["sni_root"])
+        try:
+            config = load_config(paths["config"], special_ids)
+        except ValueError as exc:
+            raise PipelineError(reporter.current, str(exc)) from exc
 
-    reporter.stage("Selecting API surface")
-    try:
-        selection = select_apis(lvgl_data, config.data)
-    except (ValueError, SystemExit) as exc:
-        raise PipelineError(reporter.current, str(exc)) from exc
+    with reporter.stage("Selecting API surface"):
+        try:
+            selection = select_apis(lvgl_data, config.data)
+        except (ValueError, SystemExit) as exc:
+            raise PipelineError(reporter.current, str(exc)) from exc
 
-    reporter.stage("Collecting referenced types")
-    # The selected signatures are collected during API selection and fed directly into the resolver.
+    with reporter.stage("Collecting referenced types"):
+        referenced_type_names = TypeResolver.collect_referenced_type_names(selection, config.data)
 
-    reporter.stage("Resolving C types")
-    resolver = TypeResolver(model, config.data, selection)
-    ir = resolver.resolve_all()
+    with reporter.stage("Resolving C types and inferring SNI representations"):
+        resolver = TypeResolver(model, config.data, selection)
+        ir = resolver.resolve_all(referenced_type_names)
 
-    reporter.stage("Inferring SNI representations")
-    # Resolution assigns the representation, source, dependencies, rationale and rejection reason in one typed pass.
+    with reporter.stage("Validating bindings") as stage:
+        diagnostics = validate_bindings(config.data, model, selection, ir, special_ids)
+        if fail_on_validation_error and has_errors(diagnostics):
+            stage.failure()
+        elif any(item.severity.value in {"WARNING", "ERROR"} for item in diagnostics):
+            stage.warning()
 
-    reporter.stage("Validating bindings")
-    diagnostics = validate_bindings(config.data, model, selection, ir, special_ids)
-    api_output_path = paths["api"]
-    analysis = build_analysis(ir, selection, config, api_output_path)
-    analysis["diagnostics"] = diagnostics
+    with reporter.stage("Building structured analysis result"):
+        analysis = build_analysis(ir, selection, config, paths["api"])
     return PipelineResult(model, config, selection, ir, analysis, special_ids)
 
 
@@ -186,6 +169,7 @@ def render_outputs(result: PipelineResult, paths: dict[str, Path], verbose: bool
         accepted_surface,
         verbose=verbose,
     )
+    result.emitter_diagnostics = list(emitter_result.get("diagnostics", []))
     expected = set(accepted_surface)
     emitted = set(emitter_result["api_names"])
     if expected != emitted:
@@ -270,10 +254,16 @@ def verify_outputs(outputs: dict[Path, str]) -> None:
 def generate_and_write(result: PipelineResult, paths: dict[str, Path], reporter: ProgressReporter, verbose: bool = False) -> dict[Path, str]:
     if has_errors(result.ir.diagnostics):
         raise PipelineError("Validating bindings", "unresolved types or invalid binding configuration prevent generation", result.ir.diagnostics)
-    reporter.stage("Rendering generated sources")
-    outputs = render_outputs(result, paths, verbose=verbose)
-    reporter.stage("Writing output files")
-    write_outputs_atomically(outputs)
-    reporter.stage("Verifying generated artifacts")
-    verify_outputs(outputs)
+    with reporter.stage("Rendering generated sources"):
+        outputs = render_outputs(result, paths, verbose=verbose)
+    for message in result.emitter_diagnostics or []:
+        reporter.detail(message)
+    result.artifact_status = {
+        path: "Unchanged" if path.is_file() and path.read_text(encoding="utf-8") == content else "Updated"
+        for path, content in outputs.items()
+    }
+    with reporter.stage("Writing output files"):
+        write_outputs_atomically(outputs)
+    with reporter.stage("Verifying generated artifacts"):
+        verify_outputs(outputs)
     return outputs

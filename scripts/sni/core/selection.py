@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .ir import ApiRecord, ApiStatus
+from .ir import ApiRecord, ApiStatus, Diagnostic, Severity
 from ..render import lv_api
 
 
@@ -25,7 +25,7 @@ class SelectionResult:
     functions: dict[str, SelectedAPI]
     constants: list[str]
     properties: dict[tuple[str, str], tuple[str | None, str | None]]
-    messages: list[dict[str, str]]
+    messages: list[Diagnostic]
     pre_rejected: list[ApiRecord] = field(default_factory=list)
     candidate_names: list[str] = field(default_factory=list)
 
@@ -43,7 +43,7 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
     function_index = lv_api.build_function_index(lvgl_data)
     selected: dict[str, SelectedAPI] = {}
     props: dict[tuple[str, str], tuple[str | None, str | None]] = {}
-    messages: list[dict[str, str]] = []
+    messages: list[Diagnostic] = []
     pre_rejected: dict[str, ApiRecord] = {}
     candidate_names: set[str] = set()
     special_by_api = _special_map(config)
@@ -58,15 +58,32 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
         candidate_names.add(name)
         if lv_api.is_matched(name, filters["function"]["blacklist"]):
             reason = rejection_reasons.get(name, "excluded by scan.function.blacklist")
-            messages.append({"severity": "info", "code": "API_BLACKLISTED", "message": f"{name}: {reason}"})
-            pre_rejected[name] = ApiRecord(name, ApiStatus.REJECTED, class_name, kind, reason=reason)
+            pre_rejected[name] = ApiRecord(
+                name,
+                ApiStatus.EXCLUDED_BLACKLIST,
+                class_name,
+                kind,
+                reason=reason,
+                reason_code="BLACKLISTED_BY_CONFIG",
+            )
             return
         entry = selected.get(name)
         if entry is None:
             entry = SelectedAPI(name, item, class_name)
             selected[name] = entry
         elif entry.item is not item and entry.item != item:
-            messages.append({"severity": "error", "code": "DUPLICATE_API_IDENTITY", "message": f"{name} resolves to conflicting declarations"})
+            messages.append(
+                Diagnostic(
+                    code="DUPLICATE_API_IDENTITY",
+                    severity=Severity.ERROR,
+                    category="selection",
+                    subject_kind="api",
+                    subject=name,
+                    api=name,
+                    reason=f"{name} resolves to conflicting declarations",
+                    suggested_action="Remove the conflicting declaration or narrow the API selector.",
+                )
+            )
         if kind not in entry.selection_kinds:
             entry.selection_kinds.append(kind)
         entry.is_constructor = entry.is_constructor or is_ctor
@@ -107,10 +124,6 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
         for name in constant_names
         if lv_api.include_by_filter(name, const_filter["whitelist"], const_filter["blacklist"], lv_api.FilterStats())
     ]
-
-    for cls_name, extras in config.get("special_bindings", {}).get("class_extensions", {}).get("methods", {}).items():
-        for item in extras:
-            messages.append({"severity": "info", "code": "SPECIAL_INJECTED", "message": f"{cls_name}.{item['name']} uses injected special binding {item['binding']}"})
 
     candidate_names.update(selected)
     return SelectionResult(classes, selected, selected_constants, props, messages, list(pre_rejected.values()), sorted(candidate_names))

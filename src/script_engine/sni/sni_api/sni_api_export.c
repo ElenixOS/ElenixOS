@@ -82,6 +82,9 @@ bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_valu
             case SNI_CONST_STRING:
                 value = jerry_string_sz(constants[i].value.s);
                 break;
+            case SNI_CONST_UNDEFINED:
+                value = jerry_undefined();
+                break;
             default:
                 return false;
         }
@@ -101,6 +104,135 @@ bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_valu
     }
 
     return true;
+}
+
+bool sni_api_register_macro_catalog(const sni_macro_desc_t *macros, jerry_value_t target)
+{
+    if (macros == NULL)
+    {
+        return true;
+    }
+
+    jerry_value_t catalog = jerry_object();
+    if (jerry_value_is_exception(catalog))
+    {
+        jerry_value_free(catalog);
+        return false;
+    }
+
+    for (size_t i = 0; macros[i].name != NULL; i++)
+    {
+        jerry_value_t info = jerry_object();
+        if (jerry_value_is_exception(info))
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t defined = jerry_boolean(macros[i].defined);
+        bool ok = sni_set_property(info, "defined", defined);
+        jerry_value_free(defined);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t function_like = jerry_boolean(macros[i].function_like);
+        ok = sni_set_property(info, "functionLike", function_like);
+        jerry_value_free(function_like);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t value_available = jerry_boolean(macros[i].value_available);
+        ok = sni_set_property(info, "valueAvailable", value_available);
+        jerry_value_free(value_available);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t parameters = jerry_null();
+        if (macros[i].parameters_json != NULL)
+        {
+            parameters =
+                jerry_json_parse((const jerry_char_t *)macros[i].parameters_json, strlen(macros[i].parameters_json));
+            if (jerry_value_is_exception(parameters))
+            {
+                jerry_value_free(parameters);
+                jerry_value_free(info);
+                jerry_value_free(catalog);
+                return false;
+            }
+        }
+        ok = sni_set_property(info, "parameters", parameters);
+        jerry_value_free(parameters);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t initializer = macros[i].initializer ? jerry_string_sz(macros[i].initializer) : jerry_undefined();
+        ok = sni_set_property(info, "initializer", initializer);
+        jerry_value_free(initializer);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        jerry_value_t value = jerry_undefined();
+        if (macros[i].value_available)
+        {
+            switch (macros[i].value_type)
+            {
+                case SNI_CONST_INT:
+                    value = jerry_number((double)macros[i].value.i);
+                    break;
+                case SNI_CONST_FLOAT:
+                    value = jerry_number(macros[i].value.f);
+                    break;
+                case SNI_CONST_STRING:
+                    value = jerry_string_sz(macros[i].value.s);
+                    break;
+                case SNI_CONST_UNDEFINED:
+                default:
+                    value = jerry_undefined();
+                    break;
+            }
+        }
+        ok = sni_set_property(info, "value", value);
+        jerry_value_free(value);
+        if (!ok)
+        {
+            jerry_value_free(info);
+            jerry_value_free(catalog);
+            return false;
+        }
+
+        ok = sni_set_property(catalog, macros[i].name, info);
+        jerry_value_free(info);
+        if (!ok)
+        {
+            jerry_value_free(catalog);
+            return false;
+        }
+    }
+
+    bool ok = sni_set_property(target, "macros", catalog);
+    jerry_value_free(catalog);
+    return ok;
 }
 
 static bool sni_register_properties(const sni_property_desc_t *properties, jerry_value_t prototype)

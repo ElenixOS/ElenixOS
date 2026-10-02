@@ -10,7 +10,6 @@
 #include "lvgl.h"
 #include "lvgl_private.h"
 #include "core/lv_global.h"
-#include "draw/lv_draw_buf.h"
 #include "misc/cache/instance/lv_image_cache.h"
 #include "misc/cache/instance/lv_image_header_cache.h"
 

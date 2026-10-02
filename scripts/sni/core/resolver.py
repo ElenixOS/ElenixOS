@@ -386,6 +386,7 @@ class TypeResolver:
             uses=[use for use in ir.uses if use.function in accepted],
             classes=self._resolved_classes(accepted),
             root_constants=list(self.selection.root_constants),
+            macros=list(self.selection.macros),
             event_assertions=list(self.selection.event_assertions),
             names=accepted_names,
         )

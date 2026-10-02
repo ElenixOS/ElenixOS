@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ..core.ir import ApiClassIR, ApiRecord, ApiStatus, ApiUse, ResolvedApiSurface
+from ..core.ir import ApiClassIR, ApiConstantIR, ApiMacroIR, ApiRecord, ApiStatus, ApiUse, ResolvedApiSurface
 from ..core.lvgl_model import normalize_c_type_node
 
 
@@ -93,13 +93,6 @@ class ApiFunction:
 class ArgRenderResult:
     call_expr: str
     post_lines: List[str]
-
-
-@dataclass
-class ApiConstant:
-    name: str
-    kind: str
-    value: str
 
 
 @dataclass
@@ -400,73 +393,6 @@ def include_by_filter(
     return True
 
 
-def parse_numeric_constant(value_text: str) -> Optional[Tuple[str, str]]:
-    text = str(value_text).strip()
-    if not text:
-        return None
-
-    # Strip one outer pair of parentheses
-    while text.startswith("(") and text.endswith(")"):
-        inner = text[1:-1].strip()
-        if not inner:
-            break
-        text = inner
-
-    # Parse hexadecimal literals before stripping suffixes. A-F are valid
-    # hexadecimal digits, so a blanket rstrip("...Ff") would turn values
-    # such as 0x0000F into 0x0000.
-    hex_match = re.fullmatch(r"[-+]?0[xX][0-9a-fA-F]+[uUlL]*", text)
-    if hex_match:
-        hex_text = re.sub(r"[uUlL]+$", "", text)
-        numeric_value = int(hex_text, 16)
-        if 0 <= numeric_value <= 0xFFFFFFFF and numeric_value > 0x7FFFFFFF:
-            numeric_value -= 0x100000000
-        return ("int", str(numeric_value))
-
-    text = text.rstrip("UuLlFf")
-
-    if re.fullmatch(r"[-+]?0x[0-9a-fA-F]+", text):
-        return ("int", str(int(text, 16)))
-    if re.fullmatch(r"[-+]?\d+", text):
-        return ("int", str(int(text, 10)))
-    if re.fullmatch(r"[-+]?\d+\.\d*([eE][-+]?\d+)?", text) or re.fullmatch(r"[-+]?\d+[eE][-+]?\d+", text):
-        return ("float", text)
-    return None
-
-
-def parse_string_constant(value_text: str) -> Optional[str]:
-    text = str(value_text).strip()
-    if not text:
-        return None
-
-    # Accept C string literals even when followed by comments, e.g. "..." /* ... */
-    match = re.match(r'^"([^"\\]|\\.)*"', text)
-    if match:
-        return match.group(0)
-    return None
-
-
-def add_exported_constants(
-    constants: Dict[str, ApiConstant],
-    lvgl_data: Dict[str, Any],
-    whitelist: List[str],
-    blacklist: List[str],
-    stats: Optional[FilterStats] = None,
-) -> None:
-    for item in lvgl_data.get("exported_constants", []):
-        if not isinstance(item, dict):
-            continue
-        name = str(item.get("name", "")).strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
-            continue
-        if not include_by_filter(name, whitelist, blacklist, stats):
-            continue
-
-        # Keep the C symbol.  The generated sni_api_lv.c includes lvgl.h, so
-        # the compiler remains the source of truth for config-dependent values.
-        constants[name] = ApiConstant(name=name, kind="int", value=name)
-
-
 def load_lvgl_version(version_header_path: Path) -> Tuple[int, int, int]:
     """Read the LVGL version directly from lv_version.h."""
     try:
@@ -522,112 +448,6 @@ def render_lvgl_compatibility_guard(
         ]
     )
     return "\n".join(lines)
-
-
-def collect_constants(
-    lvgl_data: Dict[str, Any],
-    filters: Dict[str, List[str]],
-    stats: FilterStats,
-) -> List[ApiConstant]:
-    constants: Dict[str, ApiConstant] = {}
-
-    whitelist = filters.get("whitelist", [])
-    blacklist = filters.get("blacklist", [])
-
-    for macro in lvgl_data.get("macros", []):
-        name = str(macro.get("name", "")).strip()
-        if not name:
-            continue
-        if macro.get("params"):
-            continue
-        if not include_by_filter(name, whitelist, blacklist, stats):
-            continue
-
-        init = macro.get("initializer")
-        if init is None:
-            continue
-
-        value_text = str(init).strip()
-        number = parse_numeric_constant(value_text)
-        if number:
-            kind, val = number
-            constants[name] = ApiConstant(name=name, kind=kind, value=val)
-            continue
-
-        string_value = parse_string_constant(value_text)
-        if string_value:
-            constants[name] = ApiConstant(name=name, kind="string", value=string_value)
-
-    for enum in lvgl_data.get("enums", []):
-        members = enum.get("members", [])
-        for member in members:
-            name = str(member.get("name", "")).strip()
-            if not name:
-                continue
-            if not include_by_filter(name, whitelist, blacklist, stats):
-                continue
-
-            value_text = member.get("value")
-            number = parse_numeric_constant(str(value_text))
-            if number:
-                kind, val = number
-                constants[name] = ApiConstant(name=name, kind=kind, value=val)
-
-    add_exported_constants(constants, lvgl_data, whitelist, blacklist, stats)
-    return [constants[name] for name in sorted(constants.keys())]
-
-
-def build_root_constants_with_aliases(constants: List[ApiConstant], blacklist: List[str]) -> List[ApiConstant]:
-    result: Dict[str, ApiConstant] = {}
-
-    for item in constants:
-        export_name = item.name
-        if item.name.startswith("LV_") and len(item.name) > 3:
-            export_name = item.name[3:]
-
-        if blacklist and (is_matched(item.name, blacklist) or is_matched(export_name, blacklist)):
-            continue
-
-        result[export_name] = ApiConstant(name=export_name, kind=item.kind, value=item.value)
-
-    return [result[name] for name in sorted(result.keys())]
-
-
-def build_constant_index(lvgl_data: Dict[str, Any]) -> Dict[str, ApiConstant]:
-    constants: Dict[str, ApiConstant] = {}
-
-    for macro in lvgl_data.get("macros", []):
-        name = str(macro.get("name", "")).strip()
-        if not name or macro.get("params"):
-            continue
-        init = macro.get("initializer")
-        if init is None:
-            continue
-
-        value_text = str(init).strip()
-        number = parse_numeric_constant(value_text)
-        if number:
-            kind, val = number
-            constants[name] = ApiConstant(name=name, kind=kind, value=val)
-            continue
-
-        string_value = parse_string_constant(value_text)
-        if string_value:
-            constants[name] = ApiConstant(name=name, kind="string", value=string_value)
-
-    for enum in lvgl_data.get("enums", []):
-        for member in enum.get("members", []):
-            name = str(member.get("name", "")).strip()
-            if not name:
-                continue
-            value_text = member.get("value")
-            number = parse_numeric_constant(str(value_text))
-            if number:
-                kind, val = number
-                constants[name] = ApiConstant(name=name, kind=kind, value=val)
-
-    add_exported_constants(constants, lvgl_data, [], [])
-    return constants
 
 
 def topo_sort_classes(classes: Dict[str, ApiClass]) -> List[ApiClass]:
@@ -1330,28 +1150,97 @@ def render_property_array(name: str, items: List[Tuple[str, Optional[str], Optio
     return "\n".join(lines)
 
 
-def render_constant_array(name: str, items: List[ApiConstant]) -> str:
+def _c_string_literal(value: str) -> str:
+    """Encode arbitrary metadata as a portable C string literal."""
+    escaped: List[str] = ['"']
+    for byte in value.encode("utf-8"):
+        if 0x20 <= byte <= 0x7E and byte not in {ord('"'), ord("\\")}:
+            escaped.append(chr(byte))
+        elif byte == ord('"'):
+            escaped.append('\\"')
+        elif byte == ord("\\"):
+            escaped.append("\\\\")
+        elif byte == 0x0A:
+            escaped.append("\\n")
+        elif byte == 0x0D:
+            escaped.append("\\r")
+        elif byte == 0x09:
+            escaped.append("\\t")
+        else:
+            escaped.append(f"\\{byte:03o}")
+    escaped.append('"')
+    return "".join(escaped)
+
+
+def _render_constant_value(item: ApiConstantIR) -> str:
+    if item.value_kind == "int" and item.c_expression:
+        return f"{{.name = {_c_string_literal(item.name)}, .type = SNI_CONST_INT, .value.i = {item.c_expression}}},"
+    if item.value_kind == "float" and item.c_expression:
+        return f"{{.name = {_c_string_literal(item.name)}, .type = SNI_CONST_FLOAT, .value.f = {item.c_expression}}},"
+    if item.value_kind == "string" and item.c_expression:
+        return f"{{.name = {_c_string_literal(item.name)}, .type = SNI_CONST_STRING, .value.s = {item.c_expression}}},"
+    return f"{{.name = {_c_string_literal(item.name)}, .type = SNI_CONST_UNDEFINED, .value.i = 0}},"
+
+
+def render_constant_array(name: str, items: List[ApiConstantIR]) -> str:
     lines = [f"const sni_constant_desc_t {name}[] = {{"]
     for item in items:
-        if item.kind == "int":
+        value = _render_constant_value(item)
+        if item.availability_guard and item.value_kind is not None:
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", item.availability_guard):
+                raise RuntimeError(f"Invalid constant availability guard for {item.name}: {item.availability_guard!r}")
+            lines.append(f"#if defined({item.availability_guard})")
+            lines.append(f"    {value}")
+            lines.append("#else")
             lines.append(
-                "    {"
-                f".name = \"{item.name}\", .type = SNI_CONST_INT, .value.i = {item.value}"
-                "},"
+                f"    {{.name = {_c_string_literal(item.name)}, .type = SNI_CONST_UNDEFINED, .value.i = 0}},"
             )
-        elif item.kind == "float":
-            lines.append(
-                "    {"
-                f".name = \"{item.name}\", .type = SNI_CONST_FLOAT, .value.f = {item.value}"
-                "},"
-            )
-        elif item.kind == "string":
-            lines.append(
-                "    {"
-                f".name = \"{item.name}\", .type = SNI_CONST_STRING, .value.s = {item.value}"
-                "},"
-            )
+            lines.append("#endif")
+        else:
+            lines.append(f"    {value}")
     lines.append("    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},")
+    lines.append("};")
+    return "\n".join(lines)
+
+
+def render_macro_catalog(name: str, macros: List[ApiMacroIR]) -> str:
+    lines = [f"const sni_macro_desc_t {name}[] = {{"]
+    for macro in macros:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", macro.name):
+            raise RuntimeError(f"Invalid LVGL macro identifier: {macro.name!r}")
+        function_like = macro.parameters is not None
+        parameters_json = None if macro.parameters is None else json.dumps(list(macro.parameters), ensure_ascii=False, separators=(",", ":"))
+        params_c = "NULL" if parameters_json is None else _c_string_literal(parameters_json)
+        initializer_c = "NULL" if macro.initializer is None else _c_string_literal(macro.initializer)
+        value_kind = macro.value_kind
+        if value_kind == "int":
+            value_type = "SNI_CONST_INT"
+            value_field = f".value.i = {macro.name}"
+        elif value_kind == "float":
+            value_type = "SNI_CONST_FLOAT"
+            value_field = f".value.f = {macro.name}"
+        elif value_kind == "string":
+            value_type = "SNI_CONST_STRING"
+            value_field = f".value.s = {macro.name}"
+        else:
+            value_type = "SNI_CONST_UNDEFINED"
+            value_field = ".value.i = 0"
+        common = (
+            f".name = {_c_string_literal(macro.name)}, .function_like = {str(function_like).lower()}, "
+            f".parameters_json = {params_c}, .initializer = {initializer_c}"
+        )
+        lines.append(f"#if defined({macro.name})")
+        lines.append(
+            f"    {{{common}, .defined = true, .value_available = {str(value_kind is not None).lower()}, "
+            f".value_type = {value_type}, {value_field}}},"
+        )
+        lines.append("#else")
+        lines.append(
+            f"    {{{common}, .defined = false, .value_available = false, "
+            ".value_type = SNI_CONST_UNDEFINED, .value.i = 0},"
+        )
+        lines.append("#endif")
+    lines.append("    {.name = NULL},")
     lines.append("};")
     return "\n".join(lines)
 
@@ -1405,6 +1294,10 @@ void sni_api_lv_init(void)
     if (!sni_api_register_constants(lv_root_constants, lv_api_obj))
     {
         EOS_LOG_E("Failed to register LV root constants");
+    }
+    if (!sni_api_register_macro_catalog(lv_macro_catalog, lv_api_obj))
+    {
+        EOS_LOG_E("Failed to register LV macro catalog");
     }
 }
 
@@ -1630,6 +1523,9 @@ def _render_entries(
     root_constant_array_name = "lv_root_constants"
     blocks.append(render_constant_array(root_constant_array_name, ir.root_constants))
 
+    macro_catalog_array_name = "lv_macro_catalog"
+    blocks.append(render_macro_catalog(macro_catalog_array_name, ir.macros))
+
     blocks.append(
         render_class_block(
             ir.classes,
@@ -1659,6 +1555,7 @@ def _render_entries(
         "static_method_count": sum(len(item.static_methods) for item in ir.classes),
         "property_count": sum(len(item.properties) for item in ir.classes),
         "global_constant_count": len(ir.root_constants),
+        "macro_count": len(ir.macros),
         "diagnostics": [],
     }
 

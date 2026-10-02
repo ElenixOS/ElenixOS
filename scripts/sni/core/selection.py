@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .ir import ApiClassIR, ApiConstantIR, ApiExportRef, ApiPropertyIR, ApiRecord, ApiStatus, Diagnostic, Severity
+from .constants import build_constant_index, build_macro_catalog, parse_numeric_constant, resolve_constant
+from .ir import ApiClassIR, ApiConstantIR, ApiExportRef, ApiMacroIR, ApiPropertyIR, ApiRecord, ApiStatus, Diagnostic, Severity
 from ..render import lv_api
 
 
@@ -31,6 +32,7 @@ class SelectionResult:
     render_classes: list[ApiClassIR] = field(default_factory=list)
     root_constants: list[ApiConstantIR] = field(default_factory=list)
     event_assertions: list[tuple[str, str]] = field(default_factory=list)
+    macros: list[ApiMacroIR] = field(default_factory=list)
 
 
 def _special_map(config: dict[str, Any]) -> dict[str, str]:
@@ -147,7 +149,10 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
 
     # Resolve configured class constants and global constants once, before rendering.
     const_filter = filters["constant"]
-    constant_index = lv_api.build_constant_index(lvgl_data)
+    # The macro catalog is complete and independent of the scalar-value filter.
+    # The filter controls only legacy root aliases; it never removes macro metadata.
+    macro_catalog = build_macro_catalog(lvgl_data)
+    constant_index = build_constant_index(lvgl_data)
     constant_names = sorted(constant_index)
     selected_constants = [
         name
@@ -162,10 +167,10 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
     for cls in classes:
         class_constants: list[ApiConstantIR] = []
         for name in cls.constants:
-            if name not in constant_index:
+            item = constant_index.get(name) or resolve_constant(lvgl_data, name)
+            if item is None:
                 raise SystemExit(f"[Error] classes.{cls.name}.constants references unknown constant: {name}")
-            item = constant_index[name]
-            class_constants.append(ApiConstantIR(item.name, item.kind, item.value))
+            class_constants.append(item)
         extra_methods = [
             (item["name"], item["binding"])
             for item in extensions.get("methods", {}).get(cls.name, [])
@@ -197,7 +202,16 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
         export_name = item.name[3:] if item.name.startswith("LV_") and len(item.name) > 3 else item.name
         if any(lv_api.is_matched(candidate, const_filter["blacklist"]) for candidate in (item.name, export_name)):
             continue
-        root_constants[export_name] = ApiConstantIR(export_name, item.kind, item.value)
+        root_constants[export_name] = ApiConstantIR(
+            name=export_name,
+            value_kind=item.value_kind,
+            source_kind=item.source_kind,
+            c_expression=item.c_expression,
+            source_name=item.source_name,
+            availability_guard=item.availability_guard,
+            initializer=item.initializer,
+            parameters=item.parameters,
+        )
 
     event_assertions: list[tuple[str, str]] = []
     for enum in lvgl_data.get("enums", []):
@@ -205,7 +219,7 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
             continue
         for member in enum.get("members", []):
             name = str(member.get("name", "")).strip()
-            number = lv_api.parse_numeric_constant(str(member.get("value", "")))
+            number = parse_numeric_constant(str(member.get("value", "")))
             if name and number is not None and number[0] == "int":
                 event_assertions.append((name, number[1]))
         break
@@ -221,4 +235,5 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
         render_classes,
         [root_constants[name] for name in sorted(root_constants)],
         event_assertions,
+        macro_catalog,
     )

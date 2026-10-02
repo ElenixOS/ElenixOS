@@ -189,8 +189,21 @@ class ApiPropertyIR:
 @dataclass(frozen=True)
 class ApiConstantIR:
     name: str
-    kind: str
-    value: str
+    value_kind: str | None
+    source_kind: str
+    c_expression: str | None
+    source_name: str | None = None
+    availability_guard: str | None = None
+    initializer: str | None = None
+    parameters: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True)
+class ApiMacroIR:
+    name: str
+    parameters: tuple[str, ...] | None
+    initializer: str | None
+    value_kind: str | None
 
 
 @dataclass
@@ -217,6 +230,7 @@ class ResolvedApiSurface:
     uses: list[ApiUse] = field(default_factory=list)
     classes: list[ApiClassIR] = field(default_factory=list)
     root_constants: list[ApiConstantIR] = field(default_factory=list)
+    macros: list[ApiMacroIR] = field(default_factory=list)
     event_assertions: list[tuple[str, str]] = field(default_factory=list)
     names: list[str] = field(default_factory=list)
 
@@ -372,7 +386,16 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                         for prop in cls.properties
                     ],
                     "constants": [
-                        {"name": value.name, "kind": value.kind, "value": value.value}
+                        {
+                            "name": value.name,
+                            "value_kind": value.value_kind,
+                            "source_kind": value.source_kind,
+                            "source_name": value.source_name,
+                            "c_expression": value.c_expression,
+                            "availability_guard": value.availability_guard,
+                            "initializer": value.initializer,
+                            "parameters": value.parameters,
+                        }
                         for value in cls.constants
                     ],
                     "extra_methods": [list(value) for value in cls.extra_methods],
@@ -381,8 +404,26 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                 for cls in (ir.api_surface.classes if ir.api_surface else [])
             ],
             "root_constants": [
-                {"name": value.name, "kind": value.kind, "value": value.value}
+                {
+                    "name": value.name,
+                    "value_kind": value.value_kind,
+                    "source_kind": value.source_kind,
+                    "source_name": value.source_name,
+                    "c_expression": value.c_expression,
+                    "availability_guard": value.availability_guard,
+                    "initializer": value.initializer,
+                    "parameters": value.parameters,
+                }
                 for value in (ir.api_surface.root_constants if ir.api_surface else [])
+            ],
+            "macros": [
+                {
+                    "name": macro.name,
+                    "parameters": macro.parameters,
+                    "initializer": macro.initializer,
+                    "value_kind": macro.value_kind,
+                }
+                for macro in (ir.api_surface.macros if ir.api_surface else [])
             ],
             "event_assertions": [list(item) for item in (ir.api_surface.event_assertions if ir.api_surface else [])],
         },

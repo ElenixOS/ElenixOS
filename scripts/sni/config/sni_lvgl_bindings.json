@@ -407,6 +407,7 @@
       "lv_anim_start": "sni_api_lv_anim_start",
       "lv_buttonmatrix_set_ctrl_map": "sni_api_lv_buttonmatrix_set_ctrl_map",
       "lv_buttonmatrix_set_map": "sni_api_lv_buttonmatrix_set_map",
+      "lv_calendar_set_chinese_mode": "sni_api_lv_calendar_set_chinese_mode",
       "lv_calendar_set_day_names": "sni_api_lv_calendar_set_day_names",
       "lv_calendar_set_highlighted_dates": "sni_api_lv_calendar_set_highlighted_dates",
       "lv_canvas_get_px": "sni_api_lv_canvas_get_px",
@@ -533,6 +534,13 @@
         "binding": "sni_api_lv_calendar_set_day_names"
       },
       {
+        "class": "calendar",
+        "property": "chinese_mode",
+        "function": "lv_calendar_set_chinese_mode",
+        "accessor": "setter",
+        "binding": "sni_api_lv_calendar_set_chinese_mode"
+      },
+      {
         "class": "dropdown",
         "property": "symbol",
         "function": "lv_dropdown_set_symbol",
@@ -601,13 +609,6 @@
         ]
       },
       "properties": {
-        "calendar": [
-          {
-            "name": "chineseMode",
-            "getter": null,
-            "setter": "sni_api_lv_calendar_set_chinese_mode"
-          }
-        ],
         "timer": [
           {
             "name": "autoDelete",

@@ -76,14 +76,22 @@
         "static_methods": [],
         "constants": []
       },
-      "screen": {
+      "slider": {
         "c_type": "lv_obj_t",
-        "constructor": null,
-        "base": "obj",
-        "methods": [],
-        "static_methods": [
-          "lv_screen_active"
+        "constructor": "lv_slider_create",
+        "base": "bar",
+        "methods": [
+          {
+            "name": "lv_slider_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
         ],
+        "static_methods": [],
         "constants": []
       },
       "color": {
@@ -244,6 +252,42 @@
         "static_methods": [],
         "constants": []
       },
+      "switch": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_switch_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_switch_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "textarea": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_textarea_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_textarea_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
       "dropdown": {
         "c_type": "lv_obj_t",
         "base": "obj",
@@ -298,6 +342,122 @@
         ],
         "static_methods": [],
         "constants": []
+      },
+      "list": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_list_create",
+        "base": "obj",
+        "methods": [],
+        "static_methods": [],
+        "constants": []
+      },
+      "tabview": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_tabview_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_tabview_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "tileview": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_tileview_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_tileview_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "roller": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_roller_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_roller_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "spinbox": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_spinbox_create",
+        "base": "textarea",
+        "methods": [
+          {
+            "name": "lv_spinbox_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "msgbox": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_msgbox_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_msgbox_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
+      },
+      "qrcode": {
+        "c_type": "lv_obj_t",
+        "constructor": "lv_qrcode_create",
+        "base": "obj",
+        "methods": [
+          {
+            "name": "lv_qrcode_*",
+            "arg_match": [
+              {
+                "nth": 1,
+                "type": "lv_obj_t*"
+              }
+            ]
+          }
+        ],
+        "static_methods": [],
+        "constants": []
       }
     },
     "scan": {
@@ -320,11 +480,17 @@
           "lv_image_get_bitmap_map_src",
           "lv_image_set_bitmap_map_src",
           "lv_label_set_text_vfmt",
+          "lv_list_add_button",
+          "lv_list_add_button_translation_tag",
+          "lv_msgbox_add_header_button",
+          "lv_display_get_screen_*",
           "lv_obj_add_delete_cb",
           "lv_obj_add_play_timeline_event",
           "lv_obj_add_screen_create_event",
+          "lv_obj_add_screen_load_event",
           "lv_obj_add_subject_increment_event",
           "lv_obj_get_style_image_colorkey",
+          "lv_obj_get_screen",
           "lv_obj_get_transform",
           "lv_obj_init_draw_*_dsc",
           "lv_obj_remove_delete_cb",
@@ -333,6 +499,14 @@
           "lv_obj_set_subject_increment_event_min_value",
           "lv_obj_set_subject_increment_event_rollover",
           "lv_obj_set_transform",
+          "lv_qrcode_update",
+          "lv_screen_*",
+          "lv_scr_*",
+          "lv_roller_get_option_str",
+          "lv_roller_bind_value",
+          "lv_slider_bind_value",
+          "lv_spinbox_bind_value",
+          "lv_textarea_set_accepted_chars_static",
           "lv_timer_create_basic",
           "lv_timer_get_user_data",
           "lv_timer_set_auto_delete",
@@ -344,6 +518,12 @@
           "*"
         ],
         "blacklist": [
+          "EVENT_SCREEN_*",
+          "LV_EVENT_SCREEN_*",
+          "LV_SCREEN_LOAD_ANIM_*",
+          "LV_SCR_LOAD_ANIM_*",
+          "SCREEN_LOAD_ANIM_*",
+          "SCR_LOAD_ANIM_*",
           "STR_SYMBOL_*"
         ]
       }
@@ -360,6 +540,13 @@
     "lv_dropdown_set_options_static": {
       "call": "lv_dropdown_set_options",
       "string_ownership": "copy"
+    },
+    "lv_roller_get_selected_str": {
+      "output_string": {
+        "buffer_arg": "buf",
+        "size_arg": "buf_size",
+        "js_buffer_arg": "placeholder"
+      }
     }
   },
   "type_declarations": {
@@ -439,7 +626,8 @@
     "constructors": {
       "lv_timer_create": "sni_api_ctor_timer",
       "lv_anim_init": "sni_api_ctor_anim",
-      "lv_buttonmatrix_create": "sni_api_ctor_buttonmatrix"
+      "lv_buttonmatrix_create": "sni_api_ctor_buttonmatrix",
+      "lv_list_create": "sni_api_ctor_list"
     },
     "properties": [
       {
@@ -595,6 +783,16 @@
             "binding": "sni_api_lv_canvas_free_buffer"
           }
         ],
+        "list": [
+          {
+            "name": "addText",
+            "binding": "sni_api_lv_list_add_text"
+          },
+          {
+            "name": "addButtonText",
+            "binding": "sni_api_lv_list_add_button_text"
+          }
+        ],
         "obj": [
           {
             "name": "setFontSize",
@@ -666,8 +864,25 @@
     ]
   },
   "api_rejection_reasons": {
+    "lv_display_get_screen_active": "Display screen selection is owned by eos.view and Activity lifecycle; raw LVGL screen access is excluded from SNI.",
+    "lv_display_get_screen_loading": "Display screen selection is owned by eos.view and Activity lifecycle; raw LVGL screen access is excluded from SNI.",
+    "lv_display_get_screen_prev": "Display screen selection is owned by eos.view and Activity lifecycle; raw LVGL screen access is excluded from SNI.",
     "lv_canvas_get_image": "Returns a caller-managed image descriptor pointer whose ownership and invalidation are not integrated with SNI.",
     "lv_image_get_bitmap_map_src": "Returns an image descriptor pointer without a proven SNI lifetime or external-owner invalidation path.",
-    "lv_image_set_bitmap_map_src": "Accepts an image descriptor pointer without a proven SNI lifetime contract."
+    "lv_image_set_bitmap_map_src": "Accepts an image descriptor pointer without a proven SNI lifetime contract.",
+    "lv_list_add_button": "lv.list uses a text-only SNI wrapper built from lv.button and lv.label instead of the deprecated native API and its borrowed icon pointer.",
+    "lv_list_add_button_translation_tag": "This deprecated native API exposes a borrowed icon pointer; lv.list uses safe flex-based wrappers instead.",
+    "lv_msgbox_add_header_button": "The native icon argument is a borrowed image source pointer and cannot be exposed as a generic JS value.",
+    "lv_obj_add_screen_load_event": "Screen transitions are owned by eos.view and Activity lifecycle; raw LVGL screen navigation is excluded from SNI.",
+    "lv_obj_get_screen": "The screen root is owned by eos.view and Activity lifecycle; exposing an LVGL screen handle is excluded from SNI.",
+    "lv_qrcode_update": "The native payload argument is a raw byte pointer; use lv_qrcode_set_data for the safe string payload API.",
+    "lv_roller_get_option_str": "This getter writes into a caller-owned buffer and has a non-void result; it is not exposed until a dedicated safe wrapper is available.",
+    "lv_roller_bind_value": "The LVGL subject owner and lifecycle are not integrated with SNI.",
+    "lv_slider_bind_value": "The LVGL subject owner and lifecycle are not integrated with SNI.",
+    "lv_spinbox_bind_value": "The LVGL subject owner and lifecycle are not integrated with SNI.",
+    "lv_screen_active": "The screen root is owned by eos.view and Activity lifecycle; exposing LVGL screen APIs is excluded from SNI.",
+    "lv_screen_load": "Screen transitions are owned by eos.view and Activity lifecycle; raw LVGL screen navigation is excluded from SNI.",
+    "lv_screen_load_anim": "Screen transitions are owned by eos.view and Activity lifecycle; raw LVGL screen navigation is excluded from SNI.",
+    "lv_textarea_set_accepted_chars_static": "This setter retains the supplied string pointer; use lv_textarea_set_accepted_chars, which copies the string."
   }
 }

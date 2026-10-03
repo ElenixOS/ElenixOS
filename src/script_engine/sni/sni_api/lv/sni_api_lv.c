@@ -579,34 +579,6 @@ jerry_value_t sni_api_lv_obj_move_to_index(const jerry_call_info_t *call_info_p,
 }
 
 /**
- * @brief Get the screen of an object pointer to the object's screen
- *
- * @return (object) pointer to the object's screen
- */
-jerry_value_t sni_api_lv_obj_get_screen(const jerry_call_info_t *call_info_p,
-                                        const jerry_value_t args_p[],
-                                        const jerry_length_t args_count)
-{
-    if (args_count != 0)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const lv_obj_t *self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_obj_t *result = lv_obj_get_screen(self_obj);
-    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
-}
-
-/**
  * @brief Get the parent of an object the parent of the object. (NULL if obj was a screen)
  *
  * @return (object) the parent of the object. (NULL if obj was a screen)
@@ -17688,80 +17660,6 @@ jerry_value_t sni_api_lv_obj_is_in_widget_tree(const jerry_call_info_t *call_inf
 }
 
 /**
- * @brief Add an event handler to a widget that will load a screen on a trigger.
- *
- * @param trigger (number) an event code, e.g. LV_EVENT_CLICKED
- *
- * @param screen (object) the screen to load (must be a valid widget)
- *
- * @param anim_type (number) element of :ref:`lv_screen_load_anim_t` the screen load animation
- *
- * @param duration (number) duration of the animation in milliseconds
- *
- * @param delay (number) delay before the screen load in milliseconds
- */
-jerry_value_t sni_api_lv_obj_add_screen_load_event(const jerry_call_info_t *call_info_p,
-                                                   const jerry_value_t args_p[],
-                                                   const jerry_length_t args_count)
-{
-    if (args_count != 5)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t *self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_number(args_p[0]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_event_code_t arg_trigger;
-    arg_trigger = sni_tb_js2c_int32(args_p[0]);
-
-    if (!jerry_value_is_object(args_p[1]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_obj_t *arg_screen;
-    if (!sni_tb_js2c(args_p[1], SNI_H_LV_OBJ, &arg_screen))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    if (!jerry_value_is_number(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_screen_load_anim_t arg_anim_type;
-    arg_anim_type = sni_tb_js2c_int32(args_p[2]);
-
-    if (!jerry_value_is_number(args_p[3]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    uint32_t arg_duration;
-    arg_duration = sni_tb_js2c_uint32(args_p[3]);
-
-    if (!jerry_value_is_number(args_p[4]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    uint32_t arg_delay;
-    arg_delay = sni_tb_js2c_uint32(args_p[4]);
-
-    lv_obj_add_screen_load_event(self_obj, arg_trigger, arg_screen, arg_anim_type, arg_duration, arg_delay);
-    return jerry_undefined();
-}
-
-/**
  * @brief Move the object to the foreground. It will look like if it was created as the last child of its parent. It also means it can cover any of the siblings.
  */
 jerry_value_t sni_api_lv_obj_move_foreground(const jerry_call_info_t *call_info_p,
@@ -19099,35 +18997,6 @@ jerry_value_t sni_api_prop_set_obj_radio_button(const jerry_call_info_t *call_in
 
     lv_obj_set_radio_button(self_obj, prop_value);
     return jerry_undefined();
-}
-
-/**
- * @brief Get the screen of an object pointer to the object's screen
- *
- * @return (object) pointer to the object's screen
- */
-jerry_value_t sni_api_prop_get_obj_screen(const jerry_call_info_t *call_info_p,
-                                          const jerry_value_t args_p[],
-                                          const jerry_length_t args_count)
-{
-    (void)args_p;
-    if (args_count != 0)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    const lv_obj_t *self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    lv_obj_t *result = lv_obj_get_screen(self_obj);
-    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
 }
 
 /**
@@ -23244,23 +23113,876 @@ jerry_value_t sni_api_prop_get_bar_value(const jerry_call_info_t *call_info_p,
 }
 
 /**
- * @brief Get the active screen of the default display pointer to the active screen
+ * @brief Create a slider object pointer to the created slider
  *
- * @return (object) pointer to the active screen
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created slider
  */
-jerry_value_t sni_api_lv_screen_active(const jerry_call_info_t *call_info_p,
+jerry_value_t sni_api_ctor_slider(const jerry_call_info_t *call_info_p,
+                                  const jerry_value_t args_p[],
+                                  const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_slider_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a slider object pointer to the created slider
+ *
+ * @return (object) pointer to the created slider
+ */
+jerry_value_t sni_api_lv_slider_create(const jerry_call_info_t *call_info_p,
                                        const jerry_value_t args_p[],
                                        const jerry_length_t args_count)
 {
-    (void)call_info_p;
-
     if (args_count != 0)
     {
         return sni_api_throw_error("Invalid argument count");
     }
 
-    lv_obj_t *result = lv_screen_active();
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_slider_create(self_obj);
     return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set a new value on the slider
+ *
+ * @param value (number) the new value
+ *
+ * @param anim (boolean) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
+ */
+jerry_value_t sni_api_lv_slider_set_value(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_value;
+    arg_value = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim;
+    arg_anim = sni_tb_js2c_boolean(args_p[1]);
+
+    lv_slider_set_value(self_obj, arg_value, arg_anim);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set a new value for the left knob of a slider
+ *
+ * @param value (number) new value
+ *
+ * @param anim (boolean) LV_ANIM_ON: set the value with an animation; LV_ANIM_OFF: change the value immediately
+ */
+jerry_value_t sni_api_lv_slider_set_start_value(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_value;
+    arg_value = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim;
+    arg_anim = sni_tb_js2c_boolean(args_p[1]);
+
+    lv_slider_set_start_value(self_obj, arg_value, arg_anim);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the minimum and the maximum values of a bar
+ *
+ * @param min (number) minimum value
+ *
+ * @param max (number) maximum value
+ */
+jerry_value_t sni_api_lv_slider_set_range(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_min;
+    arg_min = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_max;
+    arg_max = sni_tb_js2c_int32(args_p[1]);
+
+    lv_slider_set_range(self_obj, arg_min, arg_max);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the minimum values of a bar
+ *
+ * @param min (number) minimum value
+ */
+jerry_value_t sni_api_lv_slider_set_min_value(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_min;
+    arg_min = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_min_value(self_obj, arg_min);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the maximum values of a bar
+ *
+ * @param max (number) maximum value
+ */
+jerry_value_t sni_api_lv_slider_set_max_value(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_max;
+    arg_max = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_max_value(self_obj, arg_max);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the mode of slider.
+ *
+ * @param mode (number) the mode of the slider. See :ref:`lv_slider_mode_t`
+ */
+jerry_value_t sni_api_lv_slider_set_mode(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_slider_mode_t arg_mode;
+    arg_mode = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_mode(self_obj, arg_mode);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the orientation of slider.
+ *
+ * @param orientation (number) slider orientation from :ref:`lv_slider_orientation_t`
+ */
+jerry_value_t sni_api_lv_slider_set_orientation(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_slider_orientation_t arg_orientation;
+    arg_orientation = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_orientation(self_obj, arg_orientation);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the value of the main knob of a slider the value of the main knob of the slider
+ *
+ * @return (number) the value of the main knob of the slider
+ */
+jerry_value_t sni_api_lv_slider_get_value(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the value of the left knob of a slider the value of the left knob of the slider
+ *
+ * @return (number) the value of the left knob of the slider
+ */
+jerry_value_t sni_api_lv_slider_get_left_value(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_left_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the minimum value of a slider the minimum value of the slider
+ *
+ * @return (number) the minimum value of the slider
+ */
+jerry_value_t sni_api_lv_slider_get_min_value(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_min_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the maximum value of a slider the maximum value of the slider
+ *
+ * @return (number) the maximum value of the slider
+ */
+jerry_value_t sni_api_lv_slider_get_max_value(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_max_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Give the slider is being dragged or not true: drag in progress false: not dragged
+ *
+ * @return (boolean) true: drag in progress false: not dragged
+ */
+jerry_value_t sni_api_lv_slider_is_dragged(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_slider_is_dragged(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the mode of the slider. see :ref:`lv_slider_mode_t`
+ *
+ * @return (number) see :ref:`lv_slider_mode_t`
+ */
+jerry_value_t sni_api_lv_slider_get_mode(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_slider_mode_t result = lv_slider_get_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the orientation of slider. slider orientation from :ref:`lv_slider_orientation_t`
+ *
+ * @return (number) slider orientation from :ref:`lv_slider_orientation_t`
+ */
+jerry_value_t sni_api_lv_slider_get_orientation(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_slider_orientation_t result = lv_slider_get_orientation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Give the slider is in symmetrical mode or not true: in symmetrical mode false : not in
+ *
+ * @return (boolean) true: in symmetrical mode false : not in
+ */
+jerry_value_t sni_api_lv_slider_is_symmetrical(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_slider_is_symmetrical(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the value of the left knob of a slider the value of the left knob of the slider
+ *
+ * @return (number) the value of the left knob of the slider
+ */
+jerry_value_t sni_api_prop_get_slider_left_value(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_left_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the maximum value of a slider the maximum value of the slider
+ *
+ * @return (number) the maximum value of the slider
+ */
+jerry_value_t sni_api_prop_get_slider_max_value(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_max_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the maximum values of a bar
+ *
+ * @param max (number) maximum value
+ */
+jerry_value_t sni_api_prop_set_slider_max_value(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_max_value(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the minimum value of a slider the minimum value of the slider
+ *
+ * @return (number) the minimum value of the slider
+ */
+jerry_value_t sni_api_prop_get_slider_min_value(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_min_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the minimum values of a bar
+ *
+ * @param min (number) minimum value
+ */
+jerry_value_t sni_api_prop_set_slider_min_value(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_min_value(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the mode of the slider. see :ref:`lv_slider_mode_t`
+ *
+ * @return (number) see :ref:`lv_slider_mode_t`
+ */
+jerry_value_t sni_api_prop_get_slider_mode(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_slider_mode_t result = lv_slider_get_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the mode of slider.
+ *
+ * @param mode (number) the mode of the slider. See :ref:`lv_slider_mode_t`
+ */
+jerry_value_t sni_api_prop_set_slider_mode(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_slider_mode_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_mode(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the orientation of slider. slider orientation from :ref:`lv_slider_orientation_t`
+ *
+ * @return (number) slider orientation from :ref:`lv_slider_orientation_t`
+ */
+jerry_value_t sni_api_prop_get_slider_orientation(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_slider_orientation_t result = lv_slider_get_orientation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the orientation of slider.
+ *
+ * @param orientation (number) slider orientation from :ref:`lv_slider_orientation_t`
+ */
+jerry_value_t sni_api_prop_set_slider_orientation(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_slider_orientation_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_slider_set_orientation(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the value of the main knob of a slider the value of the main knob of the slider
+ *
+ * @return (number) the value of the main knob of the slider
+ */
+jerry_value_t sni_api_prop_get_slider_value(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_slider_get_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
 }
 
 /**
@@ -26601,6 +27323,2245 @@ jerry_value_t sni_api_prop_set_checkbox_text(const jerry_call_info_t *call_info_
 }
 
 /**
+ * @brief Create a switch object pointer to the created switch
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created switch
+ */
+jerry_value_t sni_api_ctor_switch(const jerry_call_info_t *call_info_p,
+                                  const jerry_value_t args_p[],
+                                  const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_switch_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a switch object pointer to the created switch
+ *
+ * @return (object) pointer to the created switch
+ */
+jerry_value_t sni_api_lv_switch_create(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_switch_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set the orientation of switch.
+ *
+ * @param orientation (number) switch orientation from :ref:`lv_switch_orientation_t`
+ */
+jerry_value_t sni_api_lv_switch_set_orientation(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_switch_orientation_t arg_orientation;
+    arg_orientation = sni_tb_js2c_int32(args_p[0]);
+
+    lv_switch_set_orientation(self_obj, arg_orientation);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the orientation of switch. switch orientation from :ref:`lv_switch_orientation_t`
+ *
+ * @return (number) switch orientation from :ref:`lv_switch_orientation_t`
+ */
+jerry_value_t sni_api_lv_switch_get_orientation(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_switch_orientation_t result = lv_switch_get_orientation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the orientation of switch. switch orientation from :ref:`lv_switch_orientation_t`
+ *
+ * @return (number) switch orientation from :ref:`lv_switch_orientation_t`
+ */
+jerry_value_t sni_api_prop_get_switch_orientation(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_switch_orientation_t result = lv_switch_get_orientation(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the orientation of switch.
+ *
+ * @param orientation (number) switch orientation from :ref:`lv_switch_orientation_t`
+ */
+jerry_value_t sni_api_prop_set_switch_orientation(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_switch_orientation_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_switch_set_orientation(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a text area object pointer to the created text area
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created text area
+ */
+jerry_value_t sni_api_ctor_textarea(const jerry_call_info_t *call_info_p,
+                                    const jerry_value_t args_p[],
+                                    const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_textarea_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a text area object pointer to the created text area
+ *
+ * @return (object) pointer to the created text area
+ */
+jerry_value_t sni_api_lv_textarea_create(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_textarea_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Insert a character to the current cursor position. To add a wide char, e.g. 'Á' use lv_text_encoded_conv_wc('Á )
+ *
+ * @param c (number) a character (e.g. 'a )
+ */
+jerry_value_t sni_api_lv_textarea_add_char(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_c;
+    arg_c = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_textarea_add_char(self_obj, arg_c);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Insert a text to the current cursor position
+ *
+ * @param txt (string) a '\0' terminated string to insert
+ */
+jerry_value_t sni_api_lv_textarea_add_text(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_txt;
+    arg_txt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_txt)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_add_text(self_obj, arg_txt);
+    eos_free((void *)arg_txt);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Delete a the left character from the current cursor position
+ */
+jerry_value_t sni_api_lv_textarea_delete_char(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_delete_char(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Delete the right character from the current cursor position
+ */
+jerry_value_t sni_api_lv_textarea_delete_char_forward(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_delete_char_forward(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the text of a text area
+ *
+ * @param txt (string) pointer to the text
+ */
+jerry_value_t sni_api_lv_textarea_set_text(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_txt;
+    arg_txt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_txt)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_text(self_obj, arg_txt);
+    eos_free((void *)arg_txt);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the placeholder text of a text area
+ *
+ * @param txt (string) pointer to the text May be NULL .. When NULL, the placeholder is removed
+ */
+jerry_value_t sni_api_lv_textarea_set_placeholder_text(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_txt;
+    arg_txt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_txt)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_placeholder_text(self_obj, arg_txt);
+    eos_free((void *)arg_txt);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the cursor position
+ *
+ * @param pos (number) the new cursor position in character index < 0 : index from the end of the text LV_TEXTAREA_CURSOR_LAST: go after the last character
+ */
+jerry_value_t sni_api_lv_textarea_set_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_pos;
+    arg_pos = sni_tb_js2c_int32(args_p[0]);
+
+    lv_textarea_set_cursor_pos(self_obj, arg_pos);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable/Disable the positioning of the cursor by clicking the text on the text area.
+ *
+ * @param en (boolean) true: enable click positions; false: disable
+ */
+jerry_value_t sni_api_lv_textarea_set_cursor_click_pos(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_cursor_click_pos(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable/Disable password mode
+ *
+ * @param en (boolean) true: enable, false: disable
+ */
+jerry_value_t sni_api_lv_textarea_set_password_mode(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_password_mode(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the replacement characters to show in password mode
+ *
+ * @param bullet (string) pointer to the replacement text May be NULL .. When NULL the default bullet icon is used
+ */
+jerry_value_t sni_api_lv_textarea_set_password_bullet(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_bullet;
+    arg_bullet = sni_tb_js2c_string(args_p[0]);
+    if (!arg_bullet)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_password_bullet(self_obj, arg_bullet);
+    eos_free((void *)arg_bullet);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Configure the text area to one line or back to normal
+ *
+ * @param en (boolean) true: one line, false: normal
+ */
+jerry_value_t sni_api_lv_textarea_set_one_line(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_one_line(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set a list of characters. Only these characters will be accepted by the text area
+ *
+ * @param list (string) list of characters. A copy is saved. May be NULL .. When NULL the list is removed and every character is accepted by default. Example: "+-.,0123456789"
+ */
+jerry_value_t sni_api_lv_textarea_set_accepted_chars(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_list;
+    arg_list = sni_tb_js2c_string(args_p[0]);
+    if (!arg_list)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_accepted_chars(self_obj, arg_list);
+    eos_free((void *)arg_list);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set max length of a Text Area.
+ *
+ * @param num (number) the maximal number of characters can be added ( lv_textarea_set_text ignores it)
+ */
+jerry_value_t sni_api_lv_textarea_set_max_length(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_num;
+    arg_num = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_textarea_set_max_length(self_obj, arg_num);
+    return jerry_undefined();
+}
+
+/**
+ * @brief In LV_EVENT_INSERT the text which planned to be inserted can be replaced by another text. It can be used to add automatic formatting to the text area.
+ *
+ * @param txt (string) pointer to a new string to insert. May be NULL . If "" or NULL no text will be added. The variable must be live after the event_cb exists. (Should be global or static )
+ */
+jerry_value_t sni_api_lv_textarea_set_insert_replace(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_txt;
+    arg_txt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_txt)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_insert_replace(self_obj, arg_txt);
+    eos_free((void *)arg_txt);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable/disable selection mode.
+ *
+ * @param en (boolean) true or false to enable/disable selection mode
+ */
+jerry_value_t sni_api_lv_textarea_set_text_selection(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_text_selection(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set how long show the password before changing it to '*'
+ *
+ * @param time (number) show time in milliseconds. 0: hide immediately.
+ */
+jerry_value_t sni_api_lv_textarea_set_password_show_time(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_time;
+    arg_time = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_textarea_set_password_show_time(self_obj, arg_time);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Deprecated Use the normal text_align style property instead Set the label's alignment. It sets where the label is aligned (in one line mode it can be smaller than the text area) and how the lines of the area align in case of multiline text area
+ *
+ * @param align (number) the align mode from :ref:`lv_text_align_t`
+ */
+jerry_value_t sni_api_lv_textarea_set_align(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_text_align_t arg_align;
+    arg_align = sni_tb_js2c_int32(args_p[0]);
+
+    lv_textarea_set_align(self_obj, arg_align);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the text of a text area. In password mode it gives the real text (not '*'s). pointer to the text
+ *
+ * @return (string) pointer to the text
+ */
+jerry_value_t sni_api_lv_textarea_get_text(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get the placeholder text of a text area pointer to the text
+ *
+ * @return (string) pointer to the text
+ */
+jerry_value_t sni_api_lv_textarea_get_placeholder_text(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_placeholder_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get the label of a text area pointer to the label object
+ *
+ * @return (object) pointer to the label object
+ */
+jerry_value_t sni_api_lv_textarea_get_label(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_textarea_get_label(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the current cursor position in character index the cursor position
+ *
+ * @return (number) the cursor position
+ */
+jerry_value_t sni_api_lv_textarea_get_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_cursor_pos(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get whether the cursor click positioning is enabled or not. true: enable click positions; false: disable
+ *
+ * @return (boolean) true: enable click positions; false: disable
+ */
+jerry_value_t sni_api_lv_textarea_get_cursor_click_pos(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_cursor_click_pos(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the password mode attribute true: password mode is enabled, false: disabled
+ *
+ * @return (boolean) true: password mode is enabled, false: disabled
+ */
+jerry_value_t sni_api_lv_textarea_get_password_mode(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_password_mode(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the replacement characters to show in password mode pointer to the replacement text
+ *
+ * @return (string) pointer to the replacement text
+ */
+jerry_value_t sni_api_lv_textarea_get_password_bullet(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_password_bullet(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get the one line configuration attribute true: one line configuration is enabled, false: disabled
+ *
+ * @return (boolean) true: one line configuration is enabled, false: disabled
+ */
+jerry_value_t sni_api_lv_textarea_get_one_line(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_one_line(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get a list of accepted characters. list of accented characters.
+ *
+ * @return (string) list of accented characters.
+ */
+jerry_value_t sni_api_lv_textarea_get_accepted_chars(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_accepted_chars(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get max length of a Text Area. the maximal number of characters to be add
+ *
+ * @return (number) the maximal number of characters to be add
+ */
+jerry_value_t sni_api_lv_textarea_get_max_length(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_max_length(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Find whether text is selected or not. whether text is selected or not
+ *
+ * @return (boolean) whether text is selected or not
+ */
+jerry_value_t sni_api_lv_textarea_text_is_selected(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_text_is_selected(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Find whether selection mode is enabled. true: selection mode is enabled, false: disabled
+ *
+ * @return (boolean) true: selection mode is enabled, false: disabled
+ */
+jerry_value_t sni_api_lv_textarea_get_text_selection(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_text_selection(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Set how long show the password before changing it to '*' show time in milliseconds. 0: hide immediately.
+ *
+ * @return (number) show time in milliseconds. 0: hide immediately.
+ */
+jerry_value_t sni_api_lv_textarea_get_password_show_time(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_password_show_time(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get a the character from the current cursor position a the character or 0
+ *
+ * @return (number) a the character or 0
+ */
+jerry_value_t sni_api_lv_textarea_get_current_char(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_current_char(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Clear the selection on the text area.
+ */
+jerry_value_t sni_api_lv_textarea_clear_selection(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_clear_selection(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Move the cursor one character right
+ */
+jerry_value_t sni_api_lv_textarea_cursor_right(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_cursor_right(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Move the cursor one character left
+ */
+jerry_value_t sni_api_lv_textarea_cursor_left(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_cursor_left(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Move the cursor one line down
+ */
+jerry_value_t sni_api_lv_textarea_cursor_down(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_cursor_down(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Move the cursor one line up
+ */
+jerry_value_t sni_api_lv_textarea_cursor_up(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_textarea_cursor_up(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get a list of accepted characters. list of accented characters.
+ *
+ * @return (string) list of accented characters.
+ */
+jerry_value_t sni_api_prop_get_textarea_accepted_chars(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_accepted_chars(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Set a list of characters. Only these characters will be accepted by the text area
+ *
+ * @param list (string) list of characters. A copy is saved. May be NULL .. When NULL the list is removed and every character is accepted by default. Example: "+-.,0123456789"
+ */
+jerry_value_t sni_api_prop_set_textarea_accepted_chars(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_accepted_chars(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Deprecated Use the normal text_align style property instead Set the label's alignment. It sets where the label is aligned (in one line mode it can be smaller than the text area) and how the lines of the area align in case of multiline text area
+ *
+ * @param align (number) the align mode from :ref:`lv_text_align_t`
+ */
+jerry_value_t sni_api_prop_set_textarea_align(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_text_align_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_textarea_set_align(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get a the character from the current cursor position a the character or 0
+ *
+ * @return (number) a the character or 0
+ */
+jerry_value_t sni_api_prop_get_textarea_current_char(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_current_char(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get whether the cursor click positioning is enabled or not. true: enable click positions; false: disable
+ *
+ * @return (boolean) true: enable click positions; false: disable
+ */
+jerry_value_t sni_api_prop_get_textarea_cursor_click_pos(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_cursor_click_pos(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Enable/Disable the positioning of the cursor by clicking the text on the text area.
+ *
+ * @param en (boolean) true: enable click positions; false: disable
+ */
+jerry_value_t sni_api_prop_set_textarea_cursor_click_pos(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_cursor_click_pos(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the current cursor position in character index the cursor position
+ *
+ * @return (number) the cursor position
+ */
+jerry_value_t sni_api_prop_get_textarea_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_cursor_pos(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the cursor position
+ *
+ * @param pos (number) the new cursor position in character index < 0 : index from the end of the text LV_TEXTAREA_CURSOR_LAST: go after the last character
+ */
+jerry_value_t sni_api_prop_set_textarea_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_textarea_set_cursor_pos(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief In LV_EVENT_INSERT the text which planned to be inserted can be replaced by another text. It can be used to add automatic formatting to the text area.
+ *
+ * @param txt (string) pointer to a new string to insert. May be NULL . If "" or NULL no text will be added. The variable must be live after the event_cb exists. (Should be global or static )
+ */
+jerry_value_t sni_api_prop_set_textarea_insert_replace(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_insert_replace(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the label of a text area pointer to the label object
+ *
+ * @return (object) pointer to the label object
+ */
+jerry_value_t sni_api_prop_get_textarea_label(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_textarea_get_label(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get max length of a Text Area. the maximal number of characters to be add
+ *
+ * @return (number) the maximal number of characters to be add
+ */
+jerry_value_t sni_api_prop_get_textarea_max_length(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_max_length(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set max length of a Text Area.
+ *
+ * @param num (number) the maximal number of characters can be added ( lv_textarea_set_text ignores it)
+ */
+jerry_value_t sni_api_prop_set_textarea_max_length(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_textarea_set_max_length(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the one line configuration attribute true: one line configuration is enabled, false: disabled
+ *
+ * @return (boolean) true: one line configuration is enabled, false: disabled
+ */
+jerry_value_t sni_api_prop_get_textarea_one_line(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_one_line(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Configure the text area to one line or back to normal
+ *
+ * @param en (boolean) true: one line, false: normal
+ */
+jerry_value_t sni_api_prop_set_textarea_one_line(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_one_line(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the replacement characters to show in password mode pointer to the replacement text
+ *
+ * @return (string) pointer to the replacement text
+ */
+jerry_value_t sni_api_prop_get_textarea_password_bullet(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_password_bullet(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Set the replacement characters to show in password mode
+ *
+ * @param bullet (string) pointer to the replacement text May be NULL .. When NULL the default bullet icon is used
+ */
+jerry_value_t sni_api_prop_set_textarea_password_bullet(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_password_bullet(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the password mode attribute true: password mode is enabled, false: disabled
+ *
+ * @return (boolean) true: password mode is enabled, false: disabled
+ */
+jerry_value_t sni_api_prop_get_textarea_password_mode(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_password_mode(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Enable/Disable password mode
+ *
+ * @param en (boolean) true: enable, false: disable
+ */
+jerry_value_t sni_api_prop_set_textarea_password_mode(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_password_mode(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set how long show the password before changing it to '*' show time in milliseconds. 0: hide immediately.
+ *
+ * @return (number) show time in milliseconds. 0: hide immediately.
+ */
+jerry_value_t sni_api_prop_get_textarea_password_show_time(const jerry_call_info_t *call_info_p,
+                                                           const jerry_value_t args_p[],
+                                                           const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_textarea_get_password_show_time(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set how long show the password before changing it to '*'
+ *
+ * @param time (number) show time in milliseconds. 0: hide immediately.
+ */
+jerry_value_t sni_api_prop_set_textarea_password_show_time(const jerry_call_info_t *call_info_p,
+                                                           const jerry_value_t args_p[],
+                                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_textarea_set_password_show_time(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the placeholder text of a text area pointer to the text
+ *
+ * @return (string) pointer to the text
+ */
+jerry_value_t sni_api_prop_get_textarea_placeholder_text(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_placeholder_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Set the placeholder text of a text area
+ *
+ * @param txt (string) pointer to the text May be NULL .. When NULL, the placeholder is removed
+ */
+jerry_value_t sni_api_prop_set_textarea_placeholder_text(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_placeholder_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the text of a text area. In password mode it gives the real text (not '*'s). pointer to the text
+ *
+ * @return (string) pointer to the text
+ */
+jerry_value_t sni_api_prop_get_textarea_text(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_textarea_get_text(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Set the text of a text area
+ *
+ * @param txt (string) pointer to the text
+ */
+jerry_value_t sni_api_prop_set_textarea_text(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_textarea_set_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Find whether selection mode is enabled. true: selection mode is enabled, false: disabled
+ *
+ * @return (boolean) true: selection mode is enabled, false: disabled
+ */
+jerry_value_t sni_api_prop_get_textarea_text_selection(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_textarea_get_text_selection(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Enable/disable selection mode.
+ *
+ * @param en (boolean) true or false to enable/disable selection mode
+ */
+jerry_value_t sni_api_prop_set_textarea_text_selection(const jerry_call_info_t *call_info_p,
+                                                       const jerry_value_t args_p[],
+                                                       const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_textarea_set_text_selection(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
  * @brief Create a drop-down list object pointer to the created drop-down list
  *
  * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
@@ -29545,6 +32506,3877 @@ jerry_value_t sni_api_prop_set_imagebutton_state(const jerry_call_info_t *call_i
     return jerry_undefined();
 }
 
+/**
+ * @brief Create a tabview widget the created tabview
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) the created tabview
+ */
+jerry_value_t sni_api_ctor_tabview(const jerry_call_info_t *call_info_p,
+                                   const jerry_value_t args_p[],
+                                   const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_tabview_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a tabview widget the created tabview
+ *
+ * @return (object) the created tabview
+ */
+jerry_value_t sni_api_lv_tabview_create(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tabview_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add a tab to the tabview the widget where the content of the tab can be created
+ *
+ * @param name (string) the name of the tab to be displayed on the tab bar May be NULL . When NULL the tab button's label keeps the default label text ( LV_LABEL_DEFAULT_TEXT ). Useful when the text is set later, e.g. via a translation tag.
+ *
+ * @return (object) the widget where the content of the tab can be created
+ */
+jerry_value_t sni_api_lv_tabview_add_tab(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_name;
+    arg_name = sni_tb_js2c_string(args_p[0]);
+    if (!arg_name)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_obj_t *result = lv_tabview_add_tab(self_obj, arg_name);
+    eos_free((void *)arg_name);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Change the name of the tab
+ *
+ * @param idx (number) the index of the tab to rename
+ *
+ * @param new_name (string) the new name as a string May be NULL . When NULL the current name is kept and only refreshed, see :ref:`lv_label_set_text` .
+ */
+jerry_value_t sni_api_lv_tabview_set_tab_text(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_idx;
+    arg_idx = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_string(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_new_name;
+    arg_new_name = sni_tb_js2c_string(args_p[1]);
+    if (!arg_new_name)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_tabview_set_tab_text(self_obj, arg_idx, arg_new_name);
+    eos_free((void *)arg_new_name);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Show a tab
+ *
+ * @param idx (number) the index of the tab to show
+ *
+ * @param anim_en (boolean) LV_ANIM_ON/OFF
+ */
+jerry_value_t sni_api_lv_tabview_set_active(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_idx;
+    arg_idx = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim_en;
+    arg_anim_en = sni_tb_js2c_boolean(args_p[1]);
+
+    lv_tabview_set_active(self_obj, arg_idx, arg_anim_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the position of the tab bar
+ *
+ * @param dir (number) LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ */
+jerry_value_t sni_api_lv_tabview_set_tab_bar_position(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_dir_t arg_dir;
+    arg_dir = sni_tb_js2c_int32(args_p[0]);
+
+    lv_tabview_set_tab_bar_position(self_obj, arg_dir);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the width or height of the tab bar
+ *
+ * @param size (number) size of the tab bar in pixels or percentage. will be used as width or height based on the position of the tab bar)
+ */
+jerry_value_t sni_api_lv_tabview_set_tab_bar_size(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_size;
+    arg_size = sni_tb_js2c_int32(args_p[0]);
+
+    lv_tabview_set_tab_bar_size(self_obj, arg_size);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the number of tabs the number of tabs
+ *
+ * @return (number) the number of tabs
+ */
+jerry_value_t sni_api_lv_tabview_get_tab_count(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_tabview_get_tab_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the current tab's index the zero based index of the current tab
+ *
+ * @return (number) the zero based index of the current tab
+ */
+jerry_value_t sni_api_lv_tabview_get_tab_active(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_tabview_get_tab_active(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get a given tab button by index pointer to the tab button, or NULL if the index was out of range
+ *
+ * @param idx (number) zero based index of the tab button to get. < 0 means start counting tab button from the back (-1 is the last tab button)
+ *
+ * @return (object) pointer to the tab button, or NULL if the index was out of range
+ */
+jerry_value_t sni_api_lv_tabview_get_tab_button(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_idx;
+    arg_idx = sni_tb_js2c_int32(args_p[0]);
+
+    lv_obj_t *result = lv_tabview_get_tab_button(self_obj, arg_idx);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the widget where the container of each tab is created the main container widget
+ *
+ * @return (object) the main container widget
+ */
+jerry_value_t sni_api_lv_tabview_get_content(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tabview_get_content(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the tab bar where the buttons are created the tab bar
+ *
+ * @return (object) the tab bar
+ */
+jerry_value_t sni_api_lv_tabview_get_tab_bar(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tabview_get_tab_bar(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the position of the tab bar LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ *
+ * @return (number) LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ */
+jerry_value_t sni_api_lv_tabview_get_tab_bar_position(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_dir_t result = lv_tabview_get_tab_bar_position(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the widget where the container of each tab is created the main container widget
+ *
+ * @return (object) the main container widget
+ */
+jerry_value_t sni_api_prop_get_tabview_content(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tabview_get_content(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the current tab's index the zero based index of the current tab
+ *
+ * @return (number) the zero based index of the current tab
+ */
+jerry_value_t sni_api_prop_get_tabview_tab_active(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_tabview_get_tab_active(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the tab bar where the buttons are created the tab bar
+ *
+ * @return (object) the tab bar
+ */
+jerry_value_t sni_api_prop_get_tabview_tab_bar(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tabview_get_tab_bar(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the position of the tab bar LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ *
+ * @return (number) LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ */
+jerry_value_t sni_api_prop_get_tabview_tab_bar_position(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_dir_t result = lv_tabview_get_tab_bar_position(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the position of the tab bar
+ *
+ * @param dir (number) LV_DIR_TOP/BOTTOM/LEFT/RIGHT
+ */
+jerry_value_t sni_api_prop_set_tabview_tab_bar_position(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_dir_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_tabview_set_tab_bar_position(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the width or height of the tab bar
+ *
+ * @param size (number) size of the tab bar in pixels or percentage. will be used as width or height based on the position of the tab bar)
+ */
+jerry_value_t sni_api_prop_set_tabview_tab_bar_size(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_tabview_set_tab_bar_size(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the number of tabs the number of tabs
+ *
+ * @return (number) the number of tabs
+ */
+jerry_value_t sni_api_prop_get_tabview_tab_count(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_tabview_get_tab_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Create a tileview object pointer to the created tileview
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created tileview
+ */
+jerry_value_t sni_api_ctor_tileview(const jerry_call_info_t *call_info_p,
+                                    const jerry_value_t args_p[],
+                                    const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_tileview_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a tileview object pointer to the created tileview
+ *
+ * @return (object) pointer to the created tileview
+ */
+jerry_value_t sni_api_lv_tileview_create(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tileview_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add a tile to the tileview pointer to the added tile object
+ *
+ * @param col_id (number) column id of the tile
+ *
+ * @param row_id (number) row id of the tile
+ *
+ * @param dir (number) direction to move to the next tile
+ *
+ * @return (object) pointer to the added tile object
+ */
+jerry_value_t sni_api_lv_tileview_add_tile(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 3)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint8_t arg_col_id;
+    arg_col_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint8_t arg_row_id;
+    arg_row_id = sni_tb_js2c_uint32(args_p[1]);
+
+    if (!jerry_value_is_number(args_p[2]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_dir_t arg_dir;
+    arg_dir = sni_tb_js2c_int32(args_p[2]);
+
+    lv_obj_t *result = lv_tileview_add_tile(self_obj, arg_col_id, arg_row_id, arg_dir);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set the active tile in the tileview.
+ *
+ * @param tile_obj (object) pointer to the tile object to be set as active
+ *
+ * @param anim_en (boolean) animation enable flag (LV_ANIM_ON or LV_ANIM_OFF)
+ */
+jerry_value_t sni_api_lv_tileview_set_tile(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_object(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *arg_tile_obj;
+    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arg_tile_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim_en;
+    arg_anim_en = sni_tb_js2c_boolean(args_p[1]);
+
+    lv_tileview_set_tile(self_obj, arg_tile_obj, arg_anim_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the active tile by index in the tileview
+ *
+ * @param col_id (number) column id of the tile to be set as active
+ *
+ * @param row_id (number) row id of the tile to be set as active
+ *
+ * @param anim_en (boolean) animation enable flag (LV_ANIM_ON or LV_ANIM_OFF)
+ */
+jerry_value_t sni_api_lv_tileview_set_tile_by_index(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 3)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_col_id;
+    arg_col_id = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_row_id;
+    arg_row_id = sni_tb_js2c_uint32(args_p[1]);
+
+    if (!jerry_value_is_boolean(args_p[2]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim_en;
+    arg_anim_en = sni_tb_js2c_boolean(args_p[2]);
+
+    lv_tileview_set_tile_by_index(self_obj, arg_col_id, arg_row_id, arg_anim_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the currently active tile in the tileview pointer to the currently active tile object
+ *
+ * @return (object) pointer to the currently active tile object
+ */
+jerry_value_t sni_api_lv_tileview_get_tile_active(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tileview_get_tile_active(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the currently active tile in the tileview pointer to the currently active tile object
+ *
+ * @return (object) pointer to the currently active tile object
+ */
+jerry_value_t sni_api_prop_get_tileview_tile_active(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_tileview_get_tile_active(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Create a roller object pointer to the created roller
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created roller
+ */
+jerry_value_t sni_api_ctor_roller(const jerry_call_info_t *call_info_p,
+                                  const jerry_value_t args_p[],
+                                  const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_roller_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a roller object pointer to the created roller
+ *
+ * @return (object) pointer to the created roller
+ */
+jerry_value_t sni_api_lv_roller_create(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_roller_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set the options on a roller
+ *
+ * @param options (string) a string with ' ' separated options. E.g. "One\nTwo\nThree"
+ *
+ * @param mode (number) LV_ROLLER_MODE_NORMAL or LV_ROLLER_MODE_INFINITE
+ */
+jerry_value_t sni_api_lv_roller_set_options(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_options;
+    arg_options = sni_tb_js2c_string(args_p[0]);
+    if (!arg_options)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_roller_mode_t arg_mode;
+    arg_mode = sni_tb_js2c_int32(args_p[1]);
+
+    lv_roller_set_options(self_obj, arg_options, arg_mode);
+    eos_free((void *)arg_options);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the selected option
+ *
+ * @param sel_opt (number) index of the selected option (0 ... number of option - 1);
+ *
+ * @param anim (boolean) LV_ANIM_ON: set with animation; LV_ANIM_OFF set immediately
+ */
+jerry_value_t sni_api_lv_roller_set_selected(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_sel_opt;
+    arg_sel_opt = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim;
+    arg_anim = sni_tb_js2c_boolean(args_p[1]);
+
+    lv_roller_set_selected(self_obj, arg_sel_opt, arg_anim);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Sets the given string as the selection on the roller. Does not alter the current selection on failure. true if set successfully and false if the given string does not exist as an option in the roller
+ *
+ * @param sel_opt (string) pointer to the string you want to set as an option
+ *
+ * @param anim (boolean) LV_ANIM_ON: set with animation; LV_ANIM_OFF set immediately
+ *
+ * @return (boolean) true if set successfully and false if the given string does not exist as an option in the roller
+ */
+jerry_value_t sni_api_lv_roller_set_selected_str(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_sel_opt;
+    arg_sel_opt = sni_tb_js2c_string(args_p[0]);
+    if (!arg_sel_opt)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    if (!jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_anim_enable_t arg_anim;
+    arg_anim = sni_tb_js2c_boolean(args_p[1]);
+
+    bool result = lv_roller_set_selected_str(self_obj, arg_sel_opt, arg_anim);
+    eos_free((void *)arg_sel_opt);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Set the height to show the given number of rows (options)
+ *
+ * @param row_cnt (number) number of desired visible rows
+ */
+jerry_value_t sni_api_lv_roller_set_visible_row_count(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_row_cnt;
+    arg_row_cnt = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_roller_set_visible_row_count(self_obj, arg_row_cnt);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the index of the selected option index of the selected option (0 ... number of option - 1);
+ *
+ * @return (number) index of the selected option (0 ... number of option - 1);
+ */
+jerry_value_t sni_api_lv_roller_get_selected(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_roller_get_selected(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the current selected option as a string.
+ *
+ * @param buf (string) pointer to an array to store the string
+ *
+ * @param buf_size (number) size of buf in bytes. 0: to ignore it.
+ */
+jerry_value_t sni_api_lv_roller_get_selected_str(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t output_size;
+    output_size = sni_tb_js2c_uint32(args_p[1]);
+    if (output_size == 0U)
+        return jerry_string_sz("");
+    char *output_buf = eos_malloc(output_size);
+    if (!output_buf)
+        return sni_api_throw_error("Out of memory");
+
+    lv_roller_get_selected_str(self_obj, output_buf, output_size);
+    jerry_value_t result = jerry_string_sz(output_buf);
+    eos_free(output_buf);
+    return result;
+}
+
+/**
+ * @brief Get the options of a roller the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ *
+ * @return (string) the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ */
+jerry_value_t sni_api_lv_roller_get_options(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_roller_get_options(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get the total number of options the total number of options
+ *
+ * @return (number) the total number of options
+ */
+jerry_value_t sni_api_lv_roller_get_option_count(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_roller_get_option_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the total number of options the total number of options
+ *
+ * @return (number) the total number of options
+ */
+jerry_value_t sni_api_prop_get_roller_option_count(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_roller_get_option_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the options of a roller the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ *
+ * @return (string) the options separated by ' '-s (E.g. "Option1\nOption2\nOption3")
+ */
+jerry_value_t sni_api_prop_get_roller_options(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    const char *result = lv_roller_get_options(self_obj);
+    return sni_tb_c2js_string(result);
+}
+
+/**
+ * @brief Get the index of the selected option index of the selected option (0 ... number of option - 1);
+ *
+ * @return (number) index of the selected option (0 ... number of option - 1);
+ */
+jerry_value_t sni_api_prop_get_roller_selected(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_roller_get_selected(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the height to show the given number of rows (options)
+ *
+ * @param row_cnt (number) number of desired visible rows
+ */
+jerry_value_t sni_api_prop_set_roller_visible_row_count(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_roller_set_visible_row_count(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a spinbox object pointer to the created spinbox
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created spinbox
+ */
+jerry_value_t sni_api_ctor_spinbox(const jerry_call_info_t *call_info_p,
+                                   const jerry_value_t args_p[],
+                                   const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_spinbox_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create a spinbox object pointer to the created spinbox
+ *
+ * @return (object) pointer to the created spinbox
+ */
+jerry_value_t sni_api_lv_spinbox_create(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_spinbox_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set spinbox value
+ *
+ * @param v (number) value to be set
+ */
+jerry_value_t sni_api_lv_spinbox_set_value(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_v;
+    arg_v = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_value(self_obj, arg_v);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set spinbox rollover function
+ *
+ * @param rollover (boolean) true or false to enable or disable (default)
+ */
+jerry_value_t sni_api_lv_spinbox_set_rollover(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_rollover;
+    arg_rollover = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_spinbox_set_rollover(self_obj, arg_rollover);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set spinbox digit format (digit count and decimal format)
+ *
+ * @param digit_count (number) number of digit excluding the decimal separator and the sign
+ *
+ * @param sep_pos (number) number of digit before the decimal point. If 0, decimal point is not shown
+ */
+jerry_value_t sni_api_lv_spinbox_set_digit_format(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_digit_count;
+    arg_digit_count = sni_tb_js2c_uint32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_sep_pos;
+    arg_sep_pos = sni_tb_js2c_uint32(args_p[1]);
+
+    lv_spinbox_set_digit_format(self_obj, arg_digit_count, arg_sep_pos);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the number of digits
+ *
+ * @param digit_count (number) number of digits
+ */
+jerry_value_t sni_api_lv_spinbox_set_digit_count(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_digit_count;
+    arg_digit_count = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_digit_count(self_obj, arg_digit_count);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the position of the decimal point
+ *
+ * @param dec_point_pos (number) 0: there is no separator, 2: two integer digits
+ */
+jerry_value_t sni_api_lv_spinbox_set_dec_point_pos(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_dec_point_pos;
+    arg_dec_point_pos = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_dec_point_pos(self_obj, arg_dec_point_pos);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set spinbox step
+ *
+ * @param step (number) steps on increment/decrement. Can be 1, 10, 100, 1000, etc the digit that will change.
+ */
+jerry_value_t sni_api_lv_spinbox_set_step(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_step;
+    arg_step = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_step(self_obj, arg_step);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set spinbox value range
+ *
+ * @param min_value (number) minimum value, inclusive
+ *
+ * @param max_value (number) maximum value, inclusive
+ */
+jerry_value_t sni_api_lv_spinbox_set_range(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 2)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_min_value;
+    arg_min_value = sni_tb_js2c_int32(args_p[0]);
+
+    if (!jerry_value_is_number(args_p[1]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_max_value;
+    arg_max_value = sni_tb_js2c_int32(args_p[1]);
+
+    lv_spinbox_set_range(self_obj, arg_min_value, arg_max_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the minimum value
+ *
+ * @param min_value (number) the minimum value
+ */
+jerry_value_t sni_api_lv_spinbox_set_min_value(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_min_value;
+    arg_min_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_min_value(self_obj, arg_min_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the maximum value
+ *
+ * @param max_value (number) the maximum value
+ */
+jerry_value_t sni_api_lv_spinbox_set_max_value(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_max_value;
+    arg_max_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_max_value(self_obj, arg_max_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set cursor position to a specific digit for edition
+ *
+ * @param pos (number) selected position in spinbox
+ */
+jerry_value_t sni_api_lv_spinbox_set_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_pos;
+    arg_pos = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_cursor_pos(self_obj, arg_pos);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set direction of digit step when clicking an encoder button while in editing mode
+ *
+ * @param direction (number) the direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ */
+jerry_value_t sni_api_lv_spinbox_set_digit_step_direction(const jerry_call_info_t *call_info_p,
+                                                          const jerry_value_t args_p[],
+                                                          const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_dir_t arg_direction;
+    arg_direction = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_digit_step_direction(self_obj, arg_direction);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get spinbox rollover function status
+ *
+ * @return (boolean) JavaScript return value.
+ */
+jerry_value_t sni_api_lv_spinbox_get_rollover(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_spinbox_get_rollover(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the spinbox numeral value (user has to convert to float according to its digit format) value integer value of the spinbox
+ *
+ * @return (number) value integer value of the spinbox
+ */
+jerry_value_t sni_api_lv_spinbox_get_value(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the spinbox step value (user has to convert to float according to its digit format) value integer step value of the spinbox
+ *
+ * @return (number) value integer step value of the spinbox
+ */
+jerry_value_t sni_api_lv_spinbox_get_step(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_step(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the spinbox digit count number of digits
+ *
+ * @return (number) number of digits
+ */
+jerry_value_t sni_api_lv_spinbox_get_digit_count(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_spinbox_get_digit_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the decimal point position decimal point position
+ *
+ * @return (number) decimal point position
+ */
+jerry_value_t sni_api_lv_spinbox_get_dec_point_pos(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_spinbox_get_dec_point_pos(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the spinbox minimum value minimum value
+ *
+ * @return (number) minimum value
+ */
+jerry_value_t sni_api_lv_spinbox_get_min_value(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_min_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the spinbox maximum value maximum value
+ *
+ * @return (number) maximum value
+ */
+jerry_value_t sni_api_lv_spinbox_get_max_value(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_max_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the digit step direction direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ *
+ * @return (number) direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ */
+jerry_value_t sni_api_lv_spinbox_get_digit_step_direction(const jerry_call_info_t *call_info_p,
+                                                          const jerry_value_t args_p[],
+                                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_dir_t result = lv_spinbox_get_digit_step_direction(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Select next lower digit for edition by dividing the step by 10
+ */
+jerry_value_t sni_api_lv_spinbox_step_next(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_spinbox_step_next(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Select next higher digit for edition by multiplying the step by 10
+ */
+jerry_value_t sni_api_lv_spinbox_step_prev(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_spinbox_step_prev(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Increment spinbox value by one step
+ */
+jerry_value_t sni_api_lv_spinbox_increment(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_spinbox_increment(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Decrement spinbox value by one step
+ */
+jerry_value_t sni_api_lv_spinbox_decrement(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_spinbox_decrement(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set cursor position to a specific digit for edition
+ *
+ * @param pos (number) selected position in spinbox
+ */
+jerry_value_t sni_api_prop_set_spinbox_cursor_pos(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_cursor_pos(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the decimal point position decimal point position
+ *
+ * @return (number) decimal point position
+ */
+jerry_value_t sni_api_prop_get_spinbox_dec_point_pos(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_spinbox_get_dec_point_pos(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the position of the decimal point
+ *
+ * @param dec_point_pos (number) 0: there is no separator, 2: two integer digits
+ */
+jerry_value_t sni_api_prop_set_spinbox_dec_point_pos(const jerry_call_info_t *call_info_p,
+                                                     const jerry_value_t args_p[],
+                                                     const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_dec_point_pos(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the spinbox digit count number of digits
+ *
+ * @return (number) number of digits
+ */
+jerry_value_t sni_api_prop_get_spinbox_digit_count(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_spinbox_get_digit_count(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the number of digits
+ *
+ * @param digit_count (number) number of digits
+ */
+jerry_value_t sni_api_prop_set_spinbox_digit_count(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_digit_count(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the digit step direction direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ *
+ * @return (number) direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ */
+jerry_value_t sni_api_prop_get_spinbox_digit_step_direction(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_dir_t result = lv_spinbox_get_digit_step_direction(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set direction of digit step when clicking an encoder button while in editing mode
+ *
+ * @param direction (number) the direction (LV_DIR_RIGHT or LV_DIR_LEFT)
+ */
+jerry_value_t sni_api_prop_set_spinbox_digit_step_direction(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_dir_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_digit_step_direction(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the spinbox maximum value maximum value
+ *
+ * @return (number) maximum value
+ */
+jerry_value_t sni_api_prop_get_spinbox_max_value(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_max_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the maximum value
+ *
+ * @param max_value (number) the maximum value
+ */
+jerry_value_t sni_api_prop_set_spinbox_max_value(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_max_value(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the spinbox minimum value minimum value
+ *
+ * @return (number) minimum value
+ */
+jerry_value_t sni_api_prop_get_spinbox_min_value(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_min_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the minimum value
+ *
+ * @param min_value (number) the minimum value
+ */
+jerry_value_t sni_api_prop_set_spinbox_min_value(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_min_value(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get spinbox rollover function status
+ *
+ * @return (boolean) JavaScript return value.
+ */
+jerry_value_t sni_api_prop_get_spinbox_rollover(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_spinbox_get_rollover(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Set spinbox rollover function
+ *
+ * @param rollover (boolean) true or false to enable or disable (default)
+ */
+jerry_value_t sni_api_prop_set_spinbox_rollover(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_spinbox_set_rollover(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the spinbox step value (user has to convert to float according to its digit format) value integer step value of the spinbox
+ *
+ * @return (number) value integer step value of the spinbox
+ */
+jerry_value_t sni_api_prop_get_spinbox_step(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_step(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set spinbox step
+ *
+ * @param step (number) steps on increment/decrement. Can be 1, 10, 100, 1000, etc the digit that will change.
+ */
+jerry_value_t sni_api_prop_set_spinbox_step(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_spinbox_set_step(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the spinbox numeral value (user has to convert to float according to its digit format) value integer value of the spinbox
+ *
+ * @return (number) value integer value of the spinbox
+ */
+jerry_value_t sni_api_prop_get_spinbox_value(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    int32_t result = lv_spinbox_get_value(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set spinbox value
+ *
+ * @param v (number) value to be set
+ */
+jerry_value_t sni_api_prop_set_spinbox_value(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_spinbox_set_value(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create an empty message box the created message box
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created on the top layer of the default screen.
+ *
+ * @return (object) the created message box
+ */
+jerry_value_t sni_api_ctor_msgbox(const jerry_call_info_t *call_info_p,
+                                  const jerry_value_t args_p[],
+                                  const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_msgbox_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create an empty message box the created message box
+ *
+ * @return (object) the created message box
+ */
+jerry_value_t sni_api_lv_msgbox_create(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add title to the message box. It also creates a header for the title. the created title label
+ *
+ * @param title (string) the text of the tile. May be NULL .. See the default behaviour of :ref:`lv_label_set_text`
+ *
+ * @return (object) the created title label
+ */
+jerry_value_t sni_api_lv_msgbox_add_title(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_title;
+    arg_title = sni_tb_js2c_string(args_p[0]);
+    if (!arg_title)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_obj_t *result = lv_msgbox_add_title(self_obj, arg_title);
+    eos_free((void *)arg_title);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add a text to the content area of message box. Multiple texts will be created below each other. the created label
+ *
+ * @param text (string) text to add
+ *
+ * @return (object) the created label
+ */
+jerry_value_t sni_api_lv_msgbox_add_text(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_text;
+    arg_text = sni_tb_js2c_string(args_p[0]);
+    if (!arg_text)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_obj_t *result = lv_msgbox_add_text(self_obj, arg_text);
+    eos_free((void *)arg_text);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add a button to the footer of to the message box. It also creates a footer. the created button
+ *
+ * @param text (string) the text of the button May be NULL .. When NULL an empty button is created
+ *
+ * @return (object) the created button
+ */
+jerry_value_t sni_api_lv_msgbox_add_footer_button(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_text;
+    arg_text = sni_tb_js2c_string(args_p[0]);
+    if (!arg_text)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_obj_t *result = lv_msgbox_add_footer_button(self_obj, arg_text);
+    eos_free((void *)arg_text);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Add a close button to the message box. It also creates a header. the created close button
+ *
+ * @return (object) the created close button
+ */
+jerry_value_t sni_api_lv_msgbox_add_close_button(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_add_close_button(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the header widget the header, or NULL if not exists
+ *
+ * @return (object) the header, or NULL if not exists
+ */
+jerry_value_t sni_api_lv_msgbox_get_header(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_header(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the footer widget the footer, or NULL if not exists
+ *
+ * @return (object) the footer, or NULL if not exists
+ */
+jerry_value_t sni_api_lv_msgbox_get_footer(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_footer(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the content widget the content
+ *
+ * @return (object) the content
+ */
+jerry_value_t sni_api_lv_msgbox_get_content(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_content(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the title label the title, or NULL if it does not exist
+ *
+ * @return (object) the title, or NULL if it does not exist
+ */
+jerry_value_t sni_api_lv_msgbox_get_title(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_title(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Close a message box
+ */
+jerry_value_t sni_api_lv_msgbox_close(const jerry_call_info_t *call_info_p,
+                                      const jerry_value_t args_p[],
+                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_msgbox_close(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Close a message box in the next call of the message box
+ */
+jerry_value_t sni_api_lv_msgbox_close_async(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_msgbox_close_async(self_obj);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the content widget the content
+ *
+ * @return (object) the content
+ */
+jerry_value_t sni_api_prop_get_msgbox_content(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_content(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the footer widget the footer, or NULL if not exists
+ *
+ * @return (object) the footer, or NULL if not exists
+ */
+jerry_value_t sni_api_prop_get_msgbox_footer(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_footer(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the header widget the header, or NULL if not exists
+ *
+ * @return (object) the header, or NULL if not exists
+ */
+jerry_value_t sni_api_prop_get_msgbox_header(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_header(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Get the title label the title, or NULL if it does not exist
+ *
+ * @return (object) the title, or NULL if it does not exist
+ */
+jerry_value_t sni_api_prop_get_msgbox_title(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_msgbox_get_title(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Create an empty QR code (an lv_canvas ) object. pointer to the created QR code object
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the active display.
+ *
+ * @return (object) pointer to the created QR code object
+ */
+jerry_value_t sni_api_ctor_qrcode(const jerry_call_info_t *call_info_p,
+                                  const jerry_value_t args_p[],
+                                  const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_qrcode_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Create an empty QR code (an lv_canvas ) object. pointer to the created QR code object
+ *
+ * @return (object) pointer to the created QR code object
+ */
+jerry_value_t sni_api_lv_qrcode_create(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_obj_t *result = lv_qrcode_create(self_obj);
+    return sni_tb_c2js(&result, SNI_H_LV_OBJ);
+}
+
+/**
+ * @brief Set QR code size.
+ *
+ * @param size (number) width and height of the QR code
+ */
+jerry_value_t sni_api_lv_qrcode_set_size(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_size;
+    arg_size = sni_tb_js2c_int32(args_p[0]);
+
+    lv_qrcode_set_size(self_obj, arg_size);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set QR code dark color.
+ *
+ * @param color (number) dark color of the QR code
+ */
+jerry_value_t sni_api_lv_qrcode_set_dark_color(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_color_t arg_color;
+    if (!sni_tb_js2c(args_p[0], SNI_V_LV_COLOR, &arg_color))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_set_dark_color(self_obj, arg_color);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set QR code light color.
+ *
+ * @param color (number) light color of the QR code
+ */
+jerry_value_t sni_api_lv_qrcode_set_light_color(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_color_t arg_color;
+    if (!sni_tb_js2c(args_p[0], SNI_V_LV_COLOR, &arg_color))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_set_light_color(self_obj, arg_color);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Helper function to set the data of a QR code object from a string. The NUL terminator is not part of the encoded payload.
+ *
+ * @param data (string) data to display as a NUL terminated string
+ */
+jerry_value_t sni_api_lv_qrcode_set_data(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_data;
+    arg_data = sni_tb_js2c_string(args_p[0]);
+    if (!arg_data)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_qrcode_set_data(self_obj, arg_data);
+    eos_free((void *)arg_data);
+    return jerry_undefined();
+}
+
+/**
+ * @brief (Re)generate the QR code bitmap from the payload that is already stored. Unlike :ref:`lv_qrcode_update()` this needs no payload, so it is the way to apply property changes made in LV_QRCODE_UPDATE_MODE_DEFERRED: set the size and quiet zone, then call this once to encode them and get the result. The bitmap is regenerated whether or not anything changed. LV_RESULT_OK: if no error; LV_RESULT_INVALID: on error (e.g. no data set, or the payload does not fit the current size)
+ *
+ * @return (number) LV_RESULT_OK: if no error; LV_RESULT_INVALID: on error (e.g. no data set, or the payload does not fit the current size)
+ */
+jerry_value_t sni_api_lv_qrcode_render(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_result_t result = lv_qrcode_render(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Enable or disable quiet zone. Quiet zone is the area around the QR code where no data is encoded.
+ *
+ * @param enable (boolean) true: enable quiet zone; false: disable quiet zone
+ */
+jerry_value_t sni_api_lv_qrcode_set_quiet_zone(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_enable;
+    arg_enable = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_qrcode_set_quiet_zone(self_obj, arg_enable);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set when a property change is turned into a new QR code bitmap. With LV_QRCODE_UPDATE_MODE_IMMEDIATE (the default) changing the size or the quiet zone re-encodes the stored data right away. With LV_QRCODE_UPDATE_MODE_DEFERRED such a change only marks the bitmap as out of date and several changes are collapsed into a single re-encode on the next redraw. In deferred mode you are expected to call :ref:`lv_qrcode_render()` yourself once the properties are set. It encodes right away and returns the result, leaving the next redraw nothing to do. If it is forgotten, the encode is done by the redraw instead: the bitmap is still correct, but the work is charged to that refresh and its result cannot be reported to anyone, so a warning is logged. Prefer the explicit call.  Switching back to LV_QRCODE_UPDATE_MODE_IMMEDIATE while the bitmap is out of date also re-encodes it, but this function returns void, so an encode failure can only be logged, not reported. A warning is emitted in that case. Call :ref:`lv_qrcode_render()` first and switch the mode afterwards to get the result.
+ *
+ * @param mode (number) the mode to use
+ */
+jerry_value_t sni_api_lv_qrcode_set_update_mode(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_qrcode_update_mode_t arg_mode;
+    arg_mode = sni_tb_js2c_int32(args_p[0]);
+
+    lv_qrcode_set_update_mode(self_obj, arg_mode);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get when a property change is turned into a new QR code bitmap. the update mode currently in use
+ *
+ * @return (number) the update mode currently in use
+ */
+jerry_value_t sni_api_lv_qrcode_get_update_mode(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_update_mode_t result = lv_qrcode_get_update_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Check whether the QR code bitmap is free of a known encode failure. Most encodes report their result directly: :ref:`lv_qrcode_update()` returns it. The ones that cannot are the re-encodes triggered by a property change - they happen in a void setter or, in LV_QRCODE_UPDATE_MODE_DEFERRED, in the draw pass. Use this to detect those, e.g. after shrinking the object below the size its payload needs. A failed encode leaves the bitmap marked as out of date, so it is never reported as current, and it is not retried on every redraw - only a property change makes the Widget try again. Encode failures are not logged when the caller can see the result; the one exception is the re-encode done by the redraw, which has no caller, so that one is logged.  true: no encode attempt is known to have failed. A property change re-arms the Widget, so this is also true while a deferred re-encode is still pending; false: the last encode attempt failed, or no data has been set yet
+ *
+ * @return (boolean) true: no encode attempt is known to have failed. A property change re-arms the Widget, so this is also true while a deferred re-encode is still pending; false: the last encode attempt failed, or no data has been set yet
+ */
+jerry_value_t sni_api_lv_qrcode_is_render_valid(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_qrcode_is_render_valid(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Set QR code dark color.
+ *
+ * @param color (number) dark color of the QR code
+ */
+jerry_value_t sni_api_prop_set_qrcode_dark_color(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_color_t prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_V_LV_COLOR, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_set_dark_color(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Helper function to set the data of a QR code object from a string. The NUL terminator is not part of the encoded payload.
+ *
+ * @param data (string) data to display as a NUL terminated string
+ */
+jerry_value_t sni_api_prop_set_qrcode_data(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_qrcode_set_data(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set QR code light color.
+ *
+ * @param color (number) light color of the QR code
+ */
+jerry_value_t sni_api_prop_set_qrcode_light_color(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_color_t prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_V_LV_COLOR, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_set_light_color(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable or disable quiet zone. Quiet zone is the area around the QR code where no data is encoded.
+ *
+ * @param enable (boolean) true: enable quiet zone; false: disable quiet zone
+ */
+jerry_value_t sni_api_prop_set_qrcode_quiet_zone(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_qrcode_set_quiet_zone(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set QR code size.
+ *
+ * @param size (number) width and height of the QR code
+ */
+jerry_value_t sni_api_prop_set_qrcode_size(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_qrcode_set_size(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get when a property change is turned into a new QR code bitmap. the update mode currently in use
+ *
+ * @return (number) the update mode currently in use
+ */
+jerry_value_t sni_api_prop_get_qrcode_update_mode(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_qrcode_update_mode_t result = lv_qrcode_get_update_mode(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set when a property change is turned into a new QR code bitmap. With LV_QRCODE_UPDATE_MODE_IMMEDIATE (the default) changing the size or the quiet zone re-encodes the stored data right away. With LV_QRCODE_UPDATE_MODE_DEFERRED such a change only marks the bitmap as out of date and several changes are collapsed into a single re-encode on the next redraw. In deferred mode you are expected to call :ref:`lv_qrcode_render()` yourself once the properties are set. It encodes right away and returns the result, leaving the next redraw nothing to do. If it is forgotten, the encode is done by the redraw instead: the bitmap is still correct, but the work is charged to that refresh and its result cannot be reported to anyone, so a warning is logged. Prefer the explicit call.  Switching back to LV_QRCODE_UPDATE_MODE_IMMEDIATE while the bitmap is out of date also re-encodes it, but this function returns void, so an encode failure can only be logged, not reported. A warning is emitted in that case. Call :ref:`lv_qrcode_render()` first and switch the mode afterwards to get the result.
+ *
+ * @param mode (number) the mode to use
+ */
+jerry_value_t sni_api_prop_set_qrcode_update_mode(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_qrcode_update_mode_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_qrcode_set_update_mode(self_obj, prop_value);
+    return jerry_undefined();
+}
+
 const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
@@ -29558,7 +36390,6 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setParent", .handler = sni_api_lv_obj_set_parent},
     {.name = "swap", .handler = sni_api_lv_obj_swap},
     {.name = "moveToIndex", .handler = sni_api_lv_obj_move_to_index},
-    {.name = "getScreen", .handler = sni_api_lv_obj_get_screen},
     {.name = "getParent", .handler = sni_api_lv_obj_get_parent},
     {.name = "getChild", .handler = sni_api_lv_obj_get_child},
     {.name = "getSibling", .handler = sni_api_lv_obj_get_sibling},
@@ -30030,7 +36861,6 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "getUserData", .handler = sni_api_lv_obj_get_user_data},
     {.name = "getUserFlag", .handler = sni_api_lv_obj_get_user_flag},
     {.name = "isInWidgetTree", .handler = sni_api_lv_obj_is_in_widget_tree},
-    {.name = "addScreenLoadEvent", .handler = sni_api_lv_obj_add_screen_load_event},
     {.name = "moveForeground", .handler = sni_api_lv_obj_move_foreground},
     {.name = "moveBackground", .handler = sni_api_lv_obj_move_background},
     {.name = "setFontSize", .handler = sni_api_eos_label_set_font_size},
@@ -30081,7 +36911,6 @@ const sni_property_desc_t lv_class_properties_obj[] = {
     {.name = "pressLock", .getter = NULL, .setter = sni_api_prop_set_obj_press_lock},
     {.name = "pressed", .getter = NULL, .setter = sni_api_prop_set_obj_pressed},
     {.name = "radioButton", .getter = NULL, .setter = sni_api_prop_set_obj_radio_button},
-    {.name = "screen", .getter = sni_api_prop_get_obj_screen, .setter = NULL},
     {.name = "scrollBottom", .getter = sni_api_prop_get_obj_scroll_bottom, .setter = NULL},
     {.name = "scrollChain", .getter = NULL, .setter = sni_api_prop_set_obj_scroll_chain},
     {.name = "scrollChainHor", .getter = NULL, .setter = sni_api_prop_set_obj_scroll_chain_hor},
@@ -30257,20 +37086,43 @@ const sni_constant_desc_t lv_class_constants_bar[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
-const sni_method_desc_t lv_class_methods_screen[] = {
+const sni_method_desc_t lv_class_methods_slider[] = {
+    {.name = "create", .handler = sni_api_lv_slider_create},
+    {.name = "setValue", .handler = sni_api_lv_slider_set_value},
+    {.name = "setStartValue", .handler = sni_api_lv_slider_set_start_value},
+    {.name = "setRange", .handler = sni_api_lv_slider_set_range},
+    {.name = "setMinValue", .handler = sni_api_lv_slider_set_min_value},
+    {.name = "setMaxValue", .handler = sni_api_lv_slider_set_max_value},
+    {.name = "setMode", .handler = sni_api_lv_slider_set_mode},
+    {.name = "setOrientation", .handler = sni_api_lv_slider_set_orientation},
+    {.name = "getValue", .handler = sni_api_lv_slider_get_value},
+    {.name = "getLeftValue", .handler = sni_api_lv_slider_get_left_value},
+    {.name = "getMinValue", .handler = sni_api_lv_slider_get_min_value},
+    {.name = "getMaxValue", .handler = sni_api_lv_slider_get_max_value},
+    {.name = "isDragged", .handler = sni_api_lv_slider_is_dragged},
+    {.name = "getMode", .handler = sni_api_lv_slider_get_mode},
+    {.name = "getOrientation", .handler = sni_api_lv_slider_get_orientation},
+    {.name = "isSymmetrical", .handler = sni_api_lv_slider_is_symmetrical},
     {.name = NULL, .handler = NULL},
 };
 
-const sni_method_desc_t lv_class_static_methods_screen[] = {
-    {.name = "active", .handler = sni_api_lv_screen_active},
+const sni_method_desc_t lv_class_static_methods_slider[] = {
     {.name = NULL, .handler = NULL},
 };
 
-const sni_property_desc_t lv_class_properties_screen[] = {
+const sni_property_desc_t lv_class_properties_slider[] = {
+    {.name = "leftValue", .getter = sni_api_prop_get_slider_left_value, .setter = NULL},
+    {.name = "maxValue", .getter = sni_api_prop_get_slider_max_value, .setter = sni_api_prop_set_slider_max_value},
+    {.name = "minValue", .getter = sni_api_prop_get_slider_min_value, .setter = sni_api_prop_set_slider_min_value},
+    {.name = "mode", .getter = sni_api_prop_get_slider_mode, .setter = sni_api_prop_set_slider_mode},
+    {.name = "orientation",
+     .getter = sni_api_prop_get_slider_orientation,
+     .setter = sni_api_prop_set_slider_orientation},
+    {.name = "value", .getter = sni_api_prop_get_slider_value, .setter = NULL},
     {.name = NULL, .getter = NULL, .setter = NULL},
 };
 
-const sni_constant_desc_t lv_class_constants_screen[] = {
+const sni_constant_desc_t lv_class_constants_slider[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -30543,6 +37395,114 @@ const sni_constant_desc_t lv_class_constants_checkbox[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
+const sni_method_desc_t lv_class_methods_switch[] = {
+    {.name = "create", .handler = sni_api_lv_switch_create},
+    {.name = "setOrientation", .handler = sni_api_lv_switch_set_orientation},
+    {.name = "getOrientation", .handler = sni_api_lv_switch_get_orientation},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_switch[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_switch[] = {
+    {.name = "orientation",
+     .getter = sni_api_prop_get_switch_orientation,
+     .setter = sni_api_prop_set_switch_orientation},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_switch[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_textarea[] = {
+    {.name = "create", .handler = sni_api_lv_textarea_create},
+    {.name = "addChar", .handler = sni_api_lv_textarea_add_char},
+    {.name = "addText", .handler = sni_api_lv_textarea_add_text},
+    {.name = "deleteChar", .handler = sni_api_lv_textarea_delete_char},
+    {.name = "deleteCharForward", .handler = sni_api_lv_textarea_delete_char_forward},
+    {.name = "setText", .handler = sni_api_lv_textarea_set_text},
+    {.name = "setPlaceholderText", .handler = sni_api_lv_textarea_set_placeholder_text},
+    {.name = "setCursorPos", .handler = sni_api_lv_textarea_set_cursor_pos},
+    {.name = "setCursorClickPos", .handler = sni_api_lv_textarea_set_cursor_click_pos},
+    {.name = "setPasswordMode", .handler = sni_api_lv_textarea_set_password_mode},
+    {.name = "setPasswordBullet", .handler = sni_api_lv_textarea_set_password_bullet},
+    {.name = "setOneLine", .handler = sni_api_lv_textarea_set_one_line},
+    {.name = "setAcceptedChars", .handler = sni_api_lv_textarea_set_accepted_chars},
+    {.name = "setMaxLength", .handler = sni_api_lv_textarea_set_max_length},
+    {.name = "setInsertReplace", .handler = sni_api_lv_textarea_set_insert_replace},
+    {.name = "setTextSelection", .handler = sni_api_lv_textarea_set_text_selection},
+    {.name = "setPasswordShowTime", .handler = sni_api_lv_textarea_set_password_show_time},
+    {.name = "setAlign", .handler = sni_api_lv_textarea_set_align},
+    {.name = "getText", .handler = sni_api_lv_textarea_get_text},
+    {.name = "getPlaceholderText", .handler = sni_api_lv_textarea_get_placeholder_text},
+    {.name = "getLabel", .handler = sni_api_lv_textarea_get_label},
+    {.name = "getCursorPos", .handler = sni_api_lv_textarea_get_cursor_pos},
+    {.name = "getCursorClickPos", .handler = sni_api_lv_textarea_get_cursor_click_pos},
+    {.name = "getPasswordMode", .handler = sni_api_lv_textarea_get_password_mode},
+    {.name = "getPasswordBullet", .handler = sni_api_lv_textarea_get_password_bullet},
+    {.name = "getOneLine", .handler = sni_api_lv_textarea_get_one_line},
+    {.name = "getAcceptedChars", .handler = sni_api_lv_textarea_get_accepted_chars},
+    {.name = "getMaxLength", .handler = sni_api_lv_textarea_get_max_length},
+    {.name = "textIsSelected", .handler = sni_api_lv_textarea_text_is_selected},
+    {.name = "getTextSelection", .handler = sni_api_lv_textarea_get_text_selection},
+    {.name = "getPasswordShowTime", .handler = sni_api_lv_textarea_get_password_show_time},
+    {.name = "getCurrentChar", .handler = sni_api_lv_textarea_get_current_char},
+    {.name = "clearSelection", .handler = sni_api_lv_textarea_clear_selection},
+    {.name = "cursorRight", .handler = sni_api_lv_textarea_cursor_right},
+    {.name = "cursorLeft", .handler = sni_api_lv_textarea_cursor_left},
+    {.name = "cursorDown", .handler = sni_api_lv_textarea_cursor_down},
+    {.name = "cursorUp", .handler = sni_api_lv_textarea_cursor_up},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_textarea[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_textarea[] = {
+    {.name = "acceptedChars",
+     .getter = sni_api_prop_get_textarea_accepted_chars,
+     .setter = sni_api_prop_set_textarea_accepted_chars},
+    {.name = "align", .getter = NULL, .setter = sni_api_prop_set_textarea_align},
+    {.name = "currentChar", .getter = sni_api_prop_get_textarea_current_char, .setter = NULL},
+    {.name = "cursorClickPos",
+     .getter = sni_api_prop_get_textarea_cursor_click_pos,
+     .setter = sni_api_prop_set_textarea_cursor_click_pos},
+    {.name = "cursorPos",
+     .getter = sni_api_prop_get_textarea_cursor_pos,
+     .setter = sni_api_prop_set_textarea_cursor_pos},
+    {.name = "insertReplace", .getter = NULL, .setter = sni_api_prop_set_textarea_insert_replace},
+    {.name = "label", .getter = sni_api_prop_get_textarea_label, .setter = NULL},
+    {.name = "maxLength",
+     .getter = sni_api_prop_get_textarea_max_length,
+     .setter = sni_api_prop_set_textarea_max_length},
+    {.name = "oneLine", .getter = sni_api_prop_get_textarea_one_line, .setter = sni_api_prop_set_textarea_one_line},
+    {.name = "passwordBullet",
+     .getter = sni_api_prop_get_textarea_password_bullet,
+     .setter = sni_api_prop_set_textarea_password_bullet},
+    {.name = "passwordMode",
+     .getter = sni_api_prop_get_textarea_password_mode,
+     .setter = sni_api_prop_set_textarea_password_mode},
+    {.name = "passwordShowTime",
+     .getter = sni_api_prop_get_textarea_password_show_time,
+     .setter = sni_api_prop_set_textarea_password_show_time},
+    {.name = "placeholderText",
+     .getter = sni_api_prop_get_textarea_placeholder_text,
+     .setter = sni_api_prop_set_textarea_placeholder_text},
+    {.name = "text", .getter = sni_api_prop_get_textarea_text, .setter = sni_api_prop_set_textarea_text},
+    {.name = "textSelection",
+     .getter = sni_api_prop_get_textarea_text_selection,
+     .setter = sni_api_prop_set_textarea_text_selection},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_textarea[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
 const sni_method_desc_t lv_class_methods_dropdown[] = {
     {.name = "setText", .handler = sni_api_lv_dropdown_set_text},
     {.name = "setOptions", .handler = sni_api_lv_dropdown_set_options},
@@ -30671,6 +37631,231 @@ const sni_property_desc_t lv_class_properties_imagebutton[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_imagebutton[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_list[] = {
+    {.name = "addText", .handler = sni_api_lv_list_add_text},
+    {.name = "addButtonText", .handler = sni_api_lv_list_add_button_text},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_list[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_list[] = {
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_list[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_tabview[] = {
+    {.name = "create", .handler = sni_api_lv_tabview_create},
+    {.name = "addTab", .handler = sni_api_lv_tabview_add_tab},
+    {.name = "setTabText", .handler = sni_api_lv_tabview_set_tab_text},
+    {.name = "setActive", .handler = sni_api_lv_tabview_set_active},
+    {.name = "setTabBarPosition", .handler = sni_api_lv_tabview_set_tab_bar_position},
+    {.name = "setTabBarSize", .handler = sni_api_lv_tabview_set_tab_bar_size},
+    {.name = "getTabCount", .handler = sni_api_lv_tabview_get_tab_count},
+    {.name = "getTabActive", .handler = sni_api_lv_tabview_get_tab_active},
+    {.name = "getTabButton", .handler = sni_api_lv_tabview_get_tab_button},
+    {.name = "getContent", .handler = sni_api_lv_tabview_get_content},
+    {.name = "getTabBar", .handler = sni_api_lv_tabview_get_tab_bar},
+    {.name = "getTabBarPosition", .handler = sni_api_lv_tabview_get_tab_bar_position},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_tabview[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_tabview[] = {
+    {.name = "content", .getter = sni_api_prop_get_tabview_content, .setter = NULL},
+    {.name = "tabActive", .getter = sni_api_prop_get_tabview_tab_active, .setter = NULL},
+    {.name = "tabBar", .getter = sni_api_prop_get_tabview_tab_bar, .setter = NULL},
+    {.name = "tabBarPosition",
+     .getter = sni_api_prop_get_tabview_tab_bar_position,
+     .setter = sni_api_prop_set_tabview_tab_bar_position},
+    {.name = "tabBarSize", .getter = NULL, .setter = sni_api_prop_set_tabview_tab_bar_size},
+    {.name = "tabCount", .getter = sni_api_prop_get_tabview_tab_count, .setter = NULL},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_tabview[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_tileview[] = {
+    {.name = "create", .handler = sni_api_lv_tileview_create},
+    {.name = "addTile", .handler = sni_api_lv_tileview_add_tile},
+    {.name = "setTile", .handler = sni_api_lv_tileview_set_tile},
+    {.name = "setTileByIndex", .handler = sni_api_lv_tileview_set_tile_by_index},
+    {.name = "getTileActive", .handler = sni_api_lv_tileview_get_tile_active},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_tileview[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_tileview[] = {
+    {.name = "tileActive", .getter = sni_api_prop_get_tileview_tile_active, .setter = NULL},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_tileview[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_roller[] = {
+    {.name = "create", .handler = sni_api_lv_roller_create},
+    {.name = "setOptions", .handler = sni_api_lv_roller_set_options},
+    {.name = "setSelected", .handler = sni_api_lv_roller_set_selected},
+    {.name = "setSelectedStr", .handler = sni_api_lv_roller_set_selected_str},
+    {.name = "setVisibleRowCount", .handler = sni_api_lv_roller_set_visible_row_count},
+    {.name = "getSelected", .handler = sni_api_lv_roller_get_selected},
+    {.name = "getSelectedStr", .handler = sni_api_lv_roller_get_selected_str},
+    {.name = "getOptions", .handler = sni_api_lv_roller_get_options},
+    {.name = "getOptionCount", .handler = sni_api_lv_roller_get_option_count},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_roller[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_roller[] = {
+    {.name = "optionCount", .getter = sni_api_prop_get_roller_option_count, .setter = NULL},
+    {.name = "options", .getter = sni_api_prop_get_roller_options, .setter = NULL},
+    {.name = "selected", .getter = sni_api_prop_get_roller_selected, .setter = NULL},
+    {.name = "visibleRowCount", .getter = NULL, .setter = sni_api_prop_set_roller_visible_row_count},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_roller[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_spinbox[] = {
+    {.name = "create", .handler = sni_api_lv_spinbox_create},
+    {.name = "setValue", .handler = sni_api_lv_spinbox_set_value},
+    {.name = "setRollover", .handler = sni_api_lv_spinbox_set_rollover},
+    {.name = "setDigitFormat", .handler = sni_api_lv_spinbox_set_digit_format},
+    {.name = "setDigitCount", .handler = sni_api_lv_spinbox_set_digit_count},
+    {.name = "setDecPointPos", .handler = sni_api_lv_spinbox_set_dec_point_pos},
+    {.name = "setStep", .handler = sni_api_lv_spinbox_set_step},
+    {.name = "setRange", .handler = sni_api_lv_spinbox_set_range},
+    {.name = "setMinValue", .handler = sni_api_lv_spinbox_set_min_value},
+    {.name = "setMaxValue", .handler = sni_api_lv_spinbox_set_max_value},
+    {.name = "setCursorPos", .handler = sni_api_lv_spinbox_set_cursor_pos},
+    {.name = "setDigitStepDirection", .handler = sni_api_lv_spinbox_set_digit_step_direction},
+    {.name = "getRollover", .handler = sni_api_lv_spinbox_get_rollover},
+    {.name = "getValue", .handler = sni_api_lv_spinbox_get_value},
+    {.name = "getStep", .handler = sni_api_lv_spinbox_get_step},
+    {.name = "getDigitCount", .handler = sni_api_lv_spinbox_get_digit_count},
+    {.name = "getDecPointPos", .handler = sni_api_lv_spinbox_get_dec_point_pos},
+    {.name = "getMinValue", .handler = sni_api_lv_spinbox_get_min_value},
+    {.name = "getMaxValue", .handler = sni_api_lv_spinbox_get_max_value},
+    {.name = "getDigitStepDirection", .handler = sni_api_lv_spinbox_get_digit_step_direction},
+    {.name = "stepNext", .handler = sni_api_lv_spinbox_step_next},
+    {.name = "stepPrev", .handler = sni_api_lv_spinbox_step_prev},
+    {.name = "increment", .handler = sni_api_lv_spinbox_increment},
+    {.name = "decrement", .handler = sni_api_lv_spinbox_decrement},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_spinbox[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_spinbox[] = {
+    {.name = "cursorPos", .getter = NULL, .setter = sni_api_prop_set_spinbox_cursor_pos},
+    {.name = "decPointPos",
+     .getter = sni_api_prop_get_spinbox_dec_point_pos,
+     .setter = sni_api_prop_set_spinbox_dec_point_pos},
+    {.name = "digitCount",
+     .getter = sni_api_prop_get_spinbox_digit_count,
+     .setter = sni_api_prop_set_spinbox_digit_count},
+    {.name = "digitStepDirection",
+     .getter = sni_api_prop_get_spinbox_digit_step_direction,
+     .setter = sni_api_prop_set_spinbox_digit_step_direction},
+    {.name = "maxValue", .getter = sni_api_prop_get_spinbox_max_value, .setter = sni_api_prop_set_spinbox_max_value},
+    {.name = "minValue", .getter = sni_api_prop_get_spinbox_min_value, .setter = sni_api_prop_set_spinbox_min_value},
+    {.name = "rollover", .getter = sni_api_prop_get_spinbox_rollover, .setter = sni_api_prop_set_spinbox_rollover},
+    {.name = "step", .getter = sni_api_prop_get_spinbox_step, .setter = sni_api_prop_set_spinbox_step},
+    {.name = "value", .getter = sni_api_prop_get_spinbox_value, .setter = sni_api_prop_set_spinbox_value},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_spinbox[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_msgbox[] = {
+    {.name = "create", .handler = sni_api_lv_msgbox_create},
+    {.name = "addTitle", .handler = sni_api_lv_msgbox_add_title},
+    {.name = "addText", .handler = sni_api_lv_msgbox_add_text},
+    {.name = "addFooterButton", .handler = sni_api_lv_msgbox_add_footer_button},
+    {.name = "addCloseButton", .handler = sni_api_lv_msgbox_add_close_button},
+    {.name = "getHeader", .handler = sni_api_lv_msgbox_get_header},
+    {.name = "getFooter", .handler = sni_api_lv_msgbox_get_footer},
+    {.name = "getContent", .handler = sni_api_lv_msgbox_get_content},
+    {.name = "getTitle", .handler = sni_api_lv_msgbox_get_title},
+    {.name = "close", .handler = sni_api_lv_msgbox_close},
+    {.name = "closeAsync", .handler = sni_api_lv_msgbox_close_async},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_msgbox[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_msgbox[] = {
+    {.name = "content", .getter = sni_api_prop_get_msgbox_content, .setter = NULL},
+    {.name = "footer", .getter = sni_api_prop_get_msgbox_footer, .setter = NULL},
+    {.name = "header", .getter = sni_api_prop_get_msgbox_header, .setter = NULL},
+    {.name = "title", .getter = sni_api_prop_get_msgbox_title, .setter = NULL},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_msgbox[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_qrcode[] = {
+    {.name = "create", .handler = sni_api_lv_qrcode_create},
+    {.name = "setSize", .handler = sni_api_lv_qrcode_set_size},
+    {.name = "setDarkColor", .handler = sni_api_lv_qrcode_set_dark_color},
+    {.name = "setLightColor", .handler = sni_api_lv_qrcode_set_light_color},
+    {.name = "setData", .handler = sni_api_lv_qrcode_set_data},
+    {.name = "render", .handler = sni_api_lv_qrcode_render},
+    {.name = "setQuietZone", .handler = sni_api_lv_qrcode_set_quiet_zone},
+    {.name = "setUpdateMode", .handler = sni_api_lv_qrcode_set_update_mode},
+    {.name = "getUpdateMode", .handler = sni_api_lv_qrcode_get_update_mode},
+    {.name = "isRenderValid", .handler = sni_api_lv_qrcode_is_render_valid},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_qrcode[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_qrcode[] = {
+    {.name = "darkColor", .getter = NULL, .setter = sni_api_prop_set_qrcode_dark_color},
+    {.name = "data", .getter = NULL, .setter = sni_api_prop_set_qrcode_data},
+    {.name = "lightColor", .getter = NULL, .setter = sni_api_prop_set_qrcode_light_color},
+    {.name = "quietZone", .getter = NULL, .setter = sni_api_prop_set_qrcode_quiet_zone},
+    {.name = "size", .getter = NULL, .setter = sni_api_prop_set_qrcode_size},
+    {.name = "updateMode",
+     .getter = sni_api_prop_get_qrcode_update_mode,
+     .setter = sni_api_prop_set_qrcode_update_mode},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_qrcode[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -31576,10 +38761,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "EVENT_RENDER_START", .type = SNI_CONST_INT, .value.i = LV_EVENT_RENDER_START},
     {.name = "EVENT_RESOLUTION_CHANGED", .type = SNI_CONST_INT, .value.i = LV_EVENT_RESOLUTION_CHANGED},
     {.name = "EVENT_ROTARY", .type = SNI_CONST_INT, .value.i = LV_EVENT_ROTARY},
-    {.name = "EVENT_SCREEN_LOADED", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCREEN_LOADED},
-    {.name = "EVENT_SCREEN_LOAD_START", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCREEN_LOAD_START},
-    {.name = "EVENT_SCREEN_UNLOADED", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCREEN_UNLOADED},
-    {.name = "EVENT_SCREEN_UNLOAD_START", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCREEN_UNLOAD_START},
     {.name = "EVENT_SCROLL", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCROLL},
     {.name = "EVENT_SCROLL_BEGIN", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCROLL_BEGIN},
     {.name = "EVENT_SCROLL_END", .type = SNI_CONST_INT, .value.i = LV_EVENT_SCROLL_END},
@@ -33038,22 +40219,6 @@ const sni_constant_desc_t lv_root_constants[] = {
 #else
     {.name = "SCALE_TOTAL_TICK_COUNT_DEFAULT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
 #endif
-    {.name = "SCREEN_LOAD_ANIM_FADE_IN", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_FADE_IN},
-    {.name = "SCREEN_LOAD_ANIM_FADE_ON", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_FADE_ON},
-    {.name = "SCREEN_LOAD_ANIM_FADE_OUT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_FADE_OUT},
-    {.name = "SCREEN_LOAD_ANIM_MOVE_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_MOVE_BOTTOM},
-    {.name = "SCREEN_LOAD_ANIM_MOVE_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_MOVE_LEFT},
-    {.name = "SCREEN_LOAD_ANIM_MOVE_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_MOVE_RIGHT},
-    {.name = "SCREEN_LOAD_ANIM_MOVE_TOP", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_MOVE_TOP},
-    {.name = "SCREEN_LOAD_ANIM_NONE", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_NONE},
-    {.name = "SCREEN_LOAD_ANIM_OUT_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OUT_BOTTOM},
-    {.name = "SCREEN_LOAD_ANIM_OUT_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OUT_LEFT},
-    {.name = "SCREEN_LOAD_ANIM_OUT_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OUT_RIGHT},
-    {.name = "SCREEN_LOAD_ANIM_OUT_TOP", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OUT_TOP},
-    {.name = "SCREEN_LOAD_ANIM_OVER_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OVER_BOTTOM},
-    {.name = "SCREEN_LOAD_ANIM_OVER_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OVER_LEFT},
-    {.name = "SCREEN_LOAD_ANIM_OVER_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OVER_RIGHT},
-    {.name = "SCREEN_LOAD_ANIM_OVER_TOP", .type = SNI_CONST_INT, .value.i = LV_SCREEN_LOAD_ANIM_OVER_TOP},
     {.name = "SCROLLBAR_MODE_ACTIVE", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_ACTIVE},
     {.name = "SCROLLBAR_MODE_AUTO", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_AUTO},
     {.name = "SCROLLBAR_MODE_OFF", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_OFF},
@@ -33062,86 +40227,6 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "SCROLL_SNAP_END", .type = SNI_CONST_INT, .value.i = LV_SCROLL_SNAP_END},
     {.name = "SCROLL_SNAP_NONE", .type = SNI_CONST_INT, .value.i = LV_SCROLL_SNAP_NONE},
     {.name = "SCROLL_SNAP_START", .type = SNI_CONST_INT, .value.i = LV_SCROLL_SNAP_START},
-#if defined(LV_SCR_LOAD_ANIM_FADE_IN)
-    {.name = "SCR_LOAD_ANIM_FADE_IN", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_FADE_IN},
-#else
-    {.name = "SCR_LOAD_ANIM_FADE_IN", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_FADE_ON)
-    {.name = "SCR_LOAD_ANIM_FADE_ON", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_FADE_ON},
-#else
-    {.name = "SCR_LOAD_ANIM_FADE_ON", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_FADE_OUT)
-    {.name = "SCR_LOAD_ANIM_FADE_OUT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_FADE_OUT},
-#else
-    {.name = "SCR_LOAD_ANIM_FADE_OUT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_MOVE_BOTTOM)
-    {.name = "SCR_LOAD_ANIM_MOVE_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_MOVE_BOTTOM},
-#else
-    {.name = "SCR_LOAD_ANIM_MOVE_BOTTOM", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_MOVE_LEFT)
-    {.name = "SCR_LOAD_ANIM_MOVE_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_MOVE_LEFT},
-#else
-    {.name = "SCR_LOAD_ANIM_MOVE_LEFT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_MOVE_RIGHT)
-    {.name = "SCR_LOAD_ANIM_MOVE_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_MOVE_RIGHT},
-#else
-    {.name = "SCR_LOAD_ANIM_MOVE_RIGHT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_MOVE_TOP)
-    {.name = "SCR_LOAD_ANIM_MOVE_TOP", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_MOVE_TOP},
-#else
-    {.name = "SCR_LOAD_ANIM_MOVE_TOP", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_NONE)
-    {.name = "SCR_LOAD_ANIM_NONE", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_NONE},
-#else
-    {.name = "SCR_LOAD_ANIM_NONE", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OUT_BOTTOM)
-    {.name = "SCR_LOAD_ANIM_OUT_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OUT_BOTTOM},
-#else
-    {.name = "SCR_LOAD_ANIM_OUT_BOTTOM", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OUT_LEFT)
-    {.name = "SCR_LOAD_ANIM_OUT_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OUT_LEFT},
-#else
-    {.name = "SCR_LOAD_ANIM_OUT_LEFT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OUT_RIGHT)
-    {.name = "SCR_LOAD_ANIM_OUT_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OUT_RIGHT},
-#else
-    {.name = "SCR_LOAD_ANIM_OUT_RIGHT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OUT_TOP)
-    {.name = "SCR_LOAD_ANIM_OUT_TOP", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OUT_TOP},
-#else
-    {.name = "SCR_LOAD_ANIM_OUT_TOP", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OVER_BOTTOM)
-    {.name = "SCR_LOAD_ANIM_OVER_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OVER_BOTTOM},
-#else
-    {.name = "SCR_LOAD_ANIM_OVER_BOTTOM", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OVER_LEFT)
-    {.name = "SCR_LOAD_ANIM_OVER_LEFT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OVER_LEFT},
-#else
-    {.name = "SCR_LOAD_ANIM_OVER_LEFT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OVER_RIGHT)
-    {.name = "SCR_LOAD_ANIM_OVER_RIGHT", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OVER_RIGHT},
-#else
-    {.name = "SCR_LOAD_ANIM_OVER_RIGHT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
-#if defined(LV_SCR_LOAD_ANIM_OVER_TOP)
-    {.name = "SCR_LOAD_ANIM_OVER_TOP", .type = SNI_CONST_INT, .value.i = LV_SCR_LOAD_ANIM_OVER_TOP},
-#else
-    {.name = "SCR_LOAD_ANIM_OVER_TOP", .type = SNI_CONST_UNDEFINED, .value.i = 0},
-#endif
     {.name = "SDL_AUTO_BACKEND", .type = SNI_CONST_UNDEFINED, .value.i = 0},
 #if defined(LV_SDL_BACKEND)
     {.name = "SDL_BACKEND", .type = SNI_CONST_INT, .value.i = LV_SDL_BACKEND},
@@ -57571,14 +64656,14 @@ const sni_class_desc_t lv_class_desc_bar = {
     .constants = lv_class_constants_bar,
 };
 
-const sni_class_desc_t lv_class_desc_screen = {
-    .name = "screen",
-    .constructor = NULL,
-    .base_class = NULL,
-    .methods = NULL,
-    .properties = NULL,
-    .static_methods = lv_class_static_methods_screen,
-    .constants = lv_class_constants_screen,
+const sni_class_desc_t lv_class_desc_slider = {
+    .name = "slider",
+    .constructor = sni_api_ctor_slider,
+    .base_class = &lv_class_desc_bar,
+    .methods = lv_class_methods_slider,
+    .properties = lv_class_properties_slider,
+    .static_methods = lv_class_static_methods_slider,
+    .constants = lv_class_constants_slider,
 };
 
 const sni_class_desc_t lv_class_desc_color = {
@@ -57661,6 +64746,26 @@ const sni_class_desc_t lv_class_desc_checkbox = {
     .constants = lv_class_constants_checkbox,
 };
 
+const sni_class_desc_t lv_class_desc_switch = {
+    .name = "switch",
+    .constructor = sni_api_ctor_switch,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_switch,
+    .properties = lv_class_properties_switch,
+    .static_methods = lv_class_static_methods_switch,
+    .constants = lv_class_constants_switch,
+};
+
+const sni_class_desc_t lv_class_desc_textarea = {
+    .name = "textarea",
+    .constructor = sni_api_ctor_textarea,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_textarea,
+    .properties = lv_class_properties_textarea,
+    .static_methods = lv_class_static_methods_textarea,
+    .constants = lv_class_constants_textarea,
+};
+
 const sni_class_desc_t lv_class_desc_dropdown = {
     .name = "dropdown",
     .constructor = sni_api_ctor_dropdown,
@@ -57691,25 +64796,86 @@ const sni_class_desc_t lv_class_desc_imagebutton = {
     .constants = lv_class_constants_imagebutton,
 };
 
+const sni_class_desc_t lv_class_desc_list = {
+    .name = "list",
+    .constructor = sni_api_ctor_list,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_list,
+    .properties = lv_class_properties_list,
+    .static_methods = lv_class_static_methods_list,
+    .constants = lv_class_constants_list,
+};
+
+const sni_class_desc_t lv_class_desc_tabview = {
+    .name = "tabview",
+    .constructor = sni_api_ctor_tabview,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_tabview,
+    .properties = lv_class_properties_tabview,
+    .static_methods = lv_class_static_methods_tabview,
+    .constants = lv_class_constants_tabview,
+};
+
+const sni_class_desc_t lv_class_desc_tileview = {
+    .name = "tileview",
+    .constructor = sni_api_ctor_tileview,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_tileview,
+    .properties = lv_class_properties_tileview,
+    .static_methods = lv_class_static_methods_tileview,
+    .constants = lv_class_constants_tileview,
+};
+
+const sni_class_desc_t lv_class_desc_roller = {
+    .name = "roller",
+    .constructor = sni_api_ctor_roller,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_roller,
+    .properties = lv_class_properties_roller,
+    .static_methods = lv_class_static_methods_roller,
+    .constants = lv_class_constants_roller,
+};
+
+const sni_class_desc_t lv_class_desc_spinbox = {
+    .name = "spinbox",
+    .constructor = sni_api_ctor_spinbox,
+    .base_class = &lv_class_desc_textarea,
+    .methods = lv_class_methods_spinbox,
+    .properties = lv_class_properties_spinbox,
+    .static_methods = lv_class_static_methods_spinbox,
+    .constants = lv_class_constants_spinbox,
+};
+
+const sni_class_desc_t lv_class_desc_msgbox = {
+    .name = "msgbox",
+    .constructor = sni_api_ctor_msgbox,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_msgbox,
+    .properties = lv_class_properties_msgbox,
+    .static_methods = lv_class_static_methods_msgbox,
+    .constants = lv_class_constants_msgbox,
+};
+
+const sni_class_desc_t lv_class_desc_qrcode = {
+    .name = "qrcode",
+    .constructor = sni_api_ctor_qrcode,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_qrcode,
+    .properties = lv_class_properties_qrcode,
+    .static_methods = lv_class_static_methods_qrcode,
+    .constants = lv_class_constants_qrcode,
+};
+
 const sni_class_desc_t *const lv_api_classes[] = {
-    &lv_class_desc_obj,
-    &lv_class_desc_button,
-    &lv_class_desc_label,
-    &lv_class_desc_arc,
-    &lv_class_desc_bar,
-    &lv_class_desc_screen,
-    &lv_class_desc_color,
-    &lv_class_desc_timer,
-    &lv_class_desc_anim,
-    &lv_class_desc_buttonmatrix,
-    &lv_class_desc_calendar,
-    &lv_class_desc_chart,
-    &lv_class_desc_canvas,
-    &lv_class_desc_checkbox,
-    &lv_class_desc_dropdown,
-    &lv_class_desc_image,
-    &lv_class_desc_imagebutton,
-    NULL,
+    &lv_class_desc_obj,          &lv_class_desc_button,   &lv_class_desc_label,
+    &lv_class_desc_arc,          &lv_class_desc_bar,      &lv_class_desc_slider,
+    &lv_class_desc_color,        &lv_class_desc_timer,    &lv_class_desc_anim,
+    &lv_class_desc_buttonmatrix, &lv_class_desc_calendar, &lv_class_desc_chart,
+    &lv_class_desc_canvas,       &lv_class_desc_checkbox, &lv_class_desc_switch,
+    &lv_class_desc_textarea,     &lv_class_desc_dropdown, &lv_class_desc_image,
+    &lv_class_desc_imagebutton,  &lv_class_desc_list,     &lv_class_desc_tabview,
+    &lv_class_desc_tileview,     &lv_class_desc_roller,   &lv_class_desc_spinbox,
+    &lv_class_desc_msgbox,       &lv_class_desc_qrcode,   NULL,
 };
 
 void sni_api_lv_init(void)
@@ -57932,9 +65098,20 @@ lv_label_set_recolor
 lv_label_set_text
 lv_label_set_text_selection_end
 lv_label_set_text_selection_start
+lv_list_create
+lv_msgbox_add_close_button
+lv_msgbox_add_footer_button
+lv_msgbox_add_text
+lv_msgbox_add_title
+lv_msgbox_close
+lv_msgbox_close_async
+lv_msgbox_create
+lv_msgbox_get_content
+lv_msgbox_get_footer
+lv_msgbox_get_header
+lv_msgbox_get_title
 lv_obj_add_event_cb
 lv_obj_add_flag
-lv_obj_add_screen_load_event
 lv_obj_add_state
 lv_obj_align
 lv_obj_align_to
@@ -57965,7 +65142,6 @@ lv_obj_get_event_dsc
 lv_obj_get_height
 lv_obj_get_index
 lv_obj_get_parent
-lv_obj_get_screen
 lv_obj_get_scroll_bottom
 lv_obj_get_scroll_dir
 lv_obj_get_scroll_end
@@ -58418,7 +65594,122 @@ lv_obj_swap
 lv_obj_transform_point
 lv_obj_update_layout
 lv_obj_update_snap
-lv_screen_active
+lv_qrcode_create
+lv_qrcode_get_update_mode
+lv_qrcode_is_render_valid
+lv_qrcode_render
+lv_qrcode_set_dark_color
+lv_qrcode_set_data
+lv_qrcode_set_light_color
+lv_qrcode_set_quiet_zone
+lv_qrcode_set_size
+lv_qrcode_set_update_mode
+lv_roller_create
+lv_roller_get_option_count
+lv_roller_get_options
+lv_roller_get_selected
+lv_roller_get_selected_str
+lv_roller_set_options
+lv_roller_set_selected
+lv_roller_set_selected_str
+lv_roller_set_visible_row_count
+lv_slider_create
+lv_slider_get_left_value
+lv_slider_get_max_value
+lv_slider_get_min_value
+lv_slider_get_mode
+lv_slider_get_orientation
+lv_slider_get_value
+lv_slider_is_dragged
+lv_slider_is_symmetrical
+lv_slider_set_max_value
+lv_slider_set_min_value
+lv_slider_set_mode
+lv_slider_set_orientation
+lv_slider_set_range
+lv_slider_set_start_value
+lv_slider_set_value
+lv_spinbox_create
+lv_spinbox_decrement
+lv_spinbox_get_dec_point_pos
+lv_spinbox_get_digit_count
+lv_spinbox_get_digit_step_direction
+lv_spinbox_get_max_value
+lv_spinbox_get_min_value
+lv_spinbox_get_rollover
+lv_spinbox_get_step
+lv_spinbox_get_value
+lv_spinbox_increment
+lv_spinbox_set_cursor_pos
+lv_spinbox_set_dec_point_pos
+lv_spinbox_set_digit_count
+lv_spinbox_set_digit_format
+lv_spinbox_set_digit_step_direction
+lv_spinbox_set_max_value
+lv_spinbox_set_min_value
+lv_spinbox_set_range
+lv_spinbox_set_rollover
+lv_spinbox_set_step
+lv_spinbox_set_value
+lv_spinbox_step_next
+lv_spinbox_step_prev
+lv_switch_create
+lv_switch_get_orientation
+lv_switch_set_orientation
+lv_tabview_add_tab
+lv_tabview_create
+lv_tabview_get_content
+lv_tabview_get_tab_active
+lv_tabview_get_tab_bar
+lv_tabview_get_tab_bar_position
+lv_tabview_get_tab_button
+lv_tabview_get_tab_count
+lv_tabview_set_active
+lv_tabview_set_tab_bar_position
+lv_tabview_set_tab_bar_size
+lv_tabview_set_tab_text
+lv_textarea_add_char
+lv_textarea_add_text
+lv_textarea_clear_selection
+lv_textarea_create
+lv_textarea_cursor_down
+lv_textarea_cursor_left
+lv_textarea_cursor_right
+lv_textarea_cursor_up
+lv_textarea_delete_char
+lv_textarea_delete_char_forward
+lv_textarea_get_accepted_chars
+lv_textarea_get_current_char
+lv_textarea_get_cursor_click_pos
+lv_textarea_get_cursor_pos
+lv_textarea_get_label
+lv_textarea_get_max_length
+lv_textarea_get_one_line
+lv_textarea_get_password_bullet
+lv_textarea_get_password_mode
+lv_textarea_get_password_show_time
+lv_textarea_get_placeholder_text
+lv_textarea_get_text
+lv_textarea_get_text_selection
+lv_textarea_set_accepted_chars
+lv_textarea_set_align
+lv_textarea_set_cursor_click_pos
+lv_textarea_set_cursor_pos
+lv_textarea_set_insert_replace
+lv_textarea_set_max_length
+lv_textarea_set_one_line
+lv_textarea_set_password_bullet
+lv_textarea_set_password_mode
+lv_textarea_set_password_show_time
+lv_textarea_set_placeholder_text
+lv_textarea_set_text
+lv_textarea_set_text_selection
+lv_textarea_text_is_selected
+lv_tileview_add_tile
+lv_tileview_create
+lv_tileview_get_tile_active
+lv_tileview_set_tile
+lv_tileview_set_tile_by_index
 lv_timer_create
 lv_timer_delete
 lv_timer_get_paused

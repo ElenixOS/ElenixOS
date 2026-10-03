@@ -253,6 +253,19 @@ jerry_value_t sni_api_lv_canvas_free_buffer(const jerry_call_info_t *call_info_p
                                             const jerry_value_t args_p[],
                                             const jerry_length_t args_count);
 
+/* list -------------------------------------------------------*/
+jerry_value_t sni_api_ctor_list(const jerry_call_info_t *call_info_p,
+                                const jerry_value_t args_p[],
+                                const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_list_add_text(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_list_add_button_text(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count);
+
 #ifdef __cplusplus
 }
 #endif

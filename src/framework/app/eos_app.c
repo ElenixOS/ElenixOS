@@ -7,6 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "lvgl.h"
@@ -749,6 +750,16 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
 {
     EOS_LOG_E("Script error handling - type:%d, code:%d, app_id:%s", error_type, error_code, app_id ? app_id : "NULL");
 
+    const spm_error_t *last_error = spm_get_last_error();
+    if (last_error && app_id && last_error->script_id[0] && strcmp(last_error->script_id, app_id) == 0)
+    {
+        error_type = last_error->error_type;
+        error_code = last_error->error_code;
+    }
+    else
+    {
+        last_error = NULL;
+    }
     const char *reason = _eos_script_error_get_reason(error_type);
 
     eos_fault_cfg_t fault_cfg = {
@@ -792,7 +803,6 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
     if (extra_slot)
     {
         char info_str[256];
-        const spm_error_t *last_error = spm_get_last_error();
         const char *error_info = last_error ? last_error->error_info : script_engine_get_error_info();
         if (error_info && error_info[0] != '\0')
         {
@@ -897,24 +907,63 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
 
 /* Engine Crash Recovery --------------------------------------*/
 
+static void _app_restart_cb(lv_event_t *e);
+static void _app_exit_cb(lv_event_t *e);
+
+static void _app_get_crash_app_id(char *app_id, size_t app_id_size)
+{
+    if (!app_id || app_id_size == 0)
+        return;
+
+    eos_activity_t *current = eos_activity_get_current();
+    eos_activity_t *app_root = eos_activity_get_app_root(current);
+    const char *current_app_id = eos_activity_get_app_id(app_root ? app_root : current);
+    if (current_app_id && current_app_id[0])
+    {
+        snprintf(app_id, app_id_size, "%s", current_app_id);
+        return;
+    }
+
+    const spm_crash_state_t *crash = spm_get_crash_state();
+    if (crash && crash->has_crash && crash->script_id[0])
+        snprintf(app_id, app_id_size, "%s", crash->script_id);
+}
+
+static void _app_restore_restart_error_panel(const char *app_id, eos_result_t error)
+{
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (!current || !current_app_id || !app_id || strcmp(current_app_id, app_id) != 0
+        || eos_activity_get_fault_panel(current))
+    {
+        return;
+    }
+
+    eos_script_error_handler_cfg_t cfg = {
+        .confirm_btn_id = STR_ID_APP_RESTART,
+        .confirm_cb = _app_restart_cb,
+        .cancel_btn_id = STR_ID_APP_EXIT,
+        .cancel_cb = _app_exit_cb,
+    };
+    eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, error, app_id, &cfg);
+}
+
 static void _app_restart_cb(lv_event_t *e)
 {
     (void)e;
-    const spm_crash_state_t *crash = spm_get_crash_state();
     char app_id[SPM_CRASH_ID_MAX] = {0};
-
-    if (crash && crash->has_crash && crash->script_id[0])
-    {
-        snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
-    }
-
+    _app_get_crash_app_id(app_id, sizeof(app_id));
     spm_clear_crash_state();
 
     if (app_id[0])
     {
         EOS_LOG_I("Restarting app: %s", app_id);
-        eos_activity_t *current = eos_activity_get_current();
-        eos_app_restart_in_place(app_id, current);
+        eos_result_t ret = eos_app_restart_by_id(app_id);
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_W("Restart after crash failed for '%s': %d", app_id, ret);
+            _app_restore_restart_error_panel(app_id, ret);
+        }
     }
     else
     {
@@ -927,16 +976,39 @@ static void _app_exit_cb(lv_event_t *e)
 {
     (void)e;
     EOS_LOG_I("Exiting app after crash");
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    _app_get_crash_app_id(app_id, sizeof(app_id));
+    spm_clear_last_error();
     spm_clear_crash_state();
-    /* Try to return to the previous activity (app list) with animation.
-     * The activity stack is still intact after engine reset — only JS
-     * programs were destroyed.  If that fails (empty stack, already at
-     * root, or transition in progress), fall back to watchface. */
-    if (eos_activity_back() != EOS_OK)
+
+    eos_result_t ret = app_id[0] ? eos_app_terminate_by_id(app_id) : EOS_FAILED;
+    if (ret != EOS_OK)
     {
-        EOS_LOG_W("Activity back failed, falling back to watchface");
-        eos_activity_back_to_watchface();
+        EOS_LOG_W("Failed to close app after crash '%s': %d; returning to watchface",
+                  app_id[0] ? app_id : "unknown",
+                  ret);
+        if (eos_activity_back_to_watchface() != EOS_OK)
+            EOS_LOG_E("Could not return to watchface after app close failed");
     }
+}
+
+static void _retry_script_callback_error(lv_timer_t *timer)
+{
+    uint32_t instance_id = (uint32_t)(uintptr_t)lv_timer_get_user_data(timer);
+    lv_timer_del(timer);
+    if (instance_id)
+        eos_event_post(EOS_EVENT_SCRIPT_CALLBACK_ERROR, (void *)(uintptr_t)instance_id, NULL);
+}
+
+static void _defer_script_callback_error_retry(uint32_t instance_id)
+{
+    lv_timer_t *timer = lv_timer_create(_retry_script_callback_error, 50, (void *)(uintptr_t)instance_id);
+    if (!timer)
+    {
+        EOS_LOG_E("Could not retry callback error handling for instance=%u", instance_id);
+        return;
+    }
+    lv_timer_set_repeat_count(timer, 1);
 }
 
 static void _capture_foreground_script_app_id(char *app_id, size_t app_id_size)
@@ -1037,8 +1109,64 @@ static void _on_script_fatal(eos_event_t *event)
      * need it when the user presses a button. Callbacks clear it. */
 }
 
+static void _on_script_callback_error(eos_event_t *event)
+{
+    uint32_t instance_id = (uint32_t)(uintptr_t)eos_event_get_param(event);
+    if (instance_id == 0)
+        return;
+
+    script_program_t *prog = spm_get_program_by_instance_id(instance_id);
+    if (!prog || prog->type != SCRIPT_TYPE_APPLICATION || !prog->callback_error_pending || !prog->script.id)
+    {
+        EOS_LOG_W("Ignoring stale callback error for instance=%u", instance_id);
+        return;
+    }
+
+    if (eos_activity_is_transition_in_progress())
+    {
+        _defer_script_callback_error_retry(instance_id);
+        return;
+    }
+
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    snprintf(app_id, sizeof(app_id), "%s", prog->script.id);
+
+    eos_activity_t *current = eos_activity_get_current();
+    eos_activity_t *app_root = eos_activity_get_app_root(current);
+    const char *current_app_id = eos_activity_get_app_id(app_root ? app_root : current);
+
+    eos_result_t ret = spm_app_stop_by_instance_id(instance_id);
+    if (ret == EOS_ERR_BUSY)
+    {
+        _defer_script_callback_error_retry(instance_id);
+        return;
+    }
+    if (ret != EOS_OK)
+        EOS_LOG_E("Failed to stop app '%s' after callback error: %d", app_id, ret);
+    else if (app_root && current_app_id && strcmp(current_app_id, app_id) == 0)
+    {
+        eos_activity_set_script_instance_id(app_root, 0);
+        eos_activity_set_needs_reload(app_root, true);
+    }
+
+    if (!current || !current_app_id || strcmp(current_app_id, app_id) != 0)
+    {
+        EOS_LOG_W("App '%s' callback failed while it was not the foreground Activity", app_id);
+        return;
+    }
+
+    eos_script_error_handler_cfg_t cfg = {
+        .confirm_btn_id = STR_ID_APP_RESTART,
+        .confirm_cb = _app_restart_cb,
+        .cancel_btn_id = STR_ID_APP_EXIT,
+        .cancel_cb = _app_exit_cb,
+    };
+    eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, EOS_ERR_SCRIPT_EXCEPTION, app_id, &cfg);
+}
+
 void eos_app_crash_handler_init(void)
 {
     eos_event_subscribe(EOS_EVENT_SCRIPT_FATAL, _on_script_fatal, NULL);
+    eos_event_subscribe(EOS_EVENT_SCRIPT_CALLBACK_ERROR, _on_script_callback_error, NULL);
     EOS_LOG_I("App crash handler initialized");
 }

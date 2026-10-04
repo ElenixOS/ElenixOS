@@ -52,7 +52,9 @@ typedef enum
  */
 typedef struct
 {
+    char script_id[SPM_CRASH_ID_MAX];
     char error_info[SPM_ERROR_INFO_MAX];
+    eos_result_t error_code;
     eos_script_error_type_t error_type;
     script_error_location_t error_location;
     script_error_location_t backtrace[SPM_BACKTRACE_MAX_FRAMES];
@@ -97,6 +99,7 @@ struct script_program
     jerry_value_t realm;
 
     bool has_error;
+    bool callback_error_pending;
     spm_error_t error;
 
     void (*cleanup_view)(void *user_data);
@@ -289,6 +292,14 @@ const script_error_location_t *spm_get_program_error_location(script_program_t *
  * @return Latest error snapshot, or NULL if no failure has been recorded
  */
 const spm_error_t *spm_get_last_error(void);
+
+/**
+ * @brief Clear the persistent error snapshot
+ *
+ * Call when dismissing an error panel or before starting a new attempt so a
+ * later failure cannot accidentally display an earlier app's error.
+ */
+void spm_clear_last_error(void);
 
 /**
  * @brief Save crash context that survives spm_handle_engine_reset

@@ -1734,7 +1734,24 @@ eos_result_t script_engine_run(const script_pkg_t *script_package)
 
     if (jerry_value_is_exception(parsed_code))
     {
-        _script_engine_exception_handler("Script Parse", parsed_code);
+        /* JerryScript deliberately returns an exception whose value is null
+         * when parsing runs out of heap: it cannot allocate a SyntaxError
+         * object in that case.  Report this sentinel directly instead of
+         * stringifying it as the misleading literal "null". */
+        jerry_value_t exception_value = jerry_exception_value(parsed_code, false);
+        bool parse_out_of_memory = jerry_value_is_null(exception_value);
+        jerry_value_free(exception_value);
+        if (parse_out_of_memory)
+        {
+            const char *error = "Out of memory while parsing main.js (JerryScript heap exhausted)";
+            EOS_LOG_E("Script Parse Error: %s", error);
+            _set_error_info(error);
+            _clear_error_location();
+        }
+        else
+        {
+            _script_engine_exception_handler("Script Parse", parsed_code);
+        }
         _change_state(SCRIPT_ENGINE_STATE_EXCEPTION);
         result = EOS_ERR_SCRIPT_INVALID_JS;
     }

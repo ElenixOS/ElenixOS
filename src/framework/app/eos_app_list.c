@@ -17,6 +17,7 @@
 #define EOS_LOG_TAG "AppList"
 #include "eos_log.h"
 #include "eos_app.h"
+#include "eos_fault_panel.h"
 #include "eos_basic_widgets.h"
 #include "eos_pkg_mgr.h"
 #include "eos_image.h"
@@ -819,14 +820,29 @@ static void _app_handle_script_run_result(eos_activity_t *a, app_launch_ctx_t *c
         eos_activity_set_script_instance_id(a, 0);
         eos_activity_set_needs_reload(a, true);
         lv_obj_t *view = eos_activity_get_view(a);
+        /* Cleaning the view invalidates the loading widgets.  Clear the
+         * launch-context references first so _app_on_destroy cannot treat an
+         * address reused by the error panel as the old loading widget. */
+        if (ctx)
+        {
+            ctx->loading_widget = NULL;
+            ctx->loading_spinner = NULL;
+            ctx->loading_spinner_visible = false;
+        }
         if (view && lv_obj_is_valid(view))
+        {
             lv_obj_clean(view);
+        }
     }
 
     eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
     if (ret == EOS_ERR_TIMEOUT)
     {
         error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
+    }
+    else if (ret == EOS_ERR_SCRIPT_INVALID_JS)
+    {
+        error_type = EOS_SCRIPT_FAULT_ERROR_PARSE;
     }
     else
     {
@@ -853,25 +869,27 @@ static void _app_handle_script_run_result(eos_activity_t *a, app_launch_ctx_t *c
 static void _app_list_restart_cb(lv_event_t *e)
 {
     (void)e;
-    char app_id[64] = {0};
+    char app_id[SPM_CRASH_ID_MAX] = {0};
 
-    /* Try crash context first (for engine crash recovery path) */
-    const spm_crash_state_t *crash = spm_get_crash_state();
-    if (crash && crash->has_crash && crash->script_id[0])
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current_app_id && current_app_id[0])
     {
-        snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+        snprintf(app_id, sizeof(app_id), "%s", current_app_id);
     }
     else
     {
-        /* Fallback: get app_id from current activity (initial load error path) */
-        eos_activity_t *current = eos_activity_get_current();
-        if (current)
+        /* A crash context can outlive the current Activity metadata. */
+        const spm_crash_state_t *crash = spm_get_crash_state();
+        if (crash && crash->has_crash && crash->script_id[0])
+        {
+            snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+        }
+        else if (current)
         {
             app_launch_ctx_t *ctx = eos_activity_get_user_data(current);
             if (ctx && ctx->app_id)
-            {
                 snprintf(app_id, sizeof(app_id), "%s", ctx->app_id);
-            }
         }
     }
 
@@ -880,8 +898,22 @@ static void _app_list_restart_cb(lv_event_t *e)
     if (app_id[0])
     {
         EOS_LOG_I("Restarting app from error panel: %s", app_id);
-        eos_activity_t *current = eos_activity_get_current();
-        eos_app_restart_in_place(app_id, current);
+        eos_result_t ret = eos_app_restart_by_id(app_id);
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_W("Restart from error panel failed for '%s': %d", app_id, ret);
+            eos_activity_t *current = eos_activity_get_current();
+            if (current && !eos_activity_get_fault_panel(current))
+            {
+                eos_script_error_handler_cfg_t cfg = {
+                    .confirm_btn_id = STR_ID_APP_RESTART,
+                    .confirm_cb = _app_list_restart_cb,
+                    .cancel_btn_id = STR_ID_APP_EXIT,
+                    .cancel_cb = _app_list_exit_cb,
+                };
+                eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, ret, app_id, &cfg);
+            }
+        }
     }
     else
     {
@@ -894,13 +926,32 @@ static void _app_list_exit_cb(lv_event_t *e)
 {
     (void)e;
     EOS_LOG_I("Exiting app from error panel");
-    spm_clear_crash_state();
-    /* Try to return to the previous activity (app list) with animation.
-     * Falls back to watchface if the stack is empty or transition fails. */
-    if (eos_activity_back() != EOS_OK)
+
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current_app_id && current_app_id[0])
     {
-        EOS_LOG_W("Activity back failed, falling back to watchface");
-        eos_activity_back_to_watchface();
+        snprintf(app_id, sizeof(app_id), "%s", current_app_id);
+    }
+    else
+    {
+        const spm_crash_state_t *crash = spm_get_crash_state();
+        if (crash && crash->has_crash && crash->script_id[0])
+            snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+    }
+
+    spm_clear_last_error();
+    spm_clear_crash_state();
+
+    eos_result_t ret = app_id[0] ? eos_app_terminate_by_id(app_id) : EOS_FAILED;
+    if (ret != EOS_OK)
+    {
+        EOS_LOG_W("Failed to close app from error panel '%s': %d; returning to watchface",
+                  app_id[0] ? app_id : "unknown",
+                  ret);
+        if (eos_activity_back_to_watchface() != EOS_OK)
+            EOS_LOG_E("Could not return to watchface after app close failed");
     }
 }
 
@@ -1155,11 +1206,15 @@ eos_result_t eos_app_restart_in_place(const char *app_id, eos_activity_t *activi
 
     EOS_LOG_I("Restarting app in-place: %s", ctx->app_id);
 
-    /* Clear fault panel reference BEFORE cleaning view.
-     * lv_obj_clean will delete the panel's container widget, which triggers
-     * _eos_fault_panel_container_delete_cb → eos_free(fault_panel).
-     * We must clear the activity's pointer first to avoid a dangling reference. */
-    eos_activity_set_fault_panel(activity, NULL);
+    /* Remove the opaque error overlay before the replacement program builds
+     * its UI.  Clear the Activity reference first because deleting the panel's
+     * LVGL container also frees its wrapper through LV_EVENT_DELETE. */
+    eos_fault_panel_t *fault_panel = (eos_fault_panel_t *)eos_activity_get_fault_panel(activity);
+    if (fault_panel)
+    {
+        eos_activity_set_fault_panel(activity, NULL);
+        eos_fault_panel_delete(fault_panel);
+    }
 
     /* SPM owns the complete old-instance teardown. The new instance is
      * created only after the old Realm, SNI context and native resources have
@@ -1250,6 +1305,10 @@ eos_result_t eos_app_restart_by_id(const char *app_id)
     if (!(app_id && app_id[0]))
         return EOS_ERR_INVALID_ARG;
 
+    /* A restart attempt owns any replacement error details.  Clear the old
+     * snapshot even when preflight or package loading rejects the attempt. */
+    spm_clear_last_error();
+
     /* Check before loading a package or stopping a Recent Apps program.  A
      * restart must be all-or-nothing with respect to Activity transitions;
      * otherwise the stop/evict half can succeed and the launch half can be
@@ -1276,6 +1335,9 @@ eos_result_t eos_app_restart_by_id(const char *app_id)
     if (current_id && strcmp(current_id, app_id) == 0)
     {
         eos_activity_t *root = eos_activity_get_app_root(current);
+        if (!root)
+            return EOS_ERR_INVALID_STATE;
+
         app_launch_ctx_t *ctx = root ? eos_activity_get_user_data(root) : NULL;
         if (ctx && ctx->magic == _APP_LAUNCH_CTX_MAGIC && ctx->app_id)
             return eos_app_restart_in_place(app_id, root);
@@ -1286,7 +1348,24 @@ eos_result_t eos_app_restart_by_id(const char *app_id)
         eos_result_t ret = _app_list_load_full_pkg(app_id, &pkg);
         if (ret != EOS_OK)
             return ret;
-        eos_activity_set_fault_panel(root, NULL);
+
+        if (current != root)
+        {
+            ret = eos_activity_reset_app_to_root(root);
+            if (ret != EOS_OK)
+            {
+                eos_pkg_free(&pkg);
+                return ret;
+            }
+        }
+
+        eos_fault_panel_t *fault_panel = (eos_fault_panel_t *)eos_activity_get_fault_panel(root);
+        if (fault_panel)
+        {
+            eos_activity_set_fault_panel(root, NULL);
+            eos_fault_panel_delete(fault_panel);
+        }
+
         ret = spm_app_restart(&pkg);
         if (ret == EOS_OK)
         {

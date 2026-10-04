@@ -42,7 +42,61 @@ static void _lvgl_view_clean(void *view)
 static void _program_list_add(script_program_t *prog);
 static void _program_list_remove(script_program_t *prog);
 static void _program_destroy(script_program_t *prog);
-static eos_result_t _error_copy_from_core(script_program_t *prog);
+static eos_result_t _error_copy_from_core(script_program_t *prog, eos_result_t error_code);
+
+static eos_script_error_type_t _error_type_from_result(eos_result_t error_code)
+{
+    switch (error_code)
+    {
+        case EOS_ERR_SCRIPT_INVALID_JS:
+            return EOS_SCRIPT_FAULT_ERROR_PARSE;
+        case EOS_ERR_TIMEOUT:
+            return EOS_SCRIPT_FAULT_UNRESPONSIVE;
+        case EOS_ERR_SCRIPT_EXCEPTION:
+            return EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
+        default:
+            return EOS_SCRIPT_FAULT_ERROR_UNKNOWN;
+    }
+}
+
+static void _spm_callback_error_event_cb(void *user_data)
+{
+    uint32_t instance_id = (uint32_t)(uintptr_t)user_data;
+    if (instance_id == 0)
+        return;
+
+    eos_event_post(EOS_EVENT_SCRIPT_CALLBACK_ERROR, (void *)(uintptr_t)instance_id, NULL);
+}
+
+static void _spm_capture_uncaught_callback_error(script_program_t *prog)
+{
+    if (!prog || prog->type != SCRIPT_TYPE_APPLICATION || prog->callback_error_pending)
+        return;
+
+    memset(&prog->error, 0, sizeof(prog->error));
+    _error_copy_from_core(prog, EOS_ERR_SCRIPT_EXCEPTION);
+
+    /* Defer the framework handoff until this callback and its SNI frames
+     * return. Closing the SNI gate here prevents another callback meanwhile. */
+    if (lv_async_call(_spm_callback_error_event_cb, (void *)(uintptr_t)prog->instance_id) != LV_RESULT_OK)
+    {
+        EOS_LOG_E("Could not queue callback error handling for app '%s'", prog->script.id);
+        prog->has_error = false;
+        memset(&prog->error, 0, sizeof(prog->error));
+        return;
+    }
+
+    prog->callback_error_pending = true;
+    prog->state = SCRIPT_PROGRAM_STATE_STOPPING;
+    if (prog->sni_ctx)
+        sni_context_set_paused(prog->sni_ctx, true);
+
+    memcpy(&s_last_error, &prog->error, sizeof(s_last_error));
+    s_has_last_error = true;
+    EOS_LOG_E("Uncaught application callback error; stopping instance=%u app_id=%s",
+              prog->instance_id,
+              prog->script.id ? prog->script.id : "unknown");
+}
 
 static void _program_list_add(script_program_t *prog)
 {
@@ -148,11 +202,16 @@ static void _program_destroy(script_program_t *prog)
     eos_free(prog);
 }
 
-static eos_result_t _error_copy_from_core(script_program_t *prog)
+static eos_result_t _error_copy_from_core(script_program_t *prog, eos_result_t error_code)
 {
     if (!prog)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
+    memset(&prog->error, 0, sizeof(prog->error));
     prog->has_error = true;
+    if (prog->script.id)
+        snprintf(prog->error.script_id, sizeof(prog->error.script_id), "%s", prog->script.id);
+    prog->error.error_code = error_code;
+    prog->error.error_type = _error_type_from_result(error_code);
     const char *err_info = script_engine_get_error_info();
     if (err_info)
         snprintf(prog->error.error_info, SPM_ERROR_INFO_MAX, "%s", err_info);
@@ -279,6 +338,10 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
         }
     }
 
+    /* A fresh execution attempt owns any new error snapshot from this point.
+     * Clear the previous one even if allocation or setup fails before Core. */
+    spm_clear_last_error();
+
     script_program_t *prog = eos_malloc_zeroed(sizeof(script_program_t));
     if (!prog)
     {
@@ -332,6 +395,9 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
                 s_has_last_error = true;
                 memset(&s_last_error, 0, sizeof(spm_error_t));
                 snprintf(s_last_error.error_info, SPM_ERROR_INFO_MAX, "%s", err);
+                if (pkg->id)
+                    snprintf(s_last_error.script_id, sizeof(s_last_error.script_id), "%s", pkg->id);
+                s_last_error.error_code = ret;
                 s_last_error.error_type = EOS_SCRIPT_FAULT_ENGINE_CRASH;
             }
             script_engine_set_current_program(NULL);
@@ -339,7 +405,7 @@ script_program_t *spm_start_program(const script_pkg_t *pkg)
         }
 
         /* Capture error info BEFORE script_engine_stop clears it */
-        _error_copy_from_core(prog);
+        _error_copy_from_core(prog, ret);
         /* Save a persistent copy before destroying the program so the
          * fault panel can read the backtrace after the program is gone. */
         memcpy(&s_last_error, &prog->error, sizeof(spm_error_t));
@@ -461,7 +527,7 @@ eos_result_t spm_terminate_program(script_program_t *prog)
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
     if (prog->state == SCRIPT_PROGRAM_STATE_TERMINATED)
         return EOS_OK;
-    if (prog->state == SCRIPT_PROGRAM_STATE_STOPPING)
+    if (prog->state == SCRIPT_PROGRAM_STATE_STOPPING && !prog->callback_error_pending)
     {
         /* A STOPPING program is still a live identity.  Reporting BUSY keeps
          * callers from creating a replacement before teardown has finished. */
@@ -651,6 +717,10 @@ jerry_value_t spm_call(script_program_t *prog,
         else
             script_engine_set_current_program(NULL);
     }
+
+    if (jerry_value_is_exception(result))
+        _spm_capture_uncaught_callback_error(prog);
+
     return result;
 }
 
@@ -942,7 +1012,15 @@ eos_result_t spm_app_run(const script_pkg_t *pkg)
         if (existing)
             return existing->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_ALREADY_EXISTS;
     }
-    return spm_start_program(pkg) ? EOS_OK : EOS_FAILED;
+    if (spm_start_program(pkg))
+        return EOS_OK;
+
+    if (s_has_last_error && pkg->id && s_last_error.script_id[0] && strcmp(s_last_error.script_id, pkg->id) == 0
+        && s_last_error.error_code != EOS_OK)
+    {
+        return s_last_error.error_code;
+    }
+    return EOS_FAILED;
 }
 
 eos_result_t spm_app_restart(const script_pkg_t *pkg)
@@ -1032,6 +1110,12 @@ const spm_error_t *spm_get_last_error(void)
         return &s_last_error;
     }
     return NULL;
+}
+
+void spm_clear_last_error(void)
+{
+    s_has_last_error = false;
+    memset(&s_last_error, 0, sizeof(s_last_error));
 }
 
 /* Crash Context ----------------------------------------------*/

@@ -24015,6 +24015,64 @@ jerry_value_t sni_api_lv_color_hex(const jerry_call_info_t *call_info_p,
 }
 
 /**
+ * @brief Convert a percentage value to int32_t . Percentage values are stored in special range a coordinate that stores the percentage
+ *
+ * @param x (number) the percentage (0..1000)
+ *
+ * @return (number) a coordinate that stores the percentage
+ */
+jerry_value_t sni_api_lv_pct(const jerry_call_info_t *call_info_p,
+                             const jerry_value_t args_p[],
+                             const jerry_length_t args_count)
+{
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_x;
+    arg_x = sni_tb_js2c_int32(args_p[0]);
+
+    int32_t result = lv_pct(arg_x);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Just a wrapper to LV_GRID_FR for bindings.
+ *
+ * @param x (number) JavaScript argument.
+ *
+ * @return (number) JavaScript return value.
+ */
+jerry_value_t sni_api_lv_grid_fr(const jerry_call_info_t *call_info_p,
+                                 const jerry_value_t args_p[],
+                                 const jerry_length_t args_count)
+{
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint8_t arg_x;
+    arg_x = sni_tb_js2c_uint32(args_p[0]);
+
+    int32_t result = lv_grid_fr(arg_x);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
  * @brief Pause a timer. It is typically safe to call from an interrupt handler or a different thread.
  */
 jerry_value_t sni_api_lv_timer_pause(const jerry_call_info_t *call_info_p,
@@ -36381,6 +36439,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "setFlexFlow", .handler = sni_api_lv_obj_set_flex_flow},
     {.name = "setFlexAlign", .handler = sni_api_lv_obj_set_flex_align},
     {.name = "setFlexGrow", .handler = sni_api_lv_obj_set_flex_grow},
+    {.name = "setGridDscArray", .handler = sni_api_lv_obj_set_grid_dsc_array},
     {.name = "setGridAlign", .handler = sni_api_lv_obj_set_grid_align},
     {.name = "setGridCell", .handler = sni_api_lv_obj_set_grid_cell},
     {.name = "delete", .handler = sni_api_lv_obj_delete},
@@ -37140,6 +37199,24 @@ const sni_property_desc_t lv_class_properties_color[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_color[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_layout[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_layout[] = {
+    {.name = "pct", .handler = sni_api_lv_pct},
+    {.name = "fr", .handler = sni_api_lv_grid_fr},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_layout[] = {
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_layout[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -37930,6 +38007,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "BORDER_SIDE_NONE", .type = SNI_CONST_INT, .value.i = LV_BORDER_SIDE_NONE},
     {.name = "BORDER_SIDE_RIGHT", .type = SNI_CONST_INT, .value.i = LV_BORDER_SIDE_RIGHT},
     {.name = "BORDER_SIDE_TOP", .type = SNI_CONST_INT, .value.i = LV_BORDER_SIDE_TOP},
+#if defined(LV_BUTTONMATRIX_BUTTON_NONE)
+    {.name = "BUTTONMATRIX_BUTTON_NONE", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_BUTTON_NONE},
+#else
+    {.name = "BUTTONMATRIX_BUTTON_NONE", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "BUTTONMATRIX_CTRL_CHECKABLE", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_CTRL_CHECKABLE},
     {.name = "BUTTONMATRIX_CTRL_CHECKED", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_CTRL_CHECKED},
     {.name = "BUTTONMATRIX_CTRL_CLICK_TRIG", .type = SNI_CONST_INT, .value.i = LV_BUTTONMATRIX_CTRL_CLICK_TRIG},
@@ -37961,6 +38043,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "CHART_AXIS_PRIMARY_Y", .type = SNI_CONST_INT, .value.i = LV_CHART_AXIS_PRIMARY_Y},
     {.name = "CHART_AXIS_SECONDARY_X", .type = SNI_CONST_INT, .value.i = LV_CHART_AXIS_SECONDARY_X},
     {.name = "CHART_AXIS_SECONDARY_Y", .type = SNI_CONST_INT, .value.i = LV_CHART_AXIS_SECONDARY_Y},
+#if defined(LV_CHART_POINT_NONE)
+    {.name = "CHART_POINT_NONE", .type = SNI_CONST_INT, .value.i = LV_CHART_POINT_NONE},
+#else
+    {.name = "CHART_POINT_NONE", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "CHART_TYPE_BAR", .type = SNI_CONST_INT, .value.i = LV_CHART_TYPE_BAR},
     {.name = "CHART_TYPE_CURVE", .type = SNI_CONST_INT, .value.i = LV_CHART_TYPE_CURVE},
     {.name = "CHART_TYPE_LINE", .type = SNI_CONST_INT, .value.i = LV_CHART_TYPE_LINE},
@@ -38084,6 +38171,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "COLOR_FORMAT_YUV_END", .type = SNI_CONST_INT, .value.i = LV_COLOR_FORMAT_YUV_END},
     {.name = "COLOR_FORMAT_YUV_START", .type = SNI_CONST_INT, .value.i = LV_COLOR_FORMAT_YUV_START},
     {.name = "COLOR_FORMAT_YUY2", .type = SNI_CONST_INT, .value.i = LV_COLOR_FORMAT_YUY2},
+#if defined(LV_COORD_MAX)
+    {.name = "COORD_MAX", .type = SNI_CONST_INT, .value.i = LV_COORD_MAX},
+#else
+    {.name = "COORD_MAX", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
+#if defined(LV_COORD_MIN)
+    {.name = "COORD_MIN", .type = SNI_CONST_INT, .value.i = LV_COORD_MIN},
+#else
+    {.name = "COORD_MIN", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "DIR_ALL", .type = SNI_CONST_INT, .value.i = LV_DIR_ALL},
     {.name = "DIR_BOTTOM", .type = SNI_CONST_INT, .value.i = LV_DIR_BOTTOM},
     {.name = "DIR_HOR", .type = SNI_CONST_INT, .value.i = LV_DIR_HOR},
@@ -38092,6 +38189,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "DIR_RIGHT", .type = SNI_CONST_INT, .value.i = LV_DIR_RIGHT},
     {.name = "DIR_TOP", .type = SNI_CONST_INT, .value.i = LV_DIR_TOP},
     {.name = "DIR_VER", .type = SNI_CONST_INT, .value.i = LV_DIR_VER},
+#if defined(LV_DROPDOWN_POS_LAST)
+    {.name = "DROPDOWN_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_DROPDOWN_POS_LAST},
+#else
+    {.name = "DROPDOWN_POS_LAST", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "EVENT_ALL", .type = SNI_CONST_INT, .value.i = LV_EVENT_ALL},
     {.name = "EVENT_CANCEL", .type = SNI_CONST_INT, .value.i = LV_EVENT_CANCEL},
     {.name = "EVENT_CHECKED", .type = SNI_CONST_INT, .value.i = LV_EVENT_CHECKED},
@@ -38198,6 +38300,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "GRID_ALIGN_SPACE_EVENLY", .type = SNI_CONST_INT, .value.i = LV_GRID_ALIGN_SPACE_EVENLY},
     {.name = "GRID_ALIGN_START", .type = SNI_CONST_INT, .value.i = LV_GRID_ALIGN_START},
     {.name = "GRID_ALIGN_STRETCH", .type = SNI_CONST_INT, .value.i = LV_GRID_ALIGN_STRETCH},
+#if defined(LV_GRID_CONTENT)
+    {.name = "GRID_CONTENT", .type = SNI_CONST_INT, .value.i = LV_GRID_CONTENT},
+#else
+    {.name = "GRID_CONTENT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
+#if defined(LV_GRID_TEMPLATE_LAST)
+    {.name = "GRID_TEMPLATE_LAST", .type = SNI_CONST_INT, .value.i = LV_GRID_TEMPLATE_LAST},
+#else
+    {.name = "GRID_TEMPLATE_LAST", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "IMAGEBUTTON_STATE_CHECKED_DISABLED",
      .type = SNI_CONST_INT,
      .value.i = LV_IMAGEBUTTON_STATE_CHECKED_DISABLED},
@@ -38226,6 +38338,11 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "IMAGE_ALIGN_TOP_LEFT", .type = SNI_CONST_INT, .value.i = LV_IMAGE_ALIGN_TOP_LEFT},
     {.name = "IMAGE_ALIGN_TOP_MID", .type = SNI_CONST_INT, .value.i = LV_IMAGE_ALIGN_TOP_MID},
     {.name = "IMAGE_ALIGN_TOP_RIGHT", .type = SNI_CONST_INT, .value.i = LV_IMAGE_ALIGN_TOP_RIGHT},
+#if defined(LV_LABEL_DEFAULT_TEXT)
+    {.name = "LABEL_DEFAULT_TEXT", .type = SNI_CONST_STRING, .value.s = LV_LABEL_DEFAULT_TEXT},
+#else
+    {.name = "LABEL_DEFAULT_TEXT", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
 #if defined(LV_LABEL_LONG_CLIP)
     {.name = "LABEL_LONG_CLIP", .type = SNI_CONST_INT, .value.i = LV_LABEL_LONG_CLIP},
 #else
@@ -38255,6 +38372,16 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "LABEL_LONG_WRAP", .type = SNI_CONST_INT, .value.i = LV_LABEL_LONG_WRAP},
 #else
     {.name = "LABEL_LONG_WRAP", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
+#if defined(LV_LABEL_POS_LAST)
+    {.name = "LABEL_POS_LAST", .type = SNI_CONST_INT, .value.i = LV_LABEL_POS_LAST},
+#else
+    {.name = "LABEL_POS_LAST", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
+#if defined(LV_LABEL_TEXT_SELECTION_OFF)
+    {.name = "LABEL_TEXT_SELECTION_OFF", .type = SNI_CONST_INT, .value.i = LV_LABEL_TEXT_SELECTION_OFF},
+#else
+    {.name = "LABEL_TEXT_SELECTION_OFF", .type = SNI_CONST_UNDEFINED, .value.i = 0},
 #endif
     {.name = "LAYOUT_FLEX", .type = SNI_CONST_INT, .value.i = LV_LAYOUT_FLEX},
     {.name = "LAYOUT_GRID", .type = SNI_CONST_INT, .value.i = LV_LAYOUT_GRID},
@@ -38332,12 +38459,27 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "PART_MAIN", .type = SNI_CONST_INT, .value.i = LV_PART_MAIN},
     {.name = "PART_SCROLLBAR", .type = SNI_CONST_INT, .value.i = LV_PART_SCROLLBAR},
     {.name = "PART_SELECTED", .type = SNI_CONST_INT, .value.i = LV_PART_SELECTED},
+#if defined(LV_PART_TEXTAREA_PLACEHOLDER)
+    {.name = "PART_TEXTAREA_PLACEHOLDER", .type = SNI_CONST_INT, .value.i = LV_PART_TEXTAREA_PLACEHOLDER},
+#else
+    {.name = "PART_TEXTAREA_PLACEHOLDER", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "QRCODE_UPDATE_MODE_DEFERRED", .type = SNI_CONST_INT, .value.i = LV_QRCODE_UPDATE_MODE_DEFERRED},
     {.name = "QRCODE_UPDATE_MODE_IMMEDIATE", .type = SNI_CONST_INT, .value.i = LV_QRCODE_UPDATE_MODE_IMMEDIATE},
+#if defined(LV_RADIUS_CIRCLE)
+    {.name = "RADIUS_CIRCLE", .type = SNI_CONST_INT, .value.i = LV_RADIUS_CIRCLE},
+#else
+    {.name = "RADIUS_CIRCLE", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "RESULT_INVALID", .type = SNI_CONST_INT, .value.i = LV_RESULT_INVALID},
     {.name = "RESULT_OK", .type = SNI_CONST_INT, .value.i = LV_RESULT_OK},
     {.name = "ROLLER_MODE_INFINITE", .type = SNI_CONST_INT, .value.i = LV_ROLLER_MODE_INFINITE},
     {.name = "ROLLER_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = LV_ROLLER_MODE_NORMAL},
+#if defined(LV_SCALE_NONE)
+    {.name = "SCALE_NONE", .type = SNI_CONST_INT, .value.i = LV_SCALE_NONE},
+#else
+    {.name = "SCALE_NONE", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "SCROLLBAR_MODE_ACTIVE", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_ACTIVE},
     {.name = "SCROLLBAR_MODE_AUTO", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_AUTO},
     {.name = "SCROLLBAR_MODE_OFF", .type = SNI_CONST_INT, .value.i = LV_SCROLLBAR_MODE_OFF},
@@ -38464,6 +38606,7 @@ const sni_constant_desc_t lv_root_constants[] = {
     {.name = "STYLE_PAD_ROW", .type = SNI_CONST_INT, .value.i = LV_STYLE_PAD_ROW},
     {.name = "STYLE_PAD_TOP", .type = SNI_CONST_INT, .value.i = LV_STYLE_PAD_TOP},
     {.name = "STYLE_PROP_ANY", .type = SNI_CONST_INT, .value.i = LV_STYLE_PROP_ANY},
+    {.name = "STYLE_PROP_INV", .type = SNI_CONST_INT, .value.i = LV_STYLE_PROP_INV},
     {.name = "STYLE_RADIAL_OFFSET", .type = SNI_CONST_INT, .value.i = LV_STYLE_RADIAL_OFFSET},
     {.name = "STYLE_RADIUS", .type = SNI_CONST_INT, .value.i = LV_STYLE_RADIUS},
     {.name = "STYLE_RECOLOR", .type = SNI_CONST_INT, .value.i = LV_STYLE_RECOLOR},
@@ -38817,6 +38960,11 @@ const sni_constant_desc_t lv_root_constants[] = {
 #else
     {.name = "SYMBOL_WIFI", .type = SNI_CONST_UNDEFINED, .value.i = 0},
 #endif
+#if defined(LV_TEXTAREA_CURSOR_LAST)
+    {.name = "TEXTAREA_CURSOR_LAST", .type = SNI_CONST_INT, .value.i = LV_TEXTAREA_CURSOR_LAST},
+#else
+    {.name = "TEXTAREA_CURSOR_LAST", .type = SNI_CONST_UNDEFINED, .value.i = 0},
+#endif
     {.name = "TEXT_ALIGN_AUTO", .type = SNI_CONST_INT, .value.i = LV_TEXT_ALIGN_AUTO},
     {.name = "TEXT_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = LV_TEXT_ALIGN_CENTER},
     {.name = "TEXT_ALIGN_LEFT", .type = SNI_CONST_INT, .value.i = LV_TEXT_ALIGN_LEFT},
@@ -38944,6 +39092,44 @@ const sni_macro_desc_t lv_macro_catalog[] = {
      .function_like = false,
      .parameters_json = NULL,
      .initializer = "0xFFFF",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_BUTTONMATRIX_BUTTON_NONE)
+    {.name = "LV_BUTTONMATRIX_BUTTON_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_BUTTONMATRIX_BUTTON_NONE},
+#else
+    {.name = "LV_BUTTONMATRIX_BUTTON_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_CHART_POINT_NONE)
+    {.name = "LV_CHART_POINT_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(INT32_MAX)",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_CHART_POINT_NONE},
+#else
+    {.name = "LV_CHART_POINT_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(INT32_MAX)",
      .defined = false,
      .value_available = false,
      .value_type = SNI_CONST_UNDEFINED,
@@ -39139,6 +39325,120 @@ const sni_macro_desc_t lv_macro_catalog[] = {
      .value_type = SNI_CONST_UNDEFINED,
      .value.i = 0},
 #endif
+#if defined(LV_COORD_MAX)
+    {.name = "LV_COORD_MAX",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "((1 << LV_COORD_TYPE_SHIFT) - 1)",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_COORD_MAX},
+#else
+    {.name = "LV_COORD_MAX",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "((1 << LV_COORD_TYPE_SHIFT) - 1)",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_COORD_MIN)
+    {.name = "LV_COORD_MIN",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(-LV_COORD_MAX)",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_COORD_MIN},
+#else
+    {.name = "LV_COORD_MIN",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(-LV_COORD_MAX)",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_DROPDOWN_POS_LAST)
+    {.name = "LV_DROPDOWN_POS_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_DROPDOWN_POS_LAST},
+#else
+    {.name = "LV_DROPDOWN_POS_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_GRID_CONTENT)
+    {.name = "LV_GRID_CONTENT",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(LV_COORD_MAX - 101)",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_GRID_CONTENT},
+#else
+    {.name = "LV_GRID_CONTENT",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(LV_COORD_MAX - 101)",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_GRID_TEMPLATE_LAST)
+    {.name = "LV_GRID_TEMPLATE_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(LV_COORD_MAX)",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_GRID_TEMPLATE_LAST},
+#else
+    {.name = "LV_GRID_TEMPLATE_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(LV_COORD_MAX)",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_LABEL_DEFAULT_TEXT)
+    {.name = "LV_LABEL_DEFAULT_TEXT",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "\"Text\"",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_STRING,
+     .value.s = LV_LABEL_DEFAULT_TEXT},
+#else
+    {.name = "LV_LABEL_DEFAULT_TEXT",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "\"Text\"",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
 #if defined(LV_LABEL_LONG_CLIP)
     {.name = "LV_LABEL_LONG_CLIP",
      .function_like = false,
@@ -39234,6 +39534,44 @@ const sni_macro_desc_t lv_macro_catalog[] = {
      .value_type = SNI_CONST_UNDEFINED,
      .value.i = 0},
 #endif
+#if defined(LV_LABEL_POS_LAST)
+    {.name = "LV_LABEL_POS_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_LABEL_POS_LAST},
+#else
+    {.name = "LV_LABEL_POS_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0xFFFF",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_LABEL_TEXT_SELECTION_OFF)
+    {.name = "LV_LABEL_TEXT_SELECTION_OFF",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "LV_DRAW_LABEL_NO_TXT_SEL",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_LABEL_TEXT_SELECTION_OFF},
+#else
+    {.name = "LV_LABEL_TEXT_SELECTION_OFF",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "LV_DRAW_LABEL_NO_TXT_SEL",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
 #if defined(LV_OPA_MAX)
     {.name = "LV_OPA_MAX",
      .function_like = false,
@@ -39267,6 +39605,63 @@ const sni_macro_desc_t lv_macro_catalog[] = {
      .function_like = false,
      .parameters_json = NULL,
      .initializer = "2",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_PART_TEXTAREA_PLACEHOLDER)
+    {.name = "LV_PART_TEXTAREA_PLACEHOLDER",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "LV_PART_CUSTOM_FIRST",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_PART_TEXTAREA_PLACEHOLDER},
+#else
+    {.name = "LV_PART_TEXTAREA_PLACEHOLDER",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "LV_PART_CUSTOM_FIRST",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_RADIUS_CIRCLE)
+    {.name = "LV_RADIUS_CIRCLE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0x7FFF",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_RADIUS_CIRCLE},
+#else
+    {.name = "LV_RADIUS_CIRCLE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "0x7FFF",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
+#if defined(LV_SCALE_NONE)
+    {.name = "LV_SCALE_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "256",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_SCALE_NONE},
+#else
+    {.name = "LV_SCALE_NONE",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "256",
      .defined = false,
      .value_available = false,
      .value_type = SNI_CONST_UNDEFINED,
@@ -40469,6 +40864,25 @@ const sni_macro_desc_t lv_macro_catalog[] = {
      .value_type = SNI_CONST_UNDEFINED,
      .value.i = 0},
 #endif
+#if defined(LV_TEXTAREA_CURSOR_LAST)
+    {.name = "LV_TEXTAREA_CURSOR_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(0x7FFF) /*Put the cursor after the last character*/",
+     .defined = true,
+     .value_available = true,
+     .value_type = SNI_CONST_INT,
+     .value.i = LV_TEXTAREA_CURSOR_LAST},
+#else
+    {.name = "LV_TEXTAREA_CURSOR_LAST",
+     .function_like = false,
+     .parameters_json = NULL,
+     .initializer = "(0x7FFF) /*Put the cursor after the last character*/",
+     .defined = false,
+     .value_available = false,
+     .value_type = SNI_CONST_UNDEFINED,
+     .value.i = 0},
+#endif
     {.name = NULL},
 };
 
@@ -40540,6 +40954,16 @@ const sni_class_desc_t lv_class_desc_color = {
     .properties = NULL,
     .static_methods = lv_class_static_methods_color,
     .constants = lv_class_constants_color,
+};
+
+const sni_class_desc_t lv_class_desc_layout = {
+    .name = "layout",
+    .constructor = NULL,
+    .base_class = NULL,
+    .methods = NULL,
+    .properties = NULL,
+    .static_methods = lv_class_static_methods_layout,
+    .constants = lv_class_constants_layout,
 };
 
 const sni_class_desc_t lv_class_desc_timer = {
@@ -40733,15 +41157,13 @@ const sni_class_desc_t lv_class_desc_qrcode = {
 };
 
 const sni_class_desc_t *const lv_api_classes[] = {
-    &lv_class_desc_obj,          &lv_class_desc_button,   &lv_class_desc_label,
-    &lv_class_desc_arc,          &lv_class_desc_bar,      &lv_class_desc_slider,
-    &lv_class_desc_color,        &lv_class_desc_timer,    &lv_class_desc_anim,
-    &lv_class_desc_buttonmatrix, &lv_class_desc_calendar, &lv_class_desc_chart,
-    &lv_class_desc_canvas,       &lv_class_desc_checkbox, &lv_class_desc_switch,
-    &lv_class_desc_textarea,     &lv_class_desc_dropdown, &lv_class_desc_image,
-    &lv_class_desc_imagebutton,  &lv_class_desc_list,     &lv_class_desc_tabview,
-    &lv_class_desc_tileview,     &lv_class_desc_roller,   &lv_class_desc_spinbox,
-    &lv_class_desc_msgbox,       &lv_class_desc_qrcode,   NULL,
+    &lv_class_desc_obj,      &lv_class_desc_button,   &lv_class_desc_label,        &lv_class_desc_arc,
+    &lv_class_desc_bar,      &lv_class_desc_slider,   &lv_class_desc_color,        &lv_class_desc_layout,
+    &lv_class_desc_timer,    &lv_class_desc_anim,     &lv_class_desc_buttonmatrix, &lv_class_desc_calendar,
+    &lv_class_desc_chart,    &lv_class_desc_canvas,   &lv_class_desc_checkbox,     &lv_class_desc_switch,
+    &lv_class_desc_textarea, &lv_class_desc_dropdown, &lv_class_desc_image,        &lv_class_desc_imagebutton,
+    &lv_class_desc_list,     &lv_class_desc_tabview,  &lv_class_desc_tileview,     &lv_class_desc_roller,
+    &lv_class_desc_spinbox,  &lv_class_desc_msgbox,   &lv_class_desc_qrcode,       NULL,
 };
 
 void sni_api_lv_init(void)
@@ -40912,6 +41334,7 @@ lv_dropdown_set_selected
 lv_dropdown_set_selected_highlight
 lv_dropdown_set_symbol
 lv_dropdown_set_text
+lv_grid_fr
 lv_image_create
 lv_image_get_antialias
 lv_image_get_blend_mode
@@ -41288,6 +41711,7 @@ lv_obj_set_focused
 lv_obj_set_gesture_bubble
 lv_obj_set_grid_align
 lv_obj_set_grid_cell
+lv_obj_set_grid_dsc_array
 lv_obj_set_height
 lv_obj_set_hidden
 lv_obj_set_hovered
@@ -41460,6 +41884,7 @@ lv_obj_swap
 lv_obj_transform_point
 lv_obj_update_layout
 lv_obj_update_snap
+lv_pct
 lv_qrcode_create
 lv_qrcode_get_update_mode
 lv_qrcode_is_render_valid

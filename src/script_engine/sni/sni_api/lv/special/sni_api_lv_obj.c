@@ -516,6 +516,11 @@ jerry_value_t sni_api_lv_obj_remove_event(const jerry_call_info_t *call_info_p,
      * LVGL descriptor is removed.  This matches the pattern used by
      * removeEventDsc / removeEventCb. */
     lv_event_dsc_t *dsc = lv_obj_get_event_dsc(self_obj, arg_index);
+    if (sni_api_lv_grid_is_cleanup_event(dsc))
+    {
+        return sni_tb_c2js_boolean(false);
+    }
+
     bool result = sni_cb_event_remove_dsc(self_obj, dsc);
     return sni_tb_c2js_boolean(result);
 }

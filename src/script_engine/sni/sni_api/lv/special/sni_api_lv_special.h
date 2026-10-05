@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 /* Includes ---------------------------------------------------*/
+#include <stdbool.h>
 #include "jerryscript.h"
 
 /* Macros and Definitions -------------------------------------*/
@@ -41,6 +42,12 @@ jerry_value_t sni_api_lv_obj_delete(const jerry_call_info_t *call_info_p,
 jerry_value_t sni_api_lv_obj_set_parent(const jerry_call_info_t *call_info_p,
                                         const jerry_value_t args_p[],
                                         const jerry_length_t args_count);
+
+jerry_value_t sni_api_lv_obj_set_grid_dsc_array(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count);
+
+bool sni_api_lv_grid_is_cleanup_event(const void *event_dsc);
 
 jerry_value_t sni_api_lv_obj_remove_event(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],

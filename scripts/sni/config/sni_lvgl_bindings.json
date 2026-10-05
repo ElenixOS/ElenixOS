@@ -162,19 +162,7 @@
           }
         ],
         "static_methods": [],
-        "constants": [
-          "LV_BUTTONMATRIX_CTRL_HIDDEN",
-          "LV_BUTTONMATRIX_CTRL_NO_REPEAT",
-          "LV_BUTTONMATRIX_CTRL_DISABLED",
-          "LV_BUTTONMATRIX_CTRL_CHECKABLE",
-          "LV_BUTTONMATRIX_CTRL_CHECKED",
-          "LV_BUTTONMATRIX_CTRL_CLICK_TRIG",
-          "LV_BUTTONMATRIX_CTRL_POPOVER",
-          "LV_BUTTONMATRIX_CTRL_RESERVED_1",
-          "LV_BUTTONMATRIX_CTRL_RESERVED_2",
-          "LV_BUTTONMATRIX_CTRL_CUSTOM_1",
-          "LV_BUTTONMATRIX_CTRL_CUSTOM_2"
-        ]
+        "constants": []
       },
       "calendar": {
         "c_type": "lv_obj_t",
@@ -515,7 +503,46 @@
       },
       "constant": {
         "whitelist": [
-          "*"
+          "LV_ALIGN_*",
+          "LV_ARC_MODE_*",
+          "LV_BAR_MODE_*",
+          "LV_BAR_ORIENTATION_*",
+          "LV_BASE_DIR_*",
+          "LV_BLEND_MODE_*",
+          "LV_BLUR_QUALITY_*",
+          "LV_BORDER_SIDE_*",
+          "LV_BUTTONMATRIX_CTRL_*",
+          "LV_CHART_AXIS_*",
+          "LV_CHART_TYPE_*",
+          "LV_CHART_UPDATE_MODE_*",
+          "LV_COLOR_FORMAT_*",
+          "LV_DIR_*",
+          "LV_EVENT_*",
+          "LV_FLEX_ALIGN_*",
+          "LV_FLEX_FLOW_*",
+          "LV_GRAD_DIR_*",
+          "LV_GRID_ALIGN_*",
+          "LV_IMAGE_ALIGN_*",
+          "LV_IMAGEBUTTON_STATE_*",
+          "LV_LABEL_LONG_MODE_*",
+          "LV_LAYOUT_*",
+          "LV_OBJ_FLAG_*",
+          "LV_OBJ_POINT_TRANSFORM_FLAG_*",
+          "LV_OPA_*",
+          "LV_PART_*",
+          "LV_QRCODE_UPDATE_MODE_*",
+          "LV_RESULT_*",
+          "LV_ROLLER_MODE_*",
+          "LV_SCROLL_SNAP_*",
+          "LV_SCROLLBAR_MODE_*",
+          "LV_SLIDER_MODE_*",
+          "LV_SLIDER_ORIENTATION_*",
+          "LV_STATE_*",
+          "LV_STYLE_*",
+          "LV_SWITCH_ORIENTATION_*",
+          "LV_TEXT_ALIGN_*",
+          "LV_TEXT_DECOR_*",
+          "LV_TEXT_LEADING_TRIM_*"
         ],
         "blacklist": [
           "EVENT_SCREEN_*",
@@ -524,7 +551,14 @@
           "LV_SCR_LOAD_ANIM_*",
           "SCREEN_LOAD_ANIM_*",
           "SCR_LOAD_ANIM_*",
-          "STR_SYMBOL_*"
+          "STR_SYMBOL_*",
+          "LV_BUTTONMATRIX_CTRL_RESERVED_*",
+          "LV_LAYOUT_LAST",
+          "LV_STYLE_STATE_CMP_*",
+          "LV_STYLE_PROP_INV",
+          "LV_STYLE_PROP_CONST",
+          "LV_STYLE_LAST_*",
+          "LV_STYLE_NUM_*"
         ]
       },
       "macro": {

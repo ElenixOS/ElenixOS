@@ -526,6 +526,17 @@
           "SCR_LOAD_ANIM_*",
           "STR_SYMBOL_*"
         ]
+      },
+      "macro": {
+        "whitelist": [
+          "LV_SYMBOL_*",
+          "LV_SIZE_*",
+          "LV_ANIM_*",
+          "LV_LABEL_LONG_*",
+          "LV_COLOR_FORMAT_*",
+          "LV_OPA_*"
+        ],
+        "blacklist": []
       }
     }
   },

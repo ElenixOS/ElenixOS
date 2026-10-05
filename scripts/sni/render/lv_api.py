@@ -123,10 +123,11 @@ def parse_api_filters(api_table: Dict[str, Any]) -> Dict[str, Dict[str, List[str
     result = {
         "function": {"whitelist": [], "blacklist": []},
         "constant": {"whitelist": [], "blacklist": []},
+        "macro": {"whitelist": [], "blacklist": []},
     }
 
     scan = api_table.get("scan", {}) if isinstance(api_table.get("scan", {}), dict) else {}
-    for group in ("function", "constant"):
+    for group in ("function", "constant", "macro"):
         group_obj = scan.get(group, {})
         if not isinstance(group_obj, dict):
             raise SystemExit(f"[Error] api-table field scan.{group} must be an object")

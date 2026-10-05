@@ -83,7 +83,7 @@ def validate_config(data: Any, path: Path, special_ids: set[str] | None = None) 
 
     scan = selection.get("scan", {})
     _expect(isinstance(scan, dict), f"{path}: api_selection.scan must be an object")
-    _expect(set(scan) <= {"function", "constant"}, f"{path}: api_selection.scan has unsupported fields")
+    _expect(set(scan) <= {"function", "constant", "macro"}, f"{path}: api_selection.scan has unsupported fields")
     for group in scan.values():
         _expect(isinstance(group, dict) and set(group) <= {"whitelist", "blacklist"}, f"{path}: scan group must contain whitelist/blacklist only")
         for patterns in group.values():

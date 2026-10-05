@@ -149,16 +149,57 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
 
     # Resolve configured class constants and global constants once, before rendering.
     const_filter = filters["constant"]
-    # The macro catalog is complete and independent of the scalar-value filter.
-    # The filter controls only legacy root aliases; it never removes macro metadata.
-    macro_catalog = build_macro_catalog(lvgl_data)
+    macro_filter = filters["macro"]
+    scan_config = api_config.get("scan", {})
+    macro_filter_enabled = isinstance(scan_config, dict) and "macro" in scan_config
     constant_index = build_constant_index(lvgl_data)
     constant_names = sorted(constant_index)
-    selected_constants = [
-        name
-        for name in constant_names
-        if lv_api.include_by_filter(name, const_filter["whitelist"], const_filter["blacklist"], lv_api.FilterStats())
-    ]
+    scalar_kinds = {"int", "float", "string"}
+
+    def _macro_is_selected(name: str, parameters: Any, value_kind: str | None) -> bool:
+        if parameters is not None or value_kind not in scalar_kinds:
+            return False
+        export_name = name[3:] if name.startswith("LV_") and len(name) > 3 else name
+        if any(lv_api.is_matched(candidate, const_filter["blacklist"]) for candidate in (name, export_name)):
+            return False
+        return lv_api.include_by_filter(
+            name,
+            macro_filter["whitelist"],
+            macro_filter["blacklist"],
+            lv_api.FilterStats(),
+        )
+
+    selected_constants = []
+    for name in constant_names:
+        item = constant_index[name]
+        if item.source_kind == "macro":
+            # An explicit macro filter gates macros independently of enum constants.
+            if macro_filter_enabled and _macro_is_selected(name, item.parameters, item.value_kind):
+                selected_constants.append(name)
+            # Older configs without scan.macro preserve their historical behavior.
+            elif not macro_filter_enabled and lv_api.include_by_filter(
+                name,
+                const_filter["whitelist"],
+                const_filter["blacklist"],
+                lv_api.FilterStats(),
+            ):
+                selected_constants.append(name)
+        elif lv_api.include_by_filter(
+            name,
+            const_filter["whitelist"],
+            const_filter["blacklist"],
+            lv_api.FilterStats(),
+        ):
+            selected_constants.append(name)
+
+    macro_catalog = build_macro_catalog(lvgl_data)
+    if macro_filter_enabled:
+        # Keep runtime macro metadata aligned with the selected scalar macro API.
+        macro_catalog = [
+            macro
+            for macro in macro_catalog
+            if _macro_is_selected(macro.name, macro.parameters, macro.value_kind)
+        ]
 
     candidate_names.update(selected)
     render_classes: list[ApiClassIR] = []

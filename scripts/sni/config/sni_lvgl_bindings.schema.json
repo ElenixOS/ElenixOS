@@ -110,7 +110,8 @@
       "additionalProperties": false,
       "properties": {
         "function": { "$ref": "#/$defs/scanPatterns" },
-        "constant": { "$ref": "#/$defs/scanPatterns" }
+        "constant": { "$ref": "#/$defs/scanPatterns" },
+        "macro": { "$ref": "#/$defs/scanPatterns" }
       }
     },
     "functionOverride": {

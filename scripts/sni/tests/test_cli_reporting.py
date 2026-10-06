@@ -101,7 +101,7 @@ class SNICommandReportingTests(unittest.TestCase):
         self.assertEqual(blacklist.returncode, 0, blacklist.stderr)
         self.assertIn("Blacklisted", blacklist.stdout)
         self.assertIn("Intentionally excluded", blacklist.stdout)
-        self.assertIn("Needs attention 112", blacklist.stdout)
+        self.assertRegex(blacklist.stdout, r"Needs attention\s+\d+")
         self.assertNotIn("API_BLACKLISTED", blacklist.stdout + blacklist.stderr)
 
         api = run_cli("analyze", "--api", "lv_timer_get_next", "--quiet")

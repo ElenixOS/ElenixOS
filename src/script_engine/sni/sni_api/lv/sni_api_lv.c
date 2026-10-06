@@ -25340,35 +25340,6 @@ jerry_value_t sni_api_prop_get_calendar_btnmatrix(const jerry_call_info_t *call_
 }
 
 /**
- * @brief Get the name of the day return the name of the day
- *
- * @return (string) return the name of the day
- */
-jerry_value_t sni_api_prop_get_calendar_day_name(const jerry_call_info_t *call_info_p,
-                                                 const jerry_value_t args_p[],
-                                                 const jerry_length_t args_count)
-{
-    (void)args_p;
-    if (args_count != 0)
-    {
-        return sni_api_throw_error("Invalid argument count");
-    }
-
-    if (!jerry_value_is_object(call_info_p->this_value))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-    lv_calendar_date_t self_obj_value;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_V_LV_CALENDAR_DATE, &self_obj_value))
-    {
-        return sni_api_throw_error("Failed to convert argument");
-    }
-
-    const char *result = lv_calendar_get_day_name(&self_obj_value);
-    return sni_tb_c2js_string(result);
-}
-
-/**
  * @brief Get the number of the highlighted dates number of highlighted days
  *
  * @return (number) number of highlighted days
@@ -37350,7 +37321,6 @@ const sni_method_desc_t lv_class_static_methods_calendar[] = {
 const sni_property_desc_t lv_class_properties_calendar[] = {
     {.name = "btnmatrix", .getter = sni_api_prop_get_calendar_btnmatrix, .setter = NULL},
     {.name = "chineseMode", .getter = NULL, .setter = sni_api_lv_calendar_set_chinese_mode},
-    {.name = "dayName", .getter = sni_api_prop_get_calendar_day_name, .setter = NULL},
     {.name = "dayNames", .getter = NULL, .setter = sni_api_lv_calendar_set_day_names},
     {.name = "highlightedDatesNum", .getter = sni_api_prop_get_calendar_highlighted_dates_num, .setter = NULL},
     {.name = "shownMonth", .getter = NULL, .setter = sni_api_prop_set_calendar_shown_month},
@@ -41262,7 +41232,6 @@ lv_buttonmatrix_set_one_checked
 lv_buttonmatrix_set_selected_button
 lv_calendar_create
 lv_calendar_get_btnmatrix
-lv_calendar_get_day_name
 lv_calendar_get_highlighted_dates_num
 lv_calendar_set_chinese_mode
 lv_calendar_set_day_names

@@ -159,6 +159,72 @@ class LVGLModel:
         canonical, target_category, chain = self.resolve_declaration(target_node.base_name, seen)
         return canonical, target_category, [name, *chain]
 
+    def canonical_use_site(self, use: CUseSite) -> CUseSite:
+        """Expand typedefs at a parsed use site while preserving pointer shape."""
+        base_name = use.base_name
+        pointer_depth = use.pointer_depth
+        is_const = use.is_const
+        array_shape = list(use.array_shape)
+        is_function_pointer = use.is_function_pointer
+        seen: set[str] = set()
+
+        while base_name in self.typedefs and base_name not in seen:
+            seen.add(base_name)
+            target = parse_type_node(self.typedefs[base_name].get("type")).use_site
+            base_name = target.base_name
+            pointer_depth += target.pointer_depth
+            is_const = is_const or target.is_const
+            array_shape.extend(target.array_shape)
+            is_function_pointer = is_function_pointer or target.is_function_pointer
+
+        canonical_name, _, _ = self.resolve_declaration(base_name)
+        canonical_spelling = ("const " if is_const else "") + canonical_name + (" *" * pointer_depth)
+        if array_shape:
+            canonical_spelling += " " + "".join(
+                f"[{dimension if dimension is not None else ''}]" for dimension in array_shape
+            )
+        return CUseSite(
+            spelling=canonical_spelling,
+            base_name=canonical_name,
+            pointer_depth=pointer_depth,
+            is_const=is_const,
+            array_shape=tuple(array_shape),
+            is_function_pointer=is_function_pointer,
+        )
+
+    def check_instance_receiver(
+        self,
+        class_c_type: str,
+        parameter_type: Any,
+        base_c_types: tuple[str, ...] = (),
+    ) -> "ReceiverCompatibility":
+        """Check a C parameter against the pointer receiver implied by class.c_type.
+
+        Class ``c_type`` names the native object type; an ordinary JS instance
+        receiver is one pointer to that type. Top-level const qualification is
+        intentionally ignored, matching the existing API-selector treatment.
+        """
+        class_name = str(class_c_type).strip()
+        class_types = (class_name, *base_c_types)
+        expected_bases = list(dict.fromkeys(self.resolve_declaration(name)[0] for name in class_types))
+        expected_type = " or ".join(
+            f"{base} *" if index == 0 else f"base {base} *"
+            for index, base in enumerate(expected_bases)
+        )
+        parsed = parse_type_node(parameter_type).use_site
+        actual = self.canonical_use_site(parsed)
+        compatible = (
+            actual.base_name in expected_bases
+            and actual.pointer_depth == 1
+            and not actual.array_shape
+            and not actual.is_function_pointer
+        )
+        return ReceiverCompatibility(
+            compatible=compatible,
+            expected_type=expected_type,
+            actual_type=actual.spelling,
+        )
+
     def field_facts(self, name: str) -> list[FieldInfo]:
         item = self.structures.get(name)
         if item is None:
@@ -196,3 +262,10 @@ def normalize_c_type_node(node: Any) -> str:
         if use.array_shape
         else ""
     )
+
+
+@dataclass(frozen=True)
+class ReceiverCompatibility:
+    compatible: bool
+    expected_type: str
+    actual_type: str

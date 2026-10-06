@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ..core.ir import ApiClassIR, ApiConstantIR, ApiMacroIR, ApiRecord, ApiStatus, ApiUse, ResolvedApiSurface
+from ..core.ir import ApiClassIR, ApiConstantIR, ApiMacroIR, ApiRecord, ApiStatus, ApiUse, ReceiverContract, ResolvedApiSurface
 from ..core.lvgl_model import normalize_c_type_node
 
 
@@ -165,6 +165,15 @@ class ApiClass:
 
 @dataclass
 class ApiProperty:
+    name: str
+    getter: Optional[str]
+    setter: Optional[str]
+
+
+@dataclass
+class ApiPropertyCandidate:
+    """A name-based accessor candidate that still needs receiver validation."""
+
     name: str
     getter: Optional[str]
     setter: Optional[str]
@@ -552,12 +561,22 @@ def function_name_matches_selector(class_name: str, selector: ApiMethodSelector,
     return False
 
 
-def function_args_match_selector(selector: ApiMethodSelector, func_item: Dict[str, Any]) -> bool:
+def function_args_match_selector(
+    selector: ApiMethodSelector,
+    func_item: Dict[str, Any],
+    model: Any = None,
+    class_c_type: Optional[str] = None,
+    base_c_types: Tuple[str, ...] = (),
+    skip_receiver: bool = False,
+    special_receiver: bool = False,
+) -> bool:
     if not selector.arg_matchers:
         return True
 
     args = normalize_args(func_item.get("args", []))
     for matcher in selector.arg_matchers:
+        if skip_receiver and matcher.index == 0:
+            continue
         if matcher.index >= len(args):
             return False
 
@@ -568,8 +587,14 @@ def function_args_match_selector(selector: ApiMethodSelector, func_item: Dict[st
         if matcher.name_pattern is not None and not fnmatch.fnmatchcase(arg_name, matcher.name_pattern):
             return False
 
-        if matcher.type_pattern is not None and not fnmatch.fnmatchcase(arg_type, matcher.type_pattern):
-            return False
+        if matcher.type_pattern is not None:
+            if matcher.index == 0 and special_receiver:
+                continue
+            if matcher.index == 0 and model is not None and class_c_type is not None:
+                if not model.check_instance_receiver(class_c_type, arg.get("type"), base_c_types).compatible:
+                    return False
+            elif not fnmatch.fnmatchcase(arg_type, matcher.type_pattern):
+                return False
 
     return True
 
@@ -579,14 +604,15 @@ def resolve_class_selector_items(
     class_name: str,
     selector: ApiMethodSelector,
     context: str,
+    model: Any = None,
+    class_c_type: Optional[str] = None,
+    base_c_types: Tuple[str, ...] = (),
 ) -> List[Dict[str, Any]]:
-    matches: List[Dict[str, Any]] = []
-    for func_name, item in function_index.items():
-        if not function_name_matches_selector(class_name, selector, func_name):
-            continue
-        if not function_args_match_selector(selector, item):
-            continue
-        matches.append(item)
+    matches = [
+        item
+        for item in resolve_class_selector_name_items(function_index, class_name, selector)
+        if function_args_match_selector(selector, item, model, class_c_type, base_c_types)
+    ]
 
     if not matches:
         patterns = build_selector_name_patterns(class_name, selector.name_pattern)
@@ -595,6 +621,19 @@ def resolve_class_selector_items(
         )
 
     return matches
+
+
+def resolve_class_selector_name_items(
+    function_index: Dict[str, Dict[str, Any]],
+    class_name: str,
+    selector: ApiMethodSelector,
+) -> List[Dict[str, Any]]:
+    """Return name-matched candidates before selector argument/receiver checks."""
+    return [
+        item
+        for name, item in function_index.items()
+        if function_name_matches_selector(class_name, selector, name)
+    ]
 
 
 def sanitize_ident(text: str) -> str:
@@ -610,7 +649,7 @@ def discover_class_properties(
     cls: ApiClass,
     function_index: Dict[str, Dict[str, Any]],
     filters: Dict[str, Dict[str, List[str]]],
-) -> List[ApiProperty]:
+) -> List[ApiPropertyCandidate]:
     if cls.constructor is None:
         return []
 
@@ -619,7 +658,7 @@ def discover_class_properties(
 
     get_prefix = f"lv_{cls.name}_get_"
     set_prefix = f"lv_{cls.name}_set_"
-    props: Dict[str, ApiProperty] = {}
+    props: Dict[str, ApiPropertyCandidate] = {}
 
     for func_name in sorted(function_index.keys()):
         if blacklist and is_matched(func_name, blacklist):
@@ -632,7 +671,7 @@ def discover_class_properties(
                 if existing:
                     existing.getter = func_name
                 else:
-                    props[prop_name] = ApiProperty(name=prop_name, getter=func_name, setter=None)
+                    props[prop_name] = ApiPropertyCandidate(name=prop_name, getter=func_name, setter=None)
             continue
 
         if func_name.startswith(set_prefix):
@@ -642,7 +681,7 @@ def discover_class_properties(
                 if existing:
                     existing.setter = func_name
                 else:
-                    props[prop_name] = ApiProperty(name=prop_name, getter=None, setter=func_name)
+                    props[prop_name] = ApiPropertyCandidate(name=prop_name, getter=None, setter=func_name)
 
     return [props[name] for name in sorted(props.keys())]
 
@@ -791,7 +830,7 @@ def _doc_brief_and_details(text: str) -> Tuple[str, List[str]]:
     return paragraphs[0].replace("\n", " "), paragraphs[1:]
 
 
-def render_function_docstring(lines: List[str], func: ApiFunction, skip_this: bool = False) -> None:
+def render_function_docstring(lines: List[str], func: ApiFunction, receiver_index: Optional[int] = None) -> None:
     brief, details = _doc_brief_and_details(func.docstring)
     if not brief:
         brief = f"JavaScript binding for {func.name}."
@@ -806,8 +845,9 @@ def render_function_docstring(lines: List[str], func: ApiFunction, skip_this: bo
             for detail_line in _doc_lines(detail):
                 lines.append(f" * {detail_line}")
 
-    args = func.args[1:] if skip_this and func.args else func.args
-    for arg in args:
+    for index, arg in enumerate(func.args):
+        if index == receiver_index:
+            continue
         description = arg.docstring or "JavaScript argument."
         lines.append(" *")
         lines.append(f" * @param {arg.name} ({arg.js_type}) {description}")
@@ -881,7 +921,32 @@ def render_constructor_wrapper(cls: ApiClass, ctor_func: ApiFunction) -> str:
     return "\n".join(lines)
 
 
-def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
+def _require_receiver_contract(
+    cls: ApiClassIR,
+    func: ApiFunction,
+    receiver: Optional[ReceiverContract],
+    binding_kind: str,
+) -> ReceiverContract:
+    if (
+        receiver is None
+        or not receiver.receiver_validated
+        or receiver.owner_class != cls.name
+        or receiver.binding_kind != binding_kind
+        or receiver.receiver_index < 0
+        or receiver.receiver_index >= len(func.args)
+    ):
+        raise RuntimeError(
+            f"Resolved {binding_kind} {func.name} has no validated receiver contract for class {cls.name}"
+        )
+    return receiver
+
+
+def render_output_string_method_wrapper(
+    cls: ApiClassIR,
+    func: ApiFunction,
+    receiver: Optional[ReceiverContract],
+) -> str:
+    receiver = _require_receiver_contract(cls, func, receiver, "instance_method")
     if not func.args or func.output_string is None:
         raise RuntimeError(f"Resolved output-string method {func.name} is missing metadata")
 
@@ -892,14 +957,24 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
 
     buffer_index, _ = arg_by_name[buffer_name]
     size_index, _ = arg_by_name[size_name]
-    js_buffer_index = buffer_index - 1
-    js_size_index = size_index - 1
-    if buffer_index == 0 or size_index == 0 or js_buffer_index < 0 or js_size_index < 0:
+    receiver_index = receiver.receiver_index
+
+    def js_index_for_c_index(c_index: int) -> int:
+        if c_index == receiver_index:
+            raise RuntimeError(f"Resolved output-string metadata for {func.name} cannot target the receiver parameter")
+        return c_index if c_index < receiver_index else c_index - 1
+
+    try:
+        js_buffer_index = js_index_for_c_index(buffer_index)
+        js_size_index = js_index_for_c_index(size_index)
+    except RuntimeError as exc:
+        raise RuntimeError(f"Resolved output-string metadata for {func.name} cannot target the receiver parameter") from exc
+    if js_buffer_index < 0 or js_size_index < 0:
         raise RuntimeError(f"Resolved output-string metadata for {func.name} cannot target the receiver parameter")
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
-    render_function_docstring(lines, func, skip_this=True)
+    render_function_docstring(lines, func, receiver_index=receiver_index)
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
     lines.append(f"{func_prefix}const jerry_call_info_t *call_info_p,")
@@ -912,8 +987,12 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
     lines.append("    }")
     lines.append("")
 
-    this_arg = func.args[0]
+    this_arg = func.args[receiver_index]
     self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
+    call_args: List[Optional[str]] = [None] * len(func.args)
+    call_args[receiver_index] = self_render.call_expr
+    call_args[buffer_index] = "output_buf"
+    call_args[size_index] = "output_size"
     lines.append("")
     lines.append(f"    if (!jerry_value_is_string(args_p[{js_buffer_index}]))")
     lines.append("    {")
@@ -930,9 +1009,29 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
     lines.append("    char *output_buf = eos_malloc(output_size);")
     lines.append("    if (!output_buf)")
     lines.append("        return sni_api_throw_error(\"Out of memory\");")
+
+    post_call_lines: List[str] = []
+    for index, arg in enumerate(func.args):
+        if index in {receiver_index, buffer_index, size_index}:
+            continue
+        c_var = f"arg_{arg.name}"
+        render_result = render_arg_conversion(
+            lines,
+            f"args_p[{js_index_for_c_index(index)}]",
+            arg,
+            c_var,
+            output_only_value_arg=arg.argument_mode == "value_pointer_output",
+        )
+        call_args[index] = render_result.call_expr
+        post_call_lines.extend(render_result.post_lines)
+        lines.append("")
     lines.append("")
     native_call_name = func.native_call_name or func.name
-    lines.append(f"    {native_call_name}({self_render.call_expr}, output_buf, output_size);")
+    if any(value is None for value in call_args):
+        raise RuntimeError(f"Resolved output-string method {func.name} has incomplete receiver/argument mapping")
+    lines.append(f"    {native_call_name}({', '.join(str(value) for value in call_args)});")
+    if post_call_lines:
+        lines.extend(post_call_lines)
     lines.append("    jerry_value_t result = jerry_string_sz(output_buf);")
     lines.append("    eos_free(output_buf);")
     lines.append("    return result;")
@@ -940,18 +1039,20 @@ def render_output_string_method_wrapper(cls: ApiClass, func: ApiFunction) -> str
     return "\n".join(lines)
 
 
-def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
+def render_method_wrapper(cls: ApiClassIR, func: ApiFunction, receiver: Optional[ReceiverContract]) -> str:
+    receiver = _require_receiver_contract(cls, func, receiver, "instance_method")
     if func.output_string is not None:
-        return render_output_string_method_wrapper(cls, func)
+        return render_output_string_method_wrapper(cls, func, receiver)
 
     wrapper_name = f"sni_api_{func.name}"
     lines: List[str] = []
-    render_function_docstring(lines, func, skip_this=True)
+    receiver_index = receiver.receiver_index
+    render_function_docstring(lines, func, receiver_index=receiver_index)
 
     if not func.args:
         raise RuntimeError(f"Resolved instance method {func.name} is missing its receiver parameter")
 
-    this_arg = func.args[0]
+    this_arg = func.args[receiver_index]
     js_arg_count = len(func.args) - 1
 
     func_prefix = f"jerry_value_t {wrapper_name}("
@@ -969,17 +1070,24 @@ def render_method_wrapper(cls: ApiClass, func: ApiFunction) -> str:
     self_render = render_arg_conversion(lines, "call_info_p->this_value", this_arg, "self_obj")
     lines.append("")
 
-    call_args: List[str] = [self_render.call_expr]
+    call_args: List[Optional[str]] = [None] * len(func.args)
+    call_args[receiver_index] = self_render.call_expr
     post_call_lines: List[str] = []
-    for idx, arg in enumerate(func.args[1:]):
+    js_arg_index = 0
+    for index, arg in enumerate(func.args):
+        if index == receiver_index:
+            continue
         c_var = f"arg_{arg.name}"
         output_only_value_arg = arg.argument_mode == "value_pointer_output"
-        render_result = render_arg_conversion(lines, f"args_p[{idx}]", arg, c_var, output_only_value_arg=output_only_value_arg)
-        call_args.append(render_result.call_expr)
+        render_result = render_arg_conversion(lines, f"args_p[{js_arg_index}]", arg, c_var, output_only_value_arg=output_only_value_arg)
+        call_args[index] = render_result.call_expr
         post_call_lines.extend(render_result.post_lines)
+        js_arg_index += 1
         lines.append("")
 
-    call_text = ", ".join(call_args)
+    if any(value is None for value in call_args):
+        raise RuntimeError(f"Resolved instance method {func.name} has incomplete receiver/argument mapping")
+    call_text = ", ".join(str(value) for value in call_args)
     native_call_name = func.native_call_name or func.name
     if func.return_bridge.c2js_mode == "void":
         lines.append(f"    {native_call_name}({call_text});")
@@ -1058,15 +1166,21 @@ def render_static_wrapper(func: ApiFunction) -> str:
     return "\n".join(lines)
 
 
-def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
+def render_property_getter_wrapper(
+    cls: ApiClassIR,
+    prop: ApiProperty,
+    func: ApiFunction,
+    receiver: Optional[ReceiverContract],
+) -> str:
+    receiver = _require_receiver_contract(cls, func, receiver, "property_getter")
     wrapper_name = f"sni_api_prop_get_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
     lines: List[str] = []
-    render_function_docstring(lines, func, skip_this=True)
+    render_function_docstring(lines, func, receiver_index=receiver.receiver_index)
 
     if len(func.args) != 1:
         raise RuntimeError(f"Resolved property getter {func.name} must have only a receiver parameter")
 
-    this_arg = func.args[0]
+    this_arg = func.args[receiver.receiver_index]
 
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
@@ -1094,16 +1208,23 @@ def render_property_getter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     return "\n".join(lines)
 
 
-def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFunction) -> str:
+def render_property_setter_wrapper(
+    cls: ApiClassIR,
+    prop: ApiProperty,
+    func: ApiFunction,
+    receiver: Optional[ReceiverContract],
+) -> str:
+    receiver = _require_receiver_contract(cls, func, receiver, "property_setter")
     wrapper_name = f"sni_api_prop_set_{sanitize_ident(cls.name)}_{sanitize_ident(prop.name)}"
     lines: List[str] = []
-    render_function_docstring(lines, func, skip_this=True)
+    render_function_docstring(lines, func, receiver_index=receiver.receiver_index)
 
     if len(func.args) != 2:
         raise RuntimeError(f"Resolved property setter {func.name} must have receiver and value parameters")
 
-    this_arg = func.args[0]
-    value_arg = func.args[1]
+    this_arg = func.args[receiver.receiver_index]
+    value_index = next(index for index in range(len(func.args)) if index != receiver.receiver_index)
+    value_arg = func.args[value_index]
 
     func_prefix = f"jerry_value_t {wrapper_name}("
     func_indent = " " * len(func_prefix)
@@ -1122,8 +1243,10 @@ def render_property_setter_wrapper(cls: ApiClass, prop: ApiProperty, func: ApiFu
     value_render = render_arg_conversion(lines, "args_p[0]", value_arg, "prop_value")
     lines.append("")
     native_call_name = func.native_call_name or func.name
-    native_call_name = func.native_call_name or func.name
-    lines.append(f"    {native_call_name}({self_render.call_expr}, {value_render.call_expr});")
+    call_args = [None] * len(func.args)
+    call_args[receiver.receiver_index] = self_render.call_expr
+    call_args[value_index] = value_render.call_expr
+    lines.append(f"    {native_call_name}({', '.join(str(value) for value in call_args)});")
     if value_render.post_lines:
         lines.extend(value_render.post_lines)
     lines.append("    return jerry_undefined();")
@@ -1456,7 +1579,7 @@ def _render_entries(
                 instance_items.append((entry_name(ref.function), ref.special_binding))
             else:
                 method_func = get_function(ref.function)
-                wrappers.append(render_method_wrapper(cls, method_func))
+                wrappers.append(render_method_wrapper(cls, method_func, ref.receiver))
                 instance_items.append((entry_name(method_func.name), f"sni_api_{method_func.name}"))
             rendered_names.add(ref.function)
 
@@ -1493,7 +1616,14 @@ def _render_entries(
                     getter_name = prop.getter.special_binding
                 else:
                     getter_func = get_function(prop.getter.function)
-                    wrappers.append(render_property_getter_wrapper(cls, ApiProperty(prop.name, prop.getter.function, None), getter_func))
+                    wrappers.append(
+                        render_property_getter_wrapper(
+                            cls,
+                            ApiProperty(prop.name, prop.getter.function, None),
+                            getter_func,
+                            prop.getter.receiver,
+                        )
+                    )
                     getter_name = f"sni_api_prop_get_{cls_id}_{sanitize_ident(prop.name)}"
                 rendered_names.add(prop.getter.function)
 
@@ -1502,7 +1632,14 @@ def _render_entries(
                     setter_name = prop.setter.special_binding
                 else:
                     setter_func = get_function(prop.setter.function)
-                    wrappers.append(render_property_setter_wrapper(cls, ApiProperty(prop.name, None, prop.setter.function), setter_func))
+                    wrappers.append(
+                        render_property_setter_wrapper(
+                            cls,
+                            ApiProperty(prop.name, None, prop.setter.function),
+                            setter_func,
+                            prop.setter.receiver,
+                        )
+                    )
                     setter_name = f"sni_api_prop_set_{cls_id}_{sanitize_ident(prop.name)}"
                 rendered_names.add(prop.setter.function)
 

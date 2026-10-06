@@ -174,9 +174,20 @@ class ApiRecord:
 
 
 @dataclass(frozen=True)
+class ReceiverContract:
+    owner_class: str
+    binding_kind: str
+    receiver_index: int
+    expected_receiver_type: str
+    actual_receiver_type: str
+    receiver_validated: bool
+
+
+@dataclass(frozen=True)
 class ApiExportRef:
     function: str
     special_binding: str | None = None
+    receiver: ReceiverContract | None = None
 
 
 @dataclass(frozen=True)
@@ -364,7 +375,18 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                     "constructor_binding": cls.constructor_binding,
                     "base": cls.base,
                     "methods": [
-                        {"function": ref.function, "special_binding": ref.special_binding}
+                        {
+                            "function": ref.function,
+                            "special_binding": ref.special_binding,
+                            "receiver": None if ref.receiver is None else {
+                                "owner_class": ref.receiver.owner_class,
+                                "binding_kind": ref.receiver.binding_kind,
+                                "receiver_index": ref.receiver.receiver_index,
+                                "expected_receiver_type": ref.receiver.expected_receiver_type,
+                                "actual_receiver_type": ref.receiver.actual_receiver_type,
+                                "receiver_validated": ref.receiver.receiver_validated,
+                            },
+                        }
                         for ref in cls.methods
                     ],
                     "static_methods": [
@@ -377,10 +399,26 @@ def ir_to_dict(ir: BindingIR) -> dict[str, Any]:
                             "getter": None if prop.getter is None else {
                                 "function": prop.getter.function,
                                 "special_binding": prop.getter.special_binding,
+                                "receiver": None if prop.getter.receiver is None else {
+                                    "owner_class": prop.getter.receiver.owner_class,
+                                    "binding_kind": prop.getter.receiver.binding_kind,
+                                    "receiver_index": prop.getter.receiver.receiver_index,
+                                    "expected_receiver_type": prop.getter.receiver.expected_receiver_type,
+                                    "actual_receiver_type": prop.getter.receiver.actual_receiver_type,
+                                    "receiver_validated": prop.getter.receiver.receiver_validated,
+                                },
                             },
                             "setter": None if prop.setter is None else {
                                 "function": prop.setter.function,
                                 "special_binding": prop.setter.special_binding,
+                                "receiver": None if prop.setter.receiver is None else {
+                                    "owner_class": prop.setter.receiver.owner_class,
+                                    "binding_kind": prop.setter.receiver.binding_kind,
+                                    "receiver_index": prop.setter.receiver.receiver_index,
+                                    "expected_receiver_type": prop.setter.receiver.expected_receiver_type,
+                                    "actual_receiver_type": prop.setter.receiver.actual_receiver_type,
+                                    "receiver_validated": prop.setter.receiver.receiver_validated,
+                                },
                             },
                         }
                         for prop in cls.properties

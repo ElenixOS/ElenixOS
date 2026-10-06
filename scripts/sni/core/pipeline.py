@@ -81,7 +81,7 @@ def build_pipeline(
 
     with reporter.stage("Selecting API surface"):
         try:
-            selection = select_apis(lvgl_data, config.data)
+            selection = select_apis(lvgl_data, config.data, model)
         except (ValueError, SystemExit) as exc:
             raise PipelineError(reporter.current, str(exc)) from exc
 

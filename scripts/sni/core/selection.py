@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .constants import build_constant_index, build_macro_catalog, parse_numeric_constant, resolve_constant
-from .ir import ApiClassIR, ApiConstantIR, ApiExportRef, ApiMacroIR, ApiPropertyIR, ApiRecord, ApiStatus, Diagnostic, Severity
+from .ir import ApiClassIR, ApiConstantIR, ApiExportRef, ApiMacroIR, ApiPropertyIR, ApiRecord, ApiStatus, Diagnostic, ReceiverContract, Severity
+from .lvgl_model import LVGLModel
 from ..render import lv_api
 
 
@@ -40,7 +41,8 @@ def _special_map(config: dict[str, Any]) -> dict[str, str]:
     return {**special.get("apis", {}), **special.get("constructors", {})}
 
 
-def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionResult:
+def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any], model: LVGLModel | None = None) -> SelectionResult:
+    model = model or LVGLModel(lvgl_data)
     api_config = config["api_selection"]
     filters = lv_api.parse_api_filters(api_config)
     classes_by_name = lv_api.parse_api_classes(api_config)
@@ -63,6 +65,14 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
     class_methods: dict[str, list[ApiExportRef]] = {}
     class_static_methods: dict[str, list[ApiExportRef]] = {}
     class_properties: dict[str, list[ApiPropertyIR]] = {}
+
+    def class_base_c_types(cls: Any) -> tuple[str, ...]:
+        result: list[str] = []
+        current = cls
+        while current.base:
+            current = classes_by_name[current.base]
+            result.append(current.c_type)
+        return tuple(result)
 
     def add(item: dict[str, Any], class_name: str | None, kind: str, is_ctor: bool = False) -> None:
         name = str(item.get("name", "")).strip()
@@ -102,6 +112,68 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
         entry.is_constructor = entry.is_constructor or is_ctor
         entry.special_binding = special_by_api.get(name)
 
+    def receiver_contract(cls: Any, item: dict[str, Any], binding_kind: str) -> tuple[ReceiverContract | None, Any]:
+        args = item.get("args", [])
+        receiver_type = args[0].get("type") if isinstance(args, list) and args and isinstance(args[0], dict) else None
+        compatibility = model.check_instance_receiver(cls.c_type, receiver_type, class_base_c_types(cls))
+        if not compatibility.compatible:
+            return None, compatibility
+        return (
+            ReceiverContract(
+                owner_class=cls.name,
+                binding_kind=binding_kind,
+                receiver_index=0,
+                expected_receiver_type=compatibility.expected_type,
+                actual_receiver_type=compatibility.actual_type,
+                receiver_validated=True,
+            ),
+            compatibility,
+        )
+
+    def receiver_mismatch(
+        cls: Any,
+        item: dict[str, Any],
+        binding_kind: str,
+        compatibility: Any,
+        *,
+        automatic: bool,
+        member_name: str | None = None,
+    ) -> None:
+        function_name = str(item.get("name", "")).strip()
+        candidate = (
+            f"{cls.name}.{lv_api.snake_to_camel(member_name)}"
+            if member_name
+            else f"{cls.name}.{lv_api.entry_name(function_name)}"
+        )
+        messages.append(
+            Diagnostic(
+                code="RECEIVER_TYPE_MISMATCH",
+                severity=Severity.INFO if automatic else Severity.ERROR,
+                category="selection",
+                subject_kind="api",
+                subject=function_name,
+                api=function_name,
+                reason=(
+                    f"Function {function_name} is not eligible for {candidate}: expected receiver "
+                    f"{compatibility.expected_type}, got {compatibility.actual_type}."
+                ),
+                details={
+                    "function": function_name,
+                    "candidate": candidate,
+                    "owner_class": cls.name,
+                    "binding_kind": binding_kind,
+                    "expected_receiver_type": compatibility.expected_type,
+                    "actual_receiver_type": compatibility.actual_type,
+                    "inference": "automatic" if automatic else "explicit",
+                },
+                suggested_action=(
+                    "Keep this function out of the inferred instance API, or expose it through a deliberate static/special binding."
+                    if automatic
+                    else "Correct the class method selector or configure a special binding with the intended receiver semantics."
+                ),
+            )
+        )
+
     for cls in classes:
         class_ctor[cls.name] = cls.constructor is not None
         class_methods[cls.name] = []
@@ -111,11 +183,62 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
             ctor = lv_api.require_class_function(function_index, cls.name, cls.constructor, f"classes.{cls.name}.constructor")
             add(ctor, cls.name, "constructor", True)
             for selector in cls.methods:
-                for item in lv_api.resolve_class_selector_items(function_index, cls.name, selector, f"classes.{cls.name}.methods"):
-                    add(item, cls.name, "method")
+                named_items = lv_api.resolve_class_selector_name_items(function_index, cls.name, selector)
+                matched_items = [
+                    item
+                    for item in named_items
+                    if lv_api.function_args_match_selector(
+                        selector,
+                        item,
+                        model,
+                        cls.c_type,
+                        class_base_c_types(cls),
+                        special_receiver=str(item.get("name", "")).strip() in special_by_api,
+                    )
+                ]
+                if not matched_items:
+                    exact_mismatches = []
+                    for item in named_items:
+                        if str(item.get("name", "")).strip() in special_by_api:
+                            continue
+                        if not lv_api.function_args_match_selector(
+                            selector,
+                            item,
+                            model,
+                            cls.c_type,
+                            class_base_c_types(cls),
+                            skip_receiver=True,
+                        ):
+                            continue
+                        contract, compatibility = receiver_contract(cls, item, "instance_method")
+                        if contract is None:
+                            exact_mismatches.append((item, compatibility))
+                    for item, compatibility in exact_mismatches:
+                        receiver_mismatch(cls, item, "instance_method", compatibility, automatic=False)
+                    if exact_mismatches:
+                        continue
+                    lv_api.resolve_class_selector_items(
+                        function_index,
+                        cls.name,
+                        selector,
+                        f"classes.{cls.name}.methods",
+                        model,
+                        cls.c_type,
+                        class_base_c_types(cls),
+                    )
+
+                for item in matched_items:
                     name = str(item.get("name", "")).strip()
+                    special_binding = special_by_api.get(name)
+                    method_receiver = None
+                    if special_binding is None:
+                        method_receiver, compatibility = receiver_contract(cls, item, "instance_method")
+                        if method_receiver is None:
+                            receiver_mismatch(cls, item, "instance_method", compatibility, automatic=False)
+                            continue
+                    add(item, cls.name, "method")
                     if name and name not in {ref.function for ref in class_methods[cls.name]} and name in selected:
-                        class_methods[cls.name].append(ApiExportRef(name, special_by_api.get(name)))
+                        class_methods[cls.name].append(ApiExportRef(name, special_binding, method_receiver))
         for selector in cls.static_methods:
             for item in lv_api.resolve_class_selector_items(function_index, cls.name, selector, f"classes.{cls.name}.static_methods"):
                 add(item, cls.name, "static_method")
@@ -131,6 +254,34 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
             getter_return = lv_api.normalize_type_key(lv_api.normalize_c_type(function_index[getter].get("type"))) if getter else "void"
             valid_getter = getter if getter and len(getter_args) == 1 and getter_return != "void" else None
             valid_setter = setter if setter and len(lv_api.normalize_args(function_index[setter].get("args", []))) == 2 else None
+            getter_receiver = None
+            setter_receiver = None
+            getter_binding = special_property_map.get((cls.name, prop.name, valid_getter, "getter")) if valid_getter else None
+            setter_binding = special_property_map.get((cls.name, prop.name, valid_setter, "setter")) if valid_setter else None
+            if valid_getter and getter_binding is None:
+                getter_receiver, compatibility = receiver_contract(cls, function_index[valid_getter], "property_getter")
+                if getter_receiver is None:
+                    receiver_mismatch(
+                        cls,
+                        function_index[valid_getter],
+                        "property_getter",
+                        compatibility,
+                        automatic=True,
+                        member_name=prop.name,
+                    )
+                    valid_getter = None
+            if valid_setter and setter_binding is None:
+                setter_receiver, compatibility = receiver_contract(cls, function_index[valid_setter], "property_setter")
+                if setter_receiver is None:
+                    receiver_mismatch(
+                        cls,
+                        function_index[valid_setter],
+                        "property_setter",
+                        compatibility,
+                        automatic=True,
+                        member_name=prop.name,
+                    )
+                    valid_setter = None
             if valid_getter:
                 add(function_index[getter], cls.name, "property_getter")
             if valid_setter:
@@ -140,11 +291,9 @@ def select_apis(lvgl_data: dict[str, Any], config: dict[str, Any]) -> SelectionR
                 getter_ref = None
                 setter_ref = None
                 if valid_getter:
-                    binding = special_property_map.get((cls.name, prop.name, valid_getter, "getter"))
-                    getter_ref = ApiExportRef(valid_getter, binding)
+                    getter_ref = ApiExportRef(valid_getter, getter_binding, getter_receiver)
                 if valid_setter:
-                    binding = special_property_map.get((cls.name, prop.name, valid_setter, "setter"))
-                    setter_ref = ApiExportRef(valid_setter, binding)
+                    setter_ref = ApiExportRef(valid_setter, setter_binding, setter_receiver)
                 class_properties[cls.name].append(ApiPropertyIR(prop.name, getter_ref, setter_ref))
 
     # Resolve configured class constants and global constants once, before rendering.

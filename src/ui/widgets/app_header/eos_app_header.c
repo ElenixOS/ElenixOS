@@ -27,7 +27,9 @@
 #include "eos_anim.h"
 
 /* Macros and Definitions -------------------------------------*/
-#define _HEADER_HEIGHT 120
+#define _HEADER_HEIGHT EOS_APP_HEADER_STANDARD_HEIGHT
+#define _MINI_HEADER_HEIGHT EOS_APP_HEADER_MINI_HEIGHT
+#define _MINI_HEADER_GRADIENT_HEIGHT _MINI_HEADER_HEIGHT
 #define _HEADER_CLOCK_UPDATE_PERIOD_MINUTES 1 /**< Clock label text update interval in minutes */
 
 #define _HEADER_MARGIN_RIGHT 30
@@ -39,6 +41,11 @@
 #define _ANIM_DURATION EOS_VIEW_SWITCH_DURATION
 
 #define _BACK_BTN_MARGIN_LEFT 20
+#define _MINI_BACK_BTN_SIZE 44
+#define _MINI_TITLE_GAP 4
+#define _MINI_CLOCK_WIDTH 66
+#define _MINI_CLOCK_GAP 8
+#define _MINI_EDGE_INSET 36
 
 #define _ANIM_TITLE_MOVE_DISTANCE 50
 #define _ANIM_BACK_BTN_MOVE_DISTANCE _ANIM_TITLE_MOVE_DISTANCE
@@ -58,7 +65,9 @@ typedef struct
     lv_obj_t *old_fading_back_btn; // Old back button pending cleanup
     bool is_anim_entering; // Animation direction
     bool attached_to_view; // Whether attached to View
+    const lv_font_t *clock_font;
     lv_image_dsc_t *grad_bg_img; // Pre-rendered gradient background (ARGB8888 full-size)
+    lv_image_dsc_t *mini_grad_bg_img; // Pre-rendered gradient background (ARGB8888 Mini row)
 } eos_app_header_t;
 
 /* Variables --------------------------------------------------*/
@@ -72,8 +81,104 @@ static void _app_header_fade_out_ready_cb(eos_anim_t *a)
     if (!obj || !lv_obj_is_valid(obj))
         return;
 
-    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(obj, true);
     lv_obj_set_style_opa(obj, LV_OPA_COVER, 0);
+}
+
+static eos_app_header_style_t _app_header_effective_style(eos_activity_t *activity)
+{
+    if (!activity || eos_activity_is_app_header_time_only(activity))
+        return EOS_APP_HEADER_STYLE_STANDARD;
+
+    return eos_activity_get_app_header_style(activity);
+}
+
+static bool _app_header_back_button_visible(eos_activity_t *activity)
+{
+    if (!activity)
+        return true;
+
+    return !eos_activity_is_app_header_time_only(activity) && eos_activity_is_app_header_back_button_visible(activity);
+}
+
+static void _app_header_layout_title(lv_obj_t *label, eos_app_header_style_t style, bool back_button_visible)
+{
+    if (!label || !lv_obj_is_valid(label))
+        return;
+
+    if (style == EOS_APP_HEADER_STYLE_STANDARD)
+    {
+        lv_obj_set_width(label, _HEADER_TITLE_WIDTH);
+        eos_label_set_font_size(label, EOS_FONT_SIZE_LARGE);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
+        lv_obj_align(label, LV_ALIGN_RIGHT_MID, _TITLE_LABEL_X_OFFSET, _TITLE_LABEL_Y_OFFSET);
+        return;
+    }
+
+    lv_coord_t container_width = lv_obj_get_width(app_header->container);
+    lv_coord_t left = _MINI_EDGE_INSET;
+    if (back_button_visible)
+        left += _MINI_BACK_BTN_SIZE + _MINI_TITLE_GAP;
+
+    lv_coord_t right = _MINI_EDGE_INSET + _MINI_CLOCK_WIDTH + _MINI_CLOCK_GAP;
+    lv_coord_t width = container_width - left - right;
+    if (width < 0)
+        width = 0;
+
+    lv_obj_set_width(label, width);
+    eos_label_set_font_size(label, EOS_FONT_SIZE_SMALL);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
+    const lv_font_t *font = lv_obj_get_style_text_font(label, LV_PART_MAIN);
+    lv_coord_t line_height = font ? lv_font_get_line_height(font) : _MINI_HEADER_HEIGHT;
+    lv_coord_t top = (_MINI_HEADER_HEIGHT - line_height) / 2;
+    lv_obj_align(label, LV_ALIGN_TOP_LEFT, left, top);
+}
+
+static void _app_header_layout_clock(eos_app_header_style_t style)
+{
+    if (!app_header->clock_label || !lv_obj_is_valid(app_header->clock_label))
+        return;
+
+    if (style == EOS_APP_HEADER_STYLE_STANDARD)
+    {
+        if (app_header->clock_font)
+            lv_obj_set_style_text_font(app_header->clock_label, app_header->clock_font, 0);
+        lv_obj_set_width(app_header->clock_label, LV_SIZE_CONTENT);
+        lv_obj_align(app_header->clock_label, LV_ALIGN_RIGHT_MID, -_HEADER_MARGIN_RIGHT, -20);
+        return;
+    }
+
+    eos_label_set_font_size(app_header->clock_label, EOS_FONT_SIZE_SMALL);
+    lv_obj_set_width(app_header->clock_label, _MINI_CLOCK_WIDTH);
+    lv_obj_set_style_text_align(app_header->clock_label, LV_TEXT_ALIGN_RIGHT, 0);
+    const lv_font_t *font = lv_obj_get_style_text_font(app_header->clock_label, LV_PART_MAIN);
+    lv_coord_t line_height = font ? lv_font_get_line_height(font) : _MINI_HEADER_HEIGHT;
+    lv_coord_t top = (_MINI_HEADER_HEIGHT - line_height) / 2;
+    lv_obj_align(app_header->clock_label, LV_ALIGN_TOP_RIGHT, -_MINI_EDGE_INSET, top);
+}
+
+static void _app_header_layout_back_button(lv_obj_t *button, eos_app_header_style_t style)
+{
+    if (!button || !lv_obj_is_valid(button))
+        return;
+
+    if (style == EOS_APP_HEADER_STYLE_STANDARD)
+    {
+        lv_obj_set_size(button, 64, 64);
+        lv_obj_set_style_radius(button, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(button, EOS_THEME_SECONDARY_COLOR, 0);
+        lv_obj_set_style_bg_opa(button, LV_OPA_COVER, 0);
+        lv_obj_align(button, LV_ALIGN_LEFT_MID, _BACK_BTN_MARGIN_LEFT, 0);
+        return;
+    }
+
+    lv_obj_set_size(button, _MINI_BACK_BTN_SIZE, _MINI_BACK_BTN_SIZE);
+    lv_obj_set_style_radius(button, 0, 0);
+    lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, LV_STATE_PRESSED);
+    lv_obj_align(button, LV_ALIGN_TOP_LEFT, _MINI_EDGE_INSET, (_MINI_HEADER_HEIGHT - _MINI_BACK_BTN_SIZE) / 2);
 }
 
 static void _app_header_apply_activity_mode(eos_activity_t *activity)
@@ -91,32 +196,55 @@ static void _app_header_apply_activity_mode(eos_activity_t *activity)
         }
     }
 
+    eos_app_header_style_t style = _app_header_effective_style(activity);
+    bool back_button_visible = _app_header_back_button_visible(activity);
+
     if (app_header->container && lv_obj_is_valid(app_header->container))
     {
-        lv_opa_t bg_opa = time_only ? LV_OPA_TRANSP : LV_OPA_COVER;
-        lv_obj_set_style_bg_image_opa(app_header->container, bg_opa, 0);
+        lv_coord_t height = style == EOS_APP_HEADER_STYLE_MINI ? _MINI_HEADER_GRADIENT_HEIGHT : _HEADER_HEIGHT;
+        if (lv_obj_get_height(app_header->container) != height)
+            lv_obj_set_height(app_header->container, height);
+
+        if (style == EOS_APP_HEADER_STYLE_MINI)
+        {
+            lv_obj_set_style_bg_grad(app_header->container, NULL, 0);
+            lv_obj_set_style_bg_image_src(app_header->container, app_header->mini_grad_bg_img, 0);
+            lv_obj_set_style_bg_image_opa(app_header->container, LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_opa(app_header->container, LV_OPA_TRANSP, 0);
+        }
+        else
+        {
+            lv_obj_set_style_bg_grad(app_header->container, NULL, 0);
+            lv_obj_set_style_bg_image_src(app_header->container, app_header->grad_bg_img, 0);
+            lv_obj_set_style_bg_image_opa(app_header->container, time_only ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_opa(app_header->container, LV_OPA_TRANSP, 0);
+        }
     }
+
+    _app_header_layout_clock(style);
+    _app_header_layout_title(app_header->title_label, style, back_button_visible);
+    _app_header_layout_back_button(app_header->back_btn, style);
 
     if (app_header->clock_label && lv_obj_is_valid(app_header->clock_label))
     {
         lv_obj_set_style_text_color(app_header->clock_label, clock_color, 0);
-        lv_obj_remove_flag(app_header->clock_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(app_header->clock_label, false);
     }
 
     if (app_header->title_label && lv_obj_is_valid(app_header->title_label))
     {
         if (time_only)
-            lv_obj_add_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(app_header->title_label, true);
         else
-            lv_obj_remove_flag(app_header->title_label, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(app_header->title_label, false);
     }
 
     if (app_header->back_btn && lv_obj_is_valid(app_header->back_btn))
     {
-        if (time_only)
-            lv_obj_add_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
+        if (!back_button_visible)
+            lv_obj_set_hidden(app_header->back_btn, true);
         else
-            lv_obj_remove_flag(app_header->back_btn, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(app_header->back_btn, false);
     }
 }
 
@@ -158,10 +286,7 @@ static void _set_title_style(lv_obj_t *label)
 
 static void _set_back_btn_style(lv_obj_t *btn)
 {
-    lv_obj_set_size(btn, 64, 64);
-    lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(btn, EOS_THEME_SECONDARY_COLOR, 0);
-    lv_obj_align(btn, LV_ALIGN_LEFT_MID, _BACK_BTN_MARGIN_LEFT, 0);
+    _app_header_layout_back_button(btn, EOS_APP_HEADER_STYLE_STANDARD);
 }
 
 void _play_title_changed_anim(eos_activity_t *from,
@@ -176,8 +301,12 @@ void _play_title_changed_anim(eos_activity_t *from,
 
     bool from_time_only = from ? eos_activity_is_app_header_time_only(from) : false;
     bool to_time_only = to ? eos_activity_is_app_header_time_only(to) : false;
+    eos_app_header_style_t from_style = _app_header_effective_style(from);
+    eos_app_header_style_t to_style = _app_header_effective_style(to);
+    bool from_back_visible = _app_header_back_button_visible(from);
+    bool to_back_visible = _app_header_back_button_visible(to);
 
-    if (from_time_only || to_time_only)
+    if (from_time_only || to_time_only || from_style != to_style || from_back_visible != to_back_visible)
     {
         need_anim = false;
     }
@@ -273,6 +402,7 @@ void _play_title_changed_anim(eos_activity_t *from,
 
     lv_obj_t *new_l = lv_label_create(parent);
     _set_title_style(new_l);
+    _app_header_layout_title(new_l, to_style, to_back_visible);
 
     const char *new_title = eos_activity_get_title(to);
     EOS_LOG_D("New title: %s", new_title);
@@ -282,7 +412,9 @@ void _play_title_changed_anim(eos_activity_t *from,
     lv_obj_set_style_text_color(new_l, color, 0);
 
     lv_obj_t *new_back_btn = eos_back_btn_create(parent, false);
-    _set_back_btn_style(new_back_btn);
+    _app_header_layout_back_button(new_back_btn, to_style);
+    if (!to_back_visible)
+        lv_obj_set_hidden(new_back_btn, true);
 
     int32_t new_title_start_x, new_title_end_x = 0;
     int32_t new_back_btn_start_x, new_back_btn_end_x = 0;
@@ -339,6 +471,7 @@ void _play_title_changed_anim(eos_activity_t *from,
 
     app_header->title_label = new_l;
     app_header->back_btn = new_back_btn;
+    _app_header_apply_activity_mode(to);
 }
 
 /**
@@ -359,7 +492,7 @@ static void _clock_update_cb(lv_timer_t *timer)
 {
     lv_obj_t *label = lv_timer_get_user_data(timer);
     EOS_CHECK_PTR_RETURN(app_header && label);
-    if (lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN))
+    if (lv_obj_is_hidden(app_header->container))
     {
         return;
     }
@@ -390,7 +523,7 @@ void eos_app_header_hide(void)
 
     if (app_header->container && lv_obj_is_valid(app_header->container))
     {
-        lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(app_header->container, true);
     }
 }
 
@@ -453,7 +586,7 @@ void eos_app_header_show(eos_activity_t *a)
 
     _app_header_apply_activity_mode(target_activity);
     _app_header_update_clock_label(app_header->clock_label);
-    lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(app_header->container, false);
 }
 
 void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32_t duration_ms)
@@ -491,7 +624,7 @@ void eos_app_header_set_visible_animated(eos_activity_t *a, bool visible, uint32
     }
     else
     {
-        if (lv_obj_has_flag(container, LV_OBJ_FLAG_HIDDEN))
+        if (lv_obj_is_hidden(container))
         {
             eos_anim_del(anim);
             return;
@@ -510,7 +643,7 @@ static void _app_header_slide_hide_ready_cb(eos_anim_t *a)
         return;
     }
 
-    lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(container, true);
     lv_obj_set_style_translate_y(container, 0, 0);
 }
 
@@ -538,6 +671,9 @@ void eos_app_header_slide_visible_animated(eos_activity_t *a, bool visible, uint
 
     lv_obj_t *container = app_header->container;
 
+    if (visible)
+        eos_app_header_show(a);
+
     int32_t header_height = lv_obj_get_height(container);
     if (header_height <= 0)
     {
@@ -557,14 +693,13 @@ void eos_app_header_slide_visible_animated(eos_activity_t *a, bool visible, uint
 
     if (visible)
     {
-        eos_app_header_show(a);
-        lv_obj_remove_flag(container, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(container, false);
         lv_obj_set_style_translate_y(container, -header_height, 0);
         eos_anim_start(anim);
     }
     else
     {
-        if (lv_obj_has_flag(container, LV_OBJ_FLAG_HIDDEN))
+        if (lv_obj_is_hidden(container))
         {
             eos_anim_del(anim);
             return;
@@ -640,7 +775,7 @@ bool eos_app_header_is_attached_to_view(void)
 bool eos_app_header_is_visible(void)
 {
     EOS_CHECK_PTR_RETURN_VAL(app_header, false);
-    return !lv_obj_has_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    return !lv_obj_is_hidden(app_header->container);
 }
 
 static void _update_title_label(lv_event_t *e)
@@ -652,10 +787,9 @@ static void _update_title_label(lv_event_t *e)
         lv_label_set_text(app_header->title_label, "");
 }
 
-static lv_image_dsc_t *_create_gradient_bg(void)
+static lv_image_dsc_t *_create_gradient_bg(lv_coord_t img_h, bool fade_from_top)
 {
     const lv_coord_t img_w = EOS_DISPLAY_WIDTH;
-    const lv_coord_t img_h = _HEADER_HEIGHT;
     const uint32_t cf_bytes = 4;
     const uint32_t buf_size = (uint32_t)img_w * img_h * cf_bytes;
 
@@ -670,7 +804,9 @@ static lv_image_dsc_t *_create_gradient_bg(void)
     {
         int frac = y * 255 / (img_h - 1);
         uint8_t opa;
-        if (frac <= 125)
+        if (fade_from_top)
+            opa = LV_OPA_90 - (uint8_t)((uint32_t)LV_OPA_90 * frac / 255);
+        else if (frac <= 125)
             opa = LV_OPA_90;
         else
             opa = LV_OPA_90 - (uint8_t)((uint32_t)LV_OPA_90 * (frac - 125) / (255 - 125));
@@ -702,15 +838,20 @@ static lv_image_dsc_t *_create_gradient_bg(void)
     return dsc;
 }
 
+static void _free_gradient_bg(lv_image_dsc_t *dsc)
+{
+    if (!dsc)
+        return;
+
+    if (dsc->data)
+        eos_cache_buf_free((void *)dsc->data);
+    eos_free(dsc);
+}
+
 static void _grad_bg_img_delete_cb(lv_event_t *e)
 {
     lv_image_dsc_t *dsc = lv_event_get_user_data(e);
-    if (dsc)
-    {
-        if (dsc->data)
-            eos_cache_buf_free((void *)dsc->data);
-        eos_free(dsc);
-    }
+    _free_gradient_bg(dsc);
 }
 
 void eos_app_header_init(void)
@@ -719,8 +860,22 @@ void eos_app_header_init(void)
     app_header = eos_malloc_zeroed(sizeof(eos_app_header_t));
     EOS_CHECK_PTR_RETURN_FREE(app_header, app_header);
 
-    app_header->grad_bg_img = _create_gradient_bg();
-    EOS_CHECK_PTR_RETURN_FREE(app_header->grad_bg_img, app_header);
+    app_header->grad_bg_img = _create_gradient_bg(_HEADER_HEIGHT, false);
+    if (!app_header->grad_bg_img)
+    {
+        eos_free(app_header);
+        app_header = NULL;
+        return;
+    }
+
+    app_header->mini_grad_bg_img = _create_gradient_bg(_MINI_HEADER_HEIGHT, true);
+    if (!app_header->mini_grad_bg_img)
+    {
+        _free_gradient_bg(app_header->grad_bg_img);
+        eos_free(app_header);
+        app_header = NULL;
+        return;
+    }
 
     // Semi-transparent container
     app_header->container = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER));
@@ -731,13 +886,11 @@ void eos_app_header_init(void)
     lv_obj_set_style_bg_image_src(app_header->container, app_header->grad_bg_img, 0);
     lv_obj_set_style_bg_image_opa(app_header->container, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_opa(app_header->container, LV_OPA_TRANSP, 0);
-    lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(app_header->container, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(app_header->container, false);
+    lv_obj_set_clickable(app_header->container, false);
 
     lv_obj_add_event_cb(app_header->container, _grad_bg_img_delete_cb, LV_EVENT_DELETE, app_header->grad_bg_img);
-
-    lv_coord_t header_h = _HEADER_HEIGHT;
-    lv_coord_t header_w = lv_obj_get_width(app_header->container);
+    lv_obj_add_event_cb(app_header->container, _grad_bg_img_delete_cb, LV_EVENT_DELETE, app_header->mini_grad_bg_img);
 
     // Back button
     app_header->back_btn = eos_back_btn_create(app_header->container, false);
@@ -746,6 +899,7 @@ void eos_app_header_init(void)
     // Clock label
     app_header->clock_label = lv_label_create(app_header->container);
     lv_obj_add_style(app_header->clock_label, eos_theme_get_label_style(), 0);
+    app_header->clock_font = lv_obj_get_style_text_font(app_header->clock_label, LV_PART_MAIN);
     app_header->clock_timer =
         lv_timer_create(_clock_update_cb, _HEADER_CLOCK_UPDATE_PERIOD_MINUTES * 60 * 1000, app_header->clock_label);
     lv_timer_set_repeat_count(app_header->clock_timer, -1);
@@ -758,7 +912,7 @@ void eos_app_header_init(void)
     lv_obj_add_event_cb(app_header->title_label, _update_title_label, LV_EVENT_REFRESH, NULL);
 
     // Hide app_header by default
-    lv_obj_add_flag(app_header->container, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(app_header->container, true);
 
     app_header->is_anim_entering = false;
     app_header->attached_to_view = false;

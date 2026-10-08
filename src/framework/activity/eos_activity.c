@@ -71,6 +71,8 @@ struct eos_activity_t
     eos_activity_type_t type;
     uint8_t snapshot_ref_count;
     bool is_app_header_visible;
+    eos_app_header_style_t app_header_style;
+    bool app_header_back_button_visible;
     bool is_app_header_time_only;
     lv_color_t app_header_time_only_text_color;
     eos_activity_state_t state;
@@ -478,7 +480,7 @@ static void _activity_show(eos_activity_t *activity)
         return;
     }
 
-    lv_obj_remove_flag(activity->view, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(activity->view, false);
     /* The watchface root may itself be an LVGL screen and therefore has no
      * parent. Screens are already foreground by definition. */
     if (lv_obj_get_parent(activity->view))
@@ -547,7 +549,7 @@ static void _activity_snapshot_hold(eos_activity_t *activity)
 
     if (activity->view)
     {
-        lv_obj_add_flag(activity->view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(activity->view, true);
     }
 }
 
@@ -615,7 +617,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
          * mark suspended, do NOT destroy. */
         if (anim_ctx->from->view && lv_obj_is_valid(anim_ctx->from->view))
         {
-            lv_obj_add_flag(anim_ctx->from->view, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(anim_ctx->from->view, true);
 
             /* Move parked view out of the active screen tree so LVGL
              * does not traverse it during rendering.  This keeps the
@@ -673,7 +675,7 @@ static void _anim_clean_up_activity_deferred(void *user_data)
          * another full-screen layer that LVGL must traverse each frame. */
         if (anim_ctx->from && anim_ctx->from->view && lv_obj_is_valid(anim_ctx->from->view))
         {
-            lv_obj_add_flag(anim_ctx->from->view, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(anim_ctx->from->view, true);
         }
         if (!eos_activity_is_app_header_visible(anim_ctx->to) && eos_activity_is_app_header_visible(anim_ctx->from))
         {
@@ -761,7 +763,7 @@ static void _activity_switch_to_with_deferred_destroy(eos_activity_t *next_activ
     /* Keep target view hidden during lifecycle work to avoid transient one-frame flashes. */
     if (next_activity->view && lv_obj_is_valid(next_activity->view))
     {
-        lv_obj_add_flag(next_activity->view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(next_activity->view, true);
     }
 
     eos_chrome_manager_handle_activity_switch();
@@ -915,7 +917,7 @@ static void _activity_switch_to_with_deferred_destroy(eos_activity_t *next_activ
         {
             if (cur_activity->view && lv_obj_is_valid(cur_activity->view))
             {
-                lv_obj_add_flag(cur_activity->view, LV_OBJ_FLAG_HIDDEN);
+                lv_obj_set_hidden(cur_activity->view, true);
                 if (!_parking_lot)
                 {
                     _parking_lot = lv_obj_create(NULL);
@@ -996,8 +998,8 @@ static lv_obj_t *_snap_container_create(void)
     lv_obj_set_style_border_width(container, 0, 0);
     lv_obj_set_style_pad_all(container, 0, 0);
     lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_remove_flag(container, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(container, false);
+    lv_obj_set_scrollable(container, false);
     return container;
 }
 
@@ -1319,10 +1321,10 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
         eos_app_header_attach_to_view(view);
     }
 
-    bool was_hidden = lv_obj_has_flag(view, LV_OBJ_FLAG_HIDDEN);
+    bool was_hidden = lv_obj_is_hidden(view);
     if (was_hidden)
     {
-        lv_obj_remove_flag(view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(view, false);
     }
 
     lv_obj_update_layout(view);
@@ -1342,7 +1344,7 @@ lv_obj_t *eos_activity_take_snapshot(eos_activity_t *activity, bool include_head
 
     if (was_hidden)
     {
-        lv_obj_add_flag(view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(view, true);
     }
 
     if (need_attach_header)
@@ -1584,6 +1586,52 @@ bool eos_activity_is_app_header_visible(eos_activity_t *activity)
     return activity->is_app_header_visible;
 }
 
+void eos_activity_set_app_header_style(eos_activity_t *activity, eos_app_header_style_t style)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+
+    if (style != EOS_APP_HEADER_STYLE_STANDARD && style != EOS_APP_HEADER_STYLE_MINI)
+    {
+        EOS_LOG_W("Ignoring invalid application header style: %d", (int)style);
+        return;
+    }
+
+    activity->app_header_style = style;
+    _update_app_header_if_needed(activity);
+}
+
+eos_app_header_style_t eos_activity_get_app_header_style(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, EOS_APP_HEADER_STYLE_STANDARD);
+    return activity->app_header_style;
+}
+
+void eos_activity_set_app_header_back_button_visible(eos_activity_t *activity, bool visible)
+{
+    EOS_CHECK_PTR_RETURN(activity);
+
+    activity->app_header_back_button_visible = visible;
+    _update_app_header_if_needed(activity);
+}
+
+bool eos_activity_is_app_header_back_button_visible(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, false);
+    return activity->app_header_back_button_visible;
+}
+
+lv_coord_t eos_activity_get_app_header_height(eos_activity_t *activity)
+{
+    EOS_CHECK_PTR_RETURN_VAL(activity, 0);
+    if (!activity->is_app_header_visible)
+        return 0;
+
+    if (activity->is_app_header_time_only || activity->app_header_style == EOS_APP_HEADER_STYLE_STANDARD)
+        return EOS_APP_HEADER_STANDARD_HEIGHT;
+
+    return EOS_APP_HEADER_MINI_HEIGHT;
+}
+
 void eos_activity_set_app_header_time_only(eos_activity_t *activity, bool time_only)
 {
     EOS_CHECK_PTR_RETURN(activity);
@@ -1658,7 +1706,7 @@ eos_result_t eos_activity_controller_init(eos_activity_t *root_activity)
         }
         _activity_ctx.root_screen = lv_obj_create(NULL);
         lv_obj_set_scrollbar_mode(_activity_ctx.root_screen, LV_SCROLLBAR_MODE_OFF);
-        lv_obj_remove_flag(_activity_ctx.root_screen, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollable(_activity_ctx.root_screen, false);
         lv_screen_load(_activity_ctx.root_screen);
     }
 
@@ -1776,6 +1824,8 @@ eos_activity_t *eos_activity_create(const eos_activity_lifecycle_t *lifecycle)
     activity->type = EOS_ACTIVITY_TYPE_APP;
     activity->snapshot_ref_count = 0;
     activity->is_app_header_visible = false;
+    activity->app_header_style = EOS_APP_HEADER_STYLE_STANDARD;
+    activity->app_header_back_button_visible = true;
     activity->is_app_header_time_only = false;
     activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
     activity->state = EOS_ACTIVITY_STATE_CREATED;
@@ -1805,7 +1855,7 @@ eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecyc
         }
         _activity_ctx.root_screen = lv_obj_create(NULL);
         lv_obj_set_scrollbar_mode(_activity_ctx.root_screen, LV_SCROLLBAR_MODE_OFF);
-        lv_obj_remove_flag(_activity_ctx.root_screen, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollable(_activity_ctx.root_screen, false);
         lv_screen_load(_activity_ctx.root_screen);
     }
 
@@ -1840,6 +1890,8 @@ eos_activity_t *eos_activity_create_root(const eos_activity_lifecycle_t *lifecyc
     activity->type = EOS_ACTIVITY_TYPE_WATCHFACE;
     activity->snapshot_ref_count = 0;
     activity->is_app_header_visible = false;
+    activity->app_header_style = EOS_APP_HEADER_STYLE_STANDARD;
+    activity->app_header_back_button_visible = true;
     activity->is_app_header_time_only = false;
     activity->app_header_time_only_text_color = EOS_COLOR_WHITE;
     activity->state = EOS_ACTIVITY_STATE_CREATED;
@@ -2480,7 +2532,7 @@ lv_draw_buf_t *eos_activity_take_snapshot_standalone(eos_activity_t *activity, b
 
     int32_t vw = lv_obj_get_width(view);
     int32_t vh = lv_obj_get_height(view);
-    bool was_hidden = lv_obj_has_flag(view, LV_OBJ_FLAG_HIDDEN);
+    bool was_hidden = lv_obj_is_hidden(view);
     lv_display_t *obj_disp = lv_obj_get_display(view);
     uint32_t child_cnt = lv_obj_get_child_cnt(view);
     EOS_LOG_I("[SNAP_STANDALONE] view=%p size=%dx%d hidden=%d children=%u disp=%p def_disp=%p",
@@ -2521,7 +2573,7 @@ lv_draw_buf_t *eos_activity_take_snapshot_standalone(eos_activity_t *activity, b
 
     if (was_hidden)
     {
-        lv_obj_remove_flag(view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(view, false);
     }
 
     lv_obj_update_layout(view);
@@ -2544,7 +2596,7 @@ lv_draw_buf_t *eos_activity_take_snapshot_standalone(eos_activity_t *activity, b
 
     if (was_hidden)
     {
-        lv_obj_add_flag(view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(view, true);
     }
 
     if (need_attach_header)
@@ -2742,7 +2794,7 @@ eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv
             {
                 lv_obj_set_parent(a->view, _activity_ctx.root_screen);
             }
-            lv_obj_clear_flag(a->view, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(a->view, false);
         }
     }
 

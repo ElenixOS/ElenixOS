@@ -1045,6 +1045,115 @@ jerry_value_t sni_api_eos_activity_is_app_header_visible(const jerry_call_info_t
     return jerry_boolean(visible);
 }
 
+jerry_value_t sni_api_eos_activity_set_app_header_style(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+    uint32_t style;
+
+    (void)call_info_p;
+
+    if (args_count != 2 || !_sni_api_eos_number_to_u32(args_p[1], &style)
+        || style > (uint32_t)EOS_APP_HEADER_STYLE_MINI)
+    {
+        return sni_api_throw_error("Usage: activity.setAppHeaderStyle(activity, style)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    eos_activity_set_app_header_style(activity, (eos_app_header_style_t)style);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_eos_activity_get_app_header_style(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.getAppHeaderStyle(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_number((double)eos_activity_get_app_header_style(activity));
+}
+
+jerry_value_t sni_api_eos_activity_set_app_header_back_button_visible(const jerry_call_info_t *call_info_p,
+                                                                      const jerry_value_t args_p[],
+                                                                      const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 2 || !jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Usage: activity.setAppHeaderBackButtonVisible(activity, visible)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    eos_activity_set_app_header_back_button_visible(activity, jerry_value_is_true(args_p[1]));
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_eos_activity_is_app_header_back_button_visible(const jerry_call_info_t *call_info_p,
+                                                                     const jerry_value_t args_p[],
+                                                                     const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.isAppHeaderBackButtonVisible(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_boolean(eos_activity_is_app_header_back_button_visible(activity));
+}
+
+jerry_value_t sni_api_eos_activity_get_app_header_height(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.getAppHeaderHeight(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_number((double)eos_activity_get_app_header_height(activity));
+}
+
 jerry_value_t sni_api_eos_activity_enter(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -1424,6 +1533,11 @@ const sni_method_desc_t eos_class_static_methods_activity[] = {
     {.name = "setType", .handler = sni_api_eos_activity_set_type},
     {.name = "setAppHeaderVisible", .handler = sni_api_eos_activity_set_app_header_visible},
     {.name = "isAppHeaderVisible", .handler = sni_api_eos_activity_is_app_header_visible},
+    {.name = "setAppHeaderStyle", .handler = sni_api_eos_activity_set_app_header_style},
+    {.name = "getAppHeaderStyle", .handler = sni_api_eos_activity_get_app_header_style},
+    {.name = "setAppHeaderBackButtonVisible", .handler = sni_api_eos_activity_set_app_header_back_button_visible},
+    {.name = "isAppHeaderBackButtonVisible", .handler = sni_api_eos_activity_is_app_header_back_button_visible},
+    {.name = "getAppHeaderHeight", .handler = sni_api_eos_activity_get_app_header_height},
     {.name = "enter", .handler = sni_api_eos_activity_enter},
     {.name = "back", .handler = sni_api_eos_activity_back},
     {.name = "isTransitionInProgress", .handler = sni_api_eos_activity_is_transition_in_progress},
@@ -1571,6 +1685,8 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "ACTIVITY_TYPE_APP_LIST", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_APP_LIST},
     {.name = "ACTIVITY_TYPE_WATCHFACE", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_WATCHFACE},
     {.name = "ACTIVITY_TYPE_WATCHFACE_LIST", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_WATCHFACE_LIST},
+    {.name = "APP_HEADER_STYLE_STANDARD", .type = SNI_CONST_INT, .value.i = EOS_APP_HEADER_STYLE_STANDARD},
+    {.name = "APP_HEADER_STYLE_MINI", .type = SNI_CONST_INT, .value.i = EOS_APP_HEADER_STYLE_MINI},
     {.name = "SENSOR_ACCE", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_ACCE},
     {.name = "SENSOR_GYRO", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_GYRO},
     {.name = "SENSOR_MAG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_MAG},

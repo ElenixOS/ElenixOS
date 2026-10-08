@@ -1985,6 +1985,103 @@ static void _test_unit_runner_cb(lv_event_t *e)
     eos_test_runner_start();
 }
 
+typedef enum
+{
+    _TEST_HEADER_PREVIEW_MINI_BACK = 0,
+    _TEST_HEADER_PREVIEW_MINI_NO_BACK,
+    _TEST_HEADER_PREVIEW_STANDARD
+} test_header_preview_mode_t;
+
+static void _test_header_preview_mode_cb(lv_event_t *e)
+{
+    eos_activity_t *activity = eos_activity_from_widget(lv_event_get_target(e));
+    test_header_preview_mode_t mode = (test_header_preview_mode_t)(uintptr_t)lv_event_get_user_data(e);
+    if (!activity)
+        return;
+
+    const char *title = "Widgets";
+    eos_app_header_style_t style = EOS_APP_HEADER_STYLE_MINI;
+    bool back_button_visible = true;
+    if (mode == _TEST_HEADER_PREVIEW_MINI_NO_BACK)
+    {
+        title = "Test Results";
+        back_button_visible = false;
+    }
+    else if (mode == _TEST_HEADER_PREVIEW_STANDARD)
+    {
+        title = "Standard";
+        style = EOS_APP_HEADER_STYLE_STANDARD;
+    }
+
+    eos_activity_set_title(activity, title);
+    eos_activity_set_app_header_style(activity, style);
+    eos_activity_set_app_header_back_button_visible(activity, back_button_visible);
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    lv_obj_t *content = view ? lv_obj_get_child(view, 0) : NULL;
+    if (content && lv_obj_is_valid(content))
+    {
+        lv_obj_set_style_pad_top(content, eos_activity_get_app_header_height(activity) + 12, LV_PART_MAIN);
+    }
+}
+
+static void _test_header_preview_add_button(lv_obj_t *parent, const char *title, test_header_preview_mode_t mode)
+{
+    lv_obj_t *button = lv_button_create(parent);
+    lv_obj_set_width(button, lv_pct(100));
+    lv_obj_set_height(button, 56);
+    lv_obj_add_event_cb(button, _test_header_preview_mode_cb, LV_EVENT_CLICKED, (void *)(uintptr_t)mode);
+
+    lv_obj_t *label = lv_label_create(button);
+    lv_label_set_text(label, title);
+    lv_obj_center(label);
+}
+
+static void _test_header_preview_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity)
+        return;
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view)
+    {
+        eos_activity_destroy(activity);
+        return;
+    }
+
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+    eos_activity_set_title(activity, "Widgets");
+    eos_activity_set_app_header_style(activity, EOS_APP_HEADER_STYLE_MINI);
+    eos_activity_set_app_header_back_button_visible(activity, true);
+    eos_activity_set_app_header_visible(activity, true);
+
+    lv_obj_t *content = lv_obj_create(view);
+    lv_obj_remove_style_all(content);
+    lv_obj_set_size(content, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_opa(content, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_pad_hor(content, 16, LV_PART_MAIN);
+    lv_obj_set_style_pad_top(content, eos_activity_get_app_header_height(activity) + 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(content, 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(content, 8, LV_PART_MAIN);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_scrollable(content, true);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
+
+    lv_obj_t *description = lv_label_create(content);
+    lv_label_set_text(description, "Choose a header style");
+    eos_label_set_font_size(description, EOS_FONT_SIZE_MEDIUM);
+
+    _test_header_preview_add_button(content, "Mini · Back", _TEST_HEADER_PREVIEW_MINI_BACK);
+    _test_header_preview_add_button(content, "Mini · No Back", _TEST_HEADER_PREVIEW_MINI_NO_BACK);
+    _test_header_preview_add_button(content, "Standard", _TEST_HEADER_PREVIEW_STANDARD);
+
+    eos_activity_enter(activity);
+}
+
 void eos_test_start(void)
 {
     eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
@@ -2017,6 +2114,14 @@ void eos_test_start(void)
     // Unit Tests
     btn = lv_list_add_button(test_list, LV_SYMBOL_LIST, "Unit Tests");
     lv_obj_add_event_cb(btn, _test_unit_runner_cb, LV_EVENT_CLICKED, NULL);
+    // App Header Style Preview
+    btn = lv_button_create(test_list);
+    lv_obj_set_width(btn, lv_pct(100));
+    lv_obj_set_height(btn, 56);
+    lv_obj_add_event_cb(btn, _test_header_preview_cb, LV_EVENT_CLICKED, NULL);
+    label = lv_label_create(btn);
+    lv_label_set_text(label, "App Header Preview");
+    lv_obj_center(label);
     // App Debugger
     btn = lv_list_add_button(test_list, RI_BUG_LINE, "App Debugger");
     lv_obj_add_event_cb(btn, _test_app_debug_page, LV_EVENT_CLICKED, NULL);

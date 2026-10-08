@@ -21,6 +21,11 @@ extern "C" {
 
 #define EOS_VIEW_SWITCH_DURATION 300
 
+/** @brief Height of the standard two-line application header in pixels. */
+#define EOS_APP_HEADER_STANDARD_HEIGHT 120
+/** @brief Height of the compact single-line application header in pixels. */
+#define EOS_APP_HEADER_MINI_HEIGHT 48
+
 /* Public typedefs --------------------------------------------*/
 
 typedef struct eos_activity_t eos_activity_t;
@@ -48,6 +53,17 @@ typedef enum
     EOS_ACTIVITY_STATE_DESTROYING,
     EOS_ACTIVITY_STATE_DESTROYED
 } eos_activity_state_t;
+
+/**
+ * @brief Visual style used by an Activity's application header.
+ */
+typedef enum
+{
+    /** @brief Existing two-line title and time layout. */
+    EOS_APP_HEADER_STYLE_STANDARD = 0,
+    /** @brief Compact single-line title and time layout. */
+    EOS_APP_HEADER_STYLE_MINI,
+} eos_app_header_style_t;
 
 typedef enum
 {
@@ -231,6 +247,42 @@ void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool
  * @return bool true visible, false not visible
  */
 bool eos_activity_is_app_header_visible(eos_activity_t *activity);
+
+/**
+ * @brief Set the application header style for an Activity.
+ * @param activity Target Activity.
+ * @param style Header style to use when the Activity is visible.
+ */
+void eos_activity_set_app_header_style(eos_activity_t *activity, eos_app_header_style_t style);
+
+/**
+ * @brief Get the application header style for an Activity.
+ * @param activity Target Activity.
+ * @return Current style, or EOS_APP_HEADER_STYLE_STANDARD if activity is NULL.
+ */
+eos_app_header_style_t eos_activity_get_app_header_style(eos_activity_t *activity);
+
+/**
+ * @brief Set whether the Activity's application header displays a back button.
+ * @param activity Target Activity.
+ * @param visible Whether the back button is visible.
+ */
+void eos_activity_set_app_header_back_button_visible(eos_activity_t *activity, bool visible);
+
+/**
+ * @brief Check whether the Activity's application header displays a back button.
+ * @param activity Target Activity.
+ * @return true if visible, false otherwise.
+ */
+bool eos_activity_is_app_header_back_button_visible(eos_activity_t *activity);
+
+/**
+ * @brief Get the vertical extent occupied by the Activity's application header.
+ * @param activity Target Activity.
+ * @return Header height in pixels, or 0 if the header is hidden or activity is NULL.
+ *         Time-only mode retains the standard header geometry.
+ */
+lv_coord_t eos_activity_get_app_header_height(eos_activity_t *activity);
 
 /**
  * @brief Set whether Activity AppHeader shows only time label

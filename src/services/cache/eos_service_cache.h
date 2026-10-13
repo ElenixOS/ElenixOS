@@ -30,8 +30,8 @@ extern "C" {
  * @brief Initialise LVGL image decode cache with sizes from
  *        eos_config.h (EOS_CACHE_SIZE / EOS_CACHE_HEADER_COUNT).
  *
- * Safe to call multiple times — no-op after the first successful
- * init or if LVGL cache was already configured by the user.
+ * Safe to call multiple times; each call reapplies the platform cache budget
+ * and header-entry limit.
  */
 void eos_service_cache_init(void);
 

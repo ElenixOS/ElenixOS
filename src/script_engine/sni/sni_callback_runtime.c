@@ -18,7 +18,8 @@
 #include "script_engine_core.h"
 #include "spm.h"
 #include "eos_dispatcher.h"
-#include "lvgl/src/misc/lv_timer_private.h"
+#include "eos_service_metric.h"
+#include "src/misc/lv_timer_private.h"
 
 /* Macros and Definitions -------------------------------------*/
 
@@ -29,6 +30,7 @@
  */
 static lv_timer_t *s_dispatching_timer = NULL;
 static sni_anim_callback_ctx_t *s_dispatching_anim_ctx = NULL;
+static sni_context_t *s_dispatching_ctx = NULL;
 
 bool sni_cb_is_dispatching_timer(lv_timer_t *t)
 {
@@ -38,6 +40,18 @@ bool sni_cb_is_dispatching_timer(lv_timer_t *t)
 bool sni_cb_is_dispatching_anim(sni_anim_callback_ctx_t *ctx)
 {
     return s_dispatching_anim_ctx != NULL && s_dispatching_anim_ctx == ctx;
+}
+
+bool sni_cb_is_dispatching_context(sni_context_t *ctx)
+{
+    return ctx != NULL && s_dispatching_ctx == ctx;
+}
+
+void sni_cb_reset_dispatching_state(void)
+{
+    s_dispatching_timer = NULL;
+    s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 }
 
 static inline void sni_cb_safe_jerry_value_free(sni_context_t *owner_ctx, jerry_value_t *value)
@@ -111,6 +125,7 @@ typedef struct sni_event_callback_ctx
 {
     lv_obj_t *owner;
     lv_event_dsc_t *dsc;
+    lv_event_code_t filter; /**< JS-visible filter; native descriptor also listens for DELETE */
     jerry_value_t js_cb;
     jerry_value_t js_user_data;
     sni_context_t *owner_ctx;
@@ -118,6 +133,39 @@ typedef struct sni_event_callback_ctx
     uint32_t engine_gen; /**< Engine generation at creation time, used to detect stale contexts after recovery */
     struct sni_event_callback_ctx *next;
 } sni_event_callback_ctx_t;
+
+typedef struct sni_sensor_request_callback_ctx
+{
+    eos_sensor_request_id_t request_id;
+    uint8_t kind;
+    jerry_value_t js_cb;
+    sni_context_t *owner_ctx;
+    uint32_t engine_gen;
+    bool alive;
+    uint32_t dispatch_depth;
+    bool free_pending;
+    bool release_pending;
+    struct sni_sensor_request_callback_ctx *next;
+} sni_sensor_request_callback_ctx_t;
+
+typedef struct sni_metric_subscription_ctx
+{
+    uint32_t handle;
+    eos_metric_id_t metric_id;
+    lv_timer_t *timer;
+    jerry_value_t js_cb;
+    sni_context_t *owner_ctx;
+    uint32_t engine_gen;
+    bool alive;
+    bool source_acquired;
+    uint32_t dispatch_depth;
+    bool free_pending;
+    bool release_pending;
+    struct sni_metric_subscription_ctx *next;
+} sni_metric_subscription_ctx_t;
+
+static sni_metric_subscription_ctx_t *s_dispatching_metric = NULL;
+static uint32_t s_next_metric_handle = 1U;
 
 /* Function Implementations -----------------------------------*/
 
@@ -200,18 +248,49 @@ static void sni_cb_event_free_ctx(sni_event_callback_ctx_t *ctx)
 static void sni_cb_event_dispatch(lv_event_t *e)
 {
     sni_event_callback_ctx_t *ctx = (sni_event_callback_ctx_t *)lv_event_get_user_data(e);
+    lv_event_code_t event_code;
+    script_program_t *owner_program;
+    script_program_t *previous_program;
+    jerry_value_t previous_realm;
+    uint32_t saved_gen;
+    jerry_value_t event_obj;
+    jerry_value_t ret;
+
     if (!ctx || !ctx->alive)
     {
         return;
     }
 
-    if (lv_event_get_code(e) == LV_EVENT_DELETE)
+    event_code = lv_event_get_code(e);
+
+    /* Every SNI event descriptor is registered for LV_EVENT_ALL so that its
+     * owner can invalidate the descriptor context when LVGL destroys the
+     * object.  A filtered LVGL descriptor never receives DELETE, which used
+     * to leave a raw owner pointer dangling until SPM teardown called
+     * lv_obj_is_valid() on it.  lv_obj_is_valid() is not a safe dangling
+     * pointer test: it immediately dereferences obj->parent. */
+    if (event_code == LV_EVENT_DELETE)
     {
+        if (ctx->dsc)
+        {
+            sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
+        }
+        ctx->owner = NULL;
+        ctx->dsc = NULL;
         sni_cb_event_free_ctx(ctx);
         return;
     }
 
-    if (sni_context_is_paused(ctx->owner_ctx))
+    if ((ctx->filter & ~LV_EVENT_PREPROCESS) != LV_EVENT_ALL && (ctx->filter & ~LV_EVENT_PREPROCESS) != event_code)
+    {
+        return;
+    }
+
+    /* Event contexts outlive the JS call which created them.  Never resolve
+     * their owner through the engine's global current-program cursor: that
+     * cursor is cleared while an app is suspended and is temporarily changed
+     * by other callback/console entry points. */
+    if (ctx->engine_gen != script_engine_get_gen())
     {
         return;
     }
@@ -221,27 +300,57 @@ static void sni_cb_event_dispatch(lv_event_t *e)
         return;
     }
 
-    if (ctx->owner_ctx->owner->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+    owner_program = ctx->owner_ctx->owner;
+
+    if (sni_context_is_paused(ctx->owner_ctx))
     {
         return;
     }
 
-    /* Capture engine generation BEFORE spm_call so we can detect
-     * fatal recovery / re-entrant destruction after the call returns. */
-    uint32_t saved_gen = script_engine_get_gen();
+    if (owner_program->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+    {
+        return;
+    }
+
+    /* SNI conversion must happen in the callback owner's Realm as well as the
+     * JS function call.  spm_call() switches Realm for jerry_call(), but the
+     * event object and its target are constructed before spm_call(). */
+    previous_program = script_engine_get_current_program();
+    if (previous_program != owner_program)
+        script_engine_set_current_program(owner_program);
+
+    previous_realm = jerry_set_realm(owner_program->realm);
+    if (jerry_value_is_exception(previous_realm))
+    {
+        EOS_LOG_E("Event dispatch skipped: failed to enter owner Realm");
+        jerry_value_free(previous_realm);
+        if (previous_program != owner_program)
+            script_engine_set_current_program(previous_program);
+        return;
+    }
 
     lv_event_t *event_ptr = e;
-    jerry_value_t event_obj = sni_tb_c2js(&event_ptr, SNI_H_LV_EVENT);
+    event_obj = sni_tb_c2js(&event_ptr, SNI_H_LV_EVENT);
     sni_cb_event_prepare_js_event(event_obj, e, ctx->js_user_data);
 
     jerry_value_t args[1] = {event_obj};
-    jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->js_cb, jerry_undefined(), args, 1);
+    saved_gen = script_engine_get_gen();
+    ret = spm_call(owner_program, ctx->js_cb, jerry_undefined(), args, 1);
 
     /* If a fatal recovery happened inside spm_call, return immediately
      * — all local jerry_value_t variables belong to the old heap. */
-    if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
+    if (saved_gen != script_engine_get_gen())
     {
         return;
+    }
+
+    (void)jerry_set_realm(previous_realm);
+    if (previous_program != owner_program)
+    {
+        if (previous_program && previous_program->state == SCRIPT_PROGRAM_STATE_ACTIVE)
+            script_engine_set_current_program(previous_program);
+        else
+            script_engine_set_current_program(NULL);
     }
 
     if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
@@ -255,15 +364,27 @@ static void sni_cb_event_dispatch(lv_event_t *e)
 
 void sni_cb_event_cleanup_descriptor(lv_event_dsc_t *dsc)
 {
+    sni_event_callback_ctx_t *ctx;
+
     if (!dsc)
     {
         return;
     }
 
-    sni_event_callback_ctx_t *ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
+    ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
     if (!ctx)
     {
         return;
+    }
+
+    /* A descriptor handle may be collected while its LVGL owner is still
+     * alive.  Remove the native descriptor before freeing its user_data
+     * context; otherwise a later LVGL event would call into freed memory. */
+    if (ctx->alive && ctx->owner && ctx->dsc == dsc)
+    {
+        lv_obj_remove_event_dsc(ctx->owner, dsc);
+        ctx->owner = NULL;
+        ctx->dsc = NULL;
     }
 
     sni_cb_event_free_ctx(ctx);
@@ -331,8 +452,10 @@ static void sni_cb_timer_dispatch(lv_timer_t *t)
     /* Guard: prevent sni_context_sweep_all from deleting this timer
      * while we are inside its callback (would corrupt LVGL internals). */
     s_dispatching_timer = t;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->js_cb, jerry_undefined(), args, 1);
     s_dispatching_timer = NULL;
+    s_dispatching_ctx = NULL;
 
     /* If a fatal recovery happened inside spm_call, the engine was
      * reset (jerry_init), SNI context and callback ctx were freed,
@@ -387,13 +510,26 @@ bool sni_cb_event_add(lv_obj_t *obj,
     }
 
     ctx->owner = obj;
+    ctx->filter = filter;
     ctx->js_cb = jerry_value_copy(js_cb);
     ctx->js_user_data = jerry_value_copy(js_user_data);
     ctx->owner_ctx = sni_cb_get_context();
+    if (!ctx->owner_ctx || !ctx->owner_ctx->owner)
+    {
+        EOS_LOG_W("Event callback registration rejected: no active owner program");
+        jerry_value_free(ctx->js_cb);
+        jerry_value_free(ctx->js_user_data);
+        eos_free(ctx);
+        return false;
+    }
     ctx->alive = true;
     ctx->engine_gen = script_engine_get_gen();
 
-    lv_event_dsc_t *dsc = lv_obj_add_event_cb(obj, sni_cb_event_dispatch, filter, ctx);
+    /* Listen for DELETE regardless of the JS filter.  The dispatch function
+     * applies the JS filter after handling DELETE, preserving the public API
+     * while making the native owner lifetime explicit. */
+    lv_event_dsc_t *dsc =
+        lv_obj_add_event_cb(obj, sni_cb_event_dispatch, LV_EVENT_ALL | (filter & LV_EVENT_PREPROCESS), ctx);
     if (!dsc)
     {
         jerry_value_free(ctx->js_cb);
@@ -415,13 +551,25 @@ bool sni_cb_event_add(lv_obj_t *obj,
 
 bool sni_cb_event_remove_dsc(lv_obj_t *obj, lv_event_dsc_t *dsc)
 {
+    sni_event_callback_ctx_t *ctx;
+
     if (!obj || !dsc)
     {
         return false;
     }
 
-    sni_cb_event_cleanup_descriptor(dsc);
+    ctx = (sni_event_callback_ctx_t *)lv_event_dsc_get_user_data(dsc);
     bool removed = lv_obj_remove_event_dsc(obj, dsc);
+    if (removed)
+    {
+        if (ctx && ctx->alive)
+        {
+            sni_tb_remove_sub_resource(ctx->owner_ctx, dsc, SNI_H_LV_EVENT_DSC);
+            ctx->owner = NULL;
+            ctx->dsc = NULL;
+            sni_cb_event_free_ctx(ctx);
+        }
+    }
     return removed;
 }
 
@@ -452,7 +600,9 @@ bool sni_cb_event_remove_by_js_cb(lv_obj_t *obj, jerry_value_t js_cb)
         }
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
+        sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
         ctx->dsc = NULL;
+        ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
         removed_any = true;
         ctx = next;
@@ -494,7 +644,9 @@ uint32_t sni_cb_event_remove_by_js_cb_user_data(lv_obj_t *obj, jerry_value_t js_
         }
 
         lv_obj_remove_event_dsc(obj, ctx->dsc);
+        sni_tb_remove_sub_resource(ctx->owner_ctx, ctx->dsc, SNI_H_LV_EVENT_DSC);
         ctx->dsc = NULL;
+        ctx->owner = NULL;
         sni_cb_event_free_ctx(ctx);
         removed++;
         ctx = next;
@@ -669,8 +821,10 @@ static void sni_cb_anim_call_void_slot(sni_anim_callback_ctx_t *ctx, sni_anim_cb
     /* Guard: prevent sni_context_sweep_all from deleting this anim ctx
      * while we are inside its callback (would cause use-after-free). */
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->cb_slots[slot], jerry_undefined(), args, 1);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -718,9 +872,11 @@ static void sni_cb_anim_custom_exec_dispatch(lv_anim_t *var, int32_t value)
     jerry_value_t args[2] = {js_anim, js_value};
 
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret =
         spm_call(ctx->owner_ctx->owner, ctx->cb_slots[SNI_ANIM_CB_SLOT_CUSTOM_EXEC], jerry_undefined(), args, 2);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -804,8 +960,10 @@ static int32_t sni_cb_anim_call_int_slot(sni_anim_callback_ctx_t *ctx, sni_anim_
     jerry_value_t args[1] = {js_anim};
 
     s_dispatching_anim_ctx = ctx;
+    s_dispatching_ctx = ctx->owner_ctx;
     jerry_value_t ret = spm_call(ctx->owner_ctx->owner, ctx->cb_slots[slot], jerry_undefined(), args, 1);
     s_dispatching_anim_ctx = NULL;
+    s_dispatching_ctx = NULL;
 
     if (sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
     {
@@ -855,8 +1013,10 @@ static int32_t sni_cb_anim_path_dispatch(const lv_anim_t *a)
 
 sni_context_t *sni_cb_get_context(void)
 {
-    script_program_t *prog = spm_get_active_program();
-    return prog ? prog->sni_ctx : NULL;
+    script_program_t *prog = script_engine_get_current_program();
+    if (!prog || prog->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+        return NULL;
+    return prog->sni_ctx;
 }
 
 void sni_cb_context_cleanup_events(sni_context_t *ctx)
@@ -886,16 +1046,14 @@ void sni_cb_context_cleanup_events(sni_context_t *ctx)
 
         if (event_ctx->dsc && event_ctx->owner)
         {
-            /* Only remove the event descriptor if the owner object is still
-             * in LVGL's widget tree.  If the object has already been freed
-             * (e.g. by a deferred cleanup timer or off-stack activity
-             * destruction), its spec_attr→event_list is garbage and calling
-             * lv_obj_remove_event_dsc would EXC_BAD_ACCESS. */
-            if (lv_obj_is_valid(event_ctx->owner))
-            {
-                lv_obj_remove_event_dsc(event_ctx->owner, event_ctx->dsc);
-            }
+            /* The descriptor listens for LV_EVENT_DELETE and clears owner
+             * before LVGL frees the object.  Do not call lv_obj_is_valid()
+             * here: it dereferences the raw pointer and therefore cannot
+             * validate an object that has already been freed. */
+            sni_tb_remove_sub_resource(ctx, event_ctx->dsc, SNI_H_LV_EVENT_DSC);
+            lv_obj_remove_event_dsc(event_ctx->owner, event_ctx->dsc);
             event_ctx->dsc = NULL;
+            event_ctx->owner = NULL;
         }
 
         sni_cb_safe_jerry_value_free(ctx, &event_ctx->js_cb);
@@ -903,6 +1061,582 @@ void sni_cb_context_cleanup_events(sni_context_t *ctx)
 
         eos_free(event_ctx);
         event_ctx = next;
+    }
+}
+
+/* Sensor API Callback Implementation -------------------------*/
+
+static sni_sensor_request_callback_ctx_t **_sni_sensor_request_list_ptr(sni_context_t *ctx)
+{
+    return (sni_sensor_request_callback_ctx_t **)&ctx->sensor_request_ctx_list;
+}
+
+static void _sni_sensor_request_unlink(sni_sensor_request_callback_ctx_t *ctx)
+{
+    if (!ctx || !ctx->owner_ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t **pp = _sni_sensor_request_list_ptr(ctx->owner_ctx);
+    while (*pp)
+    {
+        if (*pp == ctx)
+        {
+            *pp = ctx->next;
+            break;
+        }
+        pp = &(*pp)->next;
+    }
+}
+
+static const char *_sni_sensor_heart_rate_state_name(eos_sensor_heart_rate_state_t state)
+{
+    switch (state)
+    {
+        case EOS_SENSOR_HEART_RATE_STATE_WAITING:
+            return "waiting";
+        case EOS_SENSOR_HEART_RATE_STATE_UNSTABLE:
+            return "unstable";
+        case EOS_SENSOR_HEART_RATE_STATE_NO_CONTACT:
+            return "no_contact";
+        case EOS_SENSOR_HEART_RATE_STATE_NO_DATA:
+            return "no_data";
+        case EOS_SENSOR_HEART_RATE_STATE_SUCCESS:
+            return "success";
+        case EOS_SENSOR_HEART_RATE_STATE_TIMEOUT:
+            return "timeout";
+        case EOS_SENSOR_HEART_RATE_STATE_UNAVAILABLE:
+            return "unavailable";
+        case EOS_SENSOR_HEART_RATE_STATE_ERROR:
+            return "error";
+        case EOS_SENSOR_HEART_RATE_STATE_CANCELLED:
+            return "cancelled";
+        default:
+            return "error";
+    }
+}
+
+static const char *_sni_sensor_compass_state_name(eos_sensor_compass_state_t state)
+{
+    switch (state)
+    {
+        case EOS_SENSOR_COMPASS_STATE_WAITING:
+            return "waiting";
+        case EOS_SENSOR_COMPASS_STATE_UNSTABLE:
+            return "unstable";
+        case EOS_SENSOR_COMPASS_STATE_NO_DATA:
+            return "no_data";
+        case EOS_SENSOR_COMPASS_STATE_SUCCESS:
+            return "success";
+        case EOS_SENSOR_COMPASS_STATE_TIMEOUT:
+            return "timeout";
+        case EOS_SENSOR_COMPASS_STATE_UNAVAILABLE:
+            return "unavailable";
+        case EOS_SENSOR_COMPASS_STATE_ERROR:
+            return "error";
+        case EOS_SENSOR_COMPASS_STATE_CANCELLED:
+            return "cancelled";
+        default:
+            return "error";
+    }
+}
+
+static bool _sni_sensor_request_is_terminal(uint8_t kind, int state)
+{
+    if (kind == 0U)
+    {
+        eos_sensor_heart_rate_state_t heart_rate_state = (eos_sensor_heart_rate_state_t)state;
+        return heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_SUCCESS
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_TIMEOUT
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_UNAVAILABLE
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_ERROR
+               || heart_rate_state == EOS_SENSOR_HEART_RATE_STATE_CANCELLED;
+    }
+
+    eos_sensor_compass_state_t compass_state = (eos_sensor_compass_state_t)state;
+    return compass_state == EOS_SENSOR_COMPASS_STATE_SUCCESS || compass_state == EOS_SENSOR_COMPASS_STATE_TIMEOUT
+           || compass_state == EOS_SENSOR_COMPASS_STATE_UNAVAILABLE || compass_state == EOS_SENSOR_COMPASS_STATE_ERROR
+           || compass_state == EOS_SENSOR_COMPASS_STATE_CANCELLED;
+}
+
+static void _sni_sensor_request_free(sni_sensor_request_callback_ctx_t *ctx, bool release_js)
+{
+    if (!ctx)
+        return;
+
+    if (ctx->dispatch_depth > 0U)
+    {
+        ctx->free_pending = true;
+        ctx->release_pending = ctx->release_pending || release_js;
+        if (ctx->alive)
+        {
+            ctx->alive = false;
+            _sni_sensor_request_unlink(ctx);
+        }
+        return;
+    }
+
+    if (ctx->alive)
+    {
+        ctx->alive = false;
+        _sni_sensor_request_unlink(ctx);
+    }
+    if (release_js)
+        sni_cb_safe_jerry_value_free(ctx->owner_ctx, &ctx->js_cb);
+    else
+        ctx->js_cb = jerry_undefined();
+    eos_free(ctx);
+}
+
+static void _sni_sensor_request_dispatch_leave(sni_sensor_request_callback_ctx_t *ctx)
+{
+    bool release_js;
+
+    if (!ctx || ctx->dispatch_depth == 0U)
+        return;
+
+    ctx->dispatch_depth--;
+    if (ctx->dispatch_depth != 0U || !ctx->free_pending)
+        return;
+
+    release_js = ctx->release_pending;
+    ctx->free_pending = false;
+    ctx->release_pending = false;
+    _sni_sensor_request_free(ctx, release_js);
+}
+
+static void _sni_sensor_request_dispatch(sni_sensor_request_callback_ctx_t *ctx,
+                                         eos_sensor_request_id_t request_id,
+                                         uint8_t kind,
+                                         int state,
+                                         const eos_sensor_heart_rate_result_t *heart_rate,
+                                         const eos_sensor_compass_result_t *compass)
+{
+    script_program_t *owner_program;
+    script_program_t *previous_program;
+    jerry_value_t previous_realm;
+    jerry_value_t event_obj;
+    jerry_value_t ret;
+    uint32_t saved_gen;
+
+    if (!ctx || !ctx->alive || ctx->request_id != request_id || ctx->kind != kind)
+        return;
+    if (ctx->engine_gen != script_engine_get_gen())
+        return;
+    if (!ctx->owner_ctx || !ctx->owner_ctx->owner)
+        return;
+
+    owner_program = ctx->owner_ctx->owner;
+    if (sni_context_is_paused(ctx->owner_ctx) || owner_program->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+        return;
+
+    previous_program = script_engine_get_current_program();
+    if (previous_program != owner_program)
+        script_engine_set_current_program(owner_program);
+
+    previous_realm = jerry_set_realm(owner_program->realm);
+    if (jerry_value_is_exception(previous_realm))
+    {
+        jerry_value_free(previous_realm);
+        if (previous_program != owner_program)
+            script_engine_set_current_program(previous_program);
+        return;
+    }
+
+    ctx->dispatch_depth++;
+
+    event_obj = jerry_object();
+    script_engine_set_prop_number(event_obj, "requestId", (double)request_id);
+    if (kind == 0U)
+        script_engine_set_prop_string(event_obj,
+                                      "status",
+                                      _sni_sensor_heart_rate_state_name((eos_sensor_heart_rate_state_t)state));
+    else
+        script_engine_set_prop_string(event_obj,
+                                      "status",
+                                      _sni_sensor_compass_state_name((eos_sensor_compass_state_t)state));
+
+    if (heart_rate && state == EOS_SENSOR_HEART_RATE_STATE_SUCCESS)
+    {
+        script_engine_set_prop_number(event_obj, "bpm", (double)heart_rate->bpm);
+        script_engine_set_prop_number(event_obj, "timestamp", (double)heart_rate->timestamp);
+    }
+    if (compass && state == EOS_SENSOR_COMPASS_STATE_SUCCESS)
+    {
+        script_engine_set_prop_number(event_obj, "heading", (double)compass->heading_mdeg / 1000.0);
+        script_engine_set_prop_string(event_obj, "unit", "deg");
+        script_engine_set_prop_number(event_obj, "field_strength", (double)compass->field_strength_nt / 1000.0);
+        script_engine_set_prop_string(event_obj, "field_unit", "uT");
+        script_engine_set_prop_number(event_obj, "timestamp", (double)compass->timestamp);
+    }
+
+    jerry_value_t args[1] = {event_obj};
+    saved_gen = script_engine_get_gen();
+    s_dispatching_ctx = ctx->owner_ctx;
+    ret = spm_call(owner_program, ctx->js_cb, jerry_undefined(), args, 1);
+    s_dispatching_ctx = NULL;
+    if (saved_gen != script_engine_get_gen())
+    {
+        return;
+    }
+
+    (void)jerry_set_realm(previous_realm);
+    if (previous_program != owner_program)
+    {
+        if (previous_program && previous_program->state == SCRIPT_PROGRAM_STATE_ACTIVE)
+            script_engine_set_current_program(previous_program);
+        else
+            script_engine_set_current_program(NULL);
+    }
+
+    if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
+        EOS_LOG_E("Sensor API callback encountered an error");
+    jerry_value_free(ret);
+    jerry_value_free(event_obj);
+
+    if (_sni_sensor_request_is_terminal(kind, state))
+        _sni_sensor_request_free(ctx, true);
+    _sni_sensor_request_dispatch_leave(ctx);
+}
+
+void sni_cb_sensor_heart_rate_dispatch(eos_sensor_request_id_t request_id,
+                                       eos_sensor_heart_rate_state_t state,
+                                       const eos_sensor_heart_rate_result_t *result,
+                                       void *user_data)
+{
+    _sni_sensor_request_dispatch((sni_sensor_request_callback_ctx_t *)user_data, request_id, 0U, state, result, NULL);
+}
+
+void sni_cb_sensor_compass_dispatch(eos_sensor_request_id_t request_id,
+                                    eos_sensor_compass_state_t state,
+                                    const eos_sensor_compass_result_t *result,
+                                    void *user_data)
+{
+    _sni_sensor_request_dispatch((sni_sensor_request_callback_ctx_t *)user_data, request_id, 1U, state, NULL, result);
+}
+
+bool sni_cb_sensor_request_register(sni_context_t *ctx,
+                                    eos_sensor_request_id_t request_id,
+                                    uint8_t kind,
+                                    jerry_value_t js_cb,
+                                    void **out_ctx)
+{
+    if (!ctx || kind > 1U || !jerry_value_is_function(js_cb) || !out_ctx)
+        return false;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = eos_malloc_zeroed(sizeof(*callback_ctx));
+    if (!callback_ctx)
+        return false;
+
+    callback_ctx->request_id = request_id;
+    callback_ctx->kind = kind;
+    callback_ctx->js_cb = jerry_value_copy(js_cb);
+    callback_ctx->owner_ctx = ctx;
+    callback_ctx->engine_gen = script_engine_get_gen();
+    callback_ctx->alive = true;
+    callback_ctx->next = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = callback_ctx;
+    *out_ctx = callback_ctx;
+    return true;
+}
+
+void sni_cb_sensor_request_bind(void *callback_ctx, eos_sensor_request_id_t request_id)
+{
+    sni_sensor_request_callback_ctx_t *ctx = callback_ctx;
+    if (!ctx || !ctx->alive || request_id == EOS_SENSOR_REQUEST_INVALID)
+        return;
+    ctx->request_id = request_id;
+}
+
+void sni_cb_sensor_request_release(void *callback_ctx)
+{
+    _sni_sensor_request_free((sni_sensor_request_callback_ctx_t *)callback_ctx, true);
+}
+
+bool sni_cb_sensor_request_cancel(sni_context_t *ctx, eos_sensor_request_id_t request_id)
+{
+    sni_sensor_request_callback_ctx_t *callback_ctx;
+
+    if (!ctx || request_id == EOS_SENSOR_REQUEST_INVALID)
+        return false;
+    callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    while (callback_ctx)
+    {
+        if (callback_ctx->alive && callback_ctx->request_id == request_id)
+            return eos_sensor_cancel(request_id) == EOS_OK;
+        callback_ctx = callback_ctx->next;
+    }
+    return false;
+}
+
+void sni_cb_sensor_request_cleanup_context(sni_context_t *ctx)
+{
+    if (!ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = NULL;
+    while (callback_ctx)
+    {
+        sni_sensor_request_callback_ctx_t *next = callback_ctx->next;
+        callback_ctx->alive = false;
+        (void)eos_sensor_cancel(callback_ctx->request_id);
+        _sni_sensor_request_free(callback_ctx, true);
+        callback_ctx = next;
+    }
+}
+
+void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx)
+{
+    if (!ctx)
+        return;
+
+    sni_sensor_request_callback_ctx_t *callback_ctx = (sni_sensor_request_callback_ctx_t *)ctx->sensor_request_ctx_list;
+    ctx->sensor_request_ctx_list = NULL;
+    while (callback_ctx)
+    {
+        sni_sensor_request_callback_ctx_t *next = callback_ctx->next;
+        callback_ctx->alive = false;
+        (void)eos_sensor_cancel(callback_ctx->request_id);
+        _sni_sensor_request_free(callback_ctx, false);
+        callback_ctx = next;
+    }
+}
+
+/* Semantic Metric callback implementation --------------------*/
+
+static sni_metric_subscription_ctx_t **_sni_metric_list_ptr(sni_context_t *ctx)
+{
+    return (sni_metric_subscription_ctx_t **)&ctx->metric_subscription_ctx_list;
+}
+
+static void _sni_metric_unlink(sni_metric_subscription_ctx_t *subscription)
+{
+    if (!subscription || !subscription->owner_ctx)
+        return;
+
+    sni_metric_subscription_ctx_t **link = _sni_metric_list_ptr(subscription->owner_ctx);
+    while (*link)
+    {
+        if (*link == subscription)
+        {
+            *link = subscription->next;
+            return;
+        }
+        link = &(*link)->next;
+    }
+}
+
+static void _sni_metric_free(sni_metric_subscription_ctx_t *subscription, bool release_js)
+{
+    if (!subscription)
+        return;
+
+    if (subscription->dispatch_depth > 0U)
+    {
+        subscription->free_pending = true;
+        subscription->release_pending = subscription->release_pending || release_js;
+        subscription->alive = false;
+        _sni_metric_unlink(subscription);
+        return;
+    }
+
+    if (subscription->alive)
+    {
+        subscription->alive = false;
+        _sni_metric_unlink(subscription);
+    }
+    if (subscription->timer && subscription != s_dispatching_metric)
+    {
+        lv_timer_delete(subscription->timer);
+        subscription->timer = NULL;
+    }
+    if (subscription->source_acquired)
+    {
+        (void)eos_metric_release(subscription->metric_id);
+        subscription->source_acquired = false;
+    }
+    if (release_js)
+        sni_cb_safe_jerry_value_free(subscription->owner_ctx, &subscription->js_cb);
+    else
+        subscription->js_cb = jerry_undefined();
+    eos_free(subscription);
+}
+
+static bool _sni_metric_context_is_active(sni_metric_subscription_ctx_t *subscription)
+{
+    if (!subscription || !subscription->alive || !subscription->owner_ctx || !subscription->owner_ctx->owner)
+        return false;
+    if (subscription->engine_gen != script_engine_get_gen())
+        return false;
+    if (sni_context_is_paused(subscription->owner_ctx))
+        return false;
+    return subscription->owner_ctx->owner->state == SCRIPT_PROGRAM_STATE_ACTIVE;
+}
+
+static void _sni_metric_dispatch(lv_timer_t *timer)
+{
+    sni_metric_subscription_ctx_t *subscription = lv_timer_get_user_data(timer);
+    script_program_t *owner_program;
+    script_program_t *previous_program;
+    jerry_value_t previous_realm;
+    jerry_value_t event_obj;
+    jerry_value_t ret;
+    eos_metric_value_t sample;
+    const char *metric_name;
+    uint32_t saved_gen;
+
+    if (!_sni_metric_context_is_active(subscription))
+        return;
+
+    owner_program = subscription->owner_ctx->owner;
+    previous_program = script_engine_get_current_program();
+    if (previous_program != owner_program)
+        script_engine_set_current_program(owner_program);
+
+    previous_realm = jerry_set_realm(owner_program->realm);
+    if (jerry_value_is_exception(previous_realm))
+    {
+        jerry_value_free(previous_realm);
+        if (previous_program != owner_program)
+            script_engine_set_current_program(previous_program);
+        return;
+    }
+
+    subscription->dispatch_depth++;
+    s_dispatching_metric = subscription;
+    event_obj = jerry_object();
+    metric_name = eos_metric_name(subscription->metric_id);
+    (void)eos_metric_read(subscription->metric_id, &sample);
+    script_engine_set_prop_string(event_obj, "metric", metric_name ? metric_name : "unknown");
+    if (sample.boolean_value)
+        jerry_value_free(jerry_object_set_sz(event_obj, "value", jerry_boolean(sample.value != 0.0)));
+    else
+        script_engine_set_prop_number(event_obj, "value", sample.value);
+    script_engine_set_prop_string(event_obj, "unit", sample.unit ? sample.unit : "");
+    script_engine_set_prop_number(event_obj, "timestamp", (double)sample.timestamp);
+    jerry_value_free(jerry_object_set_sz(event_obj, "valid", jerry_boolean(sample.valid)));
+    jerry_value_free(jerry_object_set_sz(event_obj, "stale", jerry_boolean(sample.stale)));
+
+    jerry_value_t args[1] = {event_obj};
+    saved_gen = script_engine_get_gen();
+    s_dispatching_ctx = subscription->owner_ctx;
+    ret = spm_call(owner_program, subscription->js_cb, jerry_undefined(), args, 1);
+    s_dispatching_ctx = NULL;
+    if (saved_gen != script_engine_get_gen())
+    {
+        s_dispatching_metric = NULL;
+        return;
+    }
+
+    (void)jerry_set_realm(previous_realm);
+    if (previous_program != owner_program)
+    {
+        if (previous_program && previous_program->state == SCRIPT_PROGRAM_STATE_ACTIVE)
+            script_engine_set_current_program(previous_program);
+        else
+            script_engine_set_current_program(NULL);
+    }
+
+    if (jerry_value_is_error(ret) || jerry_value_is_exception(ret))
+        EOS_LOG_E("Metric callback encountered an error");
+    jerry_value_free(ret);
+    jerry_value_free(event_obj);
+    s_dispatching_metric = NULL;
+
+    subscription->dispatch_depth--;
+    if (subscription->dispatch_depth == 0U && subscription->free_pending)
+    {
+        bool release_js = subscription->release_pending;
+        subscription->free_pending = false;
+        subscription->release_pending = false;
+        _sni_metric_free(subscription, release_js);
+    }
+}
+
+bool sni_cb_metric_subscribe(sni_context_t *ctx,
+                             uint32_t metric_id,
+                             jerry_value_t js_cb,
+                             uint32_t interval_ms,
+                             uint32_t *out_handle)
+{
+    sni_metric_subscription_ctx_t *subscription;
+    eos_result_t result;
+
+    if (!ctx || metric_id >= EOS_METRIC_COUNT || !jerry_value_is_function(js_cb) || !out_handle)
+        return false;
+    if (interval_ms < 100U)
+        interval_ms = 100U;
+    if (interval_ms > 60000U)
+        interval_ms = 60000U;
+
+    result = eos_metric_acquire((eos_metric_id_t)metric_id);
+    if (result != EOS_OK)
+        return false;
+
+    subscription = eos_malloc_zeroed(sizeof(*subscription));
+    if (!subscription)
+    {
+        (void)eos_metric_release((eos_metric_id_t)metric_id);
+        return false;
+    }
+    subscription->handle = s_next_metric_handle++;
+    if (subscription->handle == 0U)
+        subscription->handle = s_next_metric_handle++;
+    subscription->metric_id = (eos_metric_id_t)metric_id;
+    subscription->js_cb = jerry_value_copy(js_cb);
+    subscription->owner_ctx = ctx;
+    subscription->engine_gen = script_engine_get_gen();
+    subscription->alive = true;
+    subscription->source_acquired = true;
+    subscription->timer = lv_timer_create(_sni_metric_dispatch, interval_ms, subscription);
+    if (!subscription->timer)
+    {
+        subscription->alive = false;
+        sni_cb_safe_jerry_value_free(ctx, &subscription->js_cb);
+        (void)eos_metric_release(subscription->metric_id);
+        eos_free(subscription);
+        return false;
+    }
+    subscription->next = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    ctx->metric_subscription_ctx_list = subscription;
+    *out_handle = subscription->handle;
+    lv_timer_ready(subscription->timer);
+    return true;
+}
+
+bool sni_cb_metric_unsubscribe(sni_context_t *ctx, uint32_t handle)
+{
+    sni_metric_subscription_ctx_t *subscription;
+
+    if (!ctx || handle == 0U)
+        return false;
+    subscription = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    while (subscription)
+    {
+        if (subscription->handle == handle && subscription->alive)
+        {
+            _sni_metric_free(subscription, true);
+            return true;
+        }
+        subscription = subscription->next;
+    }
+    return false;
+}
+
+void sni_cb_metric_cleanup_context(sni_context_t *ctx)
+{
+    sni_metric_subscription_ctx_t *subscription;
+
+    if (!ctx)
+        return;
+    subscription = (sni_metric_subscription_ctx_t *)ctx->metric_subscription_ctx_list;
+    ctx->metric_subscription_ctx_list = NULL;
+    while (subscription)
+    {
+        sni_metric_subscription_ctx_t *next = subscription->next;
+        subscription->alive = false;
+        _sni_metric_free(subscription, true);
+        subscription = next;
     }
 }
 
@@ -1197,12 +1931,14 @@ void sni_cb_anim_resume_with_strategy(sni_anim_callback_ctx_t *ctx, sni_anim_res
                 uint32_t saved_gen = script_engine_get_gen();
                 jerry_value_t js_anim = sni_tb_c2js((void **)&ctx, SNI_H_LV_ANIM);
                 s_dispatching_anim_ctx = ctx;
+                s_dispatching_ctx = ctx->owner_ctx;
                 spm_call(ctx->owner_ctx->owner,
                          ctx->cb_slots[SNI_ANIM_CB_SLOT_COMPLETED],
                          jerry_undefined(),
                          &js_anim,
                          1);
                 s_dispatching_anim_ctx = NULL;
+                s_dispatching_ctx = NULL;
                 if (!sni_cb_detect_recovery(saved_gen, ctx->owner_ctx))
                 {
                     jerry_value_free(js_anim);

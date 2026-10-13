@@ -8,6 +8,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@
 #define EOS_LOG_TAG "AppList"
 #include "eos_log.h"
 #include "eos_app.h"
+#include "eos_fault_panel.h"
 #include "eos_basic_widgets.h"
 #include "eos_pkg_mgr.h"
 #include "eos_image.h"
@@ -48,11 +50,19 @@
 #define _APP_LIST_ANIM_DURATION 350
 #define _APP_LIST_ANIM_FOCUS_SCALE 2048
 #define _APP_LIST_ANIM_MIN_SACLE 64
+/* A transformed full-screen LVGL object at 64 (25%) needs an inverse
+ * source layer that is almost the whole screen.  On U5 this can consume a
+ * second full-screen draw buffer while the page is also being faded.  Keep
+ * the direct path at 128 (50%) so the animation remains a real zoom while
+ * bounding the temporary layer allocation. */
+#define _APP_LIST_DIRECT_ANIM_MIN_SCALE 128
 
-/* Loading screen: poll interval and minimum display time.
- * MIN_MS must be >= ANIM_DURATION so fast apps don't flash. */
+/* Loading screen ------------------------------------------------
+ * The loading overlay is also used as the target of the app-list
+ * transition, so it must exist immediately.  Actual app loading must
+ * not be delayed by a cosmetic minimum display time. */
 #define _APP_LIST_LOADING_TICK_MS 20
-#define _APP_LIST_LOADING_MIN_MS 3000
+#define _APP_LIST_LOADING_SPINNER_DELAY_MS 160
 
 /* Phased loading spinner */
 #define _APP_LIST_LOADING_SPINNER_SIZE 60
@@ -122,8 +132,9 @@ typedef struct
     lv_obj_t *loading_widget; /* Loading placeholder root container */
     eos_loading_spinner_t *loading_spinner; /**< Phased radial loading spinner */
     lv_obj_t *status_label; /* Status text ("Reading app...", etc.) */
-    uint32_t loading_start_ms; /* Tick when loading began (eos_tick_get) */
+    uint32_t loading_work_start_ms; /* Tick when actual loading began */
     bool launch_running; /* Guard against re-entrant JS launch */
+    bool loading_spinner_visible; /* Spinner was started and revealed */
     bool is_resuming; /* True when resuming from recents (skip loading UI) */
     /* Chunked I/O state */
     eos_file_t script_file; /* Open file handle during chunked read */
@@ -138,6 +149,9 @@ static void _app_installed_cb(eos_event_t *e);
 static void _app_uninstalled_cb(eos_event_t *e);
 static void _container_delete_cb(lv_event_t *e);
 static void _app_list_refresh(lv_obj_t *bubble_grid);
+static void _app_list_release_icon_paths(void);
+static void _app_list_set_system_icon(lv_obj_t *bubble_grid, uint32_t index, const char *app_id, const char *icon_path);
+static void _app_list_set_app_icon(lv_obj_t *bubble_grid, uint32_t index, const char *app_id, const char *icon_path);
 static void _app_list_open_app_anim_cb(eos_anim_group_t *group, eos_activity_t *from, eos_activity_t *to);
 static void _app_list_close_app_anim_cb(eos_anim_group_t *group, eos_activity_t *from, eos_activity_t *to);
 static void _register_anim_routes_once(void);
@@ -151,6 +165,10 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
                                            eos_activity_t *from,
                                            eos_activity_t *to,
                                            bool opening);
+static void _app_list_play_direct_transition_anim(eos_anim_group_t *group,
+                                                  eos_activity_t *from,
+                                                  eos_activity_t *to,
+                                                  bool opening);
 static void _app_list_cleanup_extra_cb(lv_event_t *e);
 
 /* Forward-declare the unified-animation context so the start-function
@@ -162,11 +180,14 @@ static void _transition_anim_ready_cb(lv_anim_t *a);
 static void _transition_anim_start(_transition_anim_ctx_t *ctx, uint32_t duration, uint32_t delay);
 static int32_t _app_list_find_sys_app(const char *app_id);
 static eos_result_t _app_list_build_manifest(const char *app_id, script_pkg_t *pkg);
+static eos_result_t _app_list_load_full_pkg(const char *app_id, script_pkg_t *pkg);
 static eos_result_t _app_list_launch_script_app(const char *app_id);
+static bool _app_list_is_loading_activity(eos_activity_t *activity);
 static void _app_list_restart_cb(lv_event_t *e);
 static void _app_list_exit_cb(lv_event_t *e);
 static void _app_list_show_loading(eos_activity_t *a, app_launch_ctx_t *ctx);
 static void _app_list_loading_tick(lv_timer_t *t);
+static void _app_list_show_loading_spinner(app_launch_ctx_t *ctx);
 static void _app_list_start_chunked_read(app_launch_ctx_t *ctx);
 static void _app_list_read_chunk_tick(lv_timer_t *t);
 static void _app_list_do_launch_script(app_launch_ctx_t *ctx);
@@ -179,7 +200,10 @@ static int32_t _app_list_last_icon_center_x = 0;
 static int32_t _app_list_last_icon_center_y = 0;
 static int32_t _app_list_last_click_index = -1;
 static char _app_list_last_launch_app_id[64] = {0};
+static char _app_list_running_system_id[64] = {0};
 static uint32_t _app_list_icon_count = 0;
+static char **_app_list_icon_paths = NULL;
+static uint32_t _app_list_icon_paths_count = 0;
 
 /* Unified transition-animation context.
  * ONE lv_anim drives ALL properties (scale + translate + opacity) for every
@@ -215,6 +239,7 @@ struct _transition_anim_ctx_t
     int32_t app_ty_start, app_ty_end; /* translate_y          */
 
     bool opening;
+    bool direct_draw;
     lv_anim_t lv_anim;
     eos_anim_group_t *group;
     lv_obj_t *focus_icon; /* restored when closing anim completes  */
@@ -224,73 +249,29 @@ struct _transition_anim_ctx_t
 
 static void _app_on_pause(eos_activity_t *a)
 {
-    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    if (!ctx || !ctx->app_id)
-        return;
-
-    /* Only AppRoot handles SPM suspend.
-     * Sub-activities share the realm; their on_pause fires via the
-     * lifecycle callback if set from JS. */
-    if (eos_activity_get_type(a) == EOS_ACTIVITY_TYPE_APP)
-    {
-        /* Suspend the SPM program (pauses sni_ctx, preserves realm) */
-        eos_result_t ret = spm_app_suspend();
-        if (ret != EOS_OK)
-        {
-            EOS_LOG_W("spm_app_suspend failed for '%s': %d", ctx->app_id, ret);
-        }
-    }
+    /* Recent Apps owns the suspend transaction.  Activity callbacks describe
+     * UI visibility only, so a transition cannot suspend an unrelated SPM
+     * program as a side effect. */
+    LV_UNUSED(a);
 }
 
 static void _app_on_resume(eos_activity_t *a)
 {
-    app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    if (!ctx || !ctx->app_id)
-        return;
-
-    /* Only AppRoot handles SPM resume and resource strategies.
-     * Sub-activities share the realm; their on_resume fires via the
-     * lifecycle callback if set from JS. */
-    if (eos_activity_get_type(a) == EOS_ACTIVITY_TYPE_APP)
-    {
-        eos_result_t ret = spm_app_resume(ctx->app_id);
-        if (ret != EOS_OK)
-        {
-            EOS_LOG_W("spm_app_resume failed for '%s': %d", ctx->app_id, ret);
-        }
-
-#if EOS_RECENT_APPS_ENABLE
-        /* Timer/animation strategies are applied by eos_recent_apps_resume()
-         * via sni_context_resume_resources() on the program's sni_ctx.
-         * We also apply them here for the case where resume happens
-         * without going through the recents flow. */
-        script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
-        if (prog && prog->sni_ctx && prog->state != SCRIPT_PROGRAM_STATE_TERMINATED
-            && prog->state != SCRIPT_PROGRAM_STATE_STOPPING)
-        {
-#if defined(EOS_RECENT_APPS_TIMER_STRATEGY) && defined(EOS_RECENT_APPS_ANIM_STRATEGY)
-            uint32_t timer_strat = (uint32_t)EOS_RECENT_APPS_TIMER_STRATEGY;
-            uint32_t anim_strat = (uint32_t)EOS_RECENT_APPS_ANIM_STRATEGY;
-            sni_context_resume_resources(prog->sni_ctx, (int)timer_strat, (int)anim_strat);
-#endif
-        }
-#endif /* EOS_RECENT_APPS_ENABLE */
-    }
+    /* Recent Apps resumes SPM after the parked Activity has been validated
+     * and reattached, applying the configured resource strategies exactly
+     * once. */
+    LV_UNUSED(a);
 }
 
 static void _app_on_destroy(eos_activity_t *a)
 {
     app_launch_ctx_t *ctx = eos_activity_get_user_data(a);
-    /* Stop the app script by ID (safe when multiple app programs exist) */
-    if (ctx && ctx->app_id)
-    {
-        spm_app_stop_by_id(ctx->app_id);
-    }
-    else
-    {
-        /* Fallback: stop any running app program */
-        spm_app_stop();
-    }
+    /* Stop the exact program lifetime represented by this Activity. */
+    uint32_t instance_id = eos_activity_get_script_instance_id(a);
+    if (instance_id)
+        spm_app_stop_by_instance_id(instance_id);
+    else if (ctx && ctx->app_id)
+        EOS_LOG_W("App Activity '%s' has no program instance; skipping ID-only teardown", ctx->app_id);
 
     if (ctx)
     {
@@ -442,8 +423,8 @@ static void _app_list_show_loading(eos_activity_t *a, app_launch_ctx_t *ctx)
         eos_loading_spinner_set_radii(spinner, 64, 72);
         eos_loading_spinner_set_bar_width(spinner, 6);
         ctx->loading_spinner = spinner;
-        eos_loading_spinner_set_infinite(spinner, true);
-        /* Hidden until transition completes — snapshot shows icon only */
+        /* Keep the spinner stopped until the load exceeds the reveal
+         * threshold.  The transition snapshot shows the icon only. */
         lv_obj_add_flag(spinner->root, LV_OBJ_FLAG_HIDDEN);
     }
     else
@@ -454,14 +435,39 @@ static void _app_list_show_loading(eos_activity_t *a, app_launch_ctx_t *ctx)
     /* No text labels — the icon and spinner convey all loading state */
 
     ctx->loading_widget = loading;
-    ctx->loading_start_ms = eos_tick_get();
     ctx->launch_running = false;
+    ctx->loading_spinner_visible = false;
     ctx->loading_timer = lv_timer_create(_app_list_loading_tick, _APP_LIST_LOADING_TICK_MS, ctx);
+
+    EOS_LOG_I("[APP_LOAD] overlay shown for '%s'", ctx->app_id);
 }
 
 /**
- * @brief Polling timer — waits for transition + min display time,
- *        then switches to chunked I/O reading.
+ * @brief Start and reveal the spinner after loading takes noticeable time.
+ */
+static void _app_list_show_loading_spinner(app_launch_ctx_t *ctx)
+{
+    if (!ctx || ctx->loading_spinner_visible || !ctx->loading_spinner)
+    {
+        return;
+    }
+
+    eos_loading_spinner_t *spinner = ctx->loading_spinner;
+    if (!spinner->root || !lv_obj_is_valid(spinner->root))
+    {
+        return;
+    }
+
+    eos_loading_spinner_set_infinite(spinner, true);
+    lv_obj_remove_flag(spinner->root, LV_OBJ_FLAG_HIDDEN);
+    ctx->loading_spinner_visible = true;
+    EOS_LOG_I("[APP_LOAD] spinner shown for '%s' after %" PRIu32 "ms",
+              ctx->app_id,
+              eos_tick_get() - ctx->loading_work_start_ms);
+}
+
+/**
+ * @brief Polling timer — waits for the transition, then starts I/O.
  */
 static void _app_list_loading_tick(lv_timer_t *t)
 {
@@ -477,36 +483,20 @@ static void _app_list_loading_tick(lv_timer_t *t)
         return;
     }
 
-    /* Transition done — reveal the spinner now.
-     * During the transition the snapshot showed icon-only on black. */
-    if (ctx->loading_spinner && ctx->loading_spinner->root)
-    {
-        lv_obj_remove_flag(ctx->loading_spinner->root, LV_OBJ_FLAG_HIDDEN);
-    }
-
-    /* Enforce minimum display time so fast apps don't flash.
-     * Drive phase 0 (wait) progress by elapsed time: 0-100 → 0-33% visual. */
-    uint32_t elapsed = eos_tick_get() - ctx->loading_start_ms;
-    if (elapsed < _APP_LIST_LOADING_MIN_MS)
-    {
-        uint16_t wait_pct = (uint16_t)((uint64_t)elapsed * 100 / _APP_LIST_LOADING_MIN_MS);
-        if (ctx->loading_spinner)
-        {
-            eos_loading_spinner_set_phase_progress(ctx->loading_spinner, _APP_LIST_LOADING_PHASE_WAIT, wait_pct);
-        }
-        return;
-    }
-
-    /* Both conditions met — stop polling, start chunked I/O */
+    /* The transition snapshot has served its purpose.  Start actual
+     * loading immediately; the spinner is revealed lazily if needed. */
+    ctx->loading_work_start_ms = eos_tick_get();
     ctx->launch_running = true;
     lv_timer_del(t);
     ctx->loading_timer = NULL;
 
-    /* Mark phase 0 complete (visual 33%) */
+    /* Phase 0 is setup and completes as soon as I/O begins. */
     if (ctx->loading_spinner)
     {
         eos_loading_spinner_set_phase_progress(ctx->loading_spinner, _APP_LIST_LOADING_PHASE_WAIT, 100);
     }
+
+    EOS_LOG_I("[APP_LOAD] work start for '%s' after transition", ctx->app_id);
 
     /* Set base_path now (fast, no I/O) so the package is valid for spm_app_run */
     char base_path[EOS_FS_PATH_MAX];
@@ -650,8 +640,20 @@ static void _app_list_read_chunk_tick(lv_timer_t *t)
             eos_loading_spinner_set_phase_progress(ctx->loading_spinner, _APP_LIST_LOADING_PHASE_READ, 100);
         }
 
+        EOS_LOG_I("[APP_LOAD] script read complete for '%s' in %" PRIu32 "ms",
+                  ctx->app_id,
+                  eos_tick_get() - ctx->loading_work_start_ms);
         _app_list_update_loading_status(ctx, "Starting engine...");
         _app_list_do_launch_script(ctx);
+        return;
+    }
+
+    /* Do not show an indeterminate animation for work that has already
+     * completed.  Keep it for genuinely slow I/O only. */
+    if (!ctx->loading_spinner_visible
+        && eos_tick_get() - ctx->loading_work_start_ms >= _APP_LIST_LOADING_SPINNER_DELAY_MS)
+    {
+        _app_list_show_loading_spinner(ctx);
     }
 }
 
@@ -735,12 +737,26 @@ static void _app_list_do_launch_script(app_launch_ctx_t *ctx)
     lv_refr_now(NULL);
 
     /* Run the JS — synchronous, blocks the main thread. */
+    uint32_t eval_start_ms = eos_tick_get();
+    EOS_LOG_I("[APP_LOAD] engine start for '%s'", ctx->app_id);
     eos_result_t ret = spm_app_run(&ctx->pkg);
     if (ret != EOS_OK)
     {
         _app_handle_script_run_result(a, ctx, ret);
         return;
     }
+    script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
+    if (!prog)
+    {
+        EOS_LOG_E("SPM started '%s' but no program identity was published", ctx->app_id);
+        _app_handle_script_run_result(a, ctx, EOS_FAILED);
+        return;
+    }
+    eos_activity_set_script_instance_id(a, spm_program_get_instance_id(prog));
+    eos_activity_set_script_generation(a, script_engine_get_gen());
+    spm_program_set_view_cleanup(prog, eos_activity_get_view(a));
+    eos_activity_set_needs_reload(a, false);
+    EOS_LOG_I("[APP_LOAD] engine complete for '%s' in %" PRIu32 "ms", ctx->app_id, eos_tick_get() - eval_start_ms);
 
     /* The app's interface is now built and is rendered on top of the loading
      * overlay from the very next frame.  Reveal the header in that same frame so
@@ -751,40 +767,41 @@ static void _app_list_do_launch_script(app_launch_ctx_t *ctx)
         eos_app_header_show(a);
     }
 
-    /* JS eval succeeded. Dim spinner and icon smoothly while keeping
-     * the pure-black background fully opaque. The spinner's dim
-     * animation fires a callback that removes the overlay when done. */
+    /* JS eval succeeded.  Only animate the completion when the spinner was
+     * actually shown.  Fast apps remove the transition overlay immediately. */
     lv_obj_t *loading = ctx->loading_widget;
     if (!loading || !lv_obj_is_valid(loading))
     {
         return;
     }
 
-    /* Animate icon opacity: 100% -> 0% over 400ms */
-    lv_obj_t *icon = lv_obj_get_child(loading, 0);
-    if (icon && lv_obj_is_valid(icon))
+    if (ctx->loading_spinner_visible)
     {
-        lv_anim_t a;
-        lv_anim_init(&a);
-        lv_anim_set_var(&a, icon);
-        lv_anim_set_exec_cb(&a, _loading_dim_exec_cb);
-        lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_TRANSP);
-        lv_anim_set_duration(&a, 400);
-        lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-        lv_anim_start(&a);
-    }
+        /* Animate icon opacity: 100% -> 0% over the spinner's completion
+         * duration.  The spinner callback removes the overlay afterwards. */
+        lv_obj_t *icon = lv_obj_get_child(loading, 0);
+        if (icon && lv_obj_is_valid(icon))
+        {
+            lv_anim_t a;
+            lv_anim_init(&a);
+            lv_anim_set_var(&a, icon);
+            lv_anim_set_exec_cb(&a, _loading_dim_exec_cb);
+            lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_TRANSP);
+            lv_anim_set_duration(&a, 400);
+            lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+            lv_anim_start(&a);
+        }
 
-    /* Spinner dim animation with callback to remove overlay */
-    if (ctx->loading_spinner)
-    {
         eos_loading_spinner_set_completed(ctx->loading_spinner, _loading_dim_done_cb, ctx);
+        EOS_LOG_I("[APP_LOAD] completion animation started for '%s'", ctx->app_id);
     }
     else
     {
-        /* No spinner — remove overlay immediately */
+        /* Fast path: no spinner was shown, so there is no cosmetic delay. */
         lv_obj_del(loading);
         ctx->loading_widget = NULL;
         ctx->loading_spinner = NULL;
+        EOS_LOG_I("[APP_LOAD] overlay removed immediately for '%s'", ctx->app_id);
     }
 }
 
@@ -794,10 +811,38 @@ static void _app_list_do_launch_script(app_launch_ctx_t *ctx)
  */
 static void _app_handle_script_run_result(eos_activity_t *a, app_launch_ctx_t *ctx, eos_result_t ret)
 {
+    /* A failed initial run never publishes a valid SPM instance-to-Activity
+     * binding.  Remove any partially built UI before the error panel or a
+     * later retry uses the same Activity view; successful program teardown is
+     * still owned by SPM through its registered cleanup callback. */
+    if (a)
+    {
+        eos_activity_set_script_instance_id(a, 0);
+        eos_activity_set_needs_reload(a, true);
+        lv_obj_t *view = eos_activity_get_view(a);
+        /* Cleaning the view invalidates the loading widgets.  Clear the
+         * launch-context references first so _app_on_destroy cannot treat an
+         * address reused by the error panel as the old loading widget. */
+        if (ctx)
+        {
+            ctx->loading_widget = NULL;
+            ctx->loading_spinner = NULL;
+            ctx->loading_spinner_visible = false;
+        }
+        if (view && lv_obj_is_valid(view))
+        {
+            lv_obj_clean(view);
+        }
+    }
+
     eos_script_error_type_t error_type = EOS_SCRIPT_FAULT_ERROR_EXCEPTION;
     if (ret == EOS_ERR_TIMEOUT)
     {
         error_type = EOS_SCRIPT_FAULT_UNRESPONSIVE;
+    }
+    else if (ret == EOS_ERR_SCRIPT_INVALID_JS)
+    {
+        error_type = EOS_SCRIPT_FAULT_ERROR_PARSE;
     }
     else
     {
@@ -824,25 +869,27 @@ static void _app_handle_script_run_result(eos_activity_t *a, app_launch_ctx_t *c
 static void _app_list_restart_cb(lv_event_t *e)
 {
     (void)e;
-    char app_id[64] = {0};
+    char app_id[SPM_CRASH_ID_MAX] = {0};
 
-    /* Try crash context first (for engine crash recovery path) */
-    const spm_crash_state_t *crash = spm_get_crash_state();
-    if (crash && crash->has_crash && crash->script_id[0])
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current_app_id && current_app_id[0])
     {
-        snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+        snprintf(app_id, sizeof(app_id), "%s", current_app_id);
     }
     else
     {
-        /* Fallback: get app_id from current activity (initial load error path) */
-        eos_activity_t *current = eos_activity_get_current();
-        if (current)
+        /* A crash context can outlive the current Activity metadata. */
+        const spm_crash_state_t *crash = spm_get_crash_state();
+        if (crash && crash->has_crash && crash->script_id[0])
+        {
+            snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+        }
+        else if (current)
         {
             app_launch_ctx_t *ctx = eos_activity_get_user_data(current);
             if (ctx && ctx->app_id)
-            {
                 snprintf(app_id, sizeof(app_id), "%s", ctx->app_id);
-            }
         }
     }
 
@@ -851,8 +898,22 @@ static void _app_list_restart_cb(lv_event_t *e)
     if (app_id[0])
     {
         EOS_LOG_I("Restarting app from error panel: %s", app_id);
-        eos_activity_t *current = eos_activity_get_current();
-        eos_app_restart_in_place(app_id, current);
+        eos_result_t ret = eos_app_restart_by_id(app_id);
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_W("Restart from error panel failed for '%s': %d", app_id, ret);
+            eos_activity_t *current = eos_activity_get_current();
+            if (current && !eos_activity_get_fault_panel(current))
+            {
+                eos_script_error_handler_cfg_t cfg = {
+                    .confirm_btn_id = STR_ID_APP_RESTART,
+                    .confirm_cb = _app_list_restart_cb,
+                    .cancel_btn_id = STR_ID_APP_EXIT,
+                    .cancel_cb = _app_list_exit_cb,
+                };
+                eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, ret, app_id, &cfg);
+            }
+        }
     }
     else
     {
@@ -865,13 +926,32 @@ static void _app_list_exit_cb(lv_event_t *e)
 {
     (void)e;
     EOS_LOG_I("Exiting app from error panel");
-    spm_clear_crash_state();
-    /* Try to return to the previous activity (app list) with animation.
-     * Falls back to watchface if the stack is empty or transition fails. */
-    if (eos_activity_back() != EOS_OK)
+
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current_app_id && current_app_id[0])
     {
-        EOS_LOG_W("Activity back failed, falling back to watchface");
-        eos_activity_back_to_watchface();
+        snprintf(app_id, sizeof(app_id), "%s", current_app_id);
+    }
+    else
+    {
+        const spm_crash_state_t *crash = spm_get_crash_state();
+        if (crash && crash->has_crash && crash->script_id[0])
+            snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
+    }
+
+    spm_clear_last_error();
+    spm_clear_crash_state();
+
+    eos_result_t ret = app_id[0] ? eos_app_terminate_by_id(app_id) : EOS_FAILED;
+    if (ret != EOS_OK)
+    {
+        EOS_LOG_W("Failed to close app from error panel '%s': %d; returning to watchface",
+                  app_id[0] ? app_id : "unknown",
+                  ret);
+        if (eos_activity_back_to_watchface() != EOS_OK)
+            EOS_LOG_E("Could not return to watchface after app close failed");
     }
 }
 
@@ -891,6 +971,11 @@ static int32_t _app_list_find_sys_app(const char *app_id)
     }
 
     return -1;
+}
+
+bool eos_app_list_is_system_app(const char *app_id)
+{
+    return _app_list_find_sys_app(app_id) >= 0;
 }
 
 /**
@@ -913,6 +998,35 @@ static eos_result_t _app_list_build_manifest(const char *app_id, script_pkg_t *p
         return EOS_FAILED;
     }
 
+    return EOS_OK;
+}
+
+static eos_result_t _app_list_load_full_pkg(const char *app_id, script_pkg_t *pkg)
+{
+    if (!(app_id && pkg))
+        return EOS_ERR_INVALID_ARG;
+
+    memset(pkg, 0, sizeof(*pkg));
+    if (_app_list_build_manifest(app_id, pkg) != EOS_OK)
+        return EOS_FAILED;
+
+    char base_path[EOS_FS_PATH_MAX];
+    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
+    pkg->base_path = eos_strdup(base_path);
+    if (!pkg->base_path)
+    {
+        eos_pkg_free(pkg);
+        return EOS_FAILED;
+    }
+
+    char script_path[EOS_FS_PATH_MAX];
+    snprintf(script_path, sizeof(script_path), "%s" EOS_APP_SCRIPT_ENTRY_FILE_NAME, base_path);
+    pkg->script_str = eos_storage_read_file(script_path);
+    if (!pkg->script_str)
+    {
+        eos_pkg_free(pkg);
+        return EOS_FAILED;
+    }
     return EOS_OK;
 }
 
@@ -963,9 +1077,20 @@ static eos_result_t _app_list_launch_script_app(const char *app_id)
         return EOS_FAILED;
     }
 
+    eos_activity_set_script_generation(a, script_engine_get_gen());
+
     lv_obj_t *app_view = eos_activity_get_view(a);
     lv_obj_set_size(app_view, EOS_DISPLAY_WIDTH, EOS_DISPLAY_HEIGHT);
     eos_activity_set_type(a, EOS_ACTIVITY_TYPE_APP);
+    if (eos_activity_set_app_id(a, app_id) != EOS_OK)
+    {
+        EOS_LOG_E("Failed to bind app identity: %s", app_id);
+        eos_activity_destroy(a);
+        eos_pkg_free(&ctx->pkg);
+        eos_free(ctx->app_id);
+        eos_free(ctx);
+        return EOS_FAILED;
+    }
     eos_activity_set_user_data(a, ctx);
     eos_activity_set_title(a, ctx->pkg.name);
     eos_activity_set_app_header_visible(a, true);
@@ -976,6 +1101,24 @@ static eos_result_t _app_list_launch_script_app(const char *app_id)
      * plays the zoom animation, then defers JS load to Phase B. */
     eos_activity_enter(a);
     return EOS_OK;
+}
+
+static bool _app_list_is_loading_activity(eos_activity_t *activity)
+{
+    app_launch_ctx_t *ctx;
+
+    if (!activity || eos_activity_get_type(activity) != EOS_ACTIVITY_TYPE_APP)
+        return false;
+
+    ctx = (app_launch_ctx_t *)eos_activity_get_user_data(activity);
+    if (!ctx || ctx->magic != _APP_LAUNCH_CTX_MAGIC)
+        return false;
+
+    /* Before the script is read, pkg.script_str is still NULL. The engine
+     * phase is synchronous and cannot be interleaved with another ESH command,
+     * so this is the only state that can leave a competing loader visible to
+     * the main loop. */
+    return ctx->pkg.script_str == NULL;
 }
 
 const char *eos_app_list_get_app_id(eos_activity_t *activity)
@@ -992,39 +1135,294 @@ const char *eos_app_list_get_app_id(eos_activity_t *activity)
     return ctx->app_id;
 }
 
+const char *eos_app_list_get_running_system_id(void)
+{
+    eos_activity_t *current = eos_activity_get_current();
+    eos_activity_t *bottom = eos_activity_get_bottom();
+
+    if (_app_list_running_system_id[0] == '\0' || !current)
+    {
+        return NULL;
+    }
+
+    /* A built-in app has no script launch context. This also handles a
+     * system app launched on top of a script app. */
+    if (eos_activity_get_type(current) == EOS_ACTIVITY_TYPE_APP && eos_app_list_get_app_id(current) == NULL)
+    {
+        return _app_list_running_system_id;
+    }
+
+    /* System-app subpages may not be APP activities; inspect the bottom
+     * activity of the current app stack in that case. */
+    if (bottom && eos_activity_get_type(bottom) == EOS_ACTIVITY_TYPE_APP && eos_app_list_get_app_id(bottom) == NULL)
+    {
+        return _app_list_running_system_id;
+    }
+
+    return NULL;
+}
+
 eos_result_t eos_app_restart_in_place(const char *app_id, eos_activity_t *activity)
 {
-    LV_UNUSED(app_id);
     EOS_CHECK_PTR_RETURN_VAL(activity, EOS_FAILED);
 
-    app_launch_ctx_t *ctx = (app_launch_ctx_t *)eos_activity_get_user_data(activity);
-    if (!ctx || !ctx->app_id || !ctx->pkg.script_str)
+    /* Restart is a transaction over both the program and its Activity root.
+     * A transition still owns the old view/snapshots, so allowing teardown to
+     * start here would let its completion callback observe a new Realm or a
+     * destroyed view.  Callers must retry after the controller is quiescent. */
+    if (eos_activity_is_transition_in_progress())
     {
+        EOS_LOG_W("Cannot restart '%s' during an Activity transition", app_id ? app_id : "unknown");
+        return EOS_ERR_BUSY;
+    }
+
+    /* An application may have pushed input/settings pages above its AppRoot.
+     * Restarting those pages in place would pass a non-app launch context to
+     * the script loader. Always restart the owning AppRoot instead. */
+    eos_activity_t *app_root = eos_activity_get_app_root(activity);
+    if (app_root)
+        activity = app_root;
+
+    if (eos_activity_get_current() != activity)
+    {
+        eos_result_t reset_ret = eos_activity_reset_app_to_root(activity);
+        if (reset_ret != EOS_OK)
+        {
+            EOS_LOG_W("Cannot restart '%s': failed to reset child Activity stack (%d)",
+                      app_id ? app_id : "unknown",
+                      reset_ret);
+            return reset_ret;
+        }
+    }
+
+    app_launch_ctx_t *ctx = (app_launch_ctx_t *)eos_activity_get_user_data(activity);
+    if (!ctx || !ctx->app_id || !ctx->pkg.script_str || (app_id && strcmp(app_id, ctx->app_id) != 0))
+    {
+        if (ctx && ctx->app_id && !ctx->pkg.script_str)
+            EOS_LOG_W("Restart in-place rejected while '%s' is still loading", ctx->app_id);
         EOS_LOG_E("Restart in-place failed: invalid launch context");
         return EOS_FAILED;
     }
 
     EOS_LOG_I("Restarting app in-place: %s", ctx->app_id);
 
-    /* Clear fault panel reference BEFORE cleaning view.
-     * lv_obj_clean will delete the panel's container widget, which triggers
-     * _eos_fault_panel_container_delete_cb → eos_free(fault_panel).
-     * We must clear the activity's pointer first to avoid a dangling reference. */
-    eos_activity_set_fault_panel(activity, NULL);
-
-    /* Clean all old widgets from the view (including fault panel UI).
-     * After an engine crash, the view still holds orphaned LVGL objects
-     * from the crashed script — their JS callbacks are inert (engine gen
-     * change), but the widgets themselves need to be removed so the
-     * restarted script gets a clean slate. */
-    lv_obj_t *view = eos_activity_get_view(activity);
-    if (view && lv_obj_is_valid(view))
+    /* Remove the opaque error overlay before the replacement program builds
+     * its UI.  Clear the Activity reference first because deleting the panel's
+     * LVGL container also frees its wrapper through LV_EVENT_DELETE. */
+    eos_fault_panel_t *fault_panel = (eos_fault_panel_t *)eos_activity_get_fault_panel(activity);
+    if (fault_panel)
     {
-        lv_obj_clean(view);
+        eos_activity_set_fault_panel(activity, NULL);
+        eos_fault_panel_delete(fault_panel);
     }
 
-    /* Re-run the app script on the same activity */
-    return spm_app_run(&ctx->pkg);
+    /* SPM owns the complete old-instance teardown. The new instance is
+     * created only after the old Realm, SNI context and native resources have
+     * been released. */
+    eos_result_t run_ret = spm_app_restart(&ctx->pkg);
+    if (run_ret == EOS_OK)
+    {
+        script_program_t *prog = spm_get_program_by_id_any_state(ctx->app_id);
+        if (!prog)
+        {
+            eos_activity_set_script_instance_id(activity, 0);
+            eos_activity_set_needs_reload(activity, true);
+            return EOS_FAILED;
+        }
+        spm_program_set_view_cleanup(prog, eos_activity_get_view(activity));
+        eos_activity_set_script_instance_id(activity, spm_program_get_instance_id(prog));
+        eos_activity_set_script_generation(activity, script_engine_get_gen());
+        eos_activity_set_needs_reload(activity, false);
+    }
+    else if (!spm_get_program_by_id_any_state(ctx->app_id))
+    {
+        /* The old instance was already torn down, but the replacement failed
+         * to start.  Keep the Activity visibly invalid so a later launch must
+         * create a fresh program instead of treating this view as resumable. */
+        eos_activity_set_script_instance_id(activity, 0);
+        eos_activity_set_needs_reload(activity, true);
+    }
+    return run_ret;
+}
+
+eos_result_t eos_app_terminate_by_id(const char *app_id)
+{
+    eos_activity_t *current;
+    const char *current_id;
+    script_program_t *prog;
+    eos_recent_app_entry_t *recent;
+
+    if (!(app_id && app_id[0]))
+        return EOS_ERR_INVALID_ARG;
+
+    /* Do not partially terminate a suspended entry or an Activity that is
+     * still participating in a transition.  The transition owns its view,
+     * snapshots and completion callback until it has fully cleaned up. */
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot terminate '%s' during an Activity transition", app_id);
+        return EOS_ERR_BUSY;
+    }
+
+    /* A foreground App still owns a live Activity view.  Let Activity
+     * Controller perform the close transition first; the root Activity's
+     * exact-instance on_destroy callback tears down SPM after snapshots and
+     * animation bookkeeping no longer reference the view.  Stopping SPM
+     * first leaves Activity callbacks holding a view whose Realm/resources
+     * have already disappeared. */
+    current = eos_activity_get_current();
+    current_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (current && current_id && strcmp(current_id, app_id) == 0)
+        return eos_activity_close_current_app();
+
+    recent = eos_recent_apps_find(app_id);
+    prog = spm_get_program_by_id_any_state(app_id);
+    if (prog)
+    {
+        eos_result_t ret = spm_app_stop_by_instance_id(spm_program_get_instance_id(prog));
+        if (ret != EOS_OK)
+            return ret;
+    }
+
+    if (recent)
+    {
+        if (recent->program_instance_id && spm_get_program_by_instance_id(recent->program_instance_id))
+        {
+            EOS_LOG_E("Recent entry '%s' still owns a live program after terminate", app_id);
+            return EOS_ERR_BUSY;
+        }
+        return eos_recent_apps_evict(recent);
+    }
+
+    return EOS_OK;
+}
+
+eos_result_t eos_app_restart_by_id(const char *app_id)
+{
+    eos_activity_t *current;
+    const char *current_id;
+
+    if (!(app_id && app_id[0]))
+        return EOS_ERR_INVALID_ARG;
+
+    /* A restart attempt owns any replacement error details.  Clear the old
+     * snapshot even when preflight or package loading rejects the attempt. */
+    spm_clear_last_error();
+
+    /* Check before loading a package or stopping a Recent Apps program.  A
+     * restart must be all-or-nothing with respect to Activity transitions;
+     * otherwise the stop/evict half can succeed and the launch half can be
+     * rejected by eos_app_launch_immediately(). */
+    if (eos_activity_is_transition_in_progress())
+    {
+        EOS_LOG_W("Cannot restart '%s' during an Activity transition", app_id);
+        return EOS_ERR_BUSY;
+    }
+
+    current = eos_activity_get_current();
+    current_id = current ? eos_activity_get_app_id(current) : NULL;
+    /* Script loading is a lifecycle transaction of the foreground Activity.
+     * A restart of another App must not stop/evict its old instance before we
+     * know that the new launch can be accepted. */
+    if (current && _app_list_is_loading_activity(current))
+    {
+        EOS_LOG_W("Cannot restart '%s' while application '%s' is still loading",
+                  app_id,
+                  current_id ? current_id : "unknown");
+        return EOS_ERR_BUSY;
+    }
+
+    if (current_id && strcmp(current_id, app_id) == 0)
+    {
+        eos_activity_t *root = eos_activity_get_app_root(current);
+        if (!root)
+            return EOS_ERR_INVALID_STATE;
+
+        app_launch_ctx_t *ctx = root ? eos_activity_get_user_data(root) : NULL;
+        if (ctx && ctx->magic == _APP_LAUNCH_CTX_MAGIC && ctx->app_id)
+            return eos_app_restart_in_place(app_id, root);
+
+        /* AppDebugger-launched Apps have no launcher context.  They still use
+         * the same SPM restart transaction; only package loading is different. */
+        script_pkg_t pkg;
+        eos_result_t ret = _app_list_load_full_pkg(app_id, &pkg);
+        if (ret != EOS_OK)
+            return ret;
+
+        if (current != root)
+        {
+            ret = eos_activity_reset_app_to_root(root);
+            if (ret != EOS_OK)
+            {
+                eos_pkg_free(&pkg);
+                return ret;
+            }
+        }
+
+        eos_fault_panel_t *fault_panel = (eos_fault_panel_t *)eos_activity_get_fault_panel(root);
+        if (fault_panel)
+        {
+            eos_activity_set_fault_panel(root, NULL);
+            eos_fault_panel_delete(fault_panel);
+        }
+
+        ret = spm_app_restart(&pkg);
+        if (ret == EOS_OK)
+        {
+            script_program_t *new_prog = spm_get_program_by_id_any_state(app_id);
+            if (!new_prog)
+            {
+                ret = EOS_FAILED;
+                eos_activity_set_script_instance_id(root, 0);
+                eos_activity_set_needs_reload(root, true);
+            }
+            else
+            {
+                spm_program_set_view_cleanup(new_prog, eos_activity_get_view(root));
+                eos_activity_set_script_instance_id(root, spm_program_get_instance_id(new_prog));
+                eos_activity_set_script_generation(root, script_engine_get_gen());
+                eos_activity_set_needs_reload(root, false);
+            }
+        }
+        else if (!spm_get_program_by_id_any_state(app_id))
+        {
+            eos_activity_set_script_instance_id(root, 0);
+            eos_activity_set_needs_reload(root, true);
+        }
+        eos_pkg_free(&pkg);
+        return ret;
+    }
+
+    eos_recent_app_entry_t *recent = eos_recent_apps_find(app_id);
+    if (recent)
+    {
+        script_pkg_t pkg;
+        eos_result_t ret = _app_list_load_full_pkg(app_id, &pkg);
+        if (ret != EOS_OK)
+            return ret;
+
+        if (recent->program_instance_id)
+        {
+            ret = spm_app_stop_by_instance_id(recent->program_instance_id);
+            if (ret != EOS_OK)
+            {
+                eos_pkg_free(&pkg);
+                return ret;
+            }
+        }
+        ret = eos_recent_apps_evict(recent);
+        eos_pkg_free(&pkg);
+        if (ret != EOS_OK)
+            return ret;
+        return eos_app_launch_immediately(app_id);
+    }
+
+    /* A live program with no foreground Activity or Recent entry is a broken
+     * lifecycle invariant.  Do not hide it by starting another instance. */
+    if (spm_get_program_by_id_any_state(app_id))
+        return EOS_ERR_INVALID_STATE;
+
+    return eos_app_launch_immediately(app_id);
 }
 
 /**
@@ -1079,23 +1477,59 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
     _app_list_set_last_launch_app_id(app_id);
 
     int32_t sys_app_index = _app_list_find_sys_app(app_id);
-    if (sys_app_index >= 0)
-    {
-        if (eos_sys_app_entry_list[sys_app_index])
-        {
-            eos_sys_app_entry_list[sys_app_index]();
-            return EOS_OK;
-        }
-        return EOS_FAILED;
-    }
-
-    if (!eos_app_list_contains(app_id))
+    if (sys_app_index < 0 && !eos_app_list_contains(app_id))
     {
         EOS_LOG_E("App not found: %s", app_id);
         return EOS_FAILED;
     }
 
-    /* Check if the app is already in the recents list — resume instead of fresh launch */
+    eos_activity_t *cur = eos_activity_get_current();
+    const char *current_app_id = cur ? eos_activity_get_app_id(cur) : NULL;
+    if (cur && _app_list_is_loading_activity(cur))
+    {
+        EOS_LOG_W("Cannot launch '%s': application '%s' is still loading",
+                  app_id,
+                  current_app_id ? current_app_id : "unknown");
+        return EOS_ERR_INVALID_STATE;
+    }
+
+    if (current_app_id && strcmp(current_app_id, app_id) == 0)
+    {
+        /* Native/system Apps do not have an SPM program.  Their Activity is
+         * nevertheless the authoritative foreground instance, so launching
+         * the same App again is an idempotent request rather than a stale
+         * script-Activity error. */
+        if (sys_app_index >= 0)
+        {
+            EOS_LOG_I("System App '%s' is already the foreground app", app_id);
+            return EOS_OK;
+        }
+
+        script_program_t *current_program = spm_get_program_by_id_any_state(app_id);
+        bool current_instance_valid =
+            current_program && current_program->state == SCRIPT_PROGRAM_STATE_ACTIVE
+            && (!eos_activity_get_script_instance_id(cur)
+                || eos_activity_get_script_instance_id(cur) == spm_program_get_instance_id(current_program));
+
+        if (current_instance_valid && eos_activity_get_script_generation(cur) == script_engine_get_gen()
+            && !eos_activity_needs_reload(cur))
+        {
+            EOS_LOG_I("App '%s' is already the foreground app", app_id);
+            return EOS_OK;
+        }
+
+        if (current_program && current_program->state == SCRIPT_PROGRAM_STATE_STOPPING)
+            return EOS_ERR_BUSY;
+
+        EOS_LOG_W("App '%s' has a stale Activity without a live script program; resetting navigation", app_id);
+        if (eos_activity_reset_to_root() != EOS_OK)
+        {
+            EOS_LOG_E("Failed to reset stale Activity for '%s'", app_id);
+            return EOS_FAILED;
+        }
+    }
+
+    /* Recent entries are shared by native and script applications. */
     eos_recent_app_entry_t *recent_entry = eos_recent_apps_find(app_id);
     if (recent_entry)
     {
@@ -1178,33 +1612,60 @@ eos_result_t eos_app_launch_immediately(const char *app_id)
             EOS_LOG_W("[RECENT_CAPTURE] saved_stack_top is NULL for '%s'", app_id);
         }
 
-        /* If another script app is active, suspend it first */
-        eos_activity_t *cur = eos_activity_get_current();
-        if (cur && eos_recent_apps_is_suspendable(cur))
+        /* If another app is active, suspend its complete navigation stack. */
+        if (cur && current_app_id)
         {
-            eos_recent_apps_suspend_current();
+            if (eos_recent_apps_suspend_current() != EOS_OK)
+            {
+                EOS_LOG_E("Failed to suspend current app before resuming '%s'", app_id);
+                return EOS_FAILED;
+            }
         }
-        return eos_recent_apps_resume_by_id(app_id);
+        eos_result_t resume_ret = eos_recent_apps_resume_by_id(app_id);
+        if (resume_ret == EOS_OK)
+        {
+            if (sys_app_index >= 0)
+                snprintf(_app_list_running_system_id, sizeof(_app_list_running_system_id), "%s", app_id);
+            else
+                _app_list_running_system_id[0] = '\0';
+        }
+        return resume_ret;
     }
 
-    /* If currently inside a script app, suspend it first instead of destroying */
-    eos_activity_t *cur = eos_activity_get_current();
-    if (cur && eos_recent_apps_is_suspendable(cur))
+    script_program_t *existing_program = spm_get_program_by_id_any_state(app_id);
+    if (existing_program)
     {
-        EOS_LOG_I("Suspending current app before launching new app");
-        eos_recent_apps_suspend_current();
+        EOS_LOG_W("App '%s' already has program instance=%u state=%d without a resumable Recent entry",
+                  app_id,
+                  spm_program_get_instance_id(existing_program),
+                  existing_program->state);
+        return existing_program->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_ALREADY_EXISTS;
     }
-    else
+
+    /* A fresh app launch also moves the complete current app instance to
+     * Recent Apps before creating the new root Activity. */
+    if (cur && current_app_id)
     {
-        /* For non-script current (e.g. system app), use the old pop behavior */
-        eos_activity_type_t current_type = eos_activity_get_type(cur);
-        if (current_type == EOS_ACTIVITY_TYPE_APP)
+        EOS_LOG_I("Suspending current app before launching '%s'", app_id);
+        if (eos_recent_apps_suspend_current() != EOS_OK)
         {
-            EOS_LOG_I("Returning to app list before launching new app");
-            _app_list_pop_to_app_list();
+            EOS_LOG_E("Failed to suspend current app before launching '%s'", app_id);
+            return EOS_FAILED;
         }
     }
 
+    if (sys_app_index >= 0)
+    {
+        snprintf(_app_list_running_system_id, sizeof(_app_list_running_system_id), "%s", app_id);
+        if (eos_sys_app_entry_list[sys_app_index])
+        {
+            eos_sys_app_entry_list[sys_app_index]();
+            return EOS_OK;
+        }
+        return EOS_FAILED;
+    }
+
+    _app_list_running_system_id[0] = '\0';
     return _app_list_launch_script_app(app_id);
 }
 
@@ -1347,6 +1808,17 @@ static inline int32_t _elerp(int32_t a, int32_t b, int32_t t)
     return a + ((b - a) * t + 127) / 255;
 }
 
+static void _transition_set_scale(lv_obj_t *obj, int32_t scale, bool direct_draw)
+{
+    if (!obj || !lv_obj_is_valid(obj))
+        return;
+
+    if (direct_draw)
+        lv_obj_set_style_transform_scale(obj, scale, 0);
+    else
+        lv_image_set_scale(obj, scale);
+}
+
 static void _transition_anim_exec_cb(void *var, int32_t v)
 {
     _transition_anim_ctx_t *ctx = (_transition_anim_ctx_t *)var;
@@ -1355,7 +1827,9 @@ static void _transition_anim_exec_cb(void *var, int32_t v)
     /* list_snapshot scale + translate ----------------------------*/
     if (ctx->list_snapshot && lv_obj_is_valid(ctx->list_snapshot))
     {
-        lv_image_set_scale(ctx->list_snapshot, _elerp(ctx->list_scale_start, ctx->list_scale_end, t));
+        _transition_set_scale(ctx->list_snapshot,
+                              _elerp(ctx->list_scale_start, ctx->list_scale_end, t),
+                              ctx->direct_draw);
         lv_obj_set_style_translate_x(ctx->list_snapshot, _elerp(ctx->list_tx_start, ctx->list_tx_end, t), 0);
         lv_obj_set_style_translate_y(ctx->list_snapshot, _elerp(ctx->list_ty_start, ctx->list_ty_end, t), 0);
     }
@@ -1371,7 +1845,7 @@ static void _transition_anim_exec_cb(void *var, int32_t v)
     /* app_snapshot image scale + translate + opacity -------------*/
     if (ctx->app_snapshot && lv_obj_is_valid(ctx->app_snapshot))
     {
-        lv_image_set_scale(ctx->app_snapshot, _elerp(ctx->app_scale_start, ctx->app_scale_end, t));
+        _transition_set_scale(ctx->app_snapshot, _elerp(ctx->app_scale_start, ctx->app_scale_end, t), ctx->direct_draw);
         lv_obj_set_style_translate_x(ctx->app_snapshot, _elerp(ctx->app_tx_start, ctx->app_tx_end, t), 0);
         lv_obj_set_style_translate_y(ctx->app_snapshot, _elerp(ctx->app_ty_start, ctx->app_ty_end, t), 0);
     }
@@ -1410,6 +1884,12 @@ static void _transition_anim_ready_cb(lv_anim_t *a)
 {
     _transition_anim_ctx_t *ctx = (_transition_anim_ctx_t *)lv_anim_get_user_data(a);
 
+    if (ctx->direct_draw && ctx->icon_clone && lv_obj_is_valid(ctx->icon_clone))
+    {
+        lv_obj_delete(ctx->icon_clone);
+        ctx->icon_clone = NULL;
+    }
+
     /* Restore focus icon when closing animation finishes */
     if (ctx->focus_icon && lv_obj_is_valid(ctx->focus_icon))
     {
@@ -1439,7 +1919,7 @@ static void _transition_anim_start(_transition_anim_ctx_t *ctx, uint32_t duratio
     /* Apply initial values for all properties */
     if (ctx->list_snapshot && lv_obj_is_valid(ctx->list_snapshot))
     {
-        lv_image_set_scale(ctx->list_snapshot, ctx->list_scale_start);
+        _transition_set_scale(ctx->list_snapshot, ctx->list_scale_start, ctx->direct_draw);
         lv_obj_set_style_translate_x(ctx->list_snapshot, ctx->list_tx_start, 0);
         lv_obj_set_style_translate_y(ctx->list_snapshot, ctx->list_ty_start, 0);
     }
@@ -1451,7 +1931,7 @@ static void _transition_anim_start(_transition_anim_ctx_t *ctx, uint32_t duratio
     }
     if (ctx->app_snapshot && lv_obj_is_valid(ctx->app_snapshot))
     {
-        lv_image_set_scale(ctx->app_snapshot, ctx->app_scale_start);
+        _transition_set_scale(ctx->app_snapshot, ctx->app_scale_start, ctx->direct_draw);
         lv_obj_set_style_translate_x(ctx->app_snapshot, ctx->app_tx_start, 0);
         lv_obj_set_style_translate_y(ctx->app_snapshot, ctx->app_ty_start, 0);
     }
@@ -1513,7 +1993,7 @@ static lv_obj_t *_app_list_create_icon_clone(lv_obj_t *focus_icon)
     eos_activity_t *icon_activity = eos_activity_from_widget(focus_icon);
     lv_obj_t *icon_parent = icon_activity ? eos_activity_get_snap_container(icon_activity) : NULL;
     if (!icon_parent)
-        icon_parent = eos_overlay_get_snapshot_layer();
+        icon_parent = eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT);
 
     /* Parent may have been just created; refresh its layout so global coords are valid */
     lv_obj_update_layout(icon_parent);
@@ -1550,6 +2030,151 @@ static lv_obj_t *_app_list_create_icon_clone(lv_obj_t *focus_icon)
     return icon_clone;
 }
 
+/* Direct-draw transition used on platforms where animation snapshots are
+ * disabled.  It keeps the same zoom/translate/cross-fade choreography as the
+ * snapshot transition, but transforms the real activity views instead of
+ * raster images. */
+static void _app_list_play_direct_transition_anim(eos_anim_group_t *group,
+                                                  eos_activity_t *from,
+                                                  eos_activity_t *to,
+                                                  bool opening)
+{
+    if (!(group && from && to))
+        return;
+
+    eos_activity_t *list_activity = opening ? from : to;
+    eos_activity_t *page_activity = opening ? to : from;
+    lv_obj_t *list_view = eos_activity_get_view(list_activity);
+    lv_obj_t *page_view = eos_activity_get_view(page_activity);
+    lv_obj_t *bubble_grid = _app_list_get_bubble_grid(list_activity);
+    /* The bubble grid is the visual app-list surface.  Transforming the
+     * whole activity view also includes headers, scroll/layout helpers and
+     * every attached widget; on U5 that makes the first transformed frame
+     * unnecessarily expensive. */
+    lv_obj_t *list_anim_obj = (bubble_grid && lv_obj_is_valid(bubble_grid)) ? bubble_grid : list_view;
+    lv_obj_t *focus_icon = NULL;
+
+    if (bubble_grid && _app_list_last_click_index >= 0)
+    {
+        focus_icon = eos_bubble_get_icon_obj(bubble_grid, (uint32_t)_app_list_last_click_index);
+    }
+
+    if (!(list_view && page_view && list_anim_obj && lv_obj_is_valid(list_view) && lv_obj_is_valid(page_view)
+          && lv_obj_is_valid(list_anim_obj)))
+    {
+        EOS_LOG_W("direct app-list transition skipped: invalid list/page views");
+        return;
+    }
+
+    lv_obj_update_layout(list_view);
+    lv_obj_update_layout(list_anim_obj);
+    lv_obj_update_layout(page_view);
+
+    bool focus_icon_was_hidden = focus_icon && lv_obj_has_flag(focus_icon, LV_OBJ_FLAG_HIDDEN);
+    if (focus_icon)
+    {
+        lv_area_t icon_area;
+        lv_obj_get_coords(focus_icon, &icon_area);
+        _app_list_record_icon_center_point(icon_area.x1 + lv_area_get_width(&icon_area) / 2,
+                                           icon_area.y1 + lv_area_get_height(&icon_area) / 2);
+    }
+
+    lv_obj_t *icon_clone = _app_list_create_icon_clone(focus_icon);
+    if (focus_icon && icon_clone)
+        lv_obj_add_flag(focus_icon, LV_OBJ_FLAG_HIDDEN);
+
+    /* Scale the list around the selected bubble and the page around its own
+     * center.  The existing transition uses the same global center point. */
+    int32_t list_pivot_x = lv_obj_get_width(list_anim_obj) / 2;
+    int32_t list_pivot_y = lv_obj_get_height(list_anim_obj) / 2;
+    if (_app_list_last_icon_center_valid)
+    {
+        lv_area_t list_area;
+        lv_obj_get_coords(list_anim_obj, &list_area);
+        list_pivot_x = _app_list_last_icon_center_x - list_area.x1;
+        list_pivot_y = _app_list_last_icon_center_y - list_area.y1;
+    }
+    lv_obj_set_style_transform_pivot_x(list_anim_obj, list_pivot_x, 0);
+    lv_obj_set_style_transform_pivot_y(list_anim_obj, list_pivot_y, 0);
+    lv_obj_set_style_transform_pivot_x(page_view, lv_obj_get_width(page_view) / 2, 0);
+    lv_obj_set_style_transform_pivot_y(page_view, lv_obj_get_height(page_view) / 2, 0);
+
+    if (opening)
+    {
+        lv_obj_remove_flag(page_view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(page_view);
+    }
+    else
+    {
+        lv_obj_remove_flag(list_view, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(list_view);
+        lv_obj_move_foreground(page_view);
+
+        /* The page view is the outgoing animation layer.  Its header is
+         * already attached to that view by the activity switch, so hide the
+         * real overlay here; the header, when enabled, is part of the page
+         * snapshot and will animate away with the app. */
+        eos_app_header_hide();
+    }
+
+    int32_t focus_translate_x = 0;
+    int32_t focus_translate_y = 0;
+    if (_app_list_last_icon_center_valid)
+    {
+        focus_translate_x = (EOS_DISPLAY_WIDTH / 2) - _app_list_last_icon_center_x;
+        focus_translate_y = (EOS_DISPLAY_HEIGHT / 2) - _app_list_last_icon_center_y;
+    }
+
+    _transition_anim_ctx_t *ctx = eos_malloc_zeroed(sizeof(_transition_anim_ctx_t));
+    if (!ctx)
+    {
+        if (icon_clone)
+            lv_obj_delete(icon_clone);
+        if (focus_icon && !focus_icon_was_hidden)
+            lv_obj_remove_flag(focus_icon, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
+    ctx->list_snapshot = list_anim_obj;
+    ctx->icon_clone = icon_clone;
+    ctx->app_snapshot = page_view;
+    ctx->obj_a = opening ? icon_clone : page_view;
+    ctx->obj_b = opening ? page_view : icon_clone;
+    ctx->opening = opening;
+    ctx->direct_draw = true;
+    ctx->group = group;
+    ctx->focus_icon = focus_icon;
+
+    ctx->list_scale_start = opening ? 256 : _APP_LIST_ANIM_FOCUS_SCALE;
+    ctx->list_scale_end = opening ? _APP_LIST_ANIM_FOCUS_SCALE : 256;
+    ctx->list_tx_start = opening ? 0 : focus_translate_x;
+    ctx->list_tx_end = opening ? focus_translate_x : 0;
+    ctx->list_ty_start = opening ? 0 : focus_translate_y;
+    ctx->list_ty_end = opening ? focus_translate_y : 0;
+
+    ctx->icon_scale_start = opening ? 256 : _APP_LIST_ANIM_FOCUS_SCALE;
+    ctx->icon_scale_end = opening ? _APP_LIST_ANIM_FOCUS_SCALE : 256;
+    ctx->icon_tx_start = opening ? 0 : focus_translate_x;
+    ctx->icon_tx_end = opening ? focus_translate_x : 0;
+    ctx->icon_ty_start = opening ? 0 : focus_translate_y;
+    ctx->icon_ty_end = opening ? focus_translate_y : 0;
+
+    ctx->app_scale_start = opening ? _APP_LIST_DIRECT_ANIM_MIN_SCALE : 256;
+    ctx->app_scale_end = opening ? 256 : _APP_LIST_DIRECT_ANIM_MIN_SCALE;
+    ctx->app_tx_start = opening ? -focus_translate_x : 0;
+    ctx->app_tx_end = opening ? 0 : -focus_translate_x;
+    ctx->app_ty_start = opening ? -focus_translate_y : 0;
+    ctx->app_ty_end = opening ? 0 : -focus_translate_y;
+
+    _transition_anim_start(ctx, _APP_LIST_ANIM_DURATION, 0);
+    EOS_LOG_I("Direct app-list transition started: opening=%d list=%p grid=%p page=%p icon=%p",
+              opening,
+              (void *)list_view,
+              (void *)list_anim_obj,
+              (void *)page_view,
+              (void *)icon_clone);
+}
+
 static void _app_list_play_transition_anim(eos_anim_group_t *group,
                                            eos_activity_t *from,
                                            eos_activity_t *to,
@@ -1560,6 +2185,11 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         return;
     }
 
+#if !EOS_CONFIG_ANIM_SNAPSHOT_ENABLED
+    _app_list_play_direct_transition_anim(group, from, to, opening);
+    return;
+#endif
+
     lv_obj_t *list_view = opening ? eos_activity_get_view(from) : eos_activity_get_view(to);
     lv_obj_t *bubble_grid = _app_list_get_bubble_grid(opening ? from : to);
     lv_obj_t *focus_icon = NULL;
@@ -1568,7 +2198,8 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         focus_icon = eos_bubble_get_icon_obj(bubble_grid, (uint32_t)_app_list_last_click_index);
     }
 
-    bool include_header_in_snapshot = opening;
+    eos_activity_t *snapshot_activity = opening ? to : from;
+    bool include_header_in_snapshot = snapshot_activity && eos_activity_is_app_header_visible(snapshot_activity);
 
     lv_obj_t *list_snapshot = NULL;
     bool focus_icon_hidden_flag = false;
@@ -1597,8 +2228,14 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
             EOS_LOG_E("CLOSE ANIM: app_snapshot FAILED from %p", from);
             return;
         }
-        EOS_LOG_E("CLOSE ANIM: app_snapshot CREATED from %p", from);
+        EOS_LOG_D("CLOSE ANIM: app_snapshot CREATED from %p", from);
         lv_obj_move_foreground(app_snapshot);
+
+        /* eos_activity_take_snapshot() temporarily restores the header's
+         * previous visible state after capturing it.  Keep only the captured
+         * header in the outgoing snapshot during the close animation; the
+         * live overlay must not remain fixed above it. */
+        eos_app_header_hide();
 
         if (list_view)
         {
@@ -1654,7 +2291,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         lv_draw_buf_t *stored = eos_activity_get_snap_buf(to);
         if (stored)
         {
-            app_snapshot = lv_image_create(eos_overlay_get_snapshot_layer());
+            app_snapshot = lv_image_create(eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
             lv_image_set_src(app_snapshot, stored);
             lv_obj_set_size(app_snapshot, stored->header.w, stored->header.h);
             /* Match the real view's position for correct pivot/translate math */
@@ -1684,7 +2321,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
                 }
                 return;
             }
-            EOS_LOG_E("OPEN ANIM: app_snapshot CREATED to %p", to);
+            EOS_LOG_D("OPEN ANIM: app_snapshot CREATED to %p", to);
         }
     }
 
@@ -1730,7 +2367,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         focus_translate_x = view_center_x - _app_list_last_icon_center_x;
         focus_translate_y = view_center_y - _app_list_last_icon_center_y;
     }
-    EOS_LOG_E("FOCUS: valid=%d last_x=%d last_y=%d view_center=(%d,%d) translate=(%d,%d)",
+    EOS_LOG_D("FOCUS: valid=%d last_x=%d last_y=%d view_center=(%d,%d) translate=(%d,%d)",
               _app_list_last_icon_center_valid,
               _app_list_last_icon_center_x,
               _app_list_last_icon_center_y,
@@ -1802,7 +2439,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
     /* Cleanup: when app_snapshot is deleted, also delete icon_clone */
     lv_obj_add_event_cb(app_snapshot, _app_list_cleanup_extra_cb, LV_EVENT_DELETE, icon_clone);
 
-    EOS_LOG_E("Transition ANIMS: group[%p] expected=%d opening=%d", group, group->expected, opening);
+    EOS_LOG_D("Transition ANIMS: group[%p] expected=%d opening=%d", group, group->expected, opening);
 }
 
 static void _app_list_on_resueme(eos_activity_t *a)
@@ -1861,6 +2498,139 @@ static void _register_anim_routes_once(void)
     _anim_routes_registered = true;
 }
 
+static lv_color_t _app_list_get_fallback_icon_color(uint32_t index)
+{
+    switch (index % 9U)
+    {
+        case 0:
+            return EOS_COLOR_RED;
+        case 1:
+            return EOS_COLOR_ORANGE;
+        case 2:
+            return EOS_COLOR_YELLOW;
+        case 3:
+            return EOS_COLOR_GREEN;
+        case 4:
+            return EOS_COLOR_MINT;
+        case 5:
+            return EOS_COLOR_TEAL_BLUE;
+        case 6:
+            return EOS_COLOR_BLUE;
+        case 7:
+            return EOS_COLOR_PURPLE;
+        default:
+            return EOS_COLOR_PINK;
+    }
+}
+
+static bool _app_list_icon_source_available(const char *icon_path)
+{
+    if (!icon_path || !eos_storage_is_file(icon_path))
+    {
+        return false;
+    }
+
+    lv_image_header_t header;
+    if (lv_image_decoder_get_info(icon_path, &header) != LV_RESULT_OK)
+    {
+        return false;
+    }
+
+    return header.w > 0 && header.h > 0;
+}
+
+static void _app_list_release_icon_paths(void)
+{
+    for (uint32_t i = 0; i < _app_list_icon_paths_count; ++i)
+    {
+        eos_free(_app_list_icon_paths[i]);
+    }
+
+    eos_free(_app_list_icon_paths);
+    _app_list_icon_paths = NULL;
+    _app_list_icon_paths_count = 0;
+}
+
+static bool _app_list_store_icon_path(uint32_t index, const char *icon_path)
+{
+    if (!icon_path)
+    {
+        return false;
+    }
+
+    char *path_copy = eos_strdup(icon_path);
+    if (!path_copy)
+    {
+        EOS_LOG_W("Unable to keep icon path for slot %" PRIu32, index);
+        return false;
+    }
+
+    if (index >= _app_list_icon_paths_count)
+    {
+        uint32_t old_count = _app_list_icon_paths_count;
+        uint32_t new_count;
+        if (index == UINT32_MAX || index + 1U > SIZE_MAX / sizeof(*_app_list_icon_paths))
+        {
+            eos_free(path_copy);
+            EOS_LOG_W("Icon path table size overflow for slot %" PRIu32, index);
+            return false;
+        }
+        new_count = index + 1U;
+        char **paths = eos_realloc(_app_list_icon_paths, new_count * sizeof(*paths));
+        if (!paths)
+        {
+            eos_free(path_copy);
+            EOS_LOG_W("Unable to grow icon path table for slot %" PRIu32, index);
+            return false;
+        }
+
+        _app_list_icon_paths = paths;
+        for (uint32_t i = old_count; i < new_count; ++i)
+        {
+            _app_list_icon_paths[i] = NULL;
+        }
+        _app_list_icon_paths_count = new_count;
+    }
+
+    eos_free(_app_list_icon_paths[index]);
+    _app_list_icon_paths[index] = path_copy;
+    return true;
+}
+
+static void _app_list_set_system_icon(lv_obj_t *bubble_grid, uint32_t index, const char *app_id, const char *icon_path)
+{
+    if (_app_list_icon_source_available(icon_path))
+    {
+        eos_bubble_set_icon_src(bubble_grid, index, icon_path);
+        eos_bubble_set_icon_color(bubble_grid, index, EOS_COLOR_ICON_BG);
+    }
+    else
+    {
+        eos_bubble_set_icon_src(bubble_grid, index, NULL);
+        eos_bubble_set_icon_color(bubble_grid, index, _app_list_get_fallback_icon_color(index));
+    }
+
+    eos_bubble_set_icon_user_data(bubble_grid, index, (void *)app_id);
+}
+
+static void _app_list_set_app_icon(lv_obj_t *bubble_grid, uint32_t index, const char *app_id, const char *icon_path)
+{
+    bool has_icon = _app_list_icon_source_available(icon_path) && _app_list_store_icon_path(index, icon_path);
+    if (has_icon)
+    {
+        eos_bubble_set_icon_src(bubble_grid, index, _app_list_icon_paths[index]);
+        eos_bubble_set_icon_color(bubble_grid, index, EOS_COLOR_ICON_BG);
+    }
+    else
+    {
+        /* A NULL source is a valid color-only bubble, not an empty slot. */
+        eos_bubble_set_icon_src(bubble_grid, index, NULL);
+        eos_bubble_set_icon_color(bubble_grid, index, _app_list_get_fallback_icon_color(index));
+    }
+
+    eos_bubble_set_icon_user_data(bubble_grid, index, (void *)app_id);
+}
+
 /* Refresh App List -------------------------------------------*/
 /**
  * @brief Refresh app list - using bubble_grid
@@ -1879,6 +2649,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
         eos_bubble_set_icon_src(bubble_grid, i, NULL);
         eos_bubble_set_icon_user_data(bubble_grid, i, NULL);
     }
+    _app_list_release_icon_paths();
 
     uint32_t icon_index = 0;
 
@@ -1901,8 +2672,10 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
                 {
                     if (strcmp(order_id, eos_sys_app_id_list[si]) == 0)
                     {
-                        eos_bubble_set_icon_src(bubble_grid, icon_index, eos_sys_app_icon_list[si]);
-                        eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)eos_sys_app_id_list[si]);
+                        _app_list_set_system_icon(bubble_grid,
+                                                  icon_index,
+                                                  eos_sys_app_id_list[si],
+                                                  eos_sys_app_icon_list[si]);
                         icon_index++;
                         is_sys = true;
                         break;
@@ -1920,12 +2693,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
 
                 char icon_path[EOS_FS_PATH_MAX];
                 snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME, app_id);
-                if (!eos_storage_is_file(icon_path))
-                {
-                    snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
-                }
-                eos_bubble_set_icon_src(bubble_grid, icon_index, icon_path);
-                eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)app_id);
+                _app_list_set_app_icon(bubble_grid, icon_index, app_id, icon_path);
                 icon_index++;
             }
         }
@@ -1947,8 +2715,10 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             {
                 if (strcmp(app_id, eos_sys_app_id_list[si]) == 0)
                 {
-                    eos_bubble_set_icon_src(bubble_grid, icon_index, eos_sys_app_icon_list[si]);
-                    eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)eos_sys_app_id_list[si]);
+                    _app_list_set_system_icon(bubble_grid,
+                                              icon_index,
+                                              eos_sys_app_id_list[si],
+                                              eos_sys_app_icon_list[si]);
                     icon_index++;
                     is_sys = true;
                     break;
@@ -1960,12 +2730,7 @@ static void _app_list_refresh(lv_obj_t *bubble_grid)
             // Non-system app
             char icon_path[EOS_FS_PATH_MAX];
             snprintf(icon_path, sizeof(icon_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_ICON_FILE_NAME, app_id);
-            if (!eos_storage_is_file(icon_path))
-            {
-                snprintf(icon_path, sizeof(icon_path), "%s", EOS_IMG_APP);
-            }
-            eos_bubble_set_icon_src(bubble_grid, icon_index, icon_path);
-            eos_bubble_set_icon_user_data(bubble_grid, icon_index, (void *)app_id);
+            _app_list_set_app_icon(bubble_grid, icon_index, app_id, icon_path);
             icon_index++;
         }
     }
@@ -2010,11 +2775,19 @@ static void _container_delete_cb(lv_event_t *e)
     EOS_CHECK_PTR_RETURN(bubble_grid);
     eos_event_unsubscribe_with_obj(EOS_EVENT_APP_INSTALLED, _app_installed_cb, bubble_grid);
     eos_event_unsubscribe_with_obj(EOS_EVENT_APP_UNINSTALLED, _app_uninstalled_cb, bubble_grid);
+
+    /* The grid stores image source pointers until its child images are deleted. */
+    for (uint32_t i = 0; i < _app_list_icon_count; ++i)
+    {
+        eos_bubble_set_icon_src(bubble_grid, i, NULL);
+    }
+    _app_list_release_icon_paths();
 }
 
 void eos_app_list_enter(void)
 {
     _register_anim_routes_once();
+    _app_list_release_icon_paths();
     _app_list_icon_count = 0;
 
     eos_activity_t *a = eos_activity_create(&app_list_lifecycle);

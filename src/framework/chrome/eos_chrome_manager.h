@@ -18,6 +18,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "lvgl.h"
+#include "eos_overlay_layer.h"
 
 /* Public typedefs --------------------------------------------*/
 
@@ -25,18 +26,18 @@ extern "C" {
  * @brief Overlay descriptor for registration with the chrome manager
  *
  * Each overlay provides lifecycle callbacks and optional query interfaces.
- * The chrome manager uses these to provide unified Z-order management,
- * crown scrollable target resolution, and focus handling.
+ * Visual z-order is fixed by layer_slot; the manager handles only lifecycle,
+ * crown scrollable target resolution, and logical focus.
  */
 typedef struct eos_chrome_overlay_t
 {
+    eos_top_layer_slot_t layer_slot; /**< Fixed visual layer slot */
     void (*pull_back)(void); /**< Pull back (close with animation) this overlay */
     void (*hide)(void); /**< Hide this overlay immediately (no animation) */
     void (*on_focus)(void); /**< Called when overlay becomes top of stack */
 
     bool (*is_open)(void); /**< Check if this overlay is currently open (optional, can be NULL) */
     lv_obj_t *(*get_scrollable)(void); /**< Get the scrollable object for crown input (optional, can be NULL) */
-    lv_obj_t *(*get_foreground_obj)(void); /**< Get the object to bring to front for Z-order (optional, can be NULL) */
     const char *name; /**< Debug name for logging (optional, can be NULL) */
 } eos_chrome_overlay_t;
 
@@ -112,12 +113,12 @@ void eos_chrome_manager_remove_overlay(const eos_chrome_overlay_t *overlay);
 void eos_chrome_manager_handle_crown_click(void);
 
 /**
- * @brief Handle a crown double-click event
+ * @brief Handle a crown long-press event
  *
  * Opens the Recent Apps page. If currently in a script app, suspends it first
  * so it appears in the recents list.
  */
-void eos_chrome_manager_handle_crown_double_click(void);
+void eos_chrome_manager_handle_crown_long_press(void);
 
 /**
  * @brief Handle activity switch (called during activity transitions)

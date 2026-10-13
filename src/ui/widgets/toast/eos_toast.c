@@ -16,6 +16,7 @@
 #include "eos_anim.h"
 #include "eos_cqueue.h"
 #include "eos_widget_data.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define _TOAST_PAD_ALL 12
@@ -110,7 +111,7 @@ static void _play_move_anim(lv_obj_t *toast)
 
 static lv_obj_t *_toast_create_container(void)
 {
-    lv_obj_t *toast = lv_button_create(lv_layer_sys());
+    lv_obj_t *toast = lv_button_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_TOAST));
     lv_obj_set_size(toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_color(toast, EOS_COLOR_DARK_GREY_2, 0);
     lv_obj_set_style_bg_opa(toast, LV_OPA_COVER, 0);

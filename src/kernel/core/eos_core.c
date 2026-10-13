@@ -41,6 +41,7 @@
 #include "eos_service_sensor.h"
 #include "eos_service_cache.h"
 #include "eos_dispatcher.h"
+#include "eos_esh_service.h"
 #include "eos_anim.h"
 #include "eos_control_center.h"
 #include "eos_recent_apps.h"
@@ -51,11 +52,11 @@
 #include "eos_service_battery.h"
 #include "eos_developer_options.h"
 #include "eos_service_pm.h"
-#include "eos_dfw.h"
 #include "eos_app_header.h"
 #include "eos_toast.h"
 #include "eos_service_haptic.h"
 #include "eos_crown.h"
+#include "eos_touch.h"
 #include "eos_service_permission.h"
 #include "eos_overlay_layer.h"
 #include "eos_icon.h"
@@ -150,7 +151,7 @@ static lv_indev_t *_get_key_indev()
 void _sys_init_err_handler(const char *err_msg)
 {
     EOS_LOG_E("System initialization failed: %s", err_msg);
-    lv_obj_t *list = eos_std_info_create(lv_layer_sys(),
+    lv_obj_t *list = eos_std_info_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_ERROR),
                                          EOS_COLOR_RED,
                                          RI_BUG_LINE,
                                          eos_lang_get_text(STR_ID_SYS_INIT_FAILED),
@@ -208,11 +209,13 @@ void eos_init(void)
     /* System components initialization ---------------------------*/
     eos_service_storage_init();
     eos_logo_play(true);
+    eos_overlay_layer_init();
     eos_lang_init();
     eos_dispatcher_init();
     eos_toast_init();
     eos_service_haptic_init();
     eos_crown_init();
+    eos_touch_init();
     script_engine_init();
     spm_init();
     eos_service_config_init();
@@ -225,7 +228,6 @@ void eos_init(void)
     eos_theme_set(lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), default_font);
     eos_app_init();
     eos_watchface_init();
-    eos_overlay_layer_init();
     eos_app_header_init();
     eos_msg_list_init();
     eos_control_center_init();
@@ -263,6 +265,7 @@ uint32_t eos_main_loop(void)
         return 0;
     }
     eos_dispatch_tick();
+    eos_esh_service_poll();
     uint32_t d = lv_timer_handler();
 
     eos_developer_options_update();

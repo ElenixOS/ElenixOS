@@ -26,6 +26,8 @@ extern "C" {
 #define EOS_APP_SCRIPT_ENTRY_FILE_NAME "main.js"
 /* Public typedefs --------------------------------------------*/
 
+struct eos_pkg;
+
 /**
  * @brief Script error handler configuration
  */
@@ -83,16 +85,23 @@ const char *eos_app_list_get_id(size_t index);
 bool eos_app_list_contains(const char *app_id);
 /**
  * @brief Get existing ID from app list that matches input string (avoid duplicate memory allocation)
- * @param id Original ID to find (e.g., header.pkg_id)
+ * @param id Original ID to find (the ID declared by manifest.json)
  * @return Existing string pointer in the list (lifecycle managed by the list), returns NULL if not found
  */
 const char *eos_app_list_get_existing_id(const char *id);
 /**
  * @brief Install app
- * @param eapk_path eapk package path
+ * @param pkg_path EPK package path
  * @return eos_result_t Installation result
  */
-eos_result_t eos_app_install(const char *eapk_path);
+eos_result_t eos_app_install(const char *pkg_path);
+
+/**
+ * @brief Install an already opened Application package
+ * @param package Open EPK package context
+ * @return eos_result_t Installation result
+ */
+eos_result_t eos_app_install_package(struct eos_pkg *package);
 /**
  * @brief Uninstall app
  * @param app_id App id

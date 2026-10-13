@@ -44,7 +44,7 @@ static bool _stack_expand(eos_stack_t *stack)
 
     eos_free(stack->buffer);
     stack->buffer = new_buffer;
-    EOS_LOG_I("stack expanded: %zu -> %zu", stack->capacity, new_capacity);
+    EOS_LOG_D("stack expanded: %zu -> %zu", stack->capacity, new_capacity);
     stack->capacity = new_capacity;
     return true;
 }
@@ -72,7 +72,7 @@ static bool _stack_shrink(eos_stack_t *stack)
 
     eos_free(stack->buffer);
     stack->buffer = new_buffer;
-    EOS_LOG_I("stack shrinked: %zu -> %zu", stack->capacity, new_capacity);
+    EOS_LOG_D("stack shrinked: %zu -> %zu", stack->capacity, new_capacity);
     stack->capacity = new_capacity;
     return true;
 }
@@ -118,7 +118,7 @@ bool eos_stack_push(eos_stack_t *stack, void *data)
     }
 
     stack->buffer[stack->size++] = data;
-    EOS_LOG_I("Push data[%p]", data);
+    EOS_LOG_D("Push data[%p]", data);
     return true;
 }
 
@@ -137,7 +137,7 @@ void *eos_stack_pop(eos_stack_t *stack)
         _stack_shrink(stack);
 #endif
 
-    EOS_LOG_I("Pop data[%p]", data);
+    EOS_LOG_D("Pop data[%p]", data);
     return data;
 }
 

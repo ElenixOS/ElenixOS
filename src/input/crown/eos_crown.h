@@ -51,6 +51,15 @@ void eos_crown_button_report(eos_button_state_t state);
  */
 void eos_crown_encoder_report(eos_crown_encoder_diff_t diff);
 /**
+ * @brief Report a non-touch pixel-level encoder scroll delta
+ * @param delta Scroll delta in display pixels
+ *
+ * This path keeps Crown scroll feedback, including haptic ticks and the
+ * focused scrollbar color, while allowing continuous input sources to avoid
+ * restarting the detent animation for every sample.
+ */
+void eos_crown_encoder_scroll_report(int32_t delta);
+/**
  * @brief Initialize
  */
 void eos_crown_init(void);

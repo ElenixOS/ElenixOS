@@ -15,6 +15,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include "eos_core.h"
+#include "eos_dump.h"
 #include "eos_fs_port.h"
 #include "eos_port_critical.h"
 
@@ -80,6 +81,12 @@ void eos_locate_phone(void);
  *       The OS uses this value for LRU eviction decisions.
  */
 EOS_WEAK size_t eos_port_get_free_mem(void);
+
+/**
+ * @brief Collect platform-specific register, stack, and fault information
+ * @param context Output dump context to fill without dynamic allocation
+ */
+EOS_WEAK void eos_port_dump_capture(eos_dump_context_t *context);
 
 #ifdef __cplusplus
 }

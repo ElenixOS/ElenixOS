@@ -11,9 +11,11 @@
 #define EOS_LOG_DISABLE
 #define EOS_LOG_TAG "ThemeSystem"
 #include "eos_log.h"
+#include "eos_mem.h"
 #include "lvgl_private.h"
 #include "eos_font.h"
 #include "eos_crown.h"
+#include "eos_overlay_layer.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBOUNCE_PERIOD 200
 /* Text -------------------------------------------------------*/
@@ -45,23 +47,83 @@ static lv_style_t style_slider_indicator;
 static lv_style_t style_slider_knob;
 static lv_style_t style_slider_pressed_color;
 
-static lv_font_t *global_font = NULL;
 /* Function Implementations -----------------------------------*/
 
 /* Debounce ---------------------------------------------------*/
+typedef struct
+{
+    lv_obj_t *btn;
+    lv_timer_t *timer;
+} eos_theme_debounce_ctx_t;
+
+static void _debounce_obj_delete_cb(lv_event_t *e)
+{
+    eos_theme_debounce_ctx_t *ctx = lv_event_get_user_data(e);
+    if (!ctx)
+        return;
+
+    /* LV_EVENT_DELETE is delivered before LVGL frees the object.  Detach the
+     * timer's raw user_data and delete the timer while both sides are still
+     * owned by this debounce context. */
+    ctx->btn = NULL;
+    if (ctx->timer)
+    {
+        lv_timer_set_user_data(ctx->timer, NULL);
+        lv_timer_del(ctx->timer);
+        ctx->timer = NULL;
+    }
+    eos_free(ctx);
+}
+
 static void _debounce_timer_cb(lv_timer_t *t)
 {
-    lv_obj_t *btn = lv_timer_get_user_data(t);
-    if (btn && lv_obj_is_valid(btn) && lv_obj_has_class(btn, &lv_obj_class))
-        lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+    eos_theme_debounce_ctx_t *ctx = lv_timer_get_user_data(t);
+    if (!ctx)
+        return;
+
+    if (ctx->btn)
+    {
+        lv_obj_add_flag(ctx->btn, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_event_cb(ctx->btn, _debounce_obj_delete_cb);
+        ctx->btn = NULL;
+    }
+
+    ctx->timer = NULL;
+    lv_timer_set_user_data(t, NULL);
+    eos_free(ctx);
 }
 
 static void _object_clicked_cb(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target(e);
+    eos_theme_debounce_ctx_t *ctx = eos_malloc_zeroed(sizeof(*ctx));
+    if (!ctx)
+    {
+        /* A failed debounce allocation must not leave the button disabled. */
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+        return;
+    }
+
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_CLICKABLE);
-    lv_timer_t *t = lv_timer_create(_debounce_timer_cb, _DEBOUNCE_PERIOD, btn);
-    lv_timer_set_repeat_count(t, 1);
+    ctx->btn = btn;
+    ctx->timer = lv_timer_create(_debounce_timer_cb, _DEBOUNCE_PERIOD, ctx);
+    if (!ctx->timer)
+    {
+        eos_free(ctx);
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+        return;
+    }
+
+    if (!lv_obj_add_event_cb(btn, _debounce_obj_delete_cb, LV_EVENT_DELETE, ctx))
+    {
+        lv_timer_set_user_data(ctx->timer, NULL);
+        lv_timer_del(ctx->timer);
+        eos_free(ctx);
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+        return;
+    }
+
+    lv_timer_set_repeat_count(ctx->timer, 1);
 }
 /* Initialize styles ------------------------------------------*/
 
@@ -87,7 +149,6 @@ void _init_style_label(void)
 {
     lv_style_init(&style_label);
     lv_style_set_text_color(&style_label, TEXT_COLOR);
-    lv_style_set_text_font(&style_label, global_font);
 }
 
 void _init_style_switch(void)
@@ -255,8 +316,6 @@ lv_style_t *eos_theme_get_label_style(void)
 
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font_t *font)
 {
-    global_font = font;
-
     _init_style_button();
     _init_style_view();
     _init_style_label();
@@ -274,4 +333,5 @@ void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font
     lv_theme_set_apply_cb(&th_new, _theme_apply_cb);
 
     lv_display_set_theme(lv_display_get_default(), &th_new);
+    eos_overlay_layer_set_default_font(font);
 }

@@ -46,7 +46,7 @@ eos_cqueue_t *eos_cqueue_create(size_t init_capacity)
     cq->size = 0;
     cq->capacity = init_capacity;
     cq->min_capacity = init_capacity;
-    EOS_LOG_I("cq created");
+    EOS_LOG_D("cq created");
     return cq;
 }
 
@@ -63,7 +63,7 @@ static bool _cqueue_expand(eos_cqueue_t *cq)
 
     eos_free(cq->buffer);
     cq->buffer = new_buffer;
-    EOS_LOG_I("cq expanded: %d -> %d", cq->capacity, new_capacity);
+    EOS_LOG_D("cq expanded: %d -> %d", cq->capacity, new_capacity);
     cq->capacity = new_capacity;
     cq->head = 0;
     cq->tail = cq->size;
@@ -91,7 +91,7 @@ static bool _cqueue_shrink(eos_cqueue_t *cq)
     eos_free(cq->buffer);
 
     cq->buffer = new_buf;
-    EOS_LOG_I("cq shrinked: %d -> %d", cq->capacity, new_capacity);
+    EOS_LOG_D("cq shrinked: %d -> %d", cq->capacity, new_capacity);
     cq->capacity = new_capacity;
     cq->head = 0;
     cq->tail = cq->size;

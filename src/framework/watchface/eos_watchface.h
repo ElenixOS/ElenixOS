@@ -29,6 +29,8 @@ extern "C" {
 #define EOS_WATCHFACE_ID_LEN_MAX 256 /*< Watchface ID maximum length */
 /* Public typedefs --------------------------------------------*/
 
+struct eos_pkg;
+
 /**
  * @brief Watchface type enumeration
  */
@@ -87,10 +89,17 @@ const char *eos_watchface_list_get_id(size_t index);
 bool eos_watchface_list_contains(const char *watchface_id);
 /**
  * @brief Install watchface
- * @param eapk_path eapk package path
+ * @param pkg_path EPK package path
  * @return eos_result_t Installation result
  */
-eos_result_t eos_watchface_install(const char *eapk_path);
+eos_result_t eos_watchface_install(const char *pkg_path);
+
+/**
+ * @brief Install an already opened Watch Face package
+ * @param package Open EPK package context
+ * @return eos_result_t Installation result
+ */
+eos_result_t eos_watchface_install_package(struct eos_pkg *package);
 /**
  * @brief Uninstall watchface
  * @param watchface_id Watchface id
@@ -113,6 +122,12 @@ eos_activity_t *eos_watchface_get_activity(void);
  * @note This function should be called when returning to root activity (e.g., in on_resume)
  */
 void eos_watchface_check_and_reload(void);
+
+/**
+ * @brief Recreate the current watchface Activity after a script engine reset
+ * @return EOS_OK when the current watchface is recreated
+ */
+eos_result_t eos_watchface_reload_after_engine_reset(void);
 
 /**
  * @brief Switch to a specific watchface by ID

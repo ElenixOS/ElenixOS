@@ -14,6 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "jerryscript.h"
+#include "lvgl.h"
 #include "sni_types.h"
 /* Public macros ----------------------------------------------*/
 
@@ -38,7 +39,7 @@ extern "C" {
  * @return const char* C string pointer
  * @note Caller must use `eos_free` to free the returned string memory
  */
-const char *sni_tb_js2c_string(jerry_value_t js_val);
+char *sni_tb_js2c_string(jerry_value_t js_val);
 
 /**
  * @brief Convert JerryScript value to C value or value object
@@ -120,6 +121,28 @@ void sni_tb_link_sub_resource(void *parent_ptr, void *sub_ptr, sni_type_t sub_ty
  */
 void sni_tb_unlink_sub_resource(void *sub_ptr, sni_type_t sub_type);
 
+/**
+ * @brief Remove an explicitly destroyed Tree-Dependent handle from SNI.
+ * @param ctx Owning Realm context
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource(struct sni_context *ctx, void *sub_ptr, sni_type_t sub_type);
+
+/**
+ * @brief Remove a Tree-Dependent resource from the current Realm context.
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type);
+
+/**
+ * @brief Remove a Tree-Dependent resource from the current Realm context.
+ * @param sub_ptr Native child pointer, used only as an identity key
+ * @param sub_type SNI type ID for the child resource
+ */
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type);
+
 void sni_tb_init(void);
 
 /**
@@ -164,7 +187,6 @@ bool sni_tb_js2c_parent(jerry_value_t val, void **out);
  *
  * @param e  LVGL event (code == LV_EVENT_DELETE)
  */
-typedef struct _lv_event_t lv_event_t;
 void sni_obj_deleted_cb(lv_event_t *e);
 
 #ifdef __cplusplus

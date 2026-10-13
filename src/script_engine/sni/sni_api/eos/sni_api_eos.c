@@ -7,6 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #include "sni_type_bridge.h"
 #include "sni_types.h"
 #include "sni_context.h"
+#include "sni_callback_runtime.h"
 #include "sni_api_export.h"
 #include "eos_log.h"
 #include "eos_mem.h"
@@ -26,8 +28,8 @@
 #include "eos_watchface.h"
 #include "eos_service_storage.h"
 #include "eos_app_header.h"
-#include "eos_ww_clock_hand.h"
 #include "sni_api_eos_ww.h"
+#include "sni_api_eos_metric.h"
 #include "sni_api_eos_permission.h"
 #include "eos_service_sensor.h"
 /* Macros and Definitions -------------------------------------*/
@@ -35,6 +37,33 @@
 #define CONSOLE_LOG_TAG script_engine_get_current_script_id()
 /* Variables --------------------------------------------------*/
 static jerry_value_t eos_api_obj;
+
+static bool _sni_api_eos_number_to_u32(jerry_value_t value, uint32_t *out)
+{
+    double number;
+
+    if (!out || !jerry_value_is_number(value))
+        return false;
+
+    number = jerry_value_as_number(value);
+    if (!isfinite(number) || number < 0.0 || number > (double)UINT32_MAX || floor(number) != number)
+        return false;
+
+    *out = (uint32_t)number;
+    return true;
+}
+
+static bool _sni_api_eos_number_to_sensor_type(jerry_value_t value, eos_sensor_type_t *out)
+{
+    uint32_t type;
+
+    if (!out || !_sni_api_eos_number_to_u32(value, &type) || type <= (uint32_t)EOS_SENSOR_TYPE_UNKNOWN
+        || type >= (uint32_t)EOS_SENSOR_TYPE_MAX)
+        return false;
+
+    *out = (eos_sensor_type_t)type;
+    return true;
+}
 
 typedef enum
 {
@@ -669,150 +698,6 @@ jerry_value_t sni_api_eos_app_header_show(const jerry_call_info_t *call_info_p,
     return jerry_undefined();
 }
 
-jerry_value_t sni_api_eos_clock_hand_create(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    char *src;
-    int32_t type;
-    int32_t cx;
-    int32_t cy;
-    lv_obj_t *ret_obj;
-
-    (void)call_info_p;
-
-    if (args_count != 5)
-    {
-        return sni_api_throw_error("Usage: clockHand.create(obj, src, type, cx, cy)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj))
-    {
-        return sni_api_throw_error("Invalid object argument");
-    }
-
-    if (!jerry_value_is_string(args_p[1]) || !jerry_value_is_number(args_p[2]) || !jerry_value_is_number(args_p[3])
-        || !jerry_value_is_number(args_p[4]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    src = sni_api_eos_get_assets_file_str(args_p[1]);
-    if (!src)
-    {
-        return sni_api_throw_error("Invalid image source");
-    }
-
-    type = (int32_t)jerry_value_as_number(args_p[2]);
-    cx = (int32_t)jerry_value_as_number(args_p[3]);
-    cy = (int32_t)jerry_value_as_number(args_p[4]);
-
-    ret_obj = eos_clock_hand_create(obj, src, (eos_clock_hand_type_t)type, cx, cy);
-    eos_free(src);
-    return sni_tb_c2js(&ret_obj, SNI_H_LV_OBJ);
-}
-
-jerry_value_t sni_api_eos_clock_hand_center(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-
-    (void)call_info_p;
-
-    if (args_count != 1)
-    {
-        return sni_api_throw_error("Usage: clockHand.center(obj)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj))
-    {
-        return sni_api_throw_error("Invalid object argument");
-    }
-
-    eos_clock_hand_center(obj);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_place_pivot(const jerry_call_info_t *call_info_p,
-                                                 const jerry_value_t args_p[],
-                                                 const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t x;
-    int32_t y;
-
-    (void)call_info_p;
-
-    if (args_count != 3)
-    {
-        return sni_api_throw_error("Usage: clockHand.placePivot(obj, x, y)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1])
-        || !jerry_value_is_number(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    x = (int32_t)jerry_value_as_number(args_p[1]);
-    y = (int32_t)jerry_value_as_number(args_p[2]);
-    eos_clock_hand_place_pivot(obj, x, y);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_attach(const jerry_call_info_t *call_info_p,
-                                            const jerry_value_t args_p[],
-                                            const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t type;
-
-    (void)call_info_p;
-
-    if (args_count != 2)
-    {
-        return sni_api_throw_error("Usage: clockHand.attach(obj, type)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    type = (int32_t)jerry_value_as_number(args_p[1]);
-    eos_clock_hand_attach(obj, (eos_clock_hand_type_t)type);
-    return jerry_undefined();
-}
-
-jerry_value_t sni_api_eos_clock_hand_center_style(const jerry_call_info_t *call_info_p,
-                                                  const jerry_value_t args_p[],
-                                                  const jerry_length_t args_count)
-{
-    lv_obj_t *obj;
-    int32_t px;
-    int32_t py;
-
-    (void)call_info_p;
-
-    if (args_count != 3)
-    {
-        return sni_api_throw_error("Usage: clockHand.centerStyle(obj, pivotX, pivotY)");
-    }
-
-    if (!sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &obj) || !jerry_value_is_number(args_p[1])
-        || !jerry_value_is_number(args_p[2]))
-    {
-        return sni_api_throw_error("Invalid argument type");
-    }
-
-    px = (int32_t)jerry_value_as_number(args_p[1]);
-    py = (int32_t)jerry_value_as_number(args_p[2]);
-    eos_clock_hand_center_style(obj, px, py);
-    return jerry_undefined();
-}
-
 jerry_value_t sni_api_eos_activity_create(const jerry_call_info_t *call_info_p,
                                           const jerry_value_t args_p[],
                                           const jerry_length_t args_count)
@@ -853,19 +738,22 @@ jerry_value_t sni_api_eos_activity_destroy(const jerry_call_info_t *call_info_p,
         return sni_api_throw_error("Invalid activity argument");
     }
 
-    /* Capture view before destroy so we can clean up its EOS_VIEW
-     * managed-resource entry.  eos_activity_destroy calls lv_obj_delete
-     * on the view (which removes it from the LVGL tree) but the SNI
-     * context still holds a dangling reference until the sweep phase.
-     * Remove it now to prevent use-after-free during the sweep. */
+    /* AppRoot destruction is an App lifecycle operation, not a generic
+     * Activity operation.  Calling it from the program's own JS callback
+     * would enter on_destroy while SPM is dispatching the callback; the
+     * resulting stop request cannot complete synchronously and would leave a
+     * live program without its root Activity.  Use activity.back() for normal
+     * navigation, or the host App lifecycle API for close/terminate. */
+    if (eos_activity_get_app_id(activity) && eos_activity_get_app_root(activity) == activity)
+    {
+        return sni_api_throw_error("Cannot destroy AppRoot directly; use activity.back()");
+    }
+
+    /* Remove both managed-resource entries before native teardown. The
+     * Activity's lifecycle callback may synchronously stop the SPM program;
+     * leaving either node linked until after eos_activity_destroy() lets the
+     * nested SNI sweep see a pointer that is already being freed. */
     lv_obj_t *view = eos_activity_get_view(activity);
-
-    eos_activity_destroy(activity);
-
-    /* Remove from the managed-resource list so the context sweep does not
-       encounter a dangling pointer.  This is safe even during sweep because:
-       if sweep already passed this node it's already freed; if sweep hasn't
-       reached it yet, remove_resource takes it out of the list first. */
     sni_context_t *ctx = sni_get_current_context();
     if (ctx)
     {
@@ -875,6 +763,8 @@ jerry_value_t sni_api_eos_activity_destroy(const jerry_call_info_t *call_info_p,
         }
         sni_context_remove_resource(ctx, activity, SNI_H_EOS_ACTIVITY);
     }
+
+    eos_activity_destroy(activity);
 
     return jerry_undefined();
 }
@@ -997,10 +887,6 @@ jerry_value_t sni_api_eos_activity_set_view(const jerry_call_info_t *call_info_p
      * after eos_activity_set_view deletes it via lv_obj_delete. */
     lv_obj_t *old_view = eos_activity_get_view(activity);
 
-    eos_activity_set_view(activity, view);
-
-    /* If setView deleted a previous auto-created view, remove its
-     * EOS_VIEW managed-resource entry from the SNI context. */
     if (old_view && old_view != view)
     {
         sni_context_t *ctx = sni_get_current_context();
@@ -1009,6 +895,7 @@ jerry_value_t sni_api_eos_activity_set_view(const jerry_call_info_t *call_info_p
             sni_context_remove_resource(ctx, old_view, SNI_H_EOS_VIEW);
         }
     }
+    eos_activity_set_view(activity, view);
     return jerry_undefined();
 }
 
@@ -1158,6 +1045,115 @@ jerry_value_t sni_api_eos_activity_is_app_header_visible(const jerry_call_info_t
     return jerry_boolean(visible);
 }
 
+jerry_value_t sni_api_eos_activity_set_app_header_style(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+    uint32_t style;
+
+    (void)call_info_p;
+
+    if (args_count != 2 || !_sni_api_eos_number_to_u32(args_p[1], &style)
+        || style > (uint32_t)EOS_APP_HEADER_STYLE_MINI)
+    {
+        return sni_api_throw_error("Usage: activity.setAppHeaderStyle(activity, style)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    eos_activity_set_app_header_style(activity, (eos_app_header_style_t)style);
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_eos_activity_get_app_header_style(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.getAppHeaderStyle(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_number((double)eos_activity_get_app_header_style(activity));
+}
+
+jerry_value_t sni_api_eos_activity_set_app_header_back_button_visible(const jerry_call_info_t *call_info_p,
+                                                                      const jerry_value_t args_p[],
+                                                                      const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 2 || !jerry_value_is_boolean(args_p[1]))
+    {
+        return sni_api_throw_error("Usage: activity.setAppHeaderBackButtonVisible(activity, visible)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    eos_activity_set_app_header_back_button_visible(activity, jerry_value_is_true(args_p[1]));
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_eos_activity_is_app_header_back_button_visible(const jerry_call_info_t *call_info_p,
+                                                                     const jerry_value_t args_p[],
+                                                                     const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.isAppHeaderBackButtonVisible(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_boolean(eos_activity_is_app_header_back_button_visible(activity));
+}
+
+jerry_value_t sni_api_eos_activity_get_app_header_height(const jerry_call_info_t *call_info_p,
+                                                         const jerry_value_t args_p[],
+                                                         const jerry_length_t args_count)
+{
+    eos_activity_t *activity;
+
+    (void)call_info_p;
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Usage: activity.getAppHeaderHeight(activity)");
+    }
+
+    if (!sni_tb_js2c(args_p[0], SNI_H_EOS_ACTIVITY, &activity))
+    {
+        return sni_api_throw_error("Invalid activity argument");
+    }
+
+    return jerry_number((double)eos_activity_get_app_header_height(activity));
+}
+
 jerry_value_t sni_api_eos_activity_enter(const jerry_call_info_t *call_info_p,
                                          const jerry_value_t args_p[],
                                          const jerry_length_t args_count)
@@ -1260,29 +1256,39 @@ jerry_value_t sni_api_eos_console_debug(const jerry_call_info_t *call_info_p,
     return sni_api_eos_console_write(args_p, args_count, EOS_CONSOLE_LEVEL_DEBUG);
 }
 
+/**
+ * @brief Expose one canonical Sensor sample to JavaScript
+ *
+ * The native service stores fixed-point values documented in
+ * eos_dev_sensor.h.  This binding performs only the fixed, platform-neutral
+ * language conversion below:
+ *
+ *   ACCE/GYRO/TEMP/BARO.temperature/HUMIDITY: milli-unit / 1000
+ *   MAG: nT / 1000 -> uT
+ *   BARO.pressure, LIGHT, PROXIMITY, HR, SPO2, STEP: unchanged
+ *   PPG: red/ir ADC counts unchanged, unit="adc"
+ *   ECG/CAP: source counts unchanged; no physical conversion is defined
+ *
+ * A missing latest sample is returned as JavaScript null, preserving the
+ * existing binding convention.  A real zero-valued sample is still an object.
+ */
 jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_p,
                                              const jerry_value_t args_p[],
                                              const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     eos_sensor_raw_data_t raw;
     eos_result_t result;
     jerry_value_t obj;
 
     (void)call_info_p;
 
-    if (args_count != 1 || !jerry_value_is_number(args_p[0]))
+    if (args_count != 1 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type))
     {
         return sni_api_throw_error("Usage: sensor.readLatest(type)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
-    {
-        return sni_api_throw_error("Invalid sensor type");
-    }
-
-    result = eos_sensor_read_latest((eos_sensor_type_t)type, &raw);
+    result = eos_sensor_read_latest(type, &raw);
     if (result != EOS_OK)
     {
         return jerry_null();
@@ -1294,19 +1300,22 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
     switch ((eos_sensor_type_t)type)
     {
         case EOS_SENSOR_TYPE_ACCE:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.acce.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.acce.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.acce.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.acce.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.acce.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.acce.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "m/s2");
             break;
         case EOS_SENSOR_TYPE_GYRO:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.gyro.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.gyro.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.gyro.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.gyro.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.gyro.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.gyro.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "deg/s");
             break;
         case EOS_SENSOR_TYPE_MAG:
-            script_engine_set_prop_number(obj, "x", (double)raw.data.mag.x);
-            script_engine_set_prop_number(obj, "y", (double)raw.data.mag.y);
-            script_engine_set_prop_number(obj, "z", (double)raw.data.mag.z);
+            script_engine_set_prop_number(obj, "x", (double)raw.data.mag.x / 1000.0);
+            script_engine_set_prop_number(obj, "y", (double)raw.data.mag.y / 1000.0);
+            script_engine_set_prop_number(obj, "z", (double)raw.data.mag.z / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "uT");
             break;
         case EOS_SENSOR_TYPE_HR:
             script_engine_set_prop_number(obj, "heart_rate", (double)raw.data.hr.heart_rate);
@@ -1318,10 +1327,17 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
             script_engine_set_prop_number(obj, "lux", (double)raw.data.light.lux);
             break;
         case EOS_SENSOR_TYPE_TEMP:
-            script_engine_set_prop_number(obj, "temp", (double)raw.data.temp.temp);
+            script_engine_set_prop_number(obj, "temp", (double)raw.data.temp.temp / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "degC");
             break;
         case EOS_SENSOR_TYPE_BARO:
             script_engine_set_prop_number(obj, "pressure", (double)raw.data.baro.pressure);
+            script_engine_set_prop_number(obj, "temperature", (double)raw.data.baro.temperature / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "Pa");
+            break;
+        case EOS_SENSOR_TYPE_HUMIDITY:
+            script_engine_set_prop_number(obj, "humidity", (double)raw.data.humidity.humidity / 1000.0);
+            script_engine_set_prop_string(obj, "unit", "%RH");
             break;
         case EOS_SENSOR_TYPE_STEP:
             script_engine_set_prop_number(obj, "steps", (double)raw.data.step.steps);
@@ -1335,6 +1351,11 @@ jerry_value_t sni_api_eos_sensor_read_latest(const jerry_call_info_t *call_info_
         case EOS_SENSOR_TYPE_CAP:
             script_engine_set_prop_number(obj, "cap", (double)raw.data.cap.cap);
             break;
+        case EOS_SENSOR_TYPE_PPG:
+            script_engine_set_prop_number(obj, "red", (double)raw.data.ppg.red);
+            script_engine_set_prop_number(obj, "ir", (double)raw.data.ppg.ir);
+            script_engine_set_prop_string(obj, "unit", "adc");
+            break;
         default:
             jerry_value_free(obj);
             return jerry_null();
@@ -1347,25 +1368,19 @@ jerry_value_t sni_api_eos_sensor_set_sample_period(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     uint32_t period_ms;
     eos_result_t result;
 
     (void)call_info_p;
 
-    if (args_count != 2 || !jerry_value_is_number(args_p[0]) || !jerry_value_is_number(args_p[1]))
+    if (args_count != 2 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type)
+        || !_sni_api_eos_number_to_u32(args_p[1], &period_ms))
     {
         return sni_api_throw_error("Usage: sensor.setSamplePeriod(type, period_ms)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
-    {
-        return sni_api_throw_error("Invalid sensor type");
-    }
-
-    period_ms = (uint32_t)jerry_value_as_number(args_p[1]);
-    result = eos_sensor_set_sample_period((eos_sensor_type_t)type, period_ms);
+    result = eos_sensor_set_sample_period(type, period_ms);
 
     return jerry_boolean(result == EOS_OK);
 }
@@ -1374,24 +1389,96 @@ jerry_value_t sni_api_eos_sensor_get_sample_period(const jerry_call_info_t *call
                                                    const jerry_value_t args_p[],
                                                    const jerry_length_t args_count)
 {
-    int32_t type;
+    eos_sensor_type_t type;
     uint32_t period_ms;
 
     (void)call_info_p;
 
-    if (args_count != 1 || !jerry_value_is_number(args_p[0]))
+    if (args_count != 1 || !_sni_api_eos_number_to_sensor_type(args_p[0], &type))
     {
         return sni_api_throw_error("Usage: sensor.getSamplePeriod(type)");
     }
 
-    type = (int32_t)jerry_value_as_number(args_p[0]);
-    if (type <= (int32_t)EOS_SENSOR_TYPE_UNKNOWN || type >= (int32_t)EOS_SENSOR_TYPE_MAX)
+    period_ms = eos_sensor_get_sample_period(type);
+    return jerry_number((double)period_ms);
+}
+
+static jerry_value_t _sni_api_eos_sensor_request_start(const jerry_value_t args_p[],
+                                                       jerry_length_t args_count,
+                                                       uint8_t kind)
+{
+    sni_context_t *context;
+    void *callback_context = NULL;
+    uint32_t timeout_ms = 0U;
+    eos_sensor_request_id_t request_id = EOS_SENSOR_REQUEST_INVALID;
+    eos_result_t result;
+
+    if ((args_count != 1U && args_count != 2U) || !jerry_value_is_function(args_p[0]))
+        return sni_api_throw_error("Usage: sensor operation(callback, timeout_ms?)");
+
+    if (args_count == 2U)
     {
-        return sni_api_throw_error("Invalid sensor type");
+        if (!_sni_api_eos_number_to_u32(args_p[1], &timeout_ms))
+            return sni_api_throw_error("Invalid timeout");
     }
 
-    period_ms = eos_sensor_get_sample_period((eos_sensor_type_t)type);
-    return jerry_number((double)period_ms);
+    context = sni_cb_get_context();
+    if (!context)
+        return sni_api_throw_error("No current script context");
+    if (!sni_cb_sensor_request_register(context, EOS_SENSOR_REQUEST_INVALID, kind, args_p[0], &callback_context))
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    if (kind == 0U)
+    {
+        result =
+            eos_sensor_heart_rate_start(sni_cb_sensor_heart_rate_dispatch, callback_context, timeout_ms, &request_id);
+    }
+    else
+    {
+        result = eos_sensor_compass_start(sni_cb_sensor_compass_dispatch, callback_context, timeout_ms, &request_id);
+    }
+    if (result != EOS_OK)
+    {
+        sni_cb_sensor_request_release(callback_context);
+        return jerry_null();
+    }
+
+    sni_cb_sensor_request_bind(callback_context, request_id);
+    return jerry_number((double)request_id);
+}
+
+jerry_value_t sni_api_eos_sensor_heart_rate(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)call_info_p;
+    return _sni_api_eos_sensor_request_start(args_p, args_count, 0U);
+}
+
+jerry_value_t sni_api_eos_sensor_compass(const jerry_call_info_t *call_info_p,
+                                         const jerry_value_t args_p[],
+                                         const jerry_length_t args_count)
+{
+    (void)call_info_p;
+    return _sni_api_eos_sensor_request_start(args_p, args_count, 1U);
+}
+
+jerry_value_t sni_api_eos_sensor_cancel(const jerry_call_info_t *call_info_p,
+                                        const jerry_value_t args_p[],
+                                        const jerry_length_t args_count)
+{
+    sni_context_t *context;
+    uint32_t request_number;
+
+    (void)call_info_p;
+    if (args_count != 1U || !jerry_value_is_number(args_p[0]))
+        return sni_api_throw_error("Usage: sensor.cancel(request_id)");
+    if (!_sni_api_eos_number_to_u32(args_p[0], &request_number) || request_number == 0U)
+        return sni_api_throw_error("Invalid request id");
+    context = sni_cb_get_context();
+    return jerry_boolean(context && sni_cb_sensor_request_cancel(context, (eos_sensor_request_id_t)request_number));
 }
 
 const sni_method_desc_t eos_class_static_methods_view[] = {
@@ -1430,15 +1517,6 @@ const sni_method_desc_t eos_class_static_methods_app_header[] = {
     {.name = NULL, .handler = NULL},
 };
 
-const sni_method_desc_t eos_class_static_methods_clock_hand[] = {
-    {.name = "create", .handler = sni_api_eos_clock_hand_create},
-    {.name = "center", .handler = sni_api_eos_clock_hand_center},
-    {.name = "placePivot", .handler = sni_api_eos_clock_hand_place_pivot},
-    {.name = "attach", .handler = sni_api_eos_clock_hand_attach},
-    {.name = "centerStyle", .handler = sni_api_eos_clock_hand_center_style},
-    {.name = NULL, .handler = NULL},
-};
-
 const sni_method_desc_t eos_class_static_methods_activity[] = {
     {.name = "create", .handler = sni_api_eos_activity_create},
     {.name = "destroy", .handler = sni_api_eos_activity_destroy},
@@ -1455,6 +1533,11 @@ const sni_method_desc_t eos_class_static_methods_activity[] = {
     {.name = "setType", .handler = sni_api_eos_activity_set_type},
     {.name = "setAppHeaderVisible", .handler = sni_api_eos_activity_set_app_header_visible},
     {.name = "isAppHeaderVisible", .handler = sni_api_eos_activity_is_app_header_visible},
+    {.name = "setAppHeaderStyle", .handler = sni_api_eos_activity_set_app_header_style},
+    {.name = "getAppHeaderStyle", .handler = sni_api_eos_activity_get_app_header_style},
+    {.name = "setAppHeaderBackButtonVisible", .handler = sni_api_eos_activity_set_app_header_back_button_visible},
+    {.name = "isAppHeaderBackButtonVisible", .handler = sni_api_eos_activity_is_app_header_back_button_visible},
+    {.name = "getAppHeaderHeight", .handler = sni_api_eos_activity_get_app_header_height},
     {.name = "enter", .handler = sni_api_eos_activity_enter},
     {.name = "back", .handler = sni_api_eos_activity_back},
     {.name = "isTransitionInProgress", .handler = sni_api_eos_activity_is_transition_in_progress},
@@ -1511,16 +1594,6 @@ const sni_class_desc_t eos_class_desc_app_header = {
     .constants = NULL,
 };
 
-const sni_class_desc_t eos_class_desc_clock_hand = {
-    .name = "clockHand",
-    .constructor = NULL,
-    .base_class = NULL,
-    .methods = NULL,
-    .properties = NULL,
-    .static_methods = eos_class_static_methods_clock_hand,
-    .constants = NULL,
-};
-
 const sni_class_desc_t eos_class_desc_ww = {
     .name = "ww",
     .constructor = NULL,
@@ -1551,6 +1624,9 @@ const sni_method_desc_t eos_class_static_methods_sensor[] = {
     {.name = "readLatest", .handler = sni_api_eos_sensor_read_latest},
     {.name = "setSamplePeriod", .handler = sni_api_eos_sensor_set_sample_period},
     {.name = "getSamplePeriod", .handler = sni_api_eos_sensor_get_sample_period},
+    {.name = "heartRate", .handler = sni_api_eos_sensor_heart_rate},
+    {.name = "compass", .handler = sni_api_eos_sensor_compass},
+    {.name = "cancel", .handler = sni_api_eos_sensor_cancel},
     {.name = NULL, .handler = NULL},
 };
 
@@ -1574,17 +1650,27 @@ const sni_class_desc_t eos_class_desc_sensor = {
     .constants = NULL,
 };
 
+const sni_class_desc_t eos_class_desc_metric = {
+    .name = "metric",
+    .constructor = NULL,
+    .base_class = NULL,
+    .methods = NULL,
+    .properties = NULL,
+    .static_methods = eos_metric_static_methods,
+    .constants = NULL,
+};
+
 const sni_class_desc_t *const eos_api_classes[] = {
     &eos_class_desc_view,
     &eos_class_desc_console,
     &eos_class_desc_config,
     &eos_class_desc_time,
     &eos_class_desc_app_header,
-    &eos_class_desc_clock_hand,
     &eos_class_desc_ww,
     &eos_class_desc_activity,
     &eos_class_desc_permission,
     &eos_class_desc_sensor,
+    &eos_class_desc_metric,
     NULL,
 };
 
@@ -1594,14 +1680,13 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "FONT_SIZE_SMALL", .type = SNI_CONST_INT, .value.i = EOS_FONT_SIZE_SMALL},
     {.name = "DISPLAY_WIDTH", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_WIDTH},
     {.name = "DISPLAY_HEIGHT", .type = SNI_CONST_INT, .value.i = EOS_DISPLAY_HEIGHT},
-    {.name = "CLOCK_HAND_HOUR", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_HOUR},
-    {.name = "CLOCK_HAND_MINUTE", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_MINUTE},
-    {.name = "CLOCK_HAND_SECOND", .type = SNI_CONST_INT, .value.i = EOS_CLOCK_HAND_SECOND},
     {.name = "ACTIVITY_TYPE_NULL", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_NULL},
     {.name = "ACTIVITY_TYPE_APP", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_APP},
     {.name = "ACTIVITY_TYPE_APP_LIST", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_APP_LIST},
     {.name = "ACTIVITY_TYPE_WATCHFACE", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_WATCHFACE},
     {.name = "ACTIVITY_TYPE_WATCHFACE_LIST", .type = SNI_CONST_INT, .value.i = EOS_ACTIVITY_TYPE_WATCHFACE_LIST},
+    {.name = "APP_HEADER_STYLE_STANDARD", .type = SNI_CONST_INT, .value.i = EOS_APP_HEADER_STYLE_STANDARD},
+    {.name = "APP_HEADER_STYLE_MINI", .type = SNI_CONST_INT, .value.i = EOS_APP_HEADER_STYLE_MINI},
     {.name = "SENSOR_ACCE", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_ACCE},
     {.name = "SENSOR_GYRO", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_GYRO},
     {.name = "SENSOR_MAG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_MAG},
@@ -1610,10 +1695,12 @@ const sni_constant_desc_t eos_root_constants[] = {
     {.name = "SENSOR_LIGHT", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_LIGHT},
     {.name = "SENSOR_TEMP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_TEMP},
     {.name = "SENSOR_BARO", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_BARO},
+    {.name = "SENSOR_HUMIDITY", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_HUMIDITY},
     {.name = "SENSOR_STEP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_STEP},
     {.name = "SENSOR_PROXIMITY", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_PROXIMITY},
     {.name = "SENSOR_ECG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_ECG},
     {.name = "SENSOR_CAP", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_CAP},
+    {.name = "SENSOR_PPG", .type = SNI_CONST_INT, .value.i = EOS_SENSOR_TYPE_PPG},
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 

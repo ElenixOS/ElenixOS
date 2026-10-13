@@ -17,6 +17,7 @@ extern "C" {
 #include "lvgl.h"
 #include "sni_types.h"
 #include "sni_context.h"
+#include "eos_service_sensor.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -201,6 +202,107 @@ sni_context_t *sni_cb_get_context(void);
 void sni_cb_context_cleanup_events(sni_context_t *ctx);
 
 /**
+ * @brief Register an asynchronous type-specific Sensor API callback
+ * @param ctx Owning SNI context
+ * @param request_id Initial request identifier
+ * @param kind Sensor operation kind (0 = heart rate, 1 = compass)
+ * @param js_cb JavaScript callback
+ * @param out_ctx Returned native callback context
+ * @return true if registration succeeded
+ */
+bool sni_cb_sensor_request_register(sni_context_t *ctx,
+                                    eos_sensor_request_id_t request_id,
+                                    uint8_t kind,
+                                    jerry_value_t js_cb,
+                                    void **out_ctx);
+
+/**
+ * @brief Bind the native request identifier to a Sensor API callback
+ * @param callback_ctx Callback context returned by register
+ * @param request_id Native request identifier
+ */
+void sni_cb_sensor_request_bind(void *callback_ctx, eos_sensor_request_id_t request_id);
+
+/**
+ * @brief Release a Sensor API callback context
+ * @param callback_ctx Callback context returned by register
+ */
+void sni_cb_sensor_request_release(void *callback_ctx);
+
+/**
+ * @brief Cancel a request owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param request_id Request identifier
+ * @return true if the request was owned and cancelled
+ */
+bool sni_cb_sensor_request_cancel(sni_context_t *ctx, eos_sensor_request_id_t request_id);
+
+/**
+ * @brief Dispatch a heart-rate operation callback into JavaScript
+ * @param request_id Native request identifier
+ * @param state Heart-rate operation state
+ * @param result Heart-rate result, or NULL
+ * @param user_data Registered callback context
+ */
+void sni_cb_sensor_heart_rate_dispatch(eos_sensor_request_id_t request_id,
+                                       eos_sensor_heart_rate_state_t state,
+                                       const eos_sensor_heart_rate_result_t *result,
+                                       void *user_data);
+
+/**
+ * @brief Dispatch a compass operation callback into JavaScript
+ * @param request_id Native request identifier
+ * @param state Compass operation state
+ * @param result Compass result, or NULL
+ * @param user_data Registered callback context
+ */
+void sni_cb_sensor_compass_dispatch(eos_sensor_request_id_t request_id,
+                                    eos_sensor_compass_state_t state,
+                                    const eos_sensor_compass_result_t *result,
+                                    void *user_data);
+
+/**
+ * @brief Cancel and release all Sensor API callbacks owned by a context
+ * @param ctx Owning SNI context
+ */
+void sni_cb_sensor_request_cleanup_context(sni_context_t *ctx);
+
+/**
+ * @brief Neutralize Sensor API callbacks during engine recovery
+ * @param ctx Owning SNI context
+ */
+void sni_cb_sensor_request_neutralize_context(sni_context_t *ctx);
+
+/**
+ * @brief Create one semantic Metric subscription owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param metric_id Metric identifier
+ * @param js_cb JavaScript callback
+ * @param interval_ms Polling interval
+ * @param out_handle Returned subscription identifier
+ * @return true when the subscription was created
+ */
+bool sni_cb_metric_subscribe(sni_context_t *ctx,
+                             uint32_t metric_id,
+                             jerry_value_t js_cb,
+                             uint32_t interval_ms,
+                             uint32_t *out_handle);
+
+/**
+ * @brief Unsubscribe one Metric callback owned by an SNI context
+ * @param ctx Owning SNI context
+ * @param handle Subscription identifier
+ * @return true when a subscription was removed
+ */
+bool sni_cb_metric_unsubscribe(sni_context_t *ctx, uint32_t handle);
+
+/**
+ * @brief Cancel and release all Metric subscriptions owned by a context
+ * @param ctx Owning SNI context
+ */
+void sni_cb_metric_cleanup_context(sni_context_t *ctx);
+
+/**
  * @brief Check if the given timer is currently dispatching (in-callback).
  * Used by sni_context_sweep_all to avoid deleting the executing timer.
  */
@@ -211,6 +313,17 @@ bool sni_cb_is_dispatching_timer(lv_timer_t *t);
  * Used by sni_context_sweep_all to avoid freeing the executing anim ctx.
  */
 bool sni_cb_is_dispatching_anim(struct sni_anim_callback_ctx *ctx);
+
+/** @brief Check whether a program context is inside an active JS callback */
+bool sni_cb_is_dispatching_context(sni_context_t *ctx);
+
+/**
+ * @brief Clear callback dispatch guards after a fatal engine recovery
+ *
+ * A fatal JerryScript longjmp can bypass the normal callback epilogue.  The
+ * guard state must not survive into a new engine generation.
+ */
+void sni_cb_reset_dispatching_state(void);
 
 /* Suspend/Resume Strategies ----------------------------------*/
 

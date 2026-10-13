@@ -21,6 +21,11 @@ extern "C" {
 
 #define EOS_VIEW_SWITCH_DURATION 300
 
+/** @brief Height of the standard two-line application header in pixels. */
+#define EOS_APP_HEADER_STANDARD_HEIGHT 120
+/** @brief Height of the compact single-line application header in pixels. */
+#define EOS_APP_HEADER_MINI_HEIGHT 48
+
 /* Public typedefs --------------------------------------------*/
 
 typedef struct eos_activity_t eos_activity_t;
@@ -35,8 +40,37 @@ typedef enum
     EOS_ACTIVITY_TYPE_WATCHFACE_LIST,
     EOS_ACTIVITY_TYPE_LOCK_SCREEN,
     EOS_ACTIVITY_TYPE_RECENT_APPS,
+    /** @brief Native App Debugger tool page, not the system App List. */
+    EOS_ACTIVITY_TYPE_APP_DEBUGGER,
     EOS_ACTIVITY_TYPE_COUNT
 } eos_activity_type_t;
+
+typedef enum
+{
+    EOS_ACTIVITY_STATE_CREATED = 0,
+    EOS_ACTIVITY_STATE_ACTIVE,
+    EOS_ACTIVITY_STATE_SUSPENDED,
+    EOS_ACTIVITY_STATE_DESTROYING,
+    EOS_ACTIVITY_STATE_DESTROYED
+} eos_activity_state_t;
+
+/**
+ * @brief Visual style used by an Activity's application header.
+ */
+typedef enum
+{
+    /** @brief Existing two-line title and time layout. */
+    EOS_APP_HEADER_STYLE_STANDARD = 0,
+    /** @brief Compact single-line title and time layout. */
+    EOS_APP_HEADER_STYLE_MINI,
+} eos_app_header_style_t;
+
+typedef enum
+{
+    EOS_ACTIVITY_EXIT_KEEP = 0,
+    EOS_ACTIVITY_EXIT_DESTROY,
+    EOS_ACTIVITY_EXIT_SUSPEND
+} eos_activity_exit_policy_t;
 
 typedef void (*eos_activity_on_enter_t)(eos_activity_t *activity);
 typedef void (*eos_activity_on_destroy_t)(eos_activity_t *activity);
@@ -215,6 +249,42 @@ void eos_activity_set_app_header_visible_animated(eos_activity_t *activity, bool
 bool eos_activity_is_app_header_visible(eos_activity_t *activity);
 
 /**
+ * @brief Set the application header style for an Activity.
+ * @param activity Target Activity.
+ * @param style Header style to use when the Activity is visible.
+ */
+void eos_activity_set_app_header_style(eos_activity_t *activity, eos_app_header_style_t style);
+
+/**
+ * @brief Get the application header style for an Activity.
+ * @param activity Target Activity.
+ * @return Current style, or EOS_APP_HEADER_STYLE_STANDARD if activity is NULL.
+ */
+eos_app_header_style_t eos_activity_get_app_header_style(eos_activity_t *activity);
+
+/**
+ * @brief Set whether the Activity's application header displays a back button.
+ * @param activity Target Activity.
+ * @param visible Whether the back button is visible.
+ */
+void eos_activity_set_app_header_back_button_visible(eos_activity_t *activity, bool visible);
+
+/**
+ * @brief Check whether the Activity's application header displays a back button.
+ * @param activity Target Activity.
+ * @return true if visible, false otherwise.
+ */
+bool eos_activity_is_app_header_back_button_visible(eos_activity_t *activity);
+
+/**
+ * @brief Get the vertical extent occupied by the Activity's application header.
+ * @param activity Target Activity.
+ * @return Header height in pixels, or 0 if the header is hidden or activity is NULL.
+ *         Time-only mode retains the standard header geometry.
+ */
+lv_coord_t eos_activity_get_app_header_height(eos_activity_t *activity);
+
+/**
  * @brief Set whether Activity AppHeader shows only time label
  * @param activity Activity pointer
  * @param time_only true shows only time, false shows full AppHeader
@@ -335,6 +405,22 @@ void eos_activity_enter(eos_activity_t *activity);
 eos_result_t eos_activity_back(void);
 
 /**
+ * @brief Close the current App stack without registering it in Recent Apps
+ * @return EOS_OK on success
+ */
+eos_result_t eos_activity_close_current_app(void);
+
+/**
+ * @brief Destroy an application's child Activities before an in-place restart
+ * @param app_root The APP-type root Activity to keep
+ * @return eos_result_t EOS_OK success, EOS_ERR_BUSY while navigation is not quiescent,
+ *         or an error when the stack does not contain this app's child pages
+ * @note This is a synchronous lifecycle operation used by the app restart path.
+ *       It leaves the AppRoot on the stack and does not invoke its resume callback.
+ */
+eos_result_t eos_activity_reset_app_to_root(eos_activity_t *app_root);
+
+/**
  * @brief Return directly to root Activity and clear all stacked Activities
  * @return eos_result_t EOS_OK success, EOS_FAILED failed
  * @note This function destroys all Activities in the stack and returns to the root Activity.
@@ -353,6 +439,15 @@ void eos_activity_back_cb(lv_event_t *e);
  * @return eos_activity_t* Current Activity, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_current(void);
+
+/**
+ * @brief Reset the navigation stack after a script engine reset
+ * @return EOS_OK when the controller is restored to the root activity
+ * @note Destroys all non-root activities synchronously except a native
+ *       APP_LIST anchor, when present. Lifecycle callbacks are still allowed,
+ *       but they must be safe after the script engine has been reinitialized.
+ */
+eos_result_t eos_activity_reset_to_root(void);
 
 /**
  * @brief Get current completed display Activity
@@ -377,6 +472,59 @@ bool eos_activity_is_transition_in_progress(void);
  * @return eos_activity_t* Bottom Activity in stack, or root Activity if stack empty, returns NULL on failure
  */
 eos_activity_t *eos_activity_get_bottom(void);
+
+/**
+ * @brief Set the stable application ID owned by an Activity
+ * @param activity Activity pointer
+ * @param app_id Stable application ID, or NULL to clear
+ * @return eos_result_t EOS_OK success, EOS_FAILED on invalid input or allocation failure
+ */
+eos_result_t eos_activity_set_app_id(eos_activity_t *activity, const char *app_id);
+
+/**
+ * @brief Get the stable application ID owned by an Activity
+ * @param activity Activity pointer
+ * @return const char* Application ID, or NULL when unbound
+ */
+const char *eos_activity_get_app_id(eos_activity_t *activity);
+
+/**
+ * @brief Set the script engine generation associated with an Activity
+ * @param activity Activity to update
+ * @param generation Engine generation captured when the script instance was created
+ */
+void eos_activity_set_script_generation(eos_activity_t *activity, uint32_t generation);
+
+/**
+ * @brief Get the script engine generation associated with an Activity
+ * @param activity Activity to query
+ * @return Engine generation, or 0 for an unbound/native Activity
+ */
+uint32_t eos_activity_get_script_generation(eos_activity_t *activity);
+
+/**
+ * @brief Bind a script Activity to an SPM program lifetime
+ */
+void eos_activity_set_script_instance_id(eos_activity_t *activity, uint32_t instance_id);
+
+/**
+ * @brief Get the SPM program lifetime bound to an Activity
+ */
+uint32_t eos_activity_get_script_instance_id(eos_activity_t *activity);
+
+/**
+ * @brief Mark an Activity as requiring a fresh script instance
+ * @param activity Activity to mark
+ * @param needs_reload Whether the next launch should recreate the script instance
+ */
+void eos_activity_set_needs_reload(eos_activity_t *activity, bool needs_reload);
+
+/**
+ * @brief Check whether an Activity requires a fresh script instance
+ * @param activity Activity to query
+ * @return true when the Activity must not be resumed
+ */
+bool eos_activity_needs_reload(eos_activity_t *activity);
 
 /**
  * @brief Check whether an Activity has ever been entered (has_started)
@@ -443,14 +591,7 @@ eos_activity_t *eos_activity_detach_app_substack(void);
  * @note Pushes activities bottom-up (AppRoot first). Calls on_resume bottom-up.
  *       After call, current_activity is substack_top.
  */
-void eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv_draw_buf_t *snap_buf);
-
-/**
- * @brief Set the suspend_on_exit flag on an activity (park instead of destroy after transition)
- * @param activity Activity pointer
- * @param suspend_on_exit Whether to park the activity on exit
- */
-void eos_activity_set_suspend_on_exit(eos_activity_t *activity, bool suspend_on_exit);
+eos_result_t eos_activity_reattach_app_substack(eos_activity_t *substack_top, lv_draw_buf_t *snap_buf);
 
 /**
  * @brief Check if an activity is suspended (parked in recents registry)
@@ -460,11 +601,26 @@ void eos_activity_set_suspend_on_exit(eos_activity_t *activity, bool suspend_on_
 bool eos_activity_is_suspended(eos_activity_t *activity);
 
 /**
+ * @brief Check whether an Activity pointer is still owned by the controller
+ * @param activity Activity pointer
+ * @return true when the Activity is currently live
+ * @note Pointer-only validation for teardown paths; does not dereference a stale pointer.
+ */
+bool eos_activity_is_live(eos_activity_t *activity);
+
+/**
  * @brief Mark an activity as suspended
  * @param activity Activity pointer
  * @param suspended Suspended state
  */
 void eos_activity_set_suspended(eos_activity_t *activity, bool suspended);
+
+/**
+ * @brief Get the lifecycle state of an Activity
+ * @param activity Activity pointer
+ * @return Current Activity state
+ */
+eos_activity_state_t eos_activity_get_state(eos_activity_t *activity);
 
 /**
  * @brief Set the app_substack_next link (next activity toward app root, stack-down direction)
@@ -490,7 +646,8 @@ void eos_activity_set_app_root(eos_activity_t *activity, eos_activity_t *app_roo
 /**
  * @brief Get the app_root reference
  * @param activity Activity pointer
- * @return eos_activity_t* The app root, or NULL
+ * @return eos_activity_t* The app root (the activity itself when it is the
+ *         root), or NULL when the activity is not app-owned
  */
 eos_activity_t *eos_activity_get_app_root(eos_activity_t *activity);
 

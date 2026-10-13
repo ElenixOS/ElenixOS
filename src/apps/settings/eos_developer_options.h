@@ -13,6 +13,7 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>
+#include "eos_log.h"
 
 /* Public macros ----------------------------------------------*/
 
@@ -65,6 +66,19 @@ void eos_developer_options_set_touch_enabled(bool enabled);
  * @return true if enabled, false otherwise
  */
 bool eos_developer_options_get_touch_enabled(void);
+
+/**
+ * @brief Set and persist the minimum log level
+ * @param level Minimum level to dispatch
+ * @return EOS_OK on success, error code otherwise
+ */
+eos_result_t eos_developer_options_set_log_level(eos_log_level_t level);
+
+/**
+ * @brief Get the current minimum log level
+ * @return Current minimum level
+ */
+eos_log_level_t eos_developer_options_get_log_level(void);
 
 #ifdef __cplusplus
 }

@@ -15,11 +15,19 @@
 #include "eos_log.h"
 #include "eos_port.h"
 #include "eos_mem.h"
+#include "eos_touch.h"
 
 /* Macros and Definitions -------------------------------------*/
 
 /* Toggle to log flush areas (virtual display only) */
 #define EOS_VIRTUAL_DISP_FLUSH_DIAG 0
+#define EOS_VIRTUAL_INPUT_QUEUE_SIZE 32
+
+typedef struct
+{
+    lv_point_t point;
+    lv_indev_state_t state;
+} eos_virtual_input_event_t;
 
 struct eos_virtual_display_t
 {
@@ -35,11 +43,31 @@ struct eos_virtual_display_t
     int32_t touch_x;
     int32_t touch_y;
     bool pressed;
+    eos_virtual_input_event_t input_queue[EOS_VIRTUAL_INPUT_QUEUE_SIZE];
+    uint8_t input_queue_head;
+    uint8_t input_queue_tail;
+    uint8_t input_queue_count;
 };
 
 /* Variables --------------------------------------------------*/
 
 /* Function Implementations -----------------------------------*/
+
+static void _virtual_input_enqueue(eos_virtual_display_t *vd, lv_indev_state_t state, int32_t x, int32_t y)
+{
+    if (vd->input_queue_count >= EOS_VIRTUAL_INPUT_QUEUE_SIZE)
+    {
+        EOS_LOG_W("input queue full, dropping state=%d at (%d,%d)", state, x, y);
+        return;
+    }
+
+    eos_virtual_input_event_t *event = &vd->input_queue[vd->input_queue_tail];
+    event->point.x = (lv_coord_t)x;
+    event->point.y = (lv_coord_t)y;
+    event->state = state;
+    vd->input_queue_tail = (uint8_t)((vd->input_queue_tail + 1) % EOS_VIRTUAL_INPUT_QUEUE_SIZE);
+    vd->input_queue_count++;
+}
 
 static void _virtual_display_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
@@ -48,7 +76,7 @@ static void _virtual_display_flush_cb(lv_display_t *disp, const lv_area_t *area,
     lv_coord_t h = lv_area_get_height(area);
 
 #if EOS_VIRTUAL_DISP_FLUSH_DIAG
-    EOS_LOG_E("[FLUSH_DIAG] FLUSH area=%d,%d-%d,%d (w=%d h=%d)", area->x1, area->y1, area->x2, area->y2, w, h);
+    EOS_LOG_D("[FLUSH_DIAG] FLUSH area=%d,%d-%d,%d (w=%d h=%d)", area->x1, area->y1, area->x2, area->y2, w, h);
 #endif
 
     uint32_t px_size = lv_color_format_get_size(vd->cf);
@@ -87,12 +115,6 @@ static void _canvas_event_cb(lv_event_t *e)
         return;
     }
 
-    if (code == LV_EVENT_RELEASED)
-    {
-        vd->pressed = false;
-        return;
-    }
-
     lv_area_t canvas_area;
     lv_obj_get_coords(vd->canvas, &canvas_area);
 
@@ -110,7 +132,16 @@ static void _canvas_event_cb(lv_event_t *e)
 
     vd->touch_x = x;
     vd->touch_y = y;
-    vd->pressed = (code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING);
+    if (code == LV_EVENT_PRESSED)
+    {
+        vd->pressed = true;
+        _virtual_input_enqueue(vd, LV_INDEV_STATE_PRESSED, x, y);
+    }
+    else if (code == LV_EVENT_RELEASED)
+    {
+        vd->pressed = false;
+        _virtual_input_enqueue(vd, LV_INDEV_STATE_RELEASED, x, y);
+    }
 }
 
 static void _virtual_input_read(lv_indev_t *indev, lv_indev_data_t *data)
@@ -124,8 +155,19 @@ static void _virtual_input_read(lv_indev_t *indev, lv_indev_data_t *data)
         return;
     }
 
-    data->point.x = vd->touch_x;
-    data->point.y = vd->touch_y;
+    if (vd->input_queue_count > 0)
+    {
+        const eos_virtual_input_event_t *event = &vd->input_queue[vd->input_queue_head];
+        data->point = event->point;
+        data->state = event->state;
+        vd->input_queue_head = (uint8_t)((vd->input_queue_head + 1) % EOS_VIRTUAL_INPUT_QUEUE_SIZE);
+        vd->input_queue_count--;
+        data->continue_reading = vd->input_queue_count > 0;
+        return;
+    }
+
+    data->point.x = (lv_coord_t)vd->touch_x;
+    data->point.y = (lv_coord_t)vd->touch_y;
     data->state = vd->pressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
@@ -202,6 +244,7 @@ lv_display_t *eos_virtual_display_create(lv_obj_t *parent, lv_coord_t hor_res, l
     lv_indev_set_read_cb(vd->indev, _virtual_input_read);
     lv_indev_set_user_data(vd->indev, vd);
     lv_indev_set_display(vd->indev, vd->disp);
+    (void)eos_touch_bind_indev(vd->indev);
     return vd->disp;
 }
 

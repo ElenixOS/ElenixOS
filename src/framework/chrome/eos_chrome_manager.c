@@ -33,36 +33,6 @@ static uint32_t _overlay_count = 0;
 static eos_stack_t *_overlay_stack = NULL;
 /* Function Implementations -----------------------------------*/
 
-static void _ensure_overlay_on_top(const eos_chrome_overlay_t *overlay)
-{
-    if (!overlay)
-        return;
-
-    lv_obj_t *obj = NULL;
-
-    if (overlay->get_foreground_obj)
-    {
-        obj = overlay->get_foreground_obj();
-    }
-    else if (overlay->get_scrollable)
-    {
-        obj = overlay->get_scrollable();
-    }
-
-    if (obj && lv_obj_is_valid(obj))
-    {
-        lv_obj_move_foreground(obj);
-        /* Also raise the overlay's container layer so the entire overlay
-         * sits above any direct children of lv_layer_top() */
-        lv_obj_t *parent = lv_obj_get_parent(obj);
-        if (parent && lv_obj_is_valid(parent))
-        {
-            lv_obj_move_foreground(parent);
-        }
-        EOS_LOG_D("Brought overlay to front[%s]", overlay->name ? overlay->name : "unknown");
-    }
-}
-
 static void _activate_crown_for_overlay(const eos_chrome_overlay_t *overlay)
 {
     if (!overlay)
@@ -101,13 +71,12 @@ static void _focus_top_overlay(void)
         top->on_focus();
     }
 
-    _ensure_overlay_on_top(top);
     _activate_crown_for_overlay(top);
 }
 
 void eos_chrome_manager_register_overlay(const eos_chrome_overlay_t *overlay)
 {
-    if (!overlay || !overlay->pull_back || !overlay->hide)
+    if (!overlay || !overlay->pull_back || !overlay->hide || !eos_overlay_layer_is_valid_slot(overlay->layer_slot))
     {
         EOS_LOG_E("Invalid overlay registration");
         return;
@@ -155,8 +124,11 @@ void eos_chrome_manager_pull_back_all(void)
 
 void eos_chrome_manager_push_overlay(const eos_chrome_overlay_t *overlay)
 {
-    if (!overlay)
+    if (!overlay || !eos_overlay_layer_is_valid_slot(overlay->layer_slot))
+    {
+        EOS_LOG_E("Invalid overlay push");
         return;
+    }
 
     const eos_chrome_overlay_t *top = (const eos_chrome_overlay_t *)eos_stack_peek(_overlay_stack);
     if (top == overlay)
@@ -265,7 +237,7 @@ void eos_chrome_manager_handle_crown_click(void)
     }
 }
 
-void eos_chrome_manager_handle_crown_double_click(void)
+void eos_chrome_manager_handle_crown_long_press(void)
 {
     /* Wake up first if sleeping */
     if (eos_pm_get_state() == EOS_PM_SLEEP)
@@ -274,7 +246,7 @@ void eos_chrome_manager_handle_crown_double_click(void)
         return;
     }
 
-    /* Don't allow crown double-click to bypass lock screen */
+    /* Don't allow crown long-press to bypass lock screen */
     if (eos_lock_screen_is_active())
     {
         return;
@@ -302,7 +274,11 @@ void eos_chrome_manager_handle_crown_double_click(void)
      * so it appears in the recents list when the page opens. */
     if (current && eos_recent_apps_is_suspendable(current))
     {
-        eos_recent_apps_suspend_current();
+        if (eos_recent_apps_suspend_current() != EOS_OK)
+        {
+            EOS_LOG_W("Cannot open Recent Apps: current app could not be suspended");
+            return;
+        }
     }
     eos_recent_apps_page_enter();
 }

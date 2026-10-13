@@ -50,6 +50,7 @@ typedef struct eos_recent_app_entry
     struct eos_recent_app_entry *prev; /**< LRU: less recently used */
 
     char app_id[64]; /**< Script package ID, stable key */
+    uint32_t program_instance_id; /**< SPM program lifetime represented by this entry */
     char app_name[64]; /**< Display name for the recents page UI */
     eos_activity_t *activity; /**< AppRoot activity (parked, kept alive) */
     eos_activity_t *saved_stack_top; /**< Sub-stack top at suspend time */
@@ -133,9 +134,9 @@ void eos_recent_apps_set_anim_strategy(eos_suspend_anim_strategy_t strategy);
 uint32_t eos_recent_apps_count(void);
 
 /**
- * @brief Check whether the given activity is a suspendable script app
+ * @brief Check whether the given activity belongs to a suspendable app
  * @param activity Activity to check
- * @return true if the activity or its app_root is APP type
+ * @return true if the activity has a stable app identity
  */
 bool eos_recent_apps_is_suspendable(eos_activity_t *activity);
 

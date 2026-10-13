@@ -16,6 +16,7 @@
 #include "eos_port.h"
 #include "eos_basic_widgets.h"
 #include "eos_mem.h"
+#include "eos_interaction_slot.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define GESTURE_AREA_HEIGHT 50
@@ -201,7 +202,18 @@ void eos_swipe_panel_set_dir(eos_swipe_panel_t *sp, const eos_swipe_dir_t dir)
 void eos_swipe_panel_delete(eos_swipe_panel_t *sp)
 {
     EOS_CHECK_PTR_RETURN(sp);
+
+    /* The slide widget owns animation callbacks whose user data points at
+     * both the widget and this panel.  Destroy it first so deleting the
+     * target object cannot leave a live callback behind. */
+    if (sp->sw)
+    {
+        eos_slide_widget_delete(sp->sw);
+        sp->sw = NULL;
+    }
+
     lv_obj_delete_async(sp->swipe_obj);
+    sp->swipe_obj = NULL;
     eos_free(sp);
 }
 
@@ -239,8 +251,11 @@ void eos_swipe_panel_slide_down(eos_swipe_panel_t *sp)
     const _direction_config_t *cfg = &_dir_configs[sp->dir];
     eos_slide_widget_move(sp->sw, cfg->target_base, cfg->target_target, SWIPE_ANIM_DURATION);
 
-    lv_obj_move_foreground(sp->swipe_obj);
-    lv_obj_move_foreground(eos_slide_widget_get_touch_obj(sp->sw));
+    if (!eos_interaction_slot_focus(sp->swipe_obj, eos_slide_widget_get_touch_obj(sp->sw)))
+    {
+        lv_obj_move_foreground(sp->swipe_obj);
+        lv_obj_move_foreground(eos_slide_widget_get_touch_obj(sp->sw));
+    }
 }
 
 void eos_swipe_panel_hide(eos_swipe_panel_t *sp)

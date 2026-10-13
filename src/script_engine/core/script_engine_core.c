@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
 #include <setjmp.h>
 #define EOS_LOG_TAG "ScriptEngine"
 #include "eos_log.h"
@@ -47,7 +49,10 @@
  * _module_resolve_cb is called once per import site even for the same
  * file. Without caching each call creates a new module instance with
  * independent variable scopes — breaking ES module guarantees.
- * The cache is keyed by canonical file path and cleared at engine stop. */
+ * The cache is keyed by canonical file path and cleared at every Realm
+ * boundary. A module value belongs to the Realm in which it was parsed;
+ * reusing it from another program would otherwise leak the old Realm's
+ * exports into the new program. */
 #define MODULE_CACHE_MAX 64
 
 typedef struct
@@ -58,6 +63,7 @@ typedef struct
 
 static _module_cache_entry_t _module_cache[MODULE_CACHE_MAX];
 static int _module_cache_count = 0;
+static bool _suppress_call_exception_handler = false;
 
 typedef struct
 {
@@ -130,7 +136,19 @@ static void _track_main_module(jerry_value_t module)
 
     if (_tracked_module_count >= _tracked_module_capacity)
     {
-        int new_cap = _tracked_module_capacity > 0 ? _tracked_module_capacity * 2 : TRACKED_MODULES_INIT_CAPACITY;
+        int new_cap;
+        if (_tracked_module_capacity > 0)
+        {
+            if (_tracked_module_capacity > INT_MAX / 2)
+                return;
+            new_cap = _tracked_module_capacity * 2;
+        }
+        else
+        {
+            new_cap = TRACKED_MODULES_INIT_CAPACITY;
+        }
+        if ((size_t)new_cap > SIZE_MAX / sizeof(jerry_value_t))
+            return;
         jerry_value_t *new_arr = eos_realloc(_tracked_modules, new_cap * sizeof(jerry_value_t));
         if (!new_arr)
             return;
@@ -190,24 +208,23 @@ static void _cleanup_module_task(_module_task_t *task)
     eos_free(task);
 }
 
+static void _pkg_free_fields(script_pkg_t *p);
+
 static void _pkg_free(script_pkg_t *p)
 {
-    if (!p)
-        return;
-    if (p->base_path)
-    {
-        eos_free((void *)p->base_path);
-        p->base_path = NULL;
-    }
-    if (p->script_str)
-    {
-        eos_free((void *)p->script_str);
-        p->script_str = NULL;
-    }
+    _pkg_free_fields(p);
 }
 
-static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
+static bool _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
 {
+    if (!dst || !src)
+        return false;
+
+    /* Core keeps one transient package copy for the program currently using
+     * its execution window.  A different program may start while an older
+     * program is suspended; release the old copy before replacing it instead
+     * of losing all of its owned strings to memset(). */
+    _pkg_free_fields(dst);
     memset(dst, 0, sizeof(*dst));
     dst->type = src->type;
     dst->id = src->id ? eos_strdup(src->id) : NULL;
@@ -218,6 +235,14 @@ static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
     dst->script_str = src->script_str ? eos_strdup(src->script_str) : NULL;
     dst->base_path = src->base_path ? eos_strdup(src->base_path) : NULL;
 
+    if ((src->id && !dst->id) || (src->name && !dst->name) || (src->version && !dst->version)
+        || (src->author && !dst->author) || (src->description && !dst->description)
+        || (src->script_str && !dst->script_str) || (src->base_path && !dst->base_path))
+    {
+        _pkg_free_fields(dst);
+        return false;
+    }
+
     /* Clone permissions array */
     if (src->permissions && src->permission_count > 0)
     {
@@ -227,14 +252,25 @@ static void _pkg_clone_into(script_pkg_t *dst, const script_pkg_t *src)
             for (uint8_t i = 0; i < src->permission_count; i++)
             {
                 dst->permissions[i] = src->permissions[i] ? eos_strdup(src->permissions[i]) : NULL;
+                if (src->permissions[i] && !dst->permissions[i])
+                {
+                    _pkg_free_fields(dst);
+                    return false;
+                }
             }
             dst->permissions[src->permission_count] = NULL;
             dst->permission_count = src->permission_count;
+        }
+        else
+        {
+            _pkg_free_fields(dst);
+            return false;
         }
     }
 
     dst->min_api_level = src->min_api_level;
     dst->target_api_level = src->target_api_level;
+    return true;
 }
 
 static void _pkg_free_fields(script_pkg_t *p)
@@ -350,6 +386,21 @@ static void _realm_release_program(script_program_t *prog)
         jerry_value_free(prog->realm);
         prog->realm = jerry_undefined();
     }
+}
+
+eos_result_t script_engine_release_program_realm(script_program_t *program)
+{
+    if (!program)
+        return EOS_ERR_INVALID_ARG;
+    if (!engine_rt.initialized || engine_rt.state != SCRIPT_ENGINE_STATE_IDLE)
+        return EOS_ERR_BUSY;
+    if (engine_rt.current_program == program)
+        return EOS_ERR_BUSY;
+
+    /* Do not call the global stop path here.  The target may be suspended
+     * while another program owns Core's current execution window. */
+    _realm_release_program(program);
+    return EOS_OK;
 }
 
 static void _realm_restore_and_cleanup(void)
@@ -602,7 +653,6 @@ static void _extract_error_location_from_exception(jerry_value_t exception_value
 
 static void _script_engine_exception_handler(const char *tag, jerry_value_t result)
 {
-    EOS_LOG_E("===================================");
     jerry_value_t value = jerry_exception_value(result, false);
     jerry_value_t final_str_val = value;
     char stack_buf[SCRIPT_ERROR_STACK_BUF_SIZE];
@@ -863,11 +913,16 @@ jerry_value_t script_engine_call_raw(jerry_value_t func,
                 else
                     EOS_LOG_D("Script call stopped by request");
             }
-            else
+            else if (!_suppress_call_exception_handler)
             {
                 _script_engine_exception_handler("Jerry Call", result);
-                _change_state(SCRIPT_ENGINE_STATE_EXCEPTION);
             }
+            /* A callback exception is already reported above, but it must
+             * not poison the shared engine state.  SPM keeps the owning
+             * program gate separate from this execution-window state; leave
+             * the engine IDLE so the next independent LVGL callback can run. */
+            if (engine_rt.state == SCRIPT_ENGINE_STATE_RUNNING)
+                _change_state(SCRIPT_ENGINE_STATE_IDLE);
         }
 
         if (engine_rt.state == SCRIPT_ENGINE_STATE_RUNNING)
@@ -875,6 +930,157 @@ jerry_value_t script_engine_call_raw(jerry_value_t func,
     }
 
     return result;
+}
+
+static bool _eval_copy_string(jerry_value_t value, char *buffer, size_t buffer_size)
+{
+    jerry_value_t string_value = value;
+    bool owns_string = false;
+    jerry_size_t length;
+    jerry_size_t copied;
+
+    if (!buffer || buffer_size == 0U)
+        return false;
+
+    if (!jerry_value_is_string(string_value))
+    {
+        string_value = jerry_value_to_string(value);
+        owns_string = true;
+    }
+
+    if (jerry_value_is_exception(string_value))
+    {
+        if (owns_string)
+            jerry_value_free(string_value);
+        buffer[0] = '\0';
+        return false;
+    }
+
+    length = jerry_string_size(string_value, JERRY_ENCODING_UTF8);
+    copied = jerry_string_to_buffer(string_value,
+                                    JERRY_ENCODING_UTF8,
+                                    (jerry_char_t *)buffer,
+                                    (jerry_size_t)(buffer_size - 1U));
+    buffer[copied] = '\0';
+    if (length >= buffer_size && buffer_size > 4U)
+    {
+        buffer[buffer_size - 4U] = '.';
+        buffer[buffer_size - 3U] = '.';
+        buffer[buffer_size - 2U] = '.';
+        buffer[buffer_size - 1U] = '\0';
+    }
+
+    if (owns_string)
+        jerry_value_free(string_value);
+    return true;
+}
+
+eos_result_t script_engine_eval_program(script_program_t *program,
+                                        const char *source,
+                                        size_t source_length,
+                                        char *result_buffer,
+                                        size_t result_buffer_size,
+                                        bool *result_is_undefined)
+{
+    jerry_value_t old_realm;
+    jerry_value_t global;
+    jerry_value_t eval_function;
+    jerry_value_t source_value;
+    jerry_value_t result;
+    uint32_t saved_generation;
+    bool is_exception;
+    bool is_timeout;
+    char value_buffer[256];
+
+    if (!program || !source || !result_buffer || result_buffer_size == 0U || !result_is_undefined)
+        return EOS_ERR_INVALID_ARG;
+    result_buffer[0] = '\0';
+    *result_is_undefined = false;
+    if (source_length == 0U || source_length > SCRIPT_ENGINE_EVAL_SOURCE_MAX)
+        return EOS_ERR_INVALID_ARG;
+    if (!engine_rt.initialized || engine_rt.state != SCRIPT_ENGINE_STATE_IDLE)
+        return EOS_ERR_INVALID_STATE;
+    if (program->state != SCRIPT_PROGRAM_STATE_ACTIVE || !jerry_value_is_object(program->realm))
+        return EOS_ERR_INVALID_STATE;
+
+    /* The SNI and permission layers currently resolve their owner through
+     * the engine's single current-program slot. Do not silently impersonate
+     * another program from an ESH handler. */
+    if (engine_rt.current_program != program)
+        return EOS_ERR_SCRIPT_ALREADY_RUNNING;
+
+    old_realm = jerry_set_realm(program->realm);
+    if (jerry_value_is_exception(old_realm))
+    {
+        jerry_value_free(old_realm);
+        return EOS_ERR_INVALID_STATE;
+    }
+
+    global = jerry_current_realm();
+    eval_function = jerry_object_get_sz(global, "eval");
+    source_value = jerry_string((const jerry_char_t *)source, (jerry_size_t)source_length, JERRY_ENCODING_UTF8);
+    if (jerry_value_is_exception(eval_function) || !jerry_value_is_function(eval_function)
+        || jerry_value_is_exception(source_value))
+    {
+        jerry_value_free(source_value);
+        jerry_value_free(eval_function);
+        jerry_value_free(global);
+        (void)jerry_set_realm(old_realm);
+        return EOS_ERR_SCRIPT_INVALID_JS;
+    }
+
+    saved_generation = engine_rt.engine_gen;
+    jerry_value_t args[1] = {source_value};
+    _suppress_call_exception_handler = true;
+    result = script_engine_call_raw(eval_function, global, args, 1);
+    _suppress_call_exception_handler = false;
+
+    /* Fatal recovery reinitializes the heap and destroys all programs. No
+     * handle captured before the call may be touched after this point. */
+    if (saved_generation != engine_rt.engine_gen)
+    {
+        snprintf(result_buffer, result_buffer_size, "Engine reset during eval");
+        return EOS_ERR_SCRIPT_EXCEPTION;
+    }
+
+    is_exception = jerry_value_is_exception(result);
+    is_timeout = engine_rt.stop_is_timeout;
+    if (is_exception)
+    {
+        jerry_value_t exception = jerry_exception_value(result, false);
+        if (!_eval_copy_string(exception, value_buffer, sizeof(value_buffer)))
+            snprintf(value_buffer, sizeof(value_buffer), "JavaScript exception");
+        if (strncmp(value_buffer, "Error: ", 7U) == 0)
+            snprintf(result_buffer, result_buffer_size, "%s", value_buffer);
+        else
+            snprintf(result_buffer, result_buffer_size, "Error: %s", value_buffer);
+        jerry_value_free(exception);
+    }
+    else if (jerry_value_is_undefined(result))
+    {
+        *result_is_undefined = true;
+        snprintf(result_buffer, result_buffer_size, "undefined");
+    }
+    else if (!_eval_copy_string(result, result_buffer, result_buffer_size))
+    {
+        snprintf(result_buffer, result_buffer_size, "<unprintable>");
+    }
+
+    jerry_value_free(result);
+    jerry_value_free(source_value);
+    jerry_value_free(eval_function);
+    jerry_value_free(global);
+
+    /* A command exception/timeout must not permanently poison the program's
+     * callback gate. The exception text has already been copied above. */
+    if (engine_rt.state == SCRIPT_ENGINE_STATE_EXCEPTION)
+        _change_state(SCRIPT_ENGINE_STATE_IDLE);
+    engine_rt.pending_stop = false;
+    engine_rt.stop_is_timeout = false;
+
+    (void)jerry_set_realm(old_realm);
+
+    return is_timeout ? EOS_ERR_TIMEOUT : (is_exception ? EOS_ERR_SCRIPT_EXCEPTION : EOS_OK);
 }
 
 /* Timeout ----------------------------------------------------*/
@@ -1152,24 +1358,25 @@ static void _process_module_queue(void)
 
 static void _cleanup_module_queue(void)
 {
-    if (!_module_queue)
-        return;
-    while (eos_cqueue_get_size(_module_queue) > 0)
+    if (_module_queue)
     {
-        _module_task_t *task = (_module_task_t *)eos_cqueue_dequeue(_module_queue);
-        if (task)
+        while (eos_cqueue_get_size(_module_queue) > 0)
         {
-            jerry_value_free(task->specifier);
-            jerry_value_free(task->user_value);
-            jerry_value_free(task->promise);
-            eos_free(task);
+            _module_task_t *task = (_module_task_t *)eos_cqueue_dequeue(_module_queue);
+            if (task)
+            {
+                jerry_value_free(task->specifier);
+                jerry_value_free(task->user_value);
+                jerry_value_free(task->promise);
+                eos_free(task);
+            }
         }
+        eos_cqueue_destroy(_module_queue);
+        _module_queue = NULL;
     }
-    eos_cqueue_destroy(_module_queue);
-    _module_queue = NULL;
 
-    /* Clear the module resolve cache so the next program / engine
-     * restart starts with a clean slate. */
+    /* Clear the cache even when there was no queue. A link failure or a fatal
+     * callback can leave cached modules without pending import tasks. */
     _module_cache_clear();
 }
 
@@ -1307,6 +1514,51 @@ static jerry_value_t _script_engine_create_info(const script_pkg_t *pkg)
     return obj;
 }
 
+eos_result_t script_engine_prepare_program_realm(script_program_t *program)
+{
+    jerry_value_t new_realm;
+    jerry_value_t global;
+    jerry_value_t script_info;
+    jerry_value_t key;
+
+    if (!program || !program->sni_ctx)
+        return EOS_ERR_INVALID_ARG;
+    if (!engine_rt.initialized || engine_rt.state != SCRIPT_ENGINE_STATE_IDLE)
+        return EOS_ERR_INVALID_STATE;
+    if (engine_rt.current_program != program)
+        return EOS_ERR_SCRIPT_ALREADY_RUNNING;
+    if (jerry_value_is_object(program->realm))
+        return EOS_ERR_ALREADY_INITIALIZED;
+
+    new_realm = _realm_create();
+    if (jerry_value_is_exception(new_realm))
+    {
+        jerry_value_free(new_realm);
+        return EOS_ERR_SCRIPT_INIT_FAIL;
+    }
+
+    _realm_save_and_switch(new_realm);
+    sni_mount(new_realm);
+    jerry_halt_handler(16, _vm_exec_stop_callback, NULL);
+    jerry_log_set_level(JERRY_LOG_LEVEL_DEBUG);
+
+    global = jerry_current_realm();
+    script_info = _script_engine_create_info(&program->script);
+    key = jerry_string_sz("scriptInfo");
+    jerry_value_free(jerry_object_set(global, key, script_info));
+    jerry_value_free(key);
+    jerry_value_free(script_info);
+    jerry_value_free(global);
+
+    _realm_assign_to_program(program, new_realm);
+
+    /* _realm_restore_and_cleanup restores the boot Realm and releases the
+     * temporary reference created by _realm_create. The program keeps its
+     * independent reference assigned above. */
+    _realm_restore_and_cleanup();
+    return EOS_OK;
+}
+
 eos_result_t script_engine_run(const script_pkg_t *script_package)
 {
     if (!script_package || !script_package->script_str)
@@ -1334,7 +1586,17 @@ eos_result_t script_engine_run(const script_pkg_t *script_package)
     /* Clear stale error info from previous program runs before starting fresh */
     _clear_error_info();
 
-    _pkg_clone_into(&engine_rt.owned_script, script_package);
+    /* Module values are Realm-owned. Programs are isolated by creating a
+     * fresh Realm, so the cache must never survive from a previous program.
+     * This also removes entries left behind when the previous program had no
+     * pending module queue. */
+    _module_cache_clear();
+
+    if (!_pkg_clone_into(&engine_rt.owned_script, script_package))
+    {
+        _set_error_info("Out of memory while copying script package");
+        return EOS_ERR_MEM;
+    }
     script_program_t *prog = _get_prog();
 
     /* Fatal error recovery point (setjmp for jerry_port_fatal longjmp) -*/
@@ -1472,7 +1734,24 @@ eos_result_t script_engine_run(const script_pkg_t *script_package)
 
     if (jerry_value_is_exception(parsed_code))
     {
-        _script_engine_exception_handler("Script Parse", parsed_code);
+        /* JerryScript deliberately returns an exception whose value is null
+         * when parsing runs out of heap: it cannot allocate a SyntaxError
+         * object in that case.  Report this sentinel directly instead of
+         * stringifying it as the misleading literal "null". */
+        jerry_value_t exception_value = jerry_exception_value(parsed_code, false);
+        bool parse_out_of_memory = jerry_value_is_null(exception_value);
+        jerry_value_free(exception_value);
+        if (parse_out_of_memory)
+        {
+            const char *error = "Out of memory while parsing main.js (JerryScript heap exhausted)";
+            EOS_LOG_E("Script Parse Error: %s", error);
+            _set_error_info(error);
+            _clear_error_location();
+        }
+        else
+        {
+            _script_engine_exception_handler("Script Parse", parsed_code);
+        }
         _change_state(SCRIPT_ENGINE_STATE_EXCEPTION);
         result = EOS_ERR_SCRIPT_INVALID_JS;
     }
@@ -1675,6 +1954,17 @@ eos_result_t script_engine_reload_current_script(void)
     const script_pkg_t *p = _get_pkg();
     if (!p || !p->id || !p->base_path)
         return EOS_ERR_SCRIPT_NOT_RUNNING;
+
+    /* Application restart belongs to SPM so the program identity, Activity
+     * and Recent Apps state are updated together.  Keep this legacy Core
+     * helper for non-application scripts only. */
+    if (p->type == SCRIPT_TYPE_APPLICATION)
+        return EOS_ERR_INVALID_STATE;
+
+    script_pkg_type_t package_type = p->type;
+    char base_path_buf[EOS_FS_PATH_MAX];
+    snprintf(base_path_buf, sizeof(base_path_buf), "%s", p->base_path);
+
     script_engine_state_t state = engine_rt.state;
     if (state != SCRIPT_ENGINE_STATE_UNINITIALIZED)
     {
@@ -1684,20 +1974,26 @@ eos_result_t script_engine_reload_current_script(void)
     }
 
     script_pkg_t pkg = {0};
-    pkg.type = p->type;
+    pkg.type = package_type;
     const char *mf =
         (pkg.type == SCRIPT_TYPE_APPLICATION) ? EOS_APP_MANIFEST_FILE_NAME : EOS_WATCHFACE_MANIFEST_FILE_NAME;
     const char *ef =
         (pkg.type == SCRIPT_TYPE_APPLICATION) ? EOS_APP_SCRIPT_ENTRY_FILE_NAME : EOS_WATCHFACE_SCRIPT_ENTRY_FILE_NAME;
-    char base_path_buf[EOS_FS_PATH_MAX];
-    snprintf(base_path_buf, sizeof(base_path_buf), "%s", p->base_path);
     char manifest_path[EOS_FS_PATH_MAX];
     snprintf(manifest_path, sizeof(manifest_path), "%s%s", base_path_buf, mf);
     if (script_engine_get_manifest(manifest_path, &pkg) != EOS_OK)
+    {
+        eos_pkg_free(&pkg);
         return EOS_FAILED;
+    }
     char script_path[EOS_FS_PATH_MAX];
     snprintf(script_path, sizeof(script_path), "%s%s", base_path_buf, ef);
     pkg.base_path = eos_strdup(base_path_buf);
+    if (!pkg.base_path)
+    {
+        eos_pkg_free(&pkg);
+        return EOS_ERR_MEM;
+    }
     if (!eos_storage_is_file(script_path))
     {
         eos_pkg_free(&pkg);

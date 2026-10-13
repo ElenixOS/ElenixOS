@@ -111,7 +111,11 @@ static void _lru_eviction_check(void)
                   max,
                   s_total_mem_bytes,
                   watermark);
-        eos_recent_apps_evict(s_tail);
+        if (eos_recent_apps_evict(s_tail) != EOS_OK)
+        {
+            EOS_LOG_E("LRU eviction stopped because the tail cannot be terminated safely");
+            break;
+        }
     }
 }
 
@@ -165,8 +169,10 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
                                           uint32_t depth,
                                           bool detach)
 {
-    /* Get the real app_id from the launch context (NOT the display title) */
-    const char *app_id = eos_app_list_get_app_id(app_root);
+    /* Get the stable app identity from Activity metadata.  Script apps also
+     * keep their launch context, but native apps must not use user_data for
+     * identity because each native app owns that field. */
+    const char *app_id = eos_activity_get_app_id(app_root);
     if (!app_id)
     {
         EOS_LOG_W("AppRoot has no app_id");
@@ -178,7 +184,9 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
     if (existing)
     {
         EOS_LOG_I("App '%s' already in recents, evicting old entry", app_id);
-        eos_recent_apps_evict(existing);
+        eos_result_t evict_ret = eos_recent_apps_evict(existing);
+        if (evict_ret != EOS_OK)
+            return evict_ret;
     }
 
     /* Allocate entry */
@@ -198,6 +206,28 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
     entry->activity = app_root;
     entry->saved_stack_top = stack_top;
     entry->saved_stack_depth = depth;
+    entry->program_instance_id = 0;
+    script_program_t *program = spm_get_program_by_id_any_state(app_id);
+    /* An installed Script App must always have a live SPM program while it is
+     * represented by Recent Apps.  Native/system apps are allowed to use the
+     * Activity-only path, but silently treating a crashed Script App as a
+     * native entry would leave a zombie Recent Apps record that cannot resume. */
+    if (!program && eos_app_list_contains(app_id) && !eos_app_list_is_system_app(app_id))
+    {
+        EOS_LOG_W("Cannot register Script App '%s' without a live SPM program", app_id);
+        eos_free(entry);
+        return EOS_ERR_INVALID_STATE;
+    }
+    if (program)
+    {
+        if (program->type != SCRIPT_TYPE_APPLICATION || program->state != SCRIPT_PROGRAM_STATE_ACTIVE)
+        {
+            EOS_LOG_W("Cannot suspend '%s': program state=%d type=%d", app_id, program->state, program->type);
+            eos_free(entry);
+            return EOS_ERR_INVALID_STATE;
+        }
+        entry->program_instance_id = spm_program_get_instance_id(program);
+    }
     entry->last_used_tick = eos_tick_get();
     entry->est_mem_bytes = _estimate_entry_mem(entry);
 
@@ -208,7 +238,7 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
      * aspect ratio, so the portrait card displays it without stretching and
      * eos_draw_buf_destroy() can free it with the matching allocator. */
     {
-        lv_draw_buf_t *thumb = eos_activity_take_snapshot_standalone(snapshot_target, false);
+        lv_draw_buf_t *thumb = eos_activity_take_snapshot_standalone(snapshot_target, true);
         if (thumb)
         {
             entry->thumb_buf = thumb;
@@ -222,11 +252,10 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
 
     if (detach)
     {
-        /* Mark sub-stack for suspend park BEFORE detach */
+        /* Mark the detached sub-stack as owned by Recent Apps BEFORE detach. */
         eos_activity_t *node = stack_top;
         while (node && node != eos_activity_get_app_substack_next(app_root))
         {
-            eos_activity_set_suspend_on_exit(node, true);
             eos_activity_set_suspended(node, true);
             node = eos_activity_get_app_substack_next(node);
         }
@@ -236,17 +265,49 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
         if (!detached)
         {
             EOS_LOG_E("Failed to detach app sub-stack");
+            if (entry->thumb_buf)
+                eos_draw_buf_destroy(entry->thumb_buf);
+            for (eos_activity_t *node = stack_top; node; node = eos_activity_get_app_substack_next(node))
+            {
+                eos_activity_set_suspended(node, false);
+                if (node == app_root)
+                    break;
+            }
             eos_free(entry);
             return EOS_FAILED;
         }
     }
 
-    /* Suspend SPM program (preserves realm) */
-    eos_result_t spm_ret = spm_app_suspend();
-    if (spm_ret != EOS_OK)
+    /* Activity pause callbacks are UI lifecycle callbacks and must run while
+     * the owning program is still ACTIVE.  Commit the SPM transition only
+     * after the stack has been detached; otherwise a callback dispatched by a
+     * child Activity would be rejected as coming from a suspended program. */
+    if (program)
     {
-        EOS_LOG_W("SPM suspend returned %d (may already be suspended)", spm_ret);
+        eos_result_t suspend_ret = spm_suspend_program(program);
+        if (suspend_ret != EOS_OK)
+        {
+            EOS_LOG_W("SPM suspend returned %d for '%s'", suspend_ret, app_id);
+            if (detach)
+            {
+                for (eos_activity_t *node = stack_top; node; node = eos_activity_get_app_substack_next(node))
+                {
+                    eos_activity_set_suspended(node, false);
+                    if (node == app_root)
+                        break;
+                }
+                if (eos_activity_reattach_app_substack(stack_top, NULL) != EOS_OK)
+                    EOS_LOG_E("Failed to roll back detached App '%s' after suspend failure", app_id);
+            }
+            if (entry->thumb_buf)
+                eos_draw_buf_destroy(entry->thumb_buf);
+            eos_free(entry);
+            return suspend_ret;
+        }
     }
+
+    if (!program)
+        EOS_LOG_I("Native app '%s' suspended through Activity lifecycle", app_id);
 
     /* Link to LRU head */
     _lru_link_head(entry);
@@ -267,15 +328,33 @@ static eos_result_t _suspend_and_register(eos_activity_t *app_root,
 
 eos_result_t eos_recent_apps_register_for_suspend(eos_activity_t *app_activity)
 {
+    eos_activity_t *current;
+    eos_activity_t *app_root;
+    uint32_t depth = 1;
+
     if (!s_initialized || !app_activity)
         return EOS_FAILED;
 
-    if (eos_activity_get_type(app_activity) != EOS_ACTIVITY_TYPE_APP)
+    if (!eos_recent_apps_is_suspendable(app_activity))
         return EOS_FAILED;
 
-    /* Called from eos_activity_back() — the back/transition flow handles
-     * the detach, so we only register without detaching. */
-    return _suspend_and_register(app_activity, app_activity, app_activity, 1, false);
+    current = eos_activity_get_current();
+    if (current != app_activity)
+        return EOS_FAILED;
+
+    app_root = current;
+    while (eos_activity_get_app_substack_next(app_root))
+    {
+        app_root = eos_activity_get_app_substack_next(app_root);
+        depth++;
+    }
+
+    if (eos_activity_get_type(app_root) != EOS_ACTIVITY_TYPE_APP)
+        return EOS_FAILED;
+
+    /* The Activity remains on the main stack until the back transition's
+     * cleanup parks it, so the APP→APP_LIST animation can use the live view. */
+    return _suspend_and_register(app_root, current, current, depth, false);
 }
 
 eos_result_t eos_recent_apps_suspend_current(void)
@@ -341,26 +420,64 @@ eos_result_t eos_recent_apps_resume(eos_recent_app_entry_t *entry)
               entry->saved_stack_depth,
               (void *)entry->snap_buf);
 
+    script_program_t *prog = NULL;
+    if (entry->program_instance_id)
+    {
+        prog = spm_get_program_by_instance_id(entry->program_instance_id);
+        eos_activity_t *entry_root = entry->activity;
+        const char *program_id = prog ? prog->script.id : NULL;
+        if (!prog || prog->type != SCRIPT_TYPE_APPLICATION || prog->state != SCRIPT_PROGRAM_STATE_SUSPENDED
+            || !program_id || strcmp(program_id, entry->app_id) != 0 || !entry_root
+            || eos_activity_get_app_id(entry_root) == NULL
+            || strcmp(eos_activity_get_app_id(entry_root), entry->app_id) != 0
+            || eos_activity_get_script_instance_id(entry_root) != entry->program_instance_id)
+        {
+            EOS_LOG_W("Recent entry '%s' has no matching suspended program", entry->app_id);
+            eos_recent_apps_evict(entry);
+            return EOS_ERR_INVALID_STATE;
+        }
+    }
+
     /* Unlink from LRU list */
     _lru_unlink(entry);
+
+    if (prog)
+    {
+#if defined(EOS_RECENT_APPS_TIMER_STRATEGY)
+        int timer_strategy = EOS_RECENT_APPS_TIMER_STRATEGY;
+#else
+        int timer_strategy = (int)s_timer_strategy;
+#endif
+#if defined(EOS_RECENT_APPS_ANIM_STRATEGY)
+        int anim_strategy = EOS_RECENT_APPS_ANIM_STRATEGY;
+#else
+        int anim_strategy = (int)s_anim_strategy;
+#endif
+        eos_result_t resume_ret = spm_resume_program_with_strategies(prog, timer_strategy, anim_strategy);
+        if (resume_ret != EOS_OK)
+        {
+            EOS_LOG_E("Failed to resume program instance=%u for '%s': %d",
+                      entry->program_instance_id,
+                      entry->app_id,
+                      resume_ret);
+            _lru_link_head(entry);
+            return resume_ret;
+        }
+    }
 
     /* Re-attach sub-stack to main activity stack (calls on_resume chain bottom-up).
      * Pass the stored snapshot so the transition animation shows the actual app
      * screenshot instead of a black placeholder.  Ownership of snap_buf transfers
      * to eos_activity_reattach_app_substack which destroys it after use. */
-    eos_activity_reattach_app_substack(entry->saved_stack_top, entry->snap_buf);
-    entry->snap_buf = NULL;
-
-    /* Resume SPM program (AppRoot's on_resume handles this) */
-    /* Note: The on_resume chain was already called during reattach.
-     * For AppRoot, _app_on_resume will call spm_app_resume() with timer/anim strategies.
-     * We ensure the strategies are applied by calling sni_context_resume_resources
-     * directly on the SPM program's context. */
-    script_program_t *prog = spm_get_program_by_id_any_state(entry->app_id);
-    if (prog && prog->state == SCRIPT_PROGRAM_STATE_ACTIVE && prog->sni_ctx)
+    if (eos_activity_reattach_app_substack(entry->saved_stack_top, entry->snap_buf) != EOS_OK)
     {
-        sni_context_resume_resources(prog->sni_ctx, (int)s_timer_strategy, (int)s_anim_strategy);
+        EOS_LOG_E("Failed to re-attach app sub-stack for '%s'", entry->app_id);
+        if (prog)
+            spm_suspend_program(prog);
+        _lru_link_head(entry);
+        return EOS_FAILED;
     }
+    entry->snap_buf = NULL;
 
     entry->activity = NULL;
     entry->saved_stack_top = NULL;
@@ -409,6 +526,34 @@ eos_result_t eos_recent_apps_evict(eos_recent_app_entry_t *entry)
 
     _lru_unlink(entry);
 
+    if (entry->program_instance_id)
+    {
+        script_program_t *prog = spm_get_program_by_instance_id(entry->program_instance_id);
+        if (prog)
+        {
+            if (prog->type != SCRIPT_TYPE_APPLICATION || prog->state != SCRIPT_PROGRAM_STATE_SUSPENDED)
+            {
+                /* A Recent entry never owns an ACTIVE or STOPPING program.
+                 * Refuse to tear down a live foreground generation merely to
+                 * make an inconsistent entry disappear. */
+                EOS_LOG_E("Cannot evict entry '%s': program instance=%u state=%d type=%d",
+                          entry->app_id,
+                          entry->program_instance_id,
+                          prog->state,
+                          prog->type);
+                _lru_link_head(entry);
+                return prog->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_INVALID_STATE;
+            }
+            eos_result_t ret = spm_app_stop_by_instance_id(entry->program_instance_id);
+            if (ret != EOS_OK)
+            {
+                EOS_LOG_E("Failed to evict program instance=%u: %d", entry->program_instance_id, ret);
+                _lru_link_head(entry);
+                return ret;
+            }
+        }
+    }
+
     /* Destroy the entire sub-stack: walk app_substack_next chain from top down.
      * Use eos_activity_destroy() which handles the full teardown including
      * on_destroy lifecycle, view cleanup, and memory free. */
@@ -419,10 +564,10 @@ eos_result_t eos_recent_apps_evict(eos_recent_app_entry_t *entry)
 
         /* Clear suspended flag so _activity_run_destroy proceeds */
         eos_activity_set_suspended(node, false);
-        eos_activity_set_suspend_on_exit(node, false);
 
         /* Destroy the activity (calls on_destroy, deletes view, frees memory).
-         * For the AppRoot, on_destroy triggers spm_app_stop_by_id(). */
+         * For the AppRoot, on_destroy sees the already-terminated instance and
+         * cannot affect a later program with the same app_id. */
         eos_activity_destroy(node);
 
         if (node == entry->activity)
@@ -452,11 +597,22 @@ void eos_recent_apps_clear_all(void)
 {
     while (s_head)
     {
-        eos_recent_apps_evict(s_head);
+        if (eos_recent_apps_evict(s_head) != EOS_OK)
+        {
+            EOS_LOG_E("Unable to clear all Recent Apps entries safely");
+            break;
+        }
     }
-    s_count = 0;
-    s_total_mem_bytes = 0;
-    EOS_LOG_I("All recents entries cleared");
+    if (!s_head)
+    {
+        s_count = 0;
+        s_total_mem_bytes = 0;
+        EOS_LOG_I("All recents entries cleared");
+    }
+    else
+    {
+        EOS_LOG_W("Recent Apps clear stopped with entries still present");
+    }
 }
 
 void eos_recent_apps_on_engine_reset(void)
@@ -469,13 +625,18 @@ void eos_recent_apps_on_engine_reset(void)
     while (entry)
     {
         eos_recent_app_entry_t *next = entry->next;
-        /* Destroy the parked activity tree (clears suspended flags,
-         * calls on_destroy lifecycle, frees views and user_data). */
-        if (entry->activity)
+        /* Destroy every parked activity, not just the root.  The saved chain
+         * owns the complete navigation state and each page has its own view
+         * and lifecycle resources. */
+        eos_activity_t *node = entry->saved_stack_top ? entry->saved_stack_top : entry->activity;
+        while (node)
         {
-            eos_activity_set_suspended(entry->activity, false);
-            eos_activity_set_suspend_on_exit(entry->activity, false);
-            eos_activity_destroy(entry->activity);
+            eos_activity_t *next = eos_activity_get_app_substack_next(node);
+            eos_activity_set_suspended(node, false);
+            eos_activity_destroy(node);
+            if (node == entry->activity)
+                break;
+            node = next;
         }
         /* Free the stored snapshot if the app never got a chance to resume */
         if (entry->snap_buf)
@@ -527,13 +688,7 @@ bool eos_recent_apps_is_suspendable(eos_activity_t *activity)
 {
     if (!activity)
         return false;
-    if (eos_activity_get_type(activity) == EOS_ACTIVITY_TYPE_APP)
-        return true;
-    /* Check if it's a sub-activity with an app_root set */
-    eos_activity_t *root = eos_activity_get_app_root(activity);
-    if (root && eos_activity_get_type(root) == EOS_ACTIVITY_TYPE_APP)
-        return true;
-    return false;
+    return eos_activity_get_app_id(activity) != NULL;
 }
 
 /* Event Handlers ---------------------------------------------*/

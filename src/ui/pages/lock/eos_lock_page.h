@@ -1,6 +1,6 @@
 /**
  * @file eos_lock_page.h
- * @brief Lock screen security barrier on lv_layer_top()
+ * @brief Lock screen security barrier on the fixed security layer slot
  */
 
 #ifndef EOS_LOCK_PAGE_H
@@ -21,7 +21,7 @@ extern "C" {
 /* Public function prototypes ---------------------------------*/
 
 /**
- * @brief Show lock screen security barrier on lv_layer_top()
+ * @brief Show lock screen security barrier on the fixed security layer slot
  */
 void eos_lock_page_show(void);
 

@@ -85,6 +85,13 @@ static void _record_test(const char *name, bool passed, const char *details)
     }
 }
 
+static uint32_t _expected_arbitrated_period(uint32_t baseline_period, uint32_t requested_period)
+{
+    if (baseline_period == 0U || requested_period < baseline_period)
+        return requested_period;
+    return baseline_period;
+}
+
 /* ============================================
  * Device Layer Tests
  * ============================================ */
@@ -221,11 +228,18 @@ static bool _test_service_init(void)
 
 static bool _test_read_latest(void)
 {
-    eos_sensor_raw_data_t data;
-    eos_result_t result = eos_sensor_read_latest(EOS_SENSOR_TYPE_ACCE, &data);
+    eos_sensor_raw_data_t data = {0};
+    eos_result_t result = eos_sensor_read_latest(EOS_SENSOR_TYPE_GYRO, &data);
 
-    bool passed = (result == EOS_OK);
-    _record_test("Read Latest Data", passed, passed ? "Read successful" : "Read failed");
+    bool passed = (result == EOS_OK || result == EOS_ERR_NOT_FOUND);
+
+    /* A published all-zero sample is valid and must not be treated as no data. */
+    eos_sensor_data_t zero_sample = {0};
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &zero_sample, 123U);
+    result = eos_sensor_read_latest(EOS_SENSOR_TYPE_GYRO, &data);
+    passed = passed && result == EOS_OK && data.data.gyro.x == 0 && data.data.gyro.y == 0 && data.data.gyro.z == 0;
+
+    _record_test("Read Latest Data", passed, passed ? "Sample state and zero sample are distinct" : "Read failed");
     return passed;
 }
 
@@ -245,14 +259,14 @@ static bool _test_subscribe(void)
 
     _subscribe_cb_count = 0;
 
-    eos_result_t result = eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _subscribe_test_cb, NULL, 100);
+    eos_result_t result = eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _subscribe_test_cb, NULL, 100);
 
     if (result != EOS_OK)
     {
         passed = false;
     }
 
-    result = eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _subscribe_test_cb, NULL);
+    result = eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _subscribe_test_cb, NULL);
 
     if (result != EOS_OK)
     {
@@ -283,7 +297,7 @@ static void _nested_self_cb_a(eos_sensor_type_t type, const eos_sensor_raw_data_
     (void)user_data;
     _nested_self_count_a++;
     /* Unsubscribe ourselves from within the callback */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_self_cb_a, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_self_cb_a, NULL);
 }
 
 static void _nested_self_cb_b(eos_sensor_type_t type, const eos_sensor_raw_data_t *data, void *user_data)
@@ -301,13 +315,13 @@ static bool _test_nested_self_unsubscribe(void)
     _nested_self_count_b = 0;
 
     /* Subscribe two callbacks: A unsubscribes itself, B should survive */
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_self_cb_a, NULL, 0);
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_self_cb_b, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_self_cb_a, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_self_cb_b, NULL, 0);
 
     /* Trigger notification */
     eos_sensor_data_t data = {0};
     data.acce.x = 42;
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
 
     /*
      * A should have fired once (and then unsubscribed itself).
@@ -321,12 +335,12 @@ static bool _test_nested_self_unsubscribe(void)
 
     /* Trigger a second notify — A is gone, only B should fire */
     _nested_self_count_b = 0;
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
     if (_nested_self_count_b != 1)
         passed = false;
 
     /* Clean up */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_self_cb_b, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_self_cb_b, NULL);
     /* Double-unsubscribe of A should be harmless (already removed) */
 
     _record_test("Nested Self-Unsubscribe",
@@ -352,7 +366,7 @@ static void _nested_cross_cb_a(eos_sensor_type_t type, const eos_sensor_raw_data
     (void)user_data;
     _nested_cross_count_a++;
     /* Unsubscribe B (which appears after A in the list) */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_cross_cb_b, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_cross_cb_b, NULL);
 }
 
 static void _nested_cross_cb_b(eos_sensor_type_t type, const eos_sensor_raw_data_t *data, void *user_data)
@@ -371,11 +385,11 @@ static bool _test_nested_cross_unsubscribe(void)
 
     /* A must be subscribed LAST so it's prepended first (head of list).
      * This way A fires first and can try to remove B behind it. */
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_cross_cb_b, NULL, 0);
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_cross_cb_a, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_cross_cb_b, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_cross_cb_a, NULL, 0);
 
     eos_sensor_data_t data = {0};
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
 
     /* A should fire. B may or may not fire depending on list order.
      * But most importantly: it should NOT crash. */
@@ -383,7 +397,7 @@ static bool _test_nested_cross_unsubscribe(void)
         passed = false;
 
     /* Clean up surviving subscribers */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_cross_cb_a, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_cross_cb_a, NULL);
 
     _record_test("Nested Cross-Unsubscribe",
                  passed,
@@ -413,7 +427,7 @@ static void _nested_sub_origin_cb(eos_sensor_type_t type, const eos_sensor_raw_d
     (void)data;
     (void)user_data;
     /* Subscribe a new callback from within this notification */
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_sub_new_cb, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_sub_new_cb, NULL, 0);
 }
 
 static bool _test_nested_subscribe_during_notify(void)
@@ -421,11 +435,11 @@ static bool _test_nested_subscribe_during_notify(void)
     bool passed = true;
     _nested_sub_new_count = 0;
 
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_sub_origin_cb, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_sub_origin_cb, NULL, 0);
 
     eos_sensor_data_t data = {0};
     data.acce.x = 99;
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
 
     /*
      * The new callback was added DURING the first notification.
@@ -436,13 +450,13 @@ static bool _test_nested_subscribe_during_notify(void)
 
     /* Now trigger a second notify — the new callback SHOULD fire */
     _nested_sub_new_count = 0;
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
     if (_nested_sub_new_count != 1)
         passed = false;
 
     /* Clean up */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_sub_origin_cb, NULL);
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_sub_new_cb, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_sub_origin_cb, NULL);
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_sub_new_cb, NULL);
 
     _record_test("Nested Subscribe During Notify",
                  passed,
@@ -474,13 +488,13 @@ static void _nested_multi_acce_cb(eos_sensor_type_t type, const eos_sensor_raw_d
     (void)user_data;
     _nested_multi_acce_count++;
 
-    /* Trigger GYRO notify, which fires gyro subscribers */
+    /* Trigger CAP notify, which fires cap subscribers */
     eos_sensor_data_t gdata = {0};
-    gdata.gyro.x = 10;
-    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &gdata, lv_tick_get());
+    gdata.cap.cap = 10;
+    eos_sensor_notify(EOS_SENSOR_TYPE_CAP, &gdata, lv_tick_get());
 
-    /* Now unsubscribe ourselves — the outer ACCE notify loop must survive */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_ACCE, _nested_multi_acce_cb, NULL);
+    /* Now unsubscribe ourselves — the outer GYRO notify loop must survive */
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_multi_acce_cb, NULL);
 }
 
 static bool _test_nested_multi_sensor_uaf(void)
@@ -489,12 +503,12 @@ static bool _test_nested_multi_sensor_uaf(void)
     _nested_multi_acce_count = 0;
     _nested_multi_gyro_count = 0;
 
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_ACCE, _nested_multi_acce_cb, NULL, 0);
-    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_multi_gyro_cb, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_GYRO, _nested_multi_acce_cb, NULL, 0);
+    eos_sensor_subscribe(EOS_SENSOR_TYPE_CAP, _nested_multi_gyro_cb, NULL, 0);
 
     eos_sensor_data_t data = {0};
     data.acce.x = 77;
-    eos_sensor_notify(EOS_SENSOR_TYPE_ACCE, &data, lv_tick_get());
+    eos_sensor_notify(EOS_SENSOR_TYPE_GYRO, &data, lv_tick_get());
 
     /*
      * ACCE callback: fired once (and unsubscribed itself).
@@ -506,8 +520,8 @@ static bool _test_nested_multi_sensor_uaf(void)
     if (_nested_multi_gyro_count != 1)
         passed = false;
 
-    /* Clean up — ACCE is already unsubscribed */
-    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_GYRO, _nested_multi_gyro_cb, NULL);
+    /* Clean up — GYRO is already unsubscribed */
+    eos_sensor_unsubscribe(EOS_SENSOR_TYPE_CAP, _nested_multi_gyro_cb, NULL);
 
     _record_test("Nested Multi-Sensor UAF",
                  passed,
@@ -518,23 +532,27 @@ static bool _test_nested_multi_sensor_uaf(void)
 
 static bool _test_sample_rate(void)
 {
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
     eos_result_t result = eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 50);
 
     bool passed = (result == EOS_OK);
 
     uint32_t period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
-    if (period != 50)
+    if (period != _expected_arbitrated_period(saved_period, 50U))
     {
         passed = false;
     }
 
+    (void)eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
+
     _record_test("Sample Rate", passed, passed ? "Sample rate config works" : "Sample rate config failed");
-    return true;
+    return passed;
 }
 
 static bool _test_sample_rate_multiple(void)
 {
     bool passed = true;
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
 
     /* Test multiple sample rates */
     uint32_t test_periods[] = {10, 50, 100, 200, 500, 1000};
@@ -549,7 +567,7 @@ static bool _test_sample_rate_multiple(void)
         }
 
         uint32_t period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
-        if (period != test_periods[i])
+        if (period != _expected_arbitrated_period(saved_period, test_periods[i]))
         {
             passed = false;
             break;
@@ -557,7 +575,7 @@ static bool _test_sample_rate_multiple(void)
     }
 
     /* Reset to default */
-    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
+    (void)eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
 
     _record_test("Multiple Sample Rates",
                  passed,
@@ -565,9 +583,51 @@ static bool _test_sample_rate_multiple(void)
     return passed;
 }
 
+static bool _test_sampling_demand_arbitration(void)
+{
+    bool passed = true;
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
+    uint32_t expected_period;
+    eos_sensor_demand_id_t slow_demand = EOS_SENSOR_DEMAND_INVALID;
+    eos_sensor_demand_id_t fast_demand = EOS_SENSOR_DEMAND_INVALID;
+
+    if (eos_sensor_demand_acquire(EOS_SENSOR_TYPE_ACCE, 200U, &slow_demand) != EOS_OK)
+        passed = false;
+    expected_period = saved_period == 0U || saved_period > 200U ? 200U : saved_period;
+    if (passed && eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE) != expected_period)
+        passed = false;
+
+    if (passed && eos_sensor_demand_acquire(EOS_SENSOR_TYPE_ACCE, 50U, &fast_demand) != EOS_OK)
+        passed = false;
+    if (passed && eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE) != _expected_arbitrated_period(saved_period, 50U))
+        passed = false;
+
+    if (fast_demand != EOS_SENSOR_DEMAND_INVALID && eos_sensor_demand_release(fast_demand) != EOS_OK)
+        passed = false;
+    if (passed && eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE) != expected_period)
+        passed = false;
+
+    if (slow_demand != EOS_SENSOR_DEMAND_INVALID && eos_sensor_demand_release(slow_demand) != EOS_OK)
+        passed = false;
+    if (eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE) != saved_period)
+        passed = false;
+
+    if (fast_demand != EOS_SENSOR_DEMAND_INVALID)
+        (void)eos_sensor_demand_release(fast_demand);
+    if (slow_demand != EOS_SENSOR_DEMAND_INVALID)
+        (void)eos_sensor_demand_release(slow_demand);
+
+    _record_test("Sampling Demand Arbitration",
+                 passed,
+                 passed ? "Independent sampling demands cooperate and restore cleanly"
+                        : "Sampling demand arbitration failed");
+    return passed;
+}
+
 static bool _test_sensor_enable_disable(void)
 {
     bool passed = true;
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
 
     /* Enable sensor with 100ms period */
     eos_result_t result = eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
@@ -584,13 +644,13 @@ static bool _test_sensor_enable_disable(void)
     }
 
     uint32_t period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
-    if (period != 0)
+    if (period != saved_period)
     {
         passed = false;
     }
 
     /* Re-enable */
-    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
+    (void)eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
 
     _record_test("Enable/Disable", passed, passed ? "Enable/disable works correctly" : "Enable/disable failed");
     return passed;
@@ -599,6 +659,7 @@ static bool _test_sensor_enable_disable(void)
 static bool _test_data_notification_rate(void)
 {
     bool passed = true;
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
 
     /* Set 100ms sample period (10Hz) */
     eos_result_t result = eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
@@ -611,7 +672,7 @@ static bool _test_data_notification_rate(void)
 
     /* Verify period is correctly set */
     uint32_t period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
-    if (period != 100)
+    if (period != _expected_arbitrated_period(saved_period, 100U))
     {
         passed = false;
         _record_test("Data Notification Rate", passed, "Sample period mismatch");
@@ -636,7 +697,7 @@ static bool _test_data_notification_rate(void)
     }
 
     /* Reset to default */
-    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
+    (void)eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
 
     _record_test("Data Notification Rate",
                  passed,
@@ -717,18 +778,19 @@ static bool _test_no_subscriber_sampling(void)
 static bool _test_min_sample_rate(void)
 {
     bool passed = true;
+    uint32_t saved_period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
 
     /* Set a low sample rate (1Hz = 1000ms) */
     eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 1000);
 
     uint32_t period = eos_sensor_get_sample_period(EOS_SENSOR_TYPE_ACCE);
-    if (period != 1000)
+    if (period != _expected_arbitrated_period(saved_period, 1000U))
     {
         passed = false;
     }
 
     /* Reset to default */
-    eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, 100);
+    (void)eos_sensor_set_sample_period(EOS_SENSOR_TYPE_ACCE, saved_period);
 
     _record_test("Min Sample Rate",
                  passed,
@@ -953,10 +1015,10 @@ static bool _test_data_integrity(void)
             break;
         }
 
-        /* Additional integrity check: verify data has reasonable values */
-        /* Accelerometer values typically range from -2000 to 2000 (in mg) */
-        if (data.data.acce.x < -3000 || data.data.acce.x > 3000 || data.data.acce.y < -3000 || data.data.acce.y > 3000
-            || data.data.acce.z < -3000 || data.data.acce.z > 3000)
+        /* Additional integrity check: verify data has reasonable values. */
+        /* Accelerometer values are milli-m/s^2 (9807 ~= 1 g). */
+        if (data.data.acce.x < -12000 || data.data.acce.x > 12000 || data.data.acce.y < -12000
+            || data.data.acce.y > 12000 || data.data.acce.z < -12000 || data.data.acce.z > 12000)
         {
             passed = false;
             break;
@@ -997,6 +1059,7 @@ static void _run_service_layer_tests(void)
     _test_nested_multi_sensor_uaf();
     _test_sample_rate();
     _test_sample_rate_multiple();
+    _test_sampling_demand_arbitration();
     _test_sensor_enable_disable();
     _test_data_notification_rate();
     _test_fifo_full();
@@ -1194,6 +1257,7 @@ void eos_test_sensor_register_tests(void)
     eos_test_register("Sensor: nested multi-sensor UAF", _test_nested_multi_sensor_uaf);
     eos_test_register("Sensor: sample rate 50ms round-trip", _test_sample_rate);
     eos_test_register("Sensor: sample rate multiple periods", _test_sample_rate_multiple);
+    eos_test_register("Sensor: independent sampling demand arbitration", _test_sampling_demand_arbitration);
     eos_test_register("Sensor: enable/disable cycle", _test_sensor_enable_disable);
     eos_test_register("Sensor: data notification rate period=100", _test_data_notification_rate);
     eos_test_register("Sensor: FIFO full recovery", _test_fifo_full);

@@ -25,9 +25,11 @@
 #include "eos_swipe_panel.h"
 #include "eos_slide_widget.h"
 #include "eos_event.h"
+#include "eos_overlay_layer.h"
 /* Macros and Definitions -------------------------------------*/
 #define _CROWN_ENCODER_SCROLL_COEFFICIENT 50
 #define _VIBRATOR_TICK_DY_THRESHOLD 15
+#define _NON_TOUCH_HAPTIC_MIN_INTERVAL 50
 
 #define _SCROLLBAR_WIDTH 12
 #define _SCROLLBAR_HEIGHT 90
@@ -45,17 +47,20 @@ static lv_timer_t *scrollbar_hide_timer = NULL;
 static lv_obj_t *pending_rebind_target = NULL;
 static bool pending_rebind_is_view = true;
 static bool pending_rebind_scheduled = false;
+static uint32_t non_touch_scroll_last_haptic_tick;
+static bool non_touch_scroll_haptic_primed;
 
 static void _scrollable_obj_scrolled_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_start_cb(lv_event_t *e);
 static void _scrollable_obj_scroll_end_cb(lv_event_t *e);
 static void _clear_scrollable_obj_cb(lv_event_t *e);
-static void _clear_scrollable_obj_async_cb(void *user_data);
+static void _pending_rebind_target_delete_cb(lv_event_t *e);
 static void _activity_view_switched_cb(eos_event_t *e);
 static void _activity_view_switched_async_cb(void *user_data);
 static void _apply_pending_rebind_async_cb(void *user_data);
 static void _scrollbar_hide_timer_cb(lv_timer_t *t);
 static void _scrollbar_fade_out_done_cb(eos_anim_t *a);
+static void _crown_encoder_scroll_async_cb(void *user_data);
 static lv_obj_t *_find_scrollable_obj(lv_obj_t *root);
 static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor);
 static void _set_target_obj_immediate(lv_obj_t *obj);
@@ -186,17 +191,16 @@ static void _clear_scrollable_obj(void)
 static void _clear_scrollable_obj_cb(lv_event_t *e)
 {
     lv_obj_t *target = lv_event_get_target(e);
-    lv_async_call(_clear_scrollable_obj_async_cb, target);
-}
 
-static void _clear_scrollable_obj_async_cb(void *user_data)
-{
-    lv_obj_t *target = (lv_obj_t *)user_data;
-    /* Old scrollable object for deferred cleanup */
-    if (target != scrollable_obj && target != scrollable_root)
-        return;
-
-    _clear_scrollable_obj();
+    /* LVGL sends DELETE before the object memory is released.  Invalidate
+     * the cached pointers synchronously so later input callbacks never call
+     * lv_obj_is_valid() on an object which has already gone away. */
+    if (target == scrollable_obj || target == scrollable_root)
+    {
+        scrollable_obj = NULL;
+        scrollable_root = NULL;
+        _scrollbar_hide_now();
+    }
 }
 
 static void _scrollbar_set_focused(void)
@@ -220,51 +224,17 @@ static void _scrollbar_hide_set_anim(void)
     _scrollbar_schedule_hide();
 }
 
-static lv_timer_t *_double_click_timer = NULL;
-static bool _double_click_pending = false;
-
-/**
- * @brief Timeout callback: no second click arrived within the double-click window.
- *        The single-click action fires now — after the window expired without a
- *        second click, confirming the user intended a single click.
- */
-static void _single_click_deferred_cb(lv_timer_t *t)
-{
-    LV_UNUSED(t);
-    _double_click_timer = NULL;
-    _double_click_pending = false;
-    eos_chrome_manager_handle_crown_click();
-}
-
 static void _crown_button_async_cb(void *user_data)
 {
     eos_button_state_t state = (eos_button_state_t)(intptr_t)user_data;
     switch (state)
     {
         case EOS_BUTTON_STATE_CLICKED:
-#if EOS_RECENT_APPS_ENABLE
-            if (_double_click_pending && _double_click_timer)
-            {
-                /* Second click within window → double-click (recents toggle).
-                 * Cancel the deferred single-click timer and open recents. */
-                lv_timer_del(_double_click_timer);
-                _double_click_timer = NULL;
-                _double_click_pending = false;
-                eos_chrome_manager_handle_crown_double_click();
-            }
-            else
-            {
-                /* First click → arm the double-click detection window.
-                 * The single-click action is deferred until the timer
-                 * expires, avoiding the need to "undo" a premature back(). */
-                _double_click_pending = true;
-                _double_click_timer =
-                    lv_timer_create(_single_click_deferred_cb, (uint32_t)EOS_RECENT_APPS_CROWN_DOUBLE_CLICK_MS, NULL);
-                lv_timer_set_repeat_count(_double_click_timer, 1);
-            }
-#else
-            /* Recents disabled: single-click fires immediately */
             eos_chrome_manager_handle_crown_click();
+            break;
+        case EOS_BUTTON_STATE_LONG_PRESSED:
+#if EOS_RECENT_APPS_ENABLE
+            eos_chrome_manager_handle_crown_long_press();
 #endif
             break;
         default:
@@ -297,6 +267,37 @@ static void _crown_encoder_async_cb(void *user_data)
         if (scrollable_obj && lv_obj_is_valid(scrollable_obj))
             lv_obj_scroll_by_bounded(scrollable_obj, 0, dy, LV_ANIM_ON);
     }
+}
+
+static void _crown_encoder_scroll_async_cb(void *user_data)
+{
+    int32_t delta = (int32_t)(intptr_t)user_data;
+    int32_t dy;
+
+    if (!scrollable_obj || !lv_obj_is_valid(scrollable_obj) || !lv_obj_is_visible(scrollable_obj))
+    {
+        _clear_scrollable_obj();
+        return;
+    }
+
+    if (scrollable_root && lv_obj_is_valid(scrollable_root) && !lv_obj_is_visible(scrollable_root))
+    {
+        return;
+    }
+
+    if (delta == 0)
+        return;
+
+    dy = delta * encoder_reverse;
+    _scrollbar_set_focused();
+    if (!non_touch_scroll_haptic_primed
+        || lv_tick_elaps(non_touch_scroll_last_haptic_tick) >= _NON_TOUCH_HAPTIC_MIN_INTERVAL)
+    {
+        eos_haptic_tick();
+        non_touch_scroll_last_haptic_tick = lv_tick_get();
+        non_touch_scroll_haptic_primed = true;
+    }
+    lv_obj_scroll_by_bounded(scrollable_obj, 0, dy, LV_ANIM_OFF);
 }
 
 static void _scrollable_obj_scrolled_cb(lv_event_t *e)
@@ -344,6 +345,7 @@ static void _scrollable_obj_scrolled_cb(lv_event_t *e)
 
 static void _indev_touched_cb(lv_event_t *e)
 {
+    non_touch_scroll_haptic_primed = false;
     _scrollbar_set_unfocused();
 }
 
@@ -362,19 +364,26 @@ static void _scrollable_obj_scroll_end_cb(lv_event_t *e)
 
 static void _activity_view_switched_cb(eos_event_t *e)
 {
-    lv_obj_t *view = (lv_obj_t *)eos_event_get_param(e);
-    lv_async_call(_activity_view_switched_async_cb, view);
+    LV_UNUSED(e);
+    /* Resolve the active view when the async callback runs.  Passing an
+     * Activity-owned LVGL pointer across a frame boundary lets a fast
+     * close/restart free it before the callback executes. */
+    lv_async_call(_activity_view_switched_async_cb, NULL);
 }
 
 static void _activity_view_switched_async_cb(void *user_data)
 {
-    lv_obj_t *view = (lv_obj_t *)user_data;
-    eos_crown_encoder_set_target_view(view);
+    LV_UNUSED(user_data);
+    eos_crown_encoder_set_target_view(eos_view_active());
 }
 
 static void _slide_widget_state_changed_cb(lv_event_t *e)
 {
-    lv_async_call(_slide_widget_state_changed_async_cb, lv_event_get_param(e));
+    /* The slide widget owns the event parameter and frees itself from the
+     * target object's DELETE callback.  Process the state while the event is
+     * still in flight, then let the crown's object-owned pending rebind
+     * guard handle any later target deletion. */
+    _slide_widget_state_changed_async_cb(lv_event_get_param(e));
 }
 
 static void _slide_widget_state_changed_async_cb(void *user_data)
@@ -416,6 +425,9 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     pending_rebind_scheduled = false;
     pending_rebind_target = NULL;
 
+    if (target && lv_obj_is_valid(target))
+        lv_obj_remove_event_cb(target, _pending_rebind_target_delete_cb);
+
     if (is_view)
     {
         _set_target_view_immediate(target);
@@ -424,6 +436,20 @@ static void _apply_pending_rebind_async_cb(void *user_data)
     {
         _set_target_obj_immediate(target);
     }
+}
+
+static void _pending_rebind_target_delete_cb(lv_event_t *e)
+{
+    lv_obj_t *target = lv_event_get_target(e);
+    if (target != pending_rebind_target)
+        return;
+
+    /* This callback runs before LVGL releases target.  Cancel the matching
+     * async timer while the pointer is still only an identity token; the
+     * async callback must not dereference a freed LVGL object. */
+    lv_async_call_cancel(_apply_pending_rebind_async_cb, NULL);
+    pending_rebind_target = NULL;
+    pending_rebind_scheduled = false;
 }
 
 static bool _is_descendant_of(lv_obj_t *obj, lv_obj_t *ancestor)
@@ -503,7 +529,15 @@ static lv_obj_t *_find_scrollable_obj(lv_obj_t *root)
             continue;
 
         if (lv_obj_has_flag(child, LV_OBJ_FLAG_SCROLLABLE))
-            return child;
+        {
+            /* Many LVGL leaf widgets inherit SCROLLABLE even though they
+             * have no overflow (for example labels). Do not bind the crown
+             * to those objects; choose an object with real vertical range. */
+            lv_obj_update_layout(child);
+            if ((lv_obj_get_scroll_dir(child) & LV_DIR_VER) != 0
+                && lv_obj_get_scroll_top(child) + lv_obj_get_scroll_bottom(child) > 0)
+                return child;
+        }
 
         lv_obj_t *nested = _find_scrollable_obj(child);
         if (nested)
@@ -548,28 +582,68 @@ static void _set_target_view_immediate(lv_obj_t *view)
 
 void eos_crown_encoder_set_target_obj(lv_obj_t *obj)
 {
+    bool target_changed = pending_rebind_target != obj;
+    if (target_changed && pending_rebind_target && lv_obj_is_valid(pending_rebind_target))
+        lv_obj_remove_event_cb(pending_rebind_target, _pending_rebind_target_delete_cb);
+
     pending_rebind_target = obj;
     pending_rebind_is_view = false;
     if (pending_rebind_scheduled)
     {
+        if (target_changed && obj && lv_obj_is_valid(obj))
+            lv_obj_add_event_cb(obj, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
         return;
     }
 
+    if (obj && !lv_obj_is_valid(obj))
+    {
+        pending_rebind_target = NULL;
+        return;
+    }
+
+    if (obj)
+        lv_obj_add_event_cb(obj, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
     pending_rebind_scheduled = true;
-    lv_async_call(_apply_pending_rebind_async_cb, NULL);
+    if (lv_async_call(_apply_pending_rebind_async_cb, NULL) != LV_RESULT_OK)
+    {
+        if (obj && lv_obj_is_valid(obj))
+            lv_obj_remove_event_cb(obj, _pending_rebind_target_delete_cb);
+        pending_rebind_target = NULL;
+        pending_rebind_scheduled = false;
+    }
 }
 
 void eos_crown_encoder_set_target_view(lv_obj_t *view)
 {
+    bool target_changed = pending_rebind_target != view;
+    if (target_changed && pending_rebind_target && lv_obj_is_valid(pending_rebind_target))
+        lv_obj_remove_event_cb(pending_rebind_target, _pending_rebind_target_delete_cb);
+
     pending_rebind_target = view;
     pending_rebind_is_view = true;
     if (pending_rebind_scheduled)
     {
+        if (target_changed && view && lv_obj_is_valid(view))
+            lv_obj_add_event_cb(view, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
         return;
     }
 
+    if (view && !lv_obj_is_valid(view))
+    {
+        pending_rebind_target = NULL;
+        return;
+    }
+
+    if (view)
+        lv_obj_add_event_cb(view, _pending_rebind_target_delete_cb, LV_EVENT_DELETE, NULL);
     pending_rebind_scheduled = true;
-    lv_async_call(_apply_pending_rebind_async_cb, NULL);
+    if (lv_async_call(_apply_pending_rebind_async_cb, NULL) != LV_RESULT_OK)
+    {
+        if (view && lv_obj_is_valid(view))
+            lv_obj_remove_event_cb(view, _pending_rebind_target_delete_cb);
+        pending_rebind_target = NULL;
+        pending_rebind_scheduled = false;
+    }
 }
 
 void eos_crown_encoder_activate_current_overlay_scrollable(void)
@@ -605,6 +679,12 @@ void eos_crown_encoder_report(eos_crown_encoder_diff_t diff)
     eos_dispatcher_call(_crown_encoder_async_cb, (void *)(intptr_t)diff);
 }
 
+void eos_crown_encoder_scroll_report(int32_t delta)
+{
+    if (delta != 0)
+        eos_dispatcher_call(_crown_encoder_scroll_async_cb, (void *)(intptr_t)delta);
+}
+
 void eos_crown_button_report(eos_button_state_t state)
 {
     eos_dispatcher_call(_crown_button_async_cb, (void *)(intptr_t)state);
@@ -612,7 +692,7 @@ void eos_crown_button_report(eos_button_state_t state)
 
 void eos_crown_init(void)
 {
-    scrollbar = lv_bar_create(lv_layer_sys());
+    scrollbar = lv_bar_create(eos_overlay_layer_get(EOS_TOP_LAYER_SYSTEM_CROWN));
     lv_bar_set_mode(scrollbar, LV_BAR_MODE_RANGE);
     lv_bar_set_range(scrollbar, _SCROLLBAR_HEIGHT, 0);
     lv_obj_align(scrollbar, LV_ALIGN_TOP_RIGHT, -10, _SCROLLBAR_MARGIN_TOP);

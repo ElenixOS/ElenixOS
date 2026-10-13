@@ -241,7 +241,7 @@ void eos_battery_report_raw(const eos_battery_raw_t *raw)
     _update_mode();
     _notify_if_changed();
 
-    EOS_LOG_I("Battery: %d%%, %s", _svc.state.percent, _svc.state.charging ? "charging" : "discharging");
+    EOS_LOG_D("Battery: %d%%, %s", _svc.state.percent, _svc.state.charging ? "charging" : "discharging");
 }
 
 int8_t eos_battery_get_percent(void)

@@ -74,7 +74,7 @@ static void _perm_app_uninstalled_cb(eos_event_t *e)
     {
         return;
     }
-    EOS_LOG_D("Revoking permissions for uninstalled app: %s", app_id);
+    EOS_LOG_I("Revoking permissions for uninstalled app: %s", app_id);
     eos_permission_revoke_all(app_id);
 }
 
@@ -227,5 +227,5 @@ void eos_permission_revoke_all(const char *app_id)
     eos_config_set_json(EOS_CONFIG_KEY_PERM_GRANTS, grants);
     /* Note: eos_config_set_json takes ownership of grants, do not delete here */
 
-    EOS_LOG_D("All permissions revoked for app: %s", app_id);
+    EOS_LOG_I("All permissions revoked for app: %s", app_id);
 }

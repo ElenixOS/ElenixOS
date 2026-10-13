@@ -16,6 +16,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdarg.h>
 #include "eos_config.h"
+#include "eos_dump.h"
 #include "eos_error.h"
 
 /* Public macros ----------------------------------------------*/
@@ -69,10 +70,30 @@ extern "C" {
 #define EOS_LOG_FMT(fmt) fmt
 #endif /* EOS_LOG_TAG */
 
-#define EOS_LOG_D(fmt, ...) eos_log(EOS_LOG_LEVEL_DEBUG, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_I(fmt, ...) eos_log(EOS_LOG_LEVEL_INFO, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_W(fmt, ...) eos_log(EOS_LOG_LEVEL_WARN, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
-#define EOS_LOG_E(fmt, ...) eos_log(EOS_LOG_LEVEL_ERROR, EOS_LOG_FMT(fmt), ##__VA_ARGS__)
+#define EOS_LOG_D(fmt, ...)                                                \
+    do                                                                     \
+    {                                                                      \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_DEBUG))                       \
+            eos_log(EOS_LOG_LEVEL_DEBUG, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_I(fmt, ...)                                               \
+    do                                                                    \
+    {                                                                     \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_INFO))                       \
+            eos_log(EOS_LOG_LEVEL_INFO, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_W(fmt, ...)                                               \
+    do                                                                    \
+    {                                                                     \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_WARN))                       \
+            eos_log(EOS_LOG_LEVEL_WARN, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
+#define EOS_LOG_E(fmt, ...)                                                \
+    do                                                                     \
+    {                                                                      \
+        if (eos_log_is_enabled(EOS_LOG_LEVEL_ERROR))                       \
+            eos_log(EOS_LOG_LEVEL_ERROR, EOS_LOG_FMT(fmt), ##__VA_ARGS__); \
+    } while (0)
 
 #endif /* EOS_LOG_DISABLE */
 
@@ -121,14 +142,15 @@ extern "C" {
 
 /* Assertion Macros -------------------------------------------*/
 #if EOS_USE_ASSERT
-#define EOS_ASSERT(expr)                              \
-    do                                                \
-    {                                                 \
-        if (!(expr))                                  \
-        {                                             \
-            EOS_LOG_E("Assertion failed: %s", #expr); \
-            EOS_ASSERT_HANDLER                        \
-        }                                             \
+#define EOS_ASSERT(expr)                                \
+    do                                                  \
+    {                                                   \
+        if (!(expr))                                    \
+        {                                               \
+            EOS_LOG_E("Assertion failed: %s", #expr);   \
+            eos_dump_assert(__FILE__, __LINE__, #expr); \
+            EOS_ASSERT_HANDLER                          \
+        }                                               \
     } while (0)
 #else
 #define EOS_ASSERT(expr) ((void)0)
@@ -171,6 +193,7 @@ typedef struct
     eos_log_listener_cb_t cb; /**< Callback function */
     void *user_data; /**< User data */
     uint8_t used; /**< Whether this slot is used */
+    uint8_t enabled; /**< Whether dispatch invokes this listener */
     uint8_t flags; /**< Listener flags */
 } eos_log_listener_t;
 
@@ -181,6 +204,26 @@ typedef struct
  * @return EOS_OK on success
  */
 void eos_service_log_init(void);
+
+/**
+ * @brief Check whether a message at the given level would be dispatched
+ * @param level Message level
+ * @return true if the message meets the current minimum level
+ */
+bool eos_log_is_enabled(eos_log_level_t level);
+
+/**
+ * @brief Get the minimum level dispatched by the log service
+ * @return Current minimum level
+ */
+eos_log_level_t eos_log_get_level(void);
+
+/**
+ * @brief Set the minimum level dispatched by the log service
+ * @param level Minimum level to dispatch
+ * @return EOS_OK on success, error code otherwise
+ */
+eos_result_t eos_log_set_level(eos_log_level_t level);
 
 /**
  * @brief Register a log listener
@@ -201,6 +244,14 @@ eos_log_listener_id_t eos_log_register_listener(const char *name,
  * @return EOS_OK on success
  */
 eos_result_t eos_log_unregister_listener(eos_log_listener_id_t id);
+
+/**
+ * @brief Enable or disable a log listener without unregistering it
+ * @param id Listener ID
+ * @param enabled Whether dispatch should invoke the listener
+ * @return EOS_OK on success
+ */
+eos_result_t eos_log_set_listener_enabled(eos_log_listener_id_t id, bool enabled);
 
 /**
  * @brief Find a log listener by name

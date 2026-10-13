@@ -23,6 +23,7 @@ typedef enum
     SNI_CONST_INT,
     SNI_CONST_FLOAT,
     SNI_CONST_STRING,
+    SNI_CONST_UNDEFINED,
 } sni_constant_type_t;
 
 typedef struct
@@ -49,6 +50,23 @@ typedef struct
         const char *s;
     } value;
 } sni_constant_desc_t;
+
+typedef struct
+{
+    const char *name;
+    bool function_like;
+    const char *parameters_json;
+    const char *initializer;
+    bool defined;
+    bool value_available;
+    sni_constant_type_t value_type;
+    union
+    {
+        int32_t i;
+        double f;
+        const char *s;
+    } value;
+} sni_macro_desc_t;
 
 typedef struct sni_class_desc_t sni_class_desc_t;
 
@@ -92,6 +110,14 @@ bool sni_api_mount(jerry_value_t realm, jerry_value_t api_obj, const char *name)
  * @return bool Whether registration successful
  */
 bool sni_api_register_constants(const sni_constant_desc_t *constants, jerry_value_t target);
+
+/**
+ * @brief Register the stable macro catalog under the lv API object
+ * @param macros Macro descriptions (ends with name == NULL)
+ * @param target Target API object
+ * @return bool Whether registration succeeded
+ */
+bool sni_api_register_macro_catalog(const sni_macro_desc_t *macros, jerry_value_t target);
 
 /**
  * @brief Throw an error exception

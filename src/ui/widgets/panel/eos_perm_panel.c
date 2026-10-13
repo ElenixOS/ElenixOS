@@ -2,14 +2,14 @@
  * @file eos_perm_panel.c
  * @brief Permission request panel implementation
  *
- * Creates a full-screen overlay on lv_layer_top() with:
+ * Creates a full-screen overlay on the fixed permission layer slot with:
  *  - Solid dark background (fully covers content below including header)
  *  - Title: "Allow \"<App>\" to use your <Permission>?"
  *  - Description message
  *  - Three vertically-stacked buttons: Allow Once, Allow While Using App, Don't Allow
  *
- * The overlay_layer container (on lv_layer_sys, above the header_layer)
- * naturally obscures the app header without any hide/show coordination.
+ * The permission slot naturally obscures the app header without any hide/show
+ * coordination.
  * Side key and crown are disabled while the panel is shown (via overlay registration).
  */
 #include "eos_perm_panel.h"
@@ -44,12 +44,12 @@ static void _perm_panel_hide(void);
 static eos_perm_panel_t *_active_panel = NULL;
 
 static const eos_chrome_overlay_t s_perm_overlay = {
+    .layer_slot = EOS_TOP_LAYER_PERMISSION,
     .pull_back = _perm_panel_pull_back,
     .hide = _perm_panel_hide,
     .on_focus = NULL,
     .is_open = NULL,
     .get_scrollable = NULL,
-    .get_foreground_obj = NULL,
     .name = "PermissionPanel",
 };
 
@@ -71,7 +71,7 @@ eos_perm_panel_t *eos_perm_panel_create(const eos_perm_panel_cfg_t *cfg)
     eos_chrome_manager_notify_overlay_opened(&s_perm_overlay);
 
     /* Full-screen container on overlay layer (above header_layer) -*/
-    p->container = lv_obj_create(eos_overlay_get_overlay_layer());
+    p->container = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_PERMISSION));
     lv_obj_remove_style_all(p->container);
     lv_obj_set_size(p->container, lv_pct(100), lv_pct(100));
     lv_obj_set_flex_flow(p->container, LV_FLEX_FLOW_COLUMN);
@@ -84,9 +84,8 @@ eos_perm_panel_t *eos_perm_panel_create(const eos_perm_panel_cfg_t *cfg)
     lv_obj_set_style_pad_bottom(p->container, _PERM_PANEL_PAD_BOTTOM, 0);
     lv_obj_set_scrollbar_mode(p->container, LV_SCROLLBAR_MODE_OFF);
 
-    /* Block scroll/click-through and ensure topmost z-order */
+    /* Block scroll/click-through; the permission slot defines z-order. */
     lv_obj_add_flag(p->container, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_move_foreground(p->container);
 
     /* Title label ------------------------------------------------*/
     p->title = lv_label_create(p->container);

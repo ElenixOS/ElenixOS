@@ -205,11 +205,11 @@ void sni_obj_deleted_cb(lv_event_t *e)
     cb = (sni_control_block_t *)lv_event_get_user_data(e);
     if (!cb)
     {
-        EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb=NULL (no control block)", (void *)obj);
+        EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb=NULL (no control block)", (void *)obj);
         return;
     }
 
-    EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb=%p is_alive=%d child_cnt=%u",
+    EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb=%p is_alive=%d child_cnt=%u",
               (void *)obj,
               (void *)cb,
               cb->is_alive,
@@ -234,7 +234,7 @@ void sni_obj_deleted_cb(lv_event_t *e)
      * and return — the JS reference was already released. */
     if (!cb->is_alive)
     {
-        EOS_LOG_I("LV_EVENT_DELETE: obj=%p cb already dead, cleaning wdata", (void *)obj);
+        EOS_LOG_D("LV_EVENT_DELETE: obj=%p cb already dead, cleaning wdata", (void *)obj);
         eos_wdata_remove(obj, EOS_WDATA_SNI_CB);
         return;
     }
@@ -253,9 +253,10 @@ void sni_obj_deleted_cb(lv_event_t *e)
     sni_managed_resource_node_t *sub = cb->sub_resource_head;
     while (sub)
     {
-        sni_managed_resource_node_t *next = sub->next;
+        sni_managed_resource_node_t *next = sub->parent_next;
         sub->is_alive = false;
         sub->parent_cb = NULL;
+        sub->parent_next = NULL;
         sub->ptr = NULL;
         if (!jerry_value_is_undefined(sub->js_obj) && !jerry_value_is_null(sub->js_obj))
         {
@@ -351,12 +352,13 @@ static void sni_resource_node_free_cb(void *native_p, struct jerry_object_native
         {
             if (*pp == node)
             {
-                *pp = node->next;
+                *pp = node->parent_next;
                 break;
             }
-            pp = &(*pp)->next;
+            pp = &(*pp)->parent_next;
         }
         node->parent_cb = NULL;
+        node->parent_next = NULL;
     }
 
     /* Remove from the context's type-indexed resource list so that
@@ -396,7 +398,7 @@ static void sni_resource_node_free_cb(void *native_p, struct jerry_object_native
 
 /* Type bridge functions --------------------------------------*/
 
-const char *sni_tb_js2c_string(jerry_value_t js_val)
+char *sni_tb_js2c_string(jerry_value_t js_val)
 {
     if (!jerry_value_is_string(js_val))
     {
@@ -987,7 +989,7 @@ void sni_tb_link_sub_resource(void *parent_ptr, void *sub_ptr, sni_type_t sub_ty
     }
 
     sub_node->parent_cb = parent_cb;
-    sub_node->next = parent_cb->sub_resource_head;
+    sub_node->parent_next = parent_cb->sub_resource_head;
     parent_cb->sub_resource_head = sub_node;
 }
 
@@ -1021,13 +1023,52 @@ void sni_tb_unlink_sub_resource(void *sub_ptr, sni_type_t sub_type)
     {
         if (*prev == sub_node)
         {
-            *prev = sub_node->next;
+            *prev = sub_node->parent_next;
             break;
         }
-        prev = &(*prev)->next;
+        prev = &(*prev)->parent_next;
     }
 
     sub_node->parent_cb = NULL;
+    sub_node->parent_next = NULL;
+}
+
+void sni_tb_remove_sub_resource(sni_context_t *ctx, void *sub_ptr, sni_type_t sub_type)
+{
+    if (!ctx || !sub_ptr)
+    {
+        return;
+    }
+
+    sni_managed_resource_node_t *sub_node = sni_context_find_resource(ctx, sub_ptr, sub_type);
+    if (!sub_node)
+    {
+        return;
+    }
+
+    sni_control_block_t *parent_cb = sub_node->parent_cb;
+    if (parent_cb)
+    {
+        sni_managed_resource_node_t **prev = &parent_cb->sub_resource_head;
+        while (*prev)
+        {
+            if (*prev == sub_node)
+            {
+                *prev = sub_node->parent_next;
+                break;
+            }
+            prev = &(*prev)->parent_next;
+        }
+        sub_node->parent_cb = NULL;
+        sub_node->parent_next = NULL;
+    }
+
+    sni_context_remove_resource(ctx, sub_ptr, sub_type);
+}
+
+void sni_tb_remove_sub_resource_current(void *sub_ptr, sni_type_t sub_type)
+{
+    sni_tb_remove_sub_resource(sni_get_current_context(), sub_ptr, sub_type);
 }
 
 bool sni_tb_js2c_parent(jerry_value_t val, void **out)

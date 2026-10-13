@@ -15,7 +15,7 @@ extern "C" {
 /* Version Definitions ----------------------------------------*/
 
 #define ELENIX_OS_VERSION_MAJOR 0
-#define ELENIX_OS_VERSION_MINOR 6
+#define ELENIX_OS_VERSION_MINOR 7
 #define ELENIX_OS_VERSION_PATCH 0
 #define ELENIX_OS_VERSION_INFO "alpha"
 

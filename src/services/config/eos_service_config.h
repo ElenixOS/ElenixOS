@@ -40,6 +40,7 @@ extern "C" {
 #define EOS_CONFIG_KEY_DEV_FPS_BOOL "dev_fps"
 #define EOS_CONFIG_KEY_DEV_OBJS_BOOL "dev_objs"
 #define EOS_CONFIG_KEY_DEV_TOUCH_BOOL "dev_touch"
+#define EOS_CONFIG_KEY_DEV_LOG_LEVEL_NUMBER "dev_log_level"
 /* Default values ---------------------------------------------*/
 #define EOS_CONFIG_DEFAULT_DEVICE_NAME "Elenix Watch"
 /* Default language string is determined by EOS_CONFIG_DEFAULT_LANGUAGE in eos_config.h */

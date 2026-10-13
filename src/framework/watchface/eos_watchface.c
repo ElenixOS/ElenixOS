@@ -44,7 +44,7 @@ static eos_watchface_list_t watchface_list;
 static bool _is_watchface_initialized = false;
 static eos_watchface_instance_t *_current_instance = NULL;
 /* Function Implementations -----------------------------------*/
-static void _switch_to_watchface(const char *watchface_id);
+static eos_result_t _switch_to_watchface(const char *watchface_id);
 
 static void _show_global_ui(void)
 {
@@ -92,19 +92,59 @@ bool eos_watchface_list_contains(const char *watchface_id)
 
 void _eos_watchface_list_init(eos_watchface_list_t *list, size_t capacity)
 {
+    if (!list)
+        return;
+
+    if (capacity > SIZE_MAX / sizeof(char *))
+    {
+        list->data = NULL;
+        list->size = 0U;
+        list->capacity = 0U;
+        EOS_LOG_E("watchface list capacity overflow: capacity=%lu", (unsigned long)capacity);
+        return;
+    }
+
     list->data = eos_malloc(capacity * sizeof(char *));
     list->size = 0;
-    list->capacity = capacity;
+    list->capacity = list->data ? capacity : 0U;
+    if (!list->data)
+        EOS_LOG_E("watchface list allocation failed, capacity=%lu", (unsigned long)capacity);
 }
 
 void _eos_watchface_list_add(eos_watchface_list_t *list, const char *id)
 {
+    char *copy;
+
+    if (!list || !id)
+        return;
+
     if (list->size == list->capacity)
     {
-        list->capacity *= 2;
-        list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
+        size_t new_capacity = list->capacity > 0U ? list->capacity * 2U : 1U;
+        char **new_data;
+
+        if (new_capacity < list->capacity || new_capacity > SIZE_MAX / sizeof(char *))
+        {
+            EOS_LOG_E("watchface list capacity overflow");
+            return;
+        }
+        new_data = eos_realloc(list->data, new_capacity * sizeof(char *));
+        if (!new_data)
+        {
+            EOS_LOG_E("watchface list realloc failed, capacity=%lu", (unsigned long)new_capacity);
+            return;
+        }
+        list->data = new_data;
+        list->capacity = new_capacity;
     }
-    list->data[list->size] = eos_strdup(id); // Copy string
+
+    copy = eos_strdup(id);
+    if (!copy)
+    {
+        EOS_LOG_E("watchface list string allocation failed");
+        return;
+    }
+    list->data[list->size] = copy;
     list->size++;
 }
 
@@ -169,39 +209,70 @@ eos_result_t _eos_watchface_list_refresh()
     return EOS_OK;
 }
 
-eos_result_t eos_watchface_install(const char *eapk_path)
+eos_result_t eos_watchface_install(const char *pkg_path)
 {
-    EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
-    // Get package header
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
+    EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
+
+    eos_pkg_t *package = NULL;
+    eos_result_t result = eos_pkg_open(pkg_path, &package);
+    if (result != EOS_OK)
     {
-        EOS_LOG_E("Read header failed: %s", eapk_path);
+        EOS_LOG_E("Read header failed: %s", pkg_path);
+        return result;
+    }
+
+    result = eos_watchface_install_package(package);
+    eos_pkg_close(package);
+    return result;
+}
+
+eos_result_t eos_watchface_install_package(struct eos_pkg *package)
+{
+    EOS_CHECK_PTR_RETURN_VAL(package, EOS_ERR_VAR_NULL);
+
+    eos_pkg_manifest_info_t manifest_info = {0};
+    if (eos_pkg_get_package_type(package) != SCRIPT_TYPE_WATCHFACE)
+    {
+        EOS_LOG_E("Package is not a watchface");
+        return EOS_ERR_VALUE_MISMATCH;
+    }
+    if (eos_pkg_read_manifest_info(package, &manifest_info) != EOS_OK)
+    {
+        EOS_LOG_E("Watchface manifest preview is invalid");
+        return EOS_ERR_JSON_ERROR;
+    }
+    if (!eos_storage_is_valid_filename(manifest_info.id))
+    {
+        EOS_LOG_E("Invalid package id: %s", manifest_info.id);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_FAILED;
     }
-    if (!eos_storage_is_valid_filename(header.pkg_id))
-    {
-        EOS_LOG_E("Invalid package id");
-        return EOS_FAILED;
-    }
-    if (strcmp(header.pkg_id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
+    if (strcmp(manifest_info.id, EOS_WATCHFACE_BUILTIN_FALLBACK_ID) == 0)
     {
         EOS_LOG_E("Builtin fallback watchface cannot be installed over");
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_FAILED;
     }
-    if (header.min_api_level > ELENIX_OS_API_LEVEL)
+    if (manifest_info.min_api_level > ELENIX_OS_API_LEVEL)
     {
         EOS_LOG_E("Watchface '%s' requires API level %d, OS supports %d",
-                  header.pkg_id,
-                  header.min_api_level,
+                  manifest_info.id,
+                  manifest_info.min_api_level,
                   ELENIX_OS_API_LEVEL);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_ERR_SDK_VERSION;
+    }
+    if (eos_pkg_validate(package) != EOS_OK)
+    {
+        EOS_LOG_E("Watchface EPKG validation failed");
+        eos_pkg_manifest_info_free(&manifest_info);
+        return EOS_ERR_VALUE_MISMATCH;
     }
     // Construct path
     char path[EOS_FS_PATH_MAX];
-    snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", header.pkg_id);
+    snprintf(path, sizeof(path), EOS_WATCHFACE_INSTALLED_DIR "%s", manifest_info.id);
     char data_path[EOS_FS_PATH_MAX];
-    snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", header.pkg_id);
+    snprintf(data_path, sizeof(data_path), EOS_WATCHFACE_DATA_DIR "%s", manifest_info.id);
     EOS_LOG_D("WATCHFACE_PATH: %s", path);
     // Check if application exists
     if (eos_storage_is_dir(path))
@@ -216,20 +287,22 @@ eos_result_t eos_watchface_install(const char *eapk_path)
     }
     else
     {
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_ERR_FILE_ERROR;
     }
     // Install watchface
-    script_pkg_type_t type = SCRIPT_TYPE_WATCHFACE;
-    eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
+    eos_result_t ret = eos_pkg_unpack(package, path);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("Watchface unpack failed. Code: %d", ret);
         eos_storage_rm_recursive(path);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_FAILED;
     }
     eos_storage_mkdir_if_not_exist(data_path);
     _eos_watchface_list_refresh();
-    EOS_LOG_D("Watchface installed successfully: %s", header.pkg_name);
+    EOS_LOG_I("Watchface installed successfully: %s", manifest_info.id);
+    eos_pkg_manifest_info_free(&manifest_info);
     return EOS_OK;
 }
 
@@ -272,7 +345,7 @@ eos_result_t eos_watchface_uninstall(const char *watchface_id)
         return EOS_FAILED;
     }
     _eos_watchface_list_refresh();
-    EOS_LOG_D("Watchface uninstalled successfully: %s", watchface_id);
+    EOS_LOG_I("Watchface uninstalled successfully: %s", watchface_id);
     return EOS_OK;
 }
 
@@ -281,9 +354,9 @@ void eos_watchface_long_pressed_handler(lv_event_t *e)
     eos_watchface_list_enter();
 }
 
-static void _switch_to_watchface(const char *watchface_id)
+static eos_result_t _switch_to_watchface(const char *watchface_id)
 {
-    EOS_CHECK_PTR_RETURN(watchface_id);
+    EOS_CHECK_PTR_RETURN_VAL(watchface_id, EOS_FAILED);
 
     EOS_LOG_I("Switching to watchface: %s", watchface_id);
 
@@ -302,7 +375,7 @@ static void _switch_to_watchface(const char *watchface_id)
     if (!new_instance || !new_instance->activity)
     {
         EOS_LOG_E("Failed to create watchface instance: %s", watchface_id);
-        return;
+        return EOS_FAILED;
     }
 
     // Save old instance pointer before replacing
@@ -314,7 +387,7 @@ static void _switch_to_watchface(const char *watchface_id)
     {
         EOS_LOG_E("Failed to replace root activity");
         eos_free(new_instance); // Free new instance on failure
-        return;
+        return ret;
     }
 
     // Update current instance and free old instance (activity already freed by replace_root)
@@ -325,6 +398,8 @@ static void _switch_to_watchface(const char *watchface_id)
     {
         eos_free(old_instance);
     }
+
+    return EOS_OK;
 }
 
 eos_activity_t *eos_watchface_get_activity(void)
@@ -349,7 +424,7 @@ void eos_watchface_switch_to(const char *watchface_id)
     eos_activity_back();
 
     // Replace root activity with new watchface
-    _switch_to_watchface(watchface_id);
+    (void)_switch_to_watchface(watchface_id);
 }
 
 void eos_watchface_check_and_reload(void)
@@ -366,8 +441,25 @@ void eos_watchface_check_and_reload(void)
     if (changed)
     {
         EOS_LOG_D("Watchface changed to %s, reloading", new_wf_id);
-        _switch_to_watchface(new_wf_id);
+        (void)_switch_to_watchface(new_wf_id);
     }
+}
+
+eos_result_t eos_watchface_reload_after_engine_reset(void)
+{
+    if (!_current_instance || !_current_instance->id[0])
+    {
+        return EOS_FAILED;
+    }
+
+    char watchface_id[EOS_WATCHFACE_ID_LEN_MAX];
+    snprintf(watchface_id, sizeof(watchface_id), "%s", _current_instance->id);
+
+    /* Recreate the root Activity as well as the SPM program. Reusing the old
+     * Activity leaves old lifecycle/view state attached after a global engine
+     * reset, even if the new program starts successfully. */
+    EOS_LOG_I("Recreating watchface Activity after script engine reset: %s", watchface_id);
+    return _switch_to_watchface(watchface_id);
 }
 
 eos_result_t eos_watchface_init(void)

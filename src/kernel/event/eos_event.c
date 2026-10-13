@@ -301,7 +301,7 @@ void eos_event_unsubscribe_with_obj(eos_event_code_t event_id, eos_event_cb_t cb
 
 void eos_event_post(eos_event_code_t event_id, void *param, lv_obj_t *obj)
 {
-    EOS_LOG_I("Post event: [%d] (begin) depth=%d", (int)event_id, _broadcast_depth + 1);
+    EOS_LOG_D("Post event: [%d] (begin) depth=%d", (int)event_id, _broadcast_depth + 1);
     _broadcast_depth++;
     bool local_list_was_modified = false;
     event_node_t *curr = _event_list_head;
@@ -345,7 +345,7 @@ void eos_event_post(eos_event_code_t event_id, void *param, lv_obj_t *obj)
         }
     }
 
-    EOS_LOG_I("Post event: [%d] (end) depth=%d", (int)event_id, _broadcast_depth);
+    EOS_LOG_D("Post event: [%d] (end) depth=%d", (int)event_id, _broadcast_depth);
 }
 
 void eos_event_cleanup_now(void)

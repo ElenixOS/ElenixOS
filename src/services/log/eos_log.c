@@ -18,6 +18,7 @@
 /* Variables --------------------------------------------------*/
 static eos_log_listener_t s_listeners[EOS_LOG_MAX_LISTENERS] = {0};
 static bool _initialized = false;
+static eos_log_level_t s_min_level = EOS_LOG_LEVEL_DEBUG;
 
 /* Function Implementations -----------------------------------*/
 
@@ -29,10 +30,32 @@ void eos_service_log_init(void)
     }
 
     memset(s_listeners, 0, sizeof(s_listeners));
+    s_min_level = EOS_LOG_LEVEL_DEBUG;
     _initialized = true;
 #if EOS_LOG_ENABLE_STD
     eos_service_log_std_register();
 #endif
+}
+
+bool eos_log_is_enabled(eos_log_level_t level)
+{
+    return _initialized && level >= s_min_level && level <= EOS_LOG_LEVEL_ERROR;
+}
+
+eos_log_level_t eos_log_get_level(void)
+{
+    return s_min_level;
+}
+
+eos_result_t eos_log_set_level(eos_log_level_t level)
+{
+    if (level < EOS_LOG_LEVEL_DEBUG || level > EOS_LOG_LEVEL_ERROR)
+    {
+        return EOS_ERR_INVALID_ARG;
+    }
+
+    s_min_level = level;
+    return EOS_OK;
 }
 
 eos_log_listener_id_t eos_log_register_listener(const char *name,
@@ -54,6 +77,7 @@ eos_log_listener_id_t eos_log_register_listener(const char *name,
             s_listeners[i].user_data = user_data;
             s_listeners[i].flags = flags;
             s_listeners[i].used = 1;
+            s_listeners[i].enabled = 1;
             return i;
         }
     }
@@ -79,6 +103,22 @@ eos_result_t eos_log_unregister_listener(eos_log_listener_id_t id)
     }
 
     memset(&s_listeners[id], 0, sizeof(eos_log_listener_t));
+    return EOS_OK;
+}
+
+eos_result_t eos_log_set_listener_enabled(eos_log_listener_id_t id, bool enabled)
+{
+    if (!_initialized || id < 0 || id >= EOS_LOG_MAX_LISTENERS)
+    {
+        return EOS_ERR_INVALID_ARG;
+    }
+
+    if (!s_listeners[id].used)
+    {
+        return EOS_ERR_INVALID_ARG;
+    }
+
+    s_listeners[id].enabled = enabled ? 1U : 0U;
     return EOS_OK;
 }
 
@@ -118,7 +158,7 @@ eos_result_t eos_log_get_listener(eos_log_listener_id_t id, eos_log_listener_t *
 
 void eos_log_dispatch(eos_log_level_t level, const char *buf, size_t len)
 {
-    if (!_initialized || !buf || len == 0)
+    if (!_initialized || level < s_min_level || !buf || len == 0)
     {
         return;
     }
@@ -128,7 +168,7 @@ void eos_log_dispatch(eos_log_level_t level, const char *buf, size_t len)
 
     for (int i = 0; i < EOS_LOG_MAX_LISTENERS; i++)
     {
-        if (snapshot[i].used && snapshot[i].cb)
+        if (snapshot[i].used && snapshot[i].enabled && snapshot[i].cb)
         {
             snapshot[i].cb(level, buf, len, snapshot[i].user_data);
         }
@@ -137,7 +177,7 @@ void eos_log_dispatch(eos_log_level_t level, const char *buf, size_t len)
 
 void eos_log(eos_log_level_t level, const char *fmt, ...)
 {
-    if (!_initialized || !fmt)
+    if (!fmt || !eos_log_is_enabled(level))
     {
         return;
     }

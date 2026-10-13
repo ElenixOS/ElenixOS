@@ -226,14 +226,8 @@ void eos_lock_page_show(void)
     bool simple = eos_config_get_bool(EOS_CONFIG_KEY_PASSWORD_SIMPLE_BOOL, true);
     uint8_t target_length = simple ? 4 : 6;
 
-    /* Build UI on overlay layer — naturally above header_layer on lv_layer_top */
-    _create_lock_ui(_ctx, eos_overlay_get_overlay_layer(), target_length);
-
-    /* Ensure top z-order within overlay layer */
-    if (_ctx->root)
-    {
-        lv_obj_move_foreground(_ctx->root);
-    }
+    /* Build UI on the fixed security slot, above all product UI. */
+    _create_lock_ui(_ctx, eos_overlay_layer_get(EOS_TOP_LAYER_LOCK), target_length);
 
     EOS_LOG_I("Lock screen shown (security barrier)");
 }

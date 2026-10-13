@@ -32,6 +32,14 @@ typedef struct
     int (*resume)(void);
     int (*set_volume)(uint8_t volume);
     bool (*is_available)(void);
+    /* Optional: true only after all samples already queued in the hardware
+     * sink have been transmitted.  This lets a player drain a DMA/FIFO sink
+     * before closing the codec. */
+    bool (*is_drained)(void);
+    /* Optional: number of PCM frames that have left the hardware sink. */
+    uint32_t (*get_played_samples)(void);
+    /* Optional: tell a buffered sink that no more PCM will be enqueued. */
+    void (*set_eof)(void);
 } eos_dev_speaker_ops_t;
 
 typedef struct

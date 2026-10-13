@@ -17,6 +17,7 @@
 #include "eos_overlay_layer.h"
 #include "eos_basic_widgets.h"
 #include "eos_activity.h"
+#include "core/lv_obj_draw_private.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define DEBUG_BLOCKER_VISIBLE 0
@@ -209,10 +210,10 @@ void eos_anim_del(eos_anim_t *anim)
         eos_anim_group_t *g = anim->group;
         anim->group = NULL;
         g->completed++;
-        EOS_LOG_E("Anim[%p] DEL: group[%p] completed=%d expected=%d", anim, g, g->completed, g->expected);
+        EOS_LOG_D("Anim[%p] DEL: group[%p] completed=%d expected=%d", anim, g, g->completed, g->expected);
         if (g->completed >= g->expected && g->callback)
         {
-            EOS_LOG_E("Group[%p] ALL COMPLETE via del: triggering callback", g);
+            EOS_LOG_D("Group[%p] ALL COMPLETE via del: triggering callback", g);
             g->callback(g->user_data);
         }
     }
@@ -275,7 +276,7 @@ void eos_anim_blocker_show(void)
     if (is_blocker_show)
         return;
 
-    blocker = lv_obj_create(eos_overlay_get_snapshot_layer());
+    blocker = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT));
     lv_obj_remove_style_all(blocker);
 #if DEBUG_BLOCKER_VISIBLE
     lv_obj_set_style_bg_color(blocker, EOS_COLOR_MINT, 0);
@@ -392,10 +393,10 @@ static void _eos_anim_ready_cb(lv_anim_t *a)
             eos_anim_group_t *g = anim->group;
             anim->group = NULL;
             g->completed++;
-            EOS_LOG_E("Anim[%p] group[%p]: completed=%d expected=%d", anim, g, g->completed, g->expected);
+            EOS_LOG_D("Anim[%p] group[%p]: completed=%d expected=%d", anim, g, g->completed, g->expected);
             if (g->completed >= g->expected && g->callback)
             {
-                EOS_LOG_E("Group[%p] ALL COMPLETE: triggering cleanup callback", g);
+                EOS_LOG_D("Group[%p] ALL COMPLETE: triggering cleanup callback", g);
                 g->callback(g->user_data);
             }
         }
@@ -541,8 +542,15 @@ static void _snapshot_present_once(lv_obj_t *image, const char *tag)
 
     LV_UNUSED(tag);
 
+    lv_display_t *display = lv_display_get_default();
+    if (!display)
+    {
+        EOS_LOG_W("snapshot present skipped: no default display (%s)", tag ? tag : "unknown");
+        return;
+    }
+
     lv_obj_invalidate(image);
-    lv_refr_now(lv_display_get_default());
+    lv_refr_now(display);
 }
 
 static void _init_opa_anim(lv_anim_t *a, lv_obj_t *obj, int32_t start, int32_t end, uint32_t duration, eos_anim_t *ctx)
@@ -712,15 +720,27 @@ static bool _snapshot_backend_prepare(eos_anim_t *anim)
     if (!target || !lv_obj_is_valid(target))
         return false;
 
+    lv_obj_update_layout(target);
+
     int32_t w = lv_obj_get_width(target);
     int32_t h = lv_obj_get_height(target);
     if (w <= 0 || h <= 0)
         return false;
 
-    lv_draw_buf_t *buf = eos_draw_buf_create((uint32_t)w, (uint32_t)h, SNAP_COLOR_FORMAT, 0);
+    /* LVGL snapshots include the object's extended draw area (for example,
+     * shadows) in the raster buffer.  Allocate that area up front; otherwise
+     * lv_snapshot_take_to_draw_buf() rejects the buffer and silently falls
+     * back to direct animation. */
+    uint32_t ext_size = (uint32_t)lv_obj_get_ext_draw_size(target);
+    uint32_t snap_w = (uint32_t)w + ext_size * 2U;
+    uint32_t snap_h = (uint32_t)h + ext_size * 2U;
+    uint32_t snap_stride = lv_draw_buf_width_to_stride(snap_w, SNAP_COLOR_FORMAT);
+    lv_draw_buf_t *buf = eos_draw_buf_create(snap_w, snap_h, SNAP_COLOR_FORMAT, snap_stride);
     if (!buf)
     {
-        EOS_LOG_W("snapshot backend: eos_draw_buf_create(%d,%d) failed, fallback to direct", w, h);
+        EOS_LOG_W("snapshot backend: eos_draw_buf_create(%u,%u) failed, fallback to direct",
+                  (unsigned int)snap_w,
+                  (unsigned int)snap_h);
         return false;
     }
 
@@ -734,17 +754,21 @@ static bool _snapshot_backend_prepare(eos_anim_t *anim)
 
     eos_activity_t *activity = eos_activity_from_widget(target);
     lv_obj_t *snap_ctr = activity ? eos_activity_get_snap_container(activity) : NULL;
-    lv_obj_t *parent = snap_ctr ? snap_ctr : eos_overlay_get_snapshot_layer();
+    lv_obj_t *parent = snap_ctr ? snap_ctr : eos_overlay_layer_get(EOS_TOP_LAYER_ACTIVITY_SNAPSHOT);
     lv_obj_t *image = lv_image_create(parent);
     lv_image_set_src(image, buf);
-    lv_obj_set_size(image, w, h);
+    lv_obj_set_size(image, (lv_coord_t)buf->header.w, (lv_coord_t)buf->header.h);
 
     lv_area_t area;
     lv_obj_get_coords(target, &area);
-    lv_obj_set_pos(image, area.x1, area.y1);
+    lv_area_t parent_area;
+    lv_obj_get_coords(parent, &parent_area);
+    lv_obj_set_pos(image,
+                   area.x1 - (lv_coord_t)ext_size - parent_area.x1,
+                   area.y1 - (lv_coord_t)ext_size - parent_area.y1);
 
-    lv_obj_set_style_transform_pivot_x(image, lv_obj_get_style_transform_pivot_x(target, 0), 0);
-    lv_obj_set_style_transform_pivot_y(image, lv_obj_get_style_transform_pivot_y(target, 0), 0);
+    lv_obj_set_style_transform_pivot_x(image, lv_obj_get_style_transform_pivot_x(target, 0) + (lv_coord_t)ext_size, 0);
+    lv_obj_set_style_transform_pivot_y(image, lv_obj_get_style_transform_pivot_y(target, 0) + (lv_coord_t)ext_size, 0);
 
     _snapshot_apply_start_values(anim, image);
 
@@ -766,7 +790,7 @@ static bool _snapshot_backend_prepare(eos_anim_t *anim)
         }
         else
         {
-            EOS_LOG_E("[SNAP_BATCH] batch full! fall through to immediate path for target=%p", target);
+            EOS_LOG_W("[SNAP_BATCH] batch full! fall through to immediate path for target=%p", target);
             _snapshot_present_once(image, "frame_A_before_hide");
             if (anim->preserve_layout)
             {
@@ -1000,7 +1024,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (start_x == end_x)
     {
         anim->cfg.move.disable_x = true;
-        EOS_LOG_E("MOVE_X DISABLED: start_x=%d end_x=%d", start_x, end_x);
+        EOS_LOG_D("MOVE_X DISABLED: start_x=%d end_x=%d", start_x, end_x);
     }
     else
     {
@@ -1011,7 +1035,7 @@ eos_anim_t *eos_anim_move_create(lv_obj_t *tar_obj,
     if (start_y == end_y)
     {
         anim->cfg.move.disable_y = true;
-        EOS_LOG_E("MOVE_Y DISABLED: start_y=%d end_y=%d", start_y, end_y);
+        EOS_LOG_D("MOVE_Y DISABLED: start_y=%d end_y=%d", start_y, end_y);
     }
     else
     {
@@ -1219,12 +1243,27 @@ bool eos_anim_start(eos_anim_t *anim)
 
     if (anim->backend_type == EOS_ANIM_BACKEND_SNAPSHOT)
     {
+#if EOS_CONFIG_ANIM_SNAPSHOT_ENABLED
         if (!_snapshot_backend_prepare(anim))
         {
             EOS_LOG_W("Snapshot backend prepare failed, falling back to direct for anim[%p] obj[%p]",
                       anim,
                       anim->tar_obj);
+            anim->backend_type = EOS_ANIM_BACKEND_DIRECT;
         }
+#else
+        EOS_LOG_I("Snapshot backend disabled, using direct animation for anim[%p] obj[%p]", anim, anim->tar_obj);
+        /* preserve_layout is meaningful to the snapshot path because the
+         * original object is temporarily made transparent.  The direct path
+         * never hides the object, but it still runs the common completion
+         * callback; capture the real opacity so completion cannot overwrite
+         * it with the constructor default. */
+        if (anim->preserve_layout && anim->tar_obj && lv_obj_is_valid(anim->tar_obj))
+        {
+            anim->saved_orig_opa = lv_obj_get_style_opa(anim->tar_obj, 0);
+        }
+        anim->backend_type = EOS_ANIM_BACKEND_DIRECT;
+#endif
     }
 
     if (!anim->no_blocker)
@@ -1255,7 +1294,7 @@ bool eos_anim_start(eos_anim_t *anim)
             lv_anim_start(&anim->anim.fade.a_opa);
             break;
         case EOS_ANIM_MOVE:
-            EOS_LOG_E("MOVE start: disable_x=%d disable_y=%d anim_count=%d",
+            EOS_LOG_D("MOVE start: disable_x=%d disable_y=%d anim_count=%d",
                       anim->cfg.move.disable_x,
                       anim->cfg.move.disable_y,
                       anim->anim_count);
@@ -1264,14 +1303,14 @@ bool eos_anim_start(eos_anim_t *anim)
                 _apply_delay(&anim->anim.move.a_x, anim);
                 _apply_repeat_playback(&anim->anim.move.a_x, anim);
                 lv_anim_t *lv_anim_x = lv_anim_start(&anim->anim.move.a_x);
-                EOS_LOG_E("MOVE a_x lv_anim_start=%p", lv_anim_x);
+                EOS_LOG_D("MOVE a_x lv_anim_start=%p", lv_anim_x);
             }
             if (!anim->cfg.move.disable_y)
             {
                 _apply_delay(&anim->anim.move.a_y, anim);
                 _apply_repeat_playback(&anim->anim.move.a_y, anim);
                 lv_anim_t *lv_anim_y = lv_anim_start(&anim->anim.move.a_y);
-                EOS_LOG_E("MOVE a_y lv_anim_start=%p", lv_anim_y);
+                EOS_LOG_D("MOVE a_y lv_anim_start=%p", lv_anim_y);
             }
             break;
         case EOS_ANIM_TRANSFORM_SCALE:

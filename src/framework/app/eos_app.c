@@ -7,6 +7,7 @@
 
 /* Includes ---------------------------------------------------*/
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "lvgl.h"
@@ -31,6 +32,7 @@
 #include "eos_service_permission.h"
 #include "eos_fault_panel.h"
 #include "eos_font.h"
+#include "eos_watchface.h"
 #include "sni_callback_runtime.h"
 #include "spm.h"
 #include "eos_version.h"
@@ -63,6 +65,7 @@ static eos_result_t _eos_app_order_remove(const char *app_id);
 // App delete callbacks
 static void _app_delete_cb(lv_event_t *e);
 static void _app_delete_eos_cb(eos_event_t *e);
+static void _app_log_manifest(const char *app_path);
 
 // Application order list
 static cJSON *app_order_json = NULL;
@@ -306,9 +309,23 @@ const char *eos_app_list_get_existing_id(const char *id)
  */
 void _eos_app_list_init(eos_app_list_t *list, size_t capacity)
 {
+    if (!list)
+        return;
+
+    if (capacity > SIZE_MAX / sizeof(char *))
+    {
+        list->data = NULL;
+        list->size = 0U;
+        list->capacity = 0U;
+        EOS_LOG_E("application list capacity overflow: capacity=%lu", (unsigned long)capacity);
+        return;
+    }
+
     list->data = eos_malloc(capacity * sizeof(char *));
     list->size = 0;
-    list->capacity = capacity;
+    list->capacity = list->data ? capacity : 0U;
+    if (!list->data)
+        EOS_LOG_E("application list allocation failed, capacity=%lu", (unsigned long)capacity);
 }
 
 /**
@@ -316,12 +333,38 @@ void _eos_app_list_init(eos_app_list_t *list, size_t capacity)
  */
 void _eos_app_list_add(eos_app_list_t *list, const char *id)
 {
+    char *copy;
+
+    if (!list || !id)
+        return;
+
     if (list->size == list->capacity)
     {
-        list->capacity *= 2;
-        list->data = eos_realloc(list->data, list->capacity * sizeof(char *));
+        size_t new_capacity = list->capacity > 0U ? list->capacity * 2U : 1U;
+        char **new_data;
+
+        if (new_capacity < list->capacity || new_capacity > SIZE_MAX / sizeof(char *))
+        {
+            EOS_LOG_E("application list capacity overflow");
+            return;
+        }
+        new_data = eos_realloc(list->data, new_capacity * sizeof(char *));
+        if (!new_data)
+        {
+            EOS_LOG_E("application list realloc failed, capacity=%lu", (unsigned long)new_capacity);
+            return;
+        }
+        list->data = new_data;
+        list->capacity = new_capacity;
     }
-    list->data[list->size] = eos_strdup(id); // Copy string
+
+    copy = eos_strdup(id);
+    if (!copy)
+    {
+        EOS_LOG_E("application list string allocation failed");
+        return;
+    }
+    list->data[list->size] = copy;
     list->size++;
 }
 
@@ -387,10 +430,13 @@ eos_result_t _eos_app_list_refresh()
 {
     memset(&app_list, 0, sizeof(app_list));
     _eos_app_list_init(&app_list, EOS_APP_LIST_DEFAULT_CAPACITY);
-    if (_eos_app_list_get_installed() != EOS_OK)
+    eos_result_t installed_ret = _eos_app_list_get_installed();
+    if (installed_ret != EOS_OK)
     {
-        EOS_LOG_E("Get installed app failed");
-        return EOS_FAILED;
+        /* A platform may not have a mounted app filesystem during early
+         * bring-up. Keep built-in apps available in that case so the app
+         * list is still usable. */
+        EOS_LOG_W("Get installed app failed; keeping built-in apps");
     }
 
     // Add system built-in apps to app_list
@@ -403,38 +449,108 @@ eos_result_t _eos_app_list_refresh()
         }
     }
 
-    return EOS_OK;
+    return installed_ret;
 }
 
-eos_result_t eos_app_install(const char *eapk_path)
+static void _app_log_manifest(const char *app_path)
 {
-    EOS_CHECK_PTR_RETURN_VAL(eapk_path, EOS_ERR_VAR_NULL);
-    // Get package header
-    eos_pkg_header_t header;
-    if (eos_pkg_read_header(eapk_path, &header) != EOS_OK)
+    char manifest_path[EOS_FS_PATH_MAX];
+    script_pkg_t manifest = {0};
+
+    if (!app_path)
     {
-        EOS_LOG_E("Read header failed: %s", eapk_path);
+        return;
+    }
+
+    snprintf(manifest_path, sizeof(manifest_path), "%s/%s", app_path, EOS_APP_MANIFEST_FILE_NAME);
+    manifest.type = SCRIPT_TYPE_APPLICATION;
+    if (script_engine_get_manifest(manifest_path, &manifest) != EOS_OK)
+    {
+        EOS_LOG_W("[EPK] Application manifest could not be read: %s", manifest_path);
+        eos_pkg_free(&manifest);
+        return;
+    }
+
+    EOS_LOG_I("[EPK] Application manifest\n"
+              "  Author: %s\n"
+              "  Description: %s",
+              manifest.author ? manifest.author : "(none)",
+              manifest.description ? manifest.description : "(none)");
+
+    if (manifest.permission_count == 0U)
+    {
+        EOS_LOG_I("  Permissions: none");
+    }
+    else
+    {
+        EOS_LOG_I("  Permissions (%u):", (unsigned int)manifest.permission_count);
+        for (uint8_t index = 0U; index < manifest.permission_count; index++)
+        {
+            EOS_LOG_I("    - %s", manifest.permissions[index]);
+        }
+    }
+
+    eos_pkg_free(&manifest);
+}
+
+eos_result_t eos_app_install(const char *pkg_path)
+{
+    EOS_CHECK_PTR_RETURN_VAL(pkg_path, EOS_ERR_VAR_NULL);
+
+    eos_pkg_t *package = NULL;
+    eos_result_t result = eos_pkg_open(pkg_path, &package);
+    if (result != EOS_OK)
+    {
+        EOS_LOG_E("Read header failed: %s", pkg_path);
+        return result;
+    }
+
+    result = eos_app_install_package(package);
+    eos_pkg_close(package);
+    return result;
+}
+
+eos_result_t eos_app_install_package(struct eos_pkg *package)
+{
+    EOS_CHECK_PTR_RETURN_VAL(package, EOS_ERR_VAR_NULL);
+
+    eos_pkg_manifest_info_t manifest_info = {0};
+    if (eos_pkg_get_package_type(package) != SCRIPT_TYPE_APPLICATION)
+    {
+        EOS_LOG_E("Package is not an application");
+        return EOS_ERR_VALUE_MISMATCH;
+    }
+    if (eos_pkg_read_manifest_info(package, &manifest_info) != EOS_OK)
+    {
+        EOS_LOG_E("Application manifest preview is invalid");
+        return EOS_ERR_JSON_ERROR;
+    }
+    if (!eos_storage_is_valid_filename(manifest_info.id))
+    {
+        EOS_LOG_E("Invalid package id: %s", manifest_info.id);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_FAILED;
     }
-    if (!eos_storage_is_valid_filename(header.pkg_id))
-    {
-        EOS_LOG_E("Invalid package id");
-        return EOS_FAILED;
-    }
-    if (header.min_api_level > ELENIX_OS_API_LEVEL)
+    if (manifest_info.min_api_level > ELENIX_OS_API_LEVEL)
     {
         EOS_LOG_E("App '%s' requires API level %d, OS supports %d",
-                  header.pkg_id,
-                  header.min_api_level,
+                  manifest_info.id,
+                  manifest_info.min_api_level,
                   ELENIX_OS_API_LEVEL);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_ERR_SDK_VERSION;
+    }
+    if (eos_pkg_validate(package) != EOS_OK)
+    {
+        EOS_LOG_E("Application EPKG validation failed");
+        eos_pkg_manifest_info_free(&manifest_info);
+        return EOS_ERR_VALUE_MISMATCH;
     }
     // Concatenate path
     char path[EOS_FS_PATH_MAX];
-    snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", header.pkg_id);
+    snprintf(path, sizeof(path), EOS_APP_INSTALLED_DIR "%s", manifest_info.id);
     char data_path[EOS_FS_PATH_MAX];
-    snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", header.pkg_id);
-    EOS_LOG_D("APP_PATH: %s", path);
+    snprintf(data_path, sizeof(data_path), EOS_APP_DATA_DIR "%s", manifest_info.id);
     // Check if app exists
     if (eos_storage_is_dir(path))
     {
@@ -444,29 +560,31 @@ eos_result_t eos_app_install(const char *eapk_path)
     // Create app directory
     if (eos_storage_mkdir_if_not_exist(path) == EOS_OK)
     {
-        EOS_LOG_I("Created dir: %s\n", path);
+        EOS_LOG_D("Created application directory: %s", path);
     }
     else
     {
         EOS_LOG_E("Failed mkdir: %s\n", path);
+        eos_pkg_manifest_info_free(&manifest_info);
+        return EOS_ERR_FILE_ERROR;
     }
     // Install application
-    script_pkg_type_t type = SCRIPT_TYPE_APPLICATION;
-    eos_result_t ret = eos_pkg_mgr_unpack(eapk_path, path, type);
+    eos_result_t ret = eos_pkg_unpack(package, path);
     if (ret != EOS_OK)
     {
         EOS_LOG_E("App unpack failed. Code: %d", ret);
         eos_storage_rm_recursive(path);
+        eos_pkg_manifest_info_free(&manifest_info);
         return EOS_FAILED;
     }
     eos_storage_mkdir_if_not_exist(data_path);
+    _app_log_manifest(path);
     // Add to order list
-    _eos_app_order_add(header.pkg_id);
+    _eos_app_order_add(manifest_info.id);
     _eos_app_list_refresh();
-    EOS_LOG_D("App installed successfully: %s", header.pkg_name);
-    const char *app_id = eos_app_list_get_existing_id(header.pkg_id);
-    EOS_LOG_D("app_id=%s\npkg_id=%s", app_id, header.pkg_id);
+    const char *app_id = eos_app_list_get_existing_id(manifest_info.id);
     eos_event_post(EOS_EVENT_APP_INSTALLED, (void *)app_id, NULL);
+    eos_pkg_manifest_info_free(&manifest_info);
     return EOS_OK;
 }
 
@@ -510,7 +628,7 @@ eos_result_t eos_app_uninstall(const char *app_id)
 
     eos_event_post(EOS_EVENT_APP_UNINSTALLED, (void *)app_id, NULL);
 
-    EOS_LOG_D("App uninstalled successfully: %s", app_id);
+    EOS_LOG_I("App uninstalled successfully: %s", app_id);
     return EOS_OK;
 }
 
@@ -632,6 +750,16 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
 {
     EOS_LOG_E("Script error handling - type:%d, code:%d, app_id:%s", error_type, error_code, app_id ? app_id : "NULL");
 
+    const spm_error_t *last_error = spm_get_last_error();
+    if (last_error && app_id && last_error->script_id[0] && strcmp(last_error->script_id, app_id) == 0)
+    {
+        error_type = last_error->error_type;
+        error_code = last_error->error_code;
+    }
+    else
+    {
+        last_error = NULL;
+    }
     const char *reason = _eos_script_error_get_reason(error_type);
 
     eos_fault_cfg_t fault_cfg = {
@@ -675,7 +803,6 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
     if (extra_slot)
     {
         char info_str[256];
-        const spm_error_t *last_error = spm_get_last_error();
         const char *error_info = last_error ? last_error->error_info : script_engine_get_error_info();
         if (error_info && error_info[0] != '\0')
         {
@@ -780,24 +907,63 @@ void eos_app_handle_script_error(eos_script_error_type_t error_type,
 
 /* Engine Crash Recovery --------------------------------------*/
 
+static void _app_restart_cb(lv_event_t *e);
+static void _app_exit_cb(lv_event_t *e);
+
+static void _app_get_crash_app_id(char *app_id, size_t app_id_size)
+{
+    if (!app_id || app_id_size == 0)
+        return;
+
+    eos_activity_t *current = eos_activity_get_current();
+    eos_activity_t *app_root = eos_activity_get_app_root(current);
+    const char *current_app_id = eos_activity_get_app_id(app_root ? app_root : current);
+    if (current_app_id && current_app_id[0])
+    {
+        snprintf(app_id, app_id_size, "%s", current_app_id);
+        return;
+    }
+
+    const spm_crash_state_t *crash = spm_get_crash_state();
+    if (crash && crash->has_crash && crash->script_id[0])
+        snprintf(app_id, app_id_size, "%s", crash->script_id);
+}
+
+static void _app_restore_restart_error_panel(const char *app_id, eos_result_t error)
+{
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id = current ? eos_activity_get_app_id(current) : NULL;
+    if (!current || !current_app_id || !app_id || strcmp(current_app_id, app_id) != 0
+        || eos_activity_get_fault_panel(current))
+    {
+        return;
+    }
+
+    eos_script_error_handler_cfg_t cfg = {
+        .confirm_btn_id = STR_ID_APP_RESTART,
+        .confirm_cb = _app_restart_cb,
+        .cancel_btn_id = STR_ID_APP_EXIT,
+        .cancel_cb = _app_exit_cb,
+    };
+    eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, error, app_id, &cfg);
+}
+
 static void _app_restart_cb(lv_event_t *e)
 {
     (void)e;
-    const spm_crash_state_t *crash = spm_get_crash_state();
     char app_id[SPM_CRASH_ID_MAX] = {0};
-
-    if (crash && crash->has_crash && crash->script_id[0])
-    {
-        snprintf(app_id, sizeof(app_id), "%s", crash->script_id);
-    }
-
+    _app_get_crash_app_id(app_id, sizeof(app_id));
     spm_clear_crash_state();
 
     if (app_id[0])
     {
         EOS_LOG_I("Restarting app: %s", app_id);
-        eos_activity_t *current = eos_activity_get_current();
-        eos_app_restart_in_place(app_id, current);
+        eos_result_t ret = eos_app_restart_by_id(app_id);
+        if (ret != EOS_OK)
+        {
+            EOS_LOG_W("Restart after crash failed for '%s': %d", app_id, ret);
+            _app_restore_restart_error_panel(app_id, ret);
+        }
     }
     else
     {
@@ -810,15 +976,55 @@ static void _app_exit_cb(lv_event_t *e)
 {
     (void)e;
     EOS_LOG_I("Exiting app after crash");
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    _app_get_crash_app_id(app_id, sizeof(app_id));
+    spm_clear_last_error();
     spm_clear_crash_state();
-    /* Try to return to the previous activity (app list) with animation.
-     * The activity stack is still intact after engine reset — only JS
-     * programs were destroyed.  If that fails (empty stack, already at
-     * root, or transition in progress), fall back to watchface. */
-    if (eos_activity_back() != EOS_OK)
+
+    eos_result_t ret = app_id[0] ? eos_app_terminate_by_id(app_id) : EOS_FAILED;
+    if (ret != EOS_OK)
     {
-        EOS_LOG_W("Activity back failed, falling back to watchface");
-        eos_activity_back_to_watchface();
+        EOS_LOG_W("Failed to close app after crash '%s': %d; returning to watchface",
+                  app_id[0] ? app_id : "unknown",
+                  ret);
+        if (eos_activity_back_to_watchface() != EOS_OK)
+            EOS_LOG_E("Could not return to watchface after app close failed");
+    }
+}
+
+static void _retry_script_callback_error(lv_timer_t *timer)
+{
+    uint32_t instance_id = (uint32_t)(uintptr_t)lv_timer_get_user_data(timer);
+    lv_timer_del(timer);
+    if (instance_id)
+        eos_event_post(EOS_EVENT_SCRIPT_CALLBACK_ERROR, (void *)(uintptr_t)instance_id, NULL);
+}
+
+static void _defer_script_callback_error_retry(uint32_t instance_id)
+{
+    lv_timer_t *timer = lv_timer_create(_retry_script_callback_error, 50, (void *)(uintptr_t)instance_id);
+    if (!timer)
+    {
+        EOS_LOG_E("Could not retry callback error handling for instance=%u", instance_id);
+        return;
+    }
+    lv_timer_set_repeat_count(timer, 1);
+}
+
+static void _capture_foreground_script_app_id(char *app_id, size_t app_id_size)
+{
+    eos_activity_t *current = eos_activity_get_current();
+    const char *current_app_id;
+
+    if (!app_id || app_id_size == 0 || !current || eos_activity_get_type(current) != EOS_ACTIVITY_TYPE_APP)
+    {
+        return;
+    }
+
+    current_app_id = eos_activity_get_app_id(current);
+    if (current_app_id && current_app_id[0])
+    {
+        snprintf(app_id, app_id_size, "%s", current_app_id);
     }
 }
 
@@ -833,6 +1039,52 @@ static void _on_script_fatal(eos_event_t *event)
     }
 
     EOS_LOG_W("Handling script fatal: type=%d id=%s", crash->script_type, crash->script_id);
+
+    if (crash->script_type == SCRIPT_TYPE_CONSOLE)
+    {
+        char foreground_app_id[SPM_CRASH_ID_MAX] = {0};
+
+        /* Preserve the foreground script app identity before its Activity is
+         * destroyed. The Console crash context only identifies "esh". */
+        _capture_foreground_script_app_id(foreground_app_id, sizeof(foreground_app_id));
+
+        /* A fatal error in the shared JerryScript heap destroys every SPM
+         * program. The current Activity metadata survives that reset, so
+         * remove the stale app stack before any later app command can see it
+         * as the foreground application. */
+        if (eos_activity_reset_to_root() != EOS_OK)
+        {
+            EOS_LOG_E("Failed to reset Activity stack after Console engine crash");
+            spm_clear_crash_state();
+            return;
+        }
+
+        /* The JS watchface also lost its program during the global reset.
+         * Recreate its Activity and program now that the engine has been
+         * initialized again. */
+        if (eos_watchface_reload_after_engine_reset() != EOS_OK)
+        {
+            EOS_LOG_E("Failed to reload watchface after Console engine crash");
+            spm_clear_crash_state();
+            return;
+        }
+
+        spm_clear_crash_state();
+
+        /* Restore the app that was visible before the global reset. This is a
+         * fresh Activity and a fresh SPM program; no stale JS handles are
+         * resumed. Native/system apps have no script app_id and remain on the
+         * recreated watchface. */
+        if (foreground_app_id[0])
+        {
+            EOS_LOG_I("Recreating foreground app after Console engine crash: %s", foreground_app_id);
+            if (eos_app_launch_immediately(foreground_app_id) != EOS_OK)
+            {
+                EOS_LOG_E("Failed to recreate foreground app: %s", foreground_app_id);
+            }
+        }
+        return;
+    }
 
     if (crash->script_type == SCRIPT_TYPE_APPLICATION)
     {
@@ -857,8 +1109,64 @@ static void _on_script_fatal(eos_event_t *event)
      * need it when the user presses a button. Callbacks clear it. */
 }
 
+static void _on_script_callback_error(eos_event_t *event)
+{
+    uint32_t instance_id = (uint32_t)(uintptr_t)eos_event_get_param(event);
+    if (instance_id == 0)
+        return;
+
+    script_program_t *prog = spm_get_program_by_instance_id(instance_id);
+    if (!prog || prog->type != SCRIPT_TYPE_APPLICATION || !prog->callback_error_pending || !prog->script.id)
+    {
+        EOS_LOG_W("Ignoring stale callback error for instance=%u", instance_id);
+        return;
+    }
+
+    if (eos_activity_is_transition_in_progress())
+    {
+        _defer_script_callback_error_retry(instance_id);
+        return;
+    }
+
+    char app_id[SPM_CRASH_ID_MAX] = {0};
+    snprintf(app_id, sizeof(app_id), "%s", prog->script.id);
+
+    eos_activity_t *current = eos_activity_get_current();
+    eos_activity_t *app_root = eos_activity_get_app_root(current);
+    const char *current_app_id = eos_activity_get_app_id(app_root ? app_root : current);
+
+    eos_result_t ret = spm_app_stop_by_instance_id(instance_id);
+    if (ret == EOS_ERR_BUSY)
+    {
+        _defer_script_callback_error_retry(instance_id);
+        return;
+    }
+    if (ret != EOS_OK)
+        EOS_LOG_E("Failed to stop app '%s' after callback error: %d", app_id, ret);
+    else if (app_root && current_app_id && strcmp(current_app_id, app_id) == 0)
+    {
+        eos_activity_set_script_instance_id(app_root, 0);
+        eos_activity_set_needs_reload(app_root, true);
+    }
+
+    if (!current || !current_app_id || strcmp(current_app_id, app_id) != 0)
+    {
+        EOS_LOG_W("App '%s' callback failed while it was not the foreground Activity", app_id);
+        return;
+    }
+
+    eos_script_error_handler_cfg_t cfg = {
+        .confirm_btn_id = STR_ID_APP_RESTART,
+        .confirm_cb = _app_restart_cb,
+        .cancel_btn_id = STR_ID_APP_EXIT,
+        .cancel_cb = _app_exit_cb,
+    };
+    eos_app_handle_script_error(EOS_SCRIPT_FAULT_ERROR_EXCEPTION, EOS_ERR_SCRIPT_EXCEPTION, app_id, &cfg);
+}
+
 void eos_app_crash_handler_init(void)
 {
     eos_event_subscribe(EOS_EVENT_SCRIPT_FATAL, _on_script_fatal, NULL);
+    eos_event_subscribe(EOS_EVENT_SCRIPT_CALLBACK_ERROR, _on_script_callback_error, NULL);
     EOS_LOG_I("App crash handler initialized");
 }

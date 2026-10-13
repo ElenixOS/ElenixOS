@@ -52,7 +52,7 @@ void eos_app_header_slide_visible_animated(eos_activity_t *a, bool visible, uint
 /**
  * @brief Initialize app header
  *
- * App header will be placed in lv_layer_top() layer
+ * App header is placed in the fixed app-header layer slot
  *
  * To hide app header use `eos_app_header_hide`
  *

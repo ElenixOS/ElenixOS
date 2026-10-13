@@ -24,6 +24,7 @@
 #include "eos_port.h"
 #include "eos_app.h"
 #include "eos_app_list.h"
+#include "eos_recent_apps.h"
 #include "eos_core.h"
 #include "spm.h"
 #include "eos_pkg_mgr.h"
@@ -51,6 +52,7 @@
 #include "eos_activity.h"
 #include "eos_panel.h"
 #include "eos_fault_panel.h"
+#include "eos_overlay_layer.h"
 
 /* Macros and Definitions -------------------------------------*/
 #define EOS_LOG_TAG "Test"
@@ -77,8 +79,8 @@ typedef struct
     lv_obj_t *list_screen;
     lv_obj_t *debug_bar;
     char *current_app_id;
+    uint32_t current_instance_id;
     bool debug_active;
-    bool global_cb_registered;
 } test_app_debug_ctx_t;
 
 typedef struct
@@ -138,8 +140,16 @@ static test_recording_page_ctx_t s_test_recording_page = {0};
 static lv_coord_t s_debug_bar_global_x = 0;
 static lv_coord_t s_debug_bar_global_y = 0;
 static bool s_debug_bar_global_pos_valid = false;
-static const char *s_test_audio_primary_path = "fs/music.mp3";
-static const char *s_test_audio_fallback_path = "/music.mp3";
+/* The current embedded audio service registers the PCM WAV decoder only.
+ * Keep the test page aligned with the files users can actually play instead
+ * of selecting the historical MP3 path and failing before the sink opens. */
+static const char *const s_test_audio_paths[] = {
+    "fs/music.wav",
+    "/music.wav",
+    "fs/1.wav",
+    "/1.wav",
+    "1.wav",
+};
 
 #define TEST_APP_DEBUG_BAR_W 220
 #define TEST_APP_DEBUG_BAR_H 64
@@ -237,6 +247,7 @@ static void _test_app_debug_clear_current_app_id(void)
         eos_free(s_test_app_debug.current_app_id);
         s_test_app_debug.current_app_id = NULL;
     }
+    s_test_app_debug.current_instance_id = 0;
 }
 
 static void _test_app_debug_destroy_bar_internal(bool save_pos)
@@ -259,105 +270,6 @@ static void _test_app_debug_destroy_bar(void)
 
 static void _test_app_debug_create_bar(void);
 static void _test_app_debug_app_installed_cb(eos_event_t *e);
-
-static void _test_app_debug_script_exited_cb(eos_event_t *e)
-{
-    LV_UNUSED(e);
-
-    if (!s_test_app_debug.debug_active)
-        return;
-
-    /* Do not overwrite persisted position in script-exit timing path. */
-    _test_app_debug_destroy_bar_internal(false);
-    s_test_app_debug.debug_active = false;
-    _test_app_debug_clear_current_app_id();
-}
-
-static void _test_app_debug_global_screen_loaded_cb(lv_event_t *e)
-{
-    lv_obj_t *scr = lv_event_get_param(e);
-    if (!s_test_app_debug.debug_active)
-        return;
-    if (!(scr && lv_obj_is_valid(scr) && lv_obj_has_class(scr, &lv_obj_class)))
-        return;
-
-    eos_app_header_hide();
-    if (s_test_app_debug.debug_bar && lv_obj_is_valid(s_test_app_debug.debug_bar))
-    {
-        _test_app_debug_sync_bar_pos();
-        lv_obj_move_foreground(s_test_app_debug.debug_bar);
-    }
-}
-
-static void _test_app_debug_register_global_cb(void)
-{
-    if (s_test_app_debug.global_cb_registered)
-        return;
-
-    // eos_event_add_global_cb(_test_app_debug_global_screen_loaded_cb,
-    //                         EOS_EVENT_GLOBAL_SCREEN_LOADED,
-    //                         NULL);
-    eos_event_subscribe(EOS_EVENT_SCRIPT_EXITED, _test_app_debug_script_exited_cb, NULL);
-    s_test_app_debug.global_cb_registered = true;
-}
-
-static void _test_app_debug_unregister_global_cb(void)
-{
-    if (!s_test_app_debug.global_cb_registered)
-        return;
-
-    eos_event_unsubscribe_all(_test_app_debug_script_exited_cb);
-    eos_event_unsubscribe(EOS_EVENT_APP_INSTALLED, _test_app_debug_app_installed_cb);
-    eos_event_cleanup_now();
-    s_test_app_debug.global_cb_registered = false;
-}
-
-static eos_result_t _test_app_debug_create_pkg(const char *app_id, script_pkg_t **out_pkg)
-{
-    if (!(app_id && out_pkg))
-        return EOS_ERR_SCRIPT_NULL_PACKAGE;
-
-    char manifest_path[EOS_FS_PATH_MAX];
-    snprintf(manifest_path, sizeof(manifest_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_MANIFEST_FILE_NAME, app_id);
-
-    script_pkg_t *pkg = eos_malloc_zeroed(sizeof(script_pkg_t));
-    if (!pkg)
-        return EOS_ERR_MEM;
-
-    pkg->type = SCRIPT_TYPE_APPLICATION;
-    if (script_engine_get_manifest(manifest_path, pkg) != EOS_OK)
-    {
-        EOS_LOG_E("Read manifest failed: %s", manifest_path);
-        eos_free(pkg);
-        return EOS_FAILED;
-    }
-
-    char script_path[EOS_FS_PATH_MAX];
-    snprintf(script_path, sizeof(script_path), EOS_APP_INSTALLED_DIR "%s/" EOS_APP_SCRIPT_ENTRY_FILE_NAME, app_id);
-
-    char base_path[EOS_FS_PATH_MAX];
-    snprintf(base_path, sizeof(base_path), EOS_APP_INSTALLED_DIR "%s/", app_id);
-    pkg->base_path = eos_strdup(base_path);
-
-    if (!eos_storage_is_file(script_path))
-    {
-        EOS_LOG_E("Can't find script: %s", script_path);
-        eos_pkg_free(pkg);
-        eos_free(pkg);
-        return EOS_FAILED;
-    }
-
-    pkg->script_str = eos_storage_read_file(script_path);
-    if (!pkg->script_str)
-    {
-        eos_pkg_free(pkg);
-        eos_free(pkg);
-        return EOS_FAILED;
-    }
-
-    *out_pkg = pkg;
-    return EOS_OK;
-}
 
 static void _test_app_debug_show_error(lv_obj_t *scr, const char *app_id, eos_result_t ret)
 {
@@ -393,84 +305,83 @@ static eos_result_t _test_app_debug_start_internal(const char *app_id)
     if (!(app_id && s_test_app_debug.list_screen && lv_obj_is_valid(s_test_app_debug.list_screen)))
         return EOS_ERR_SCRIPT_NULL_PACKAGE;
 
-    if (script_engine_get_state() != SCRIPT_ENGINE_STATE_UNINITIALIZED
-        && script_engine_get_state() != SCRIPT_ENGINE_STATE_EXCEPTION)
+    script_program_t *existing = spm_get_program_by_id_any_state(app_id);
+    if (existing)
     {
-        script_engine_request_stop();
+        eos_activity_t *current = eos_activity_get_current();
+        if (current && eos_activity_get_app_id(current) && strcmp(eos_activity_get_app_id(current), app_id) == 0
+            && eos_activity_get_script_instance_id(current) == spm_program_get_instance_id(existing))
+        {
+            _test_app_debug_clear_current_app_id();
+            s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
+            s_test_app_debug.current_instance_id = spm_program_get_instance_id(existing);
+            s_test_app_debug.debug_active = true;
+            return EOS_OK;
+        }
+
+        if (existing->state == SCRIPT_PROGRAM_STATE_SUSPENDED)
+        {
+            /* A debugger selection is the same user intent as opening an
+             * application from the launcher.  Let App List perform the
+             * Recent Apps transaction so the program and Activity are
+             * resumed exactly once. */
+            eos_result_t resume_ret = eos_app_launch_immediately(app_id);
+            if (resume_ret != EOS_OK)
+                return resume_ret;
+            current = eos_activity_get_current();
+            _test_app_debug_clear_current_app_id();
+            s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
+            s_test_app_debug.current_instance_id = current ? eos_activity_get_script_instance_id(current) : 0;
+            s_test_app_debug.debug_active = true;
+            return EOS_OK;
+        }
+
+        return existing->state == SCRIPT_PROGRAM_STATE_STOPPING ? EOS_ERR_BUSY : EOS_ERR_ALREADY_EXISTS;
     }
 
-    _test_app_debug_register_global_cb();
+    /* A fresh debugger launch must use the same App List transaction as every
+     * other launch entry.  In particular this suspends the current app before
+     * creating the new Activity and preserves the standard Activity animation
+     * route.  Loading is intentionally asynchronous, so record the selected
+     * App ID before returning; the normal launch callback binds instance_id
+     * when SPM actually creates the program. */
     _test_app_debug_clear_current_app_id();
     s_test_app_debug.current_app_id = (char *)eos_strdup(app_id);
     if (!s_test_app_debug.current_app_id)
-    {
-        s_test_app_debug.debug_active = false;
         return EOS_ERR_MEM;
-    }
     s_test_app_debug.debug_active = true;
 
-    // Create new activity for the app
-    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
-    if (!activity)
-    {
-        s_test_app_debug.debug_active = false;
-        _test_app_debug_clear_current_app_id();
-        return EOS_FAILED;
-    }
-
-    lv_obj_t *view = eos_activity_get_view(activity);
-    if (!view)
-    {
-        s_test_app_debug.debug_active = false;
-        _test_app_debug_clear_current_app_id();
-        return EOS_FAILED;
-    }
-
-    eos_activity_set_view(activity, view);
-    eos_activity_set_title(activity, app_id);
-    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
-
-    script_pkg_t *pkg = NULL;
-    eos_result_t ret = _test_app_debug_create_pkg(app_id, &pkg);
+    eos_result_t ret = eos_app_launch_immediately(app_id);
     if (ret != EOS_OK)
     {
-        s_test_app_debug.debug_active = false;
-        _test_app_debug_clear_current_app_id();
-        return ret;
-    }
-
-    eos_activity_enter(activity);
-    ret = spm_app_run(pkg);
-    if (ret != EOS_OK)
-    {
-        _test_app_debug_show_error(view, app_id, ret);
+        _test_app_debug_show_error(s_test_app_debug.list_screen, app_id, ret);
         _test_app_debug_restore_after_error(app_id);
+    }
+    else
+    {
+        EOS_LOG_I("Debugger requested launch of '%s'; SPM instance will bind after loading", app_id);
     }
 
     return ret;
 }
 
-static void _test_app_debug_safe_nav_cleanup(void)
-{
-    // Activity-based cleanup - just return to previous activity
-    eos_activity_back();
-}
-
 static void _test_app_debug_exit_current_app(void)
 {
-    if (script_engine_get_state() == SCRIPT_ENGINE_STATE_RUNNING
-        || script_engine_get_state() == SCRIPT_ENGINE_STATE_IDLE
-        || script_engine_get_state() == SCRIPT_ENGINE_STATE_EXCEPTION)
+    char *app_id = s_test_app_debug.current_app_id ? eos_strdup(s_test_app_debug.current_app_id) : NULL;
+    eos_result_t ret = app_id ? eos_app_terminate_by_id(app_id) : EOS_OK;
+    if (ret != EOS_OK)
     {
-        script_engine_request_stop();
+        EOS_LOG_W("Debugger close failed: %d", ret);
+        if (app_id)
+            eos_free(app_id);
+        return;
     }
+    if (app_id)
+        eos_free(app_id);
 
     s_test_app_debug.debug_active = false;
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
-    _test_app_debug_unregister_global_cb();
-
-    _test_app_debug_safe_nav_cleanup();
 }
 
 static void _test_app_debug_restart_current_app(void)
@@ -482,17 +393,17 @@ static void _test_app_debug_restart_current_app(void)
     if (!app_id)
         return;
 
-    if (script_engine_get_state() == SCRIPT_ENGINE_STATE_RUNNING
-        || script_engine_get_state() == SCRIPT_ENGINE_STATE_IDLE
-        || script_engine_get_state() == SCRIPT_ENGINE_STATE_EXCEPTION)
+    eos_result_t ret = eos_app_restart_by_id(app_id);
+    if (ret != EOS_OK)
+        EOS_LOG_W("Debugger restart failed for '%s': %d", app_id, ret);
+    else
     {
-        script_engine_request_stop();
+        eos_activity_t *current = eos_activity_get_current();
+        s_test_app_debug.current_instance_id = current ? eos_activity_get_script_instance_id(current) : 0;
+        s_test_app_debug.debug_active = true;
+        if (!s_test_app_debug.debug_bar || !lv_obj_is_valid(s_test_app_debug.debug_bar))
+            _test_app_debug_create_bar();
     }
-
-    _test_app_debug_safe_nav_cleanup();
-
-    _test_app_debug_create_bar();
-    _test_app_debug_start_internal(app_id);
     eos_free(app_id);
 }
 
@@ -558,7 +469,7 @@ static void _test_app_debug_create_bar(void)
 {
     _test_app_debug_destroy_bar();
 
-    lv_obj_t *bar = lv_obj_create(lv_layer_top());
+    lv_obj_t *bar = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_DEBUG_TEST));
     s_test_app_debug.debug_bar = bar;
     lv_obj_remove_style_all(bar);
 
@@ -673,7 +584,8 @@ static void _test_app_debug_list_delete_cb(lv_event_t *e)
     }
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
-    _test_app_debug_unregister_global_cb();
+    eos_event_unsubscribe(EOS_EVENT_APP_INSTALLED, _test_app_debug_app_installed_cb);
+    eos_event_cleanup_now();
     s_test_app_debug.debug_active = false;
 }
 
@@ -683,7 +595,8 @@ static void _test_app_debug_back_to_test_cb(lv_event_t *e)
 
     _test_app_debug_destroy_bar();
     _test_app_debug_clear_current_app_id();
-    _test_app_debug_unregister_global_cb();
+    eos_event_unsubscribe(EOS_EVENT_APP_INSTALLED, _test_app_debug_app_installed_cb);
+    eos_event_cleanup_now();
     s_test_app_debug.debug_active = false;
 
     eos_activity_back();
@@ -720,7 +633,10 @@ static void _test_app_debugger(void)
 
     eos_activity_set_view(activity, view);
     eos_activity_set_title(activity, "App Debugger");
-    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+    /* The debugger is a tool/list Activity, not the system App List and not
+     * an App execution root.  Keep it out of both the App List animation
+     * routes and app-owned Activity binding. */
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP_DEBUGGER);
 
     lv_obj_t *scr = view;
     lv_obj_add_event_cb(scr, _test_app_debug_list_delete_cb, LV_EVENT_DELETE, NULL);
@@ -1271,17 +1187,15 @@ static void _test_panel_list(lv_event_t *e)
 
 static const char *_test_audio_resolve_path(void)
 {
-    if (eos_storage_is_file(s_test_audio_primary_path))
+    for (uint32_t i = 0U; i < sizeof(s_test_audio_paths) / sizeof(s_test_audio_paths[0]); i++)
     {
-        return s_test_audio_primary_path;
+        if (eos_storage_is_file(s_test_audio_paths[i]))
+        {
+            return s_test_audio_paths[i];
+        }
     }
 
-    if (eos_storage_is_file(s_test_audio_fallback_path))
-    {
-        return s_test_audio_fallback_path;
-    }
-
-    return s_test_audio_primary_path;
+    return s_test_audio_paths[0];
 }
 
 static void _test_audio_sync_ui(void)
@@ -1474,7 +1388,7 @@ static void _test_audio_page(lv_event_t *e)
     eos_label_set_font_size(title, EOS_FONT_SIZE_LARGE);
 
     lv_obj_t *hint = lv_label_create(list);
-    lv_label_set_text(hint, "Play/Pause/Stop fs/music.mp3");
+    lv_label_set_text(hint, "Play/Pause/Stop a PCM WAV file");
     lv_obj_set_style_text_color(hint, lv_color_hex(0xA0A0A0), LV_PART_MAIN);
 
     s_test_audio_page.play_btn = lv_button_create(list);
@@ -1856,15 +1770,19 @@ static void _sensor_update_table(_sensor_test_data_t *data)
                                             i + 1,
                                             _SENSOR_VAL_COL,
                                             "%.2f C",
-                                            raw_data.data.temp.temp / 100.0f);
+                                            raw_data.data.temp.temp / 1000.0f);
                 break;
 
             case EOS_SENSOR_TYPE_BARO:
+                lv_table_set_cell_value_fmt(data->table, i + 1, _SENSOR_VAL_COL, "%d Pa", raw_data.data.baro.pressure);
+                break;
+
+            case EOS_SENSOR_TYPE_HUMIDITY:
                 lv_table_set_cell_value_fmt(data->table,
                                             i + 1,
                                             _SENSOR_VAL_COL,
-                                            "%.2f hPa",
-                                            raw_data.data.baro.pressure / 100.0f);
+                                            "%.3f %%RH",
+                                            raw_data.data.humidity.humidity / 1000.0f);
                 break;
 
             case EOS_SENSOR_TYPE_LIGHT:
@@ -2067,6 +1985,103 @@ static void _test_unit_runner_cb(lv_event_t *e)
     eos_test_runner_start();
 }
 
+typedef enum
+{
+    _TEST_HEADER_PREVIEW_MINI_BACK = 0,
+    _TEST_HEADER_PREVIEW_MINI_NO_BACK,
+    _TEST_HEADER_PREVIEW_STANDARD
+} test_header_preview_mode_t;
+
+static void _test_header_preview_mode_cb(lv_event_t *e)
+{
+    eos_activity_t *activity = eos_activity_from_widget(lv_event_get_target(e));
+    test_header_preview_mode_t mode = (test_header_preview_mode_t)(uintptr_t)lv_event_get_user_data(e);
+    if (!activity)
+        return;
+
+    const char *title = "Widgets";
+    eos_app_header_style_t style = EOS_APP_HEADER_STYLE_MINI;
+    bool back_button_visible = true;
+    if (mode == _TEST_HEADER_PREVIEW_MINI_NO_BACK)
+    {
+        title = "Test Results";
+        back_button_visible = false;
+    }
+    else if (mode == _TEST_HEADER_PREVIEW_STANDARD)
+    {
+        title = "Standard";
+        style = EOS_APP_HEADER_STYLE_STANDARD;
+    }
+
+    eos_activity_set_title(activity, title);
+    eos_activity_set_app_header_style(activity, style);
+    eos_activity_set_app_header_back_button_visible(activity, back_button_visible);
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    lv_obj_t *content = view ? lv_obj_get_child(view, 0) : NULL;
+    if (content && lv_obj_is_valid(content))
+    {
+        lv_obj_set_style_pad_top(content, eos_activity_get_app_header_height(activity) + 12, LV_PART_MAIN);
+    }
+}
+
+static void _test_header_preview_add_button(lv_obj_t *parent, const char *title, test_header_preview_mode_t mode)
+{
+    lv_obj_t *button = lv_button_create(parent);
+    lv_obj_set_width(button, lv_pct(100));
+    lv_obj_set_height(button, 56);
+    lv_obj_add_event_cb(button, _test_header_preview_mode_cb, LV_EVENT_CLICKED, (void *)(uintptr_t)mode);
+
+    lv_obj_t *label = lv_label_create(button);
+    lv_label_set_text(label, title);
+    lv_obj_center(label);
+}
+
+static void _test_header_preview_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+
+    eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
+    if (!activity)
+        return;
+
+    lv_obj_t *view = eos_activity_get_view(activity);
+    if (!view)
+    {
+        eos_activity_destroy(activity);
+        return;
+    }
+
+    eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+    eos_activity_set_title(activity, "Widgets");
+    eos_activity_set_app_header_style(activity, EOS_APP_HEADER_STYLE_MINI);
+    eos_activity_set_app_header_back_button_visible(activity, true);
+    eos_activity_set_app_header_visible(activity, true);
+
+    lv_obj_t *content = lv_obj_create(view);
+    lv_obj_remove_style_all(content);
+    lv_obj_set_size(content, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_opa(content, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_pad_hor(content, 16, LV_PART_MAIN);
+    lv_obj_set_style_pad_top(content, eos_activity_get_app_header_height(activity) + 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(content, 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(content, 8, LV_PART_MAIN);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_scrollable(content, true);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
+
+    lv_obj_t *description = lv_label_create(content);
+    lv_label_set_text(description, "Choose a header style");
+    eos_label_set_font_size(description, EOS_FONT_SIZE_MEDIUM);
+
+    _test_header_preview_add_button(content, "Mini · Back", _TEST_HEADER_PREVIEW_MINI_BACK);
+    _test_header_preview_add_button(content, "Mini · No Back", _TEST_HEADER_PREVIEW_MINI_NO_BACK);
+    _test_header_preview_add_button(content, "Standard", _TEST_HEADER_PREVIEW_STANDARD);
+
+    eos_activity_enter(activity);
+}
+
 void eos_test_start(void)
 {
     eos_activity_t *activity = eos_activity_create(&s_test_activity_lifecycle);
@@ -2083,6 +2098,11 @@ void eos_test_start(void)
 
     eos_activity_set_title(activity, "ElenixOS Test");
     eos_activity_set_type(activity, EOS_ACTIVITY_TYPE_APP);
+    if (eos_activity_set_app_id(activity, "sys.test") != EOS_OK)
+    {
+        eos_activity_destroy(activity);
+        return;
+    }
 
     lv_obj_t *test_list = lv_list_create(view);
     lv_obj_set_size(test_list, lv_pct(100), lv_pct(100));
@@ -2094,6 +2114,14 @@ void eos_test_start(void)
     // Unit Tests
     btn = lv_list_add_button(test_list, LV_SYMBOL_LIST, "Unit Tests");
     lv_obj_add_event_cb(btn, _test_unit_runner_cb, LV_EVENT_CLICKED, NULL);
+    // App Header Style Preview
+    btn = lv_button_create(test_list);
+    lv_obj_set_width(btn, lv_pct(100));
+    lv_obj_set_height(btn, 56);
+    lv_obj_add_event_cb(btn, _test_header_preview_cb, LV_EVENT_CLICKED, NULL);
+    label = lv_label_create(btn);
+    lv_label_set_text(label, "App Header Preview");
+    lv_obj_center(label);
     // App Debugger
     btn = lv_list_add_button(test_list, RI_BUG_LINE, "App Debugger");
     lv_obj_add_event_cb(btn, _test_app_debug_page, LV_EVENT_CLICKED, NULL);

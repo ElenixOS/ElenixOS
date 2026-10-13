@@ -33,8 +33,11 @@ typedef struct
     lv_coord_t size;
     lv_coord_t ring_width;
     lv_coord_t gap;
+    int32_t start_angle;
+    uint16_t angle_range;
     uint32_t track_color;
     bool animate;
+    bool rounded;
     uint8_t ring_count;
     eos_ww_metric_ring_spec_t rings[EOS_WW_METRIC_RINGS_MAX];
 } eos_ww_metric_rings_config_t;

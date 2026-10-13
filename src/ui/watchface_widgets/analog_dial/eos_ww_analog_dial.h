@@ -13,11 +13,14 @@ extern "C" {
 /* Includes ---------------------------------------------------*/
 #include <stdbool.h>
 #include <stdint.h>
+#include "eos_dev_time.h"
 #include "lvgl.h"
 
 /* Public macros ----------------------------------------------*/
 #define EOS_WW_ANALOG_DIAL_HAND_COUNT 3U
 #define EOS_WW_ANALOG_DIAL_IMAGE_SRC_MAX 256U
+/** @brief Maximum number of angular ranges that can omit dial ticks. */
+#define EOS_WW_ANALOG_DIAL_MAX_TICK_HIDDEN_RANGES 8U
 
 /* Public typedefs --------------------------------------------*/
 typedef enum
@@ -64,6 +67,13 @@ typedef struct
     lv_opa_t opacity;
 } eos_ww_analog_tick_config_t;
 
+/** @brief Angular interval in which the analog dial omits all tick marks. */
+typedef struct
+{
+    int32_t start_angle;
+    int32_t end_angle;
+} eos_ww_analog_tick_hidden_range_t;
+
 typedef struct
 {
     bool enabled;
@@ -78,10 +88,14 @@ typedef struct
     lv_coord_t height;
     eos_ww_analog_tick_config_t major_ticks;
     eos_ww_analog_tick_config_t minor_ticks;
+    uint8_t tick_hidden_range_count;
+    eos_ww_analog_tick_hidden_range_t tick_hidden_ranges[EOS_WW_ANALOG_DIAL_MAX_TICK_HIDDEN_RANGES];
     eos_ww_analog_hand_config_t hands[EOS_WW_ANALOG_DIAL_HAND_COUNT];
     eos_ww_analog_center_cap_config_t center_cap;
+    eos_datetime_t display_time;
     bool numerals;
     bool smooth_second;
+    bool time_override;
 } eos_ww_analog_dial_config_t;
 
 typedef struct eos_ww_analog_dial_t eos_ww_analog_dial_t;

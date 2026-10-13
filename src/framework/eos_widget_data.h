@@ -47,6 +47,7 @@ typedef enum
     EOS_WDATA_WW_METRIC_RINGS,
     EOS_WDATA_WW_TREND_CHART,
     EOS_WDATA_WW_CALENDAR_GRID,
+    EOS_WDATA_WW_ARC_TRACK,
     EOS_WDATA_COUNT
 } eos_widget_data_type_t;
 

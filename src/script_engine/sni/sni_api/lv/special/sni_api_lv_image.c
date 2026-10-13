@@ -8,6 +8,7 @@
 /* Includes ---------------------------------------------------*/
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
 #include <string.h>
 #include "eos_image.h"
 #include "eos_mem.h"
@@ -193,6 +194,9 @@ static char *sni_image_resolve_under_root(const char *root_dir, const char *cand
 {
     char root_real[EOS_FS_PATH_MAX];
     char candidate_real[EOS_FS_PATH_MAX];
+    char physical_path[EOS_FS_PATH_MAX];
+    char lvgl_path[EOS_FS_PATH_MAX];
+    int path_len;
 
     if (!root_dir || !candidate)
     {
@@ -216,7 +220,16 @@ static char *sni_image_resolve_under_root(const char *root_dir, const char *cand
         return NULL;
     }
 
-    return sni_image_dup_string(candidate_real);
+    if (!eos_fs_realpath(candidate_real, physical_path, sizeof(physical_path)))
+        return NULL;
+
+    /* LVGL image decoders open file sources through lv_fs, which requires a
+     * registered drive letter even when the underlying driver uses stdio. */
+    path_len = snprintf(lvgl_path, sizeof(lvgl_path), "%c:%s", LV_FS_STDIO_LETTER, physical_path);
+    if (path_len < 0 || (size_t)path_len >= sizeof(lvgl_path))
+        return NULL;
+
+    return sni_image_dup_string(lvgl_path);
 }
 
 static char *sni_image_resolve_asset_path(const char *src)

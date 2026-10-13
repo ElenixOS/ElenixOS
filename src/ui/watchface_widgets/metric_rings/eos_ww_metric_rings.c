@@ -93,17 +93,22 @@ lv_obj_t *eos_ww_metric_rings_create(lv_obj_t *parent, const eos_ww_metric_rings
         .size = 120,
         .ring_width = 6,
         .gap = 4,
+        .start_angle = 0,
+        .angle_range = 360,
         .track_color = 0x1A2030,
         .animate = true,
+        .rounded = false,
         .ring_count = 0,
     };
     _metric_rings_t *rings;
     lv_obj_t *root;
+    bool has_metric_bound = false;
 
     EOS_CHECK_PTR_RETURN_VAL(parent, NULL);
     if (config)
         defaults = *config;
-    if (defaults.size <= 0 || defaults.ring_count == 0U || defaults.ring_count > EOS_WW_METRIC_RINGS_MAX)
+    if (defaults.size <= 0 || defaults.ring_width <= 0 || defaults.gap < 0 || defaults.angle_range == 0U
+        || defaults.angle_range > 360U || defaults.ring_count == 0U || defaults.ring_count > EOS_WW_METRIC_RINGS_MAX)
         return NULL;
     rings = eos_malloc_zeroed(sizeof(*rings));
     EOS_CHECK_PTR_RETURN_VAL(rings, NULL);
@@ -126,17 +131,30 @@ lv_obj_t *eos_ww_metric_rings_create(lv_obj_t *parent, const eos_ww_metric_rings
             continue;
         rings->arc[i] = arc;
         rings->spec[i] = defaults.rings[i];
+        has_metric_bound = has_metric_bound || rings->spec[i].metric_bound;
         lv_obj_set_size(arc, ring_size, ring_size);
         lv_obj_center(arc);
         lv_arc_set_range(arc, 0, 100);
         lv_arc_set_value(arc, 0);
-        lv_arc_set_rotation(arc, 0);
-        lv_arc_set_bg_angles(arc, 0, 360);
+        if (defaults.angle_range == 360U)
+        {
+            /* LVGL reserves 0..360 as the full-circle span. Rotate that span
+             * afterward so progress still begins at the configured angle. */
+            lv_arc_set_bg_angles(arc, 0, 360);
+            lv_arc_set_rotation(arc, defaults.start_angle);
+        }
+        else
+        {
+            lv_arc_set_rotation(arc, 0);
+            lv_arc_set_bg_angles(arc, defaults.start_angle, defaults.start_angle + defaults.angle_range);
+        }
         lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
         lv_obj_set_style_arc_width(arc, defaults.ring_width, LV_PART_MAIN);
         lv_obj_set_style_arc_width(arc, defaults.ring_width, LV_PART_INDICATOR);
         lv_obj_set_style_arc_color(arc, lv_color_hex(defaults.track_color), LV_PART_MAIN);
         lv_obj_set_style_arc_color(arc, lv_color_hex(defaults.rings[i].color), LV_PART_INDICATOR);
+        lv_obj_set_style_arc_rounded(arc, defaults.rounded, LV_PART_MAIN);
+        lv_obj_set_style_arc_rounded(arc, defaults.rounded, LV_PART_INDICATOR);
         eos_ww_internal_make_static(arc);
     }
     eos_wdata_set(root, EOS_WDATA_WW_METRIC_RINGS, rings, _metric_rings_destroy);
@@ -149,13 +167,16 @@ lv_obj_t *eos_ww_metric_rings_create(lv_obj_t *parent, const eos_ww_metric_rings
                 _metric_rings_set_arc(rings, i, sample.value, sample.valid && !sample.stale);
         }
     }
-    rings->timer = lv_timer_create(_metric_rings_timer_cb, 500U, rings);
-    if (!rings->timer)
+    if (has_metric_bound)
     {
-        lv_obj_delete(root);
-        return NULL;
+        rings->timer = lv_timer_create(_metric_rings_timer_cb, 500U, rings);
+        if (!rings->timer)
+        {
+            lv_obj_delete(root);
+            return NULL;
+        }
+        lv_timer_ready(rings->timer);
     }
-    lv_timer_ready(rings->timer);
     return root;
 }
 

@@ -62,9 +62,13 @@ struct eos_ww_analog_dial_t
     _analog_hand_t hands[EOS_WW_ANALOG_DIAL_HAND_COUNT];
     eos_ww_analog_tick_config_t major_ticks;
     eos_ww_analog_tick_config_t minor_ticks;
+    uint8_t tick_hidden_range_count;
+    eos_ww_analog_tick_hidden_range_t tick_hidden_ranges[EOS_WW_ANALOG_DIAL_MAX_TICK_HIDDEN_RANGES];
     eos_ww_analog_center_cap_config_t center_cap;
+    eos_datetime_t display_time;
     bool numerals;
     bool smooth_second;
+    bool time_override;
     bool alive;
     bool geometry_valid;
     _analog_geometry_t geometry;
@@ -173,6 +177,32 @@ static int32_t _analog_normalize_angle(int32_t angle_tenths)
     if (angle_tenths < 0)
         angle_tenths += _ANALOG_FULL_CIRCLE_TENTHS;
     return angle_tenths;
+}
+
+static int32_t _analog_normalize_degrees(int32_t angle)
+{
+    angle %= 360;
+    if (angle < 0)
+        angle += 360;
+    return angle;
+}
+
+static bool _analog_tick_angle_is_hidden(const _analog_dial_t *dial, double angle)
+{
+    if (!dial)
+        return false;
+
+    for (uint8_t i = 0; i < dial->tick_hidden_range_count; i++)
+    {
+        int32_t start = _analog_normalize_degrees(dial->tick_hidden_ranges[i].start_angle);
+        int32_t end = _analog_normalize_degrees(dial->tick_hidden_ranges[i].end_angle);
+        bool in_range = start <= end ? (angle >= (double)start && angle <= (double)end)
+                                     : (angle >= (double)start || angle <= (double)end);
+        if (in_range)
+            return true;
+    }
+
+    return false;
 }
 
 static _analog_hand_t *_analog_hand_from_handle(eos_ww_analog_dial_hand_handle_t *handle)
@@ -803,6 +833,8 @@ static void _analog_draw_ticks_and_numbers(lv_obj_t *root, _analog_dial_t *dial,
 
         if (count == 0U)
             break;
+        if (_analog_tick_angle_is_hidden(dial, angle))
+            continue;
         if (style->width <= 0 || style->opacity <= LV_OPA_MIN)
             continue;
         _analog_point(&outer, geometry->center_x, geometry->center_y, angle, outer_radius);
@@ -932,19 +964,26 @@ static void _analog_update(_analog_dial_t *dial)
 {
     eos_datetime_t now;
     double calculated[EOS_WW_ANALOG_DIAL_HAND_COUNT];
+    bool changed = false;
 
     if (!dial || !dial->alive || !dial->root || !lv_obj_is_valid(dial->root))
         return;
 
-    now = eos_time_get();
+    now = dial->time_override ? dial->display_time : eos_time_get();
     calculated[EOS_WW_ANALOG_HAND_HOUR] = _analog_hour_angle(&now);
     calculated[EOS_WW_ANALOG_HAND_MINUTE] = _analog_minute_angle(&now);
     calculated[EOS_WW_ANALOG_HAND_SECOND] = _analog_second_angle(&now);
     for (uint32_t i = 0; i < EOS_WW_ANALOG_DIAL_HAND_COUNT; i++)
     {
         int32_t angle_tenths = (int32_t)llround(calculated[i] * 10.0) + dial->hands[i].style.angle_offset * 10;
-        dial->hands[i].angle_tenths = _analog_normalize_angle(angle_tenths);
-        if (dial->hands[i].object && lv_obj_is_valid(dial->hands[i].object))
+        angle_tenths = _analog_normalize_angle(angle_tenths);
+        bool hand_changed = dial->hands[i].angle_tenths != angle_tenths;
+        if (hand_changed)
+        {
+            dial->hands[i].angle_tenths = angle_tenths;
+            changed = true;
+        }
+        if (hand_changed && dial->hands[i].object && lv_obj_is_valid(dial->hands[i].object))
         {
             if (dial->hands[i].style.type == EOS_WW_ANALOG_HAND_IMAGE)
                 lv_image_set_rotation(dial->hands[i].object, dial->hands[i].angle_tenths);
@@ -952,7 +991,8 @@ static void _analog_update(_analog_dial_t *dial)
                 lv_obj_set_style_transform_rotation(dial->hands[i].object, dial->hands[i].angle_tenths, LV_PART_MAIN);
         }
     }
-    lv_obj_invalidate(dial->root);
+    if (changed)
+        lv_obj_invalidate(dial->root);
 }
 
 static void _analog_timer_cb(lv_timer_t *timer)
@@ -1034,9 +1074,15 @@ lv_obj_t *eos_ww_analog_dial_create(lv_obj_t *parent, const eos_ww_analog_dial_c
     dial->root = root;
     dial->major_ticks = defaults.major_ticks;
     dial->minor_ticks = defaults.minor_ticks;
+    dial->tick_hidden_range_count = LV_MIN(defaults.tick_hidden_range_count, EOS_WW_ANALOG_DIAL_MAX_TICK_HIDDEN_RANGES);
+    memcpy(dial->tick_hidden_ranges,
+           defaults.tick_hidden_ranges,
+           sizeof(dial->tick_hidden_ranges[0]) * dial->tick_hidden_range_count);
     dial->center_cap = defaults.center_cap;
+    dial->display_time = defaults.display_time;
     dial->numerals = defaults.numerals;
     dial->smooth_second = defaults.smooth_second;
+    dial->time_override = defaults.time_override;
     dial->alive = true;
 
     for (uint32_t i = 0; i < EOS_WW_ANALOG_DIAL_HAND_COUNT; i++)
@@ -1057,8 +1103,9 @@ lv_obj_t *eos_ww_analog_dial_create(lv_obj_t *parent, const eos_ww_analog_dial_c
     }
 
     lv_obj_add_event_cb(root, _analog_event_cb, LV_EVENT_ALL, NULL);
-    dial->timer = lv_timer_create(_analog_timer_cb, defaults.smooth_second ? 16U : 500U, dial);
-    if (!dial->timer)
+    if (!dial->time_override)
+        dial->timer = lv_timer_create(_analog_timer_cb, defaults.smooth_second ? 16U : 500U, dial);
+    if (!dial->time_override && !dial->timer)
     {
         lv_obj_delete(root);
         eos_free(dial);
@@ -1068,7 +1115,8 @@ lv_obj_t *eos_ww_analog_dial_create(lv_obj_t *parent, const eos_ww_analog_dial_c
     eos_wdata_set(root, EOS_WDATA_WW_ANALOG_DIAL, dial, _analog_destroy);
     _analog_refresh_ext_draw_size(dial);
     _analog_layout_hands(dial);
-    lv_timer_ready(dial->timer);
+    if (dial->timer)
+        lv_timer_ready(dial->timer);
     _analog_update(dial);
     return root;
 }

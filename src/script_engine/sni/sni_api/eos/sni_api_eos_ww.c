@@ -12,6 +12,7 @@
 #include "eos_mem.h"
 #include "eos_service_metric.h"
 #include "eos_ww_analog_dial.h"
+#include "eos_ww_arc_track.h"
 #include "eos_ww_calendar_grid.h"
 #include "eos_ww_compass_dial.h"
 #include "eos_ww_metric_rings.h"
@@ -95,6 +96,27 @@ static bool _parse_metric(jerry_value_t object, const char *property, eos_metric
     if (!_read_string(object, property, name, sizeof(name)))
         return false;
     return eos_metric_parse(name, id);
+}
+
+static uint8_t _read_color_array(jerry_value_t object, const char *property, uint32_t *colors, uint8_t capacity)
+{
+    jerry_value_t list = jerry_object_get_sz(object, property);
+    uint8_t count = 0;
+
+    if (jerry_value_is_array(list))
+    {
+        jerry_length_t length = jerry_array_length(list);
+        for (jerry_length_t i = 0; i < length && count < capacity; i++)
+        {
+            jerry_value_t item = jerry_object_get_index(list, i);
+            double value;
+            if (_number(item, &value) && value >= 0.0 && value <= 16777215.0)
+                colors[count++] = (uint32_t)value;
+            jerry_value_free(item);
+        }
+    }
+    jerry_value_free(list);
+    return count;
 }
 
 static bool _get_parent(const jerry_value_t args_p[], lv_obj_t **parent)
@@ -332,6 +354,32 @@ static void _parse_analog(jerry_value_t options, eos_ww_analog_dial_config_t *co
                 config->minor_ticks.opacity = _analog_opacity(value);
             jerry_value_free(minor);
         }
+
+        jerry_value_t hidden_ranges = jerry_object_get_sz(child, "hiddenRanges");
+        if (jerry_value_is_array(hidden_ranges))
+        {
+            jerry_length_t length = jerry_array_length(hidden_ranges);
+            for (jerry_length_t i = 0;
+                 i < length && config->tick_hidden_range_count < EOS_WW_ANALOG_DIAL_MAX_TICK_HIDDEN_RANGES;
+                 i++)
+            {
+                jerry_value_t item = jerry_object_get_index(hidden_ranges, i);
+                double start_angle;
+                double end_angle;
+                if (jerry_value_is_object(item) && _read_number(item, "startAngle", &start_angle)
+                    && _read_number(item, "endAngle", &end_angle) && start_angle >= (double)INT32_MIN
+                    && start_angle <= (double)INT32_MAX && end_angle >= (double)INT32_MIN
+                    && end_angle <= (double)INT32_MAX)
+                {
+                    eos_ww_analog_tick_hidden_range_t *range =
+                        &config->tick_hidden_ranges[config->tick_hidden_range_count++];
+                    range->start_angle = (int32_t)start_angle;
+                    range->end_angle = (int32_t)end_angle;
+                }
+                jerry_value_free(item);
+            }
+        }
+        jerry_value_free(hidden_ranges);
         jerry_value_free(child);
     }
 
@@ -393,6 +441,32 @@ static void _parse_analog(jerry_value_t options, eos_ww_analog_dial_config_t *co
     }
     if (_read_bool(options, "smoothSecond", &flag))
         config->smooth_second = flag;
+
+    child = _read_object(options, "time");
+    if (!jerry_value_is_undefined(child))
+    {
+        double hour;
+        double minute;
+        double second;
+        double millisecond = 0.0;
+        bool valid = _read_number(child, "hour", &hour) && _read_number(child, "min", &minute)
+                     && _read_number(child, "sec", &second);
+        jerry_value_t millisecond_value = jerry_object_get_sz(child, "ms");
+        if (!jerry_value_is_undefined(millisecond_value))
+            valid = valid && _number(millisecond_value, &millisecond);
+        jerry_value_free(millisecond_value);
+        if (valid && hour >= 0.0 && hour <= 23.0 && minute >= 0.0 && minute <= 59.0 && second >= 0.0 && second <= 59.0
+            && millisecond >= 0.0 && millisecond <= 999.0)
+        {
+            memset(&config->display_time, 0, sizeof(config->display_time));
+            config->display_time.hour = (uint8_t)hour;
+            config->display_time.min = (uint8_t)minute;
+            config->display_time.sec = (uint8_t)second;
+            config->display_time.ms = (uint16_t)millisecond;
+            config->time_override = true;
+        }
+        jerry_value_free(child);
+    }
 }
 
 static bool _hand_this(const jerry_call_info_t *call_info_p, eos_ww_analog_dial_hand_handle_t **handle)
@@ -841,10 +915,16 @@ static void _parse_rings(jerry_value_t options, eos_ww_metric_rings_config_t *co
         config->ring_width = (lv_coord_t)value;
     if (_read_number(options, "gap", &value))
         config->gap = (lv_coord_t)value;
+    if (_read_number(options, "startAngle", &value))
+        config->start_angle = (int32_t)value;
+    if (_read_number(options, "angleRange", &value))
+        config->angle_range = (uint16_t)value;
     if (_read_number(options, "trackColor", &value))
         config->track_color = (uint32_t)value;
     if (_read_bool(options, "animate", &flag))
         config->animate = flag;
+    if (_read_bool(options, "rounded", &flag))
+        config->rounded = flag;
     if (jerry_value_is_array(list))
     {
         jerry_length_t length = jerry_array_length(list);
@@ -880,8 +960,11 @@ jerry_value_t sni_api_eos_ww_metric_rings(const jerry_call_info_t *call_info_p,
         .size = 120,
         .ring_width = 6,
         .gap = 4,
+        .start_angle = 0,
+        .angle_range = 360,
         .track_color = 0x1A2030,
         .animate = true,
+        .rounded = false,
     };
     lv_obj_t *parent;
     (void)call_info_p;
@@ -893,6 +976,264 @@ jerry_value_t sni_api_eos_ww_metric_rings(const jerry_call_info_t *call_info_p,
     lv_obj_t *object = eos_ww_metric_rings_create(parent, &config);
     _apply_position(args_p[1], object);
     return _return_widget(object);
+}
+
+static bool _arc_track_option_number(jerry_value_t options, const char *name, double *out, bool *present)
+{
+    jerry_value_t js_value = jerry_object_get_sz(options, name);
+    bool ok = true;
+
+    if (jerry_value_is_exception(js_value))
+    {
+        ok = false;
+    }
+    else if (jerry_value_is_undefined(js_value))
+    {
+        *present = false;
+    }
+    else
+    {
+        *present = true;
+        ok = _number(js_value, out);
+    }
+
+    jerry_value_free(js_value);
+    return ok;
+}
+
+static bool _arc_track_option_integer(jerry_value_t options,
+                                      const char *name,
+                                      double min,
+                                      double max,
+                                      double *out,
+                                      bool *present)
+{
+    double value;
+
+    if (!_arc_track_option_number(options, name, &value, present))
+        return false;
+    if (!*present)
+        return true;
+    if (trunc(value) != value || value < min || value > max)
+        return false;
+    *out = value;
+    return true;
+}
+
+static bool _arc_track_option_bool(jerry_value_t options, const char *name, bool *out, bool *present)
+{
+    jerry_value_t js_value = jerry_object_get_sz(options, name);
+    bool ok = true;
+
+    if (jerry_value_is_exception(js_value))
+    {
+        ok = false;
+    }
+    else if (jerry_value_is_undefined(js_value))
+    {
+        *present = false;
+    }
+    else
+    {
+        *present = true;
+        ok = _bool(js_value, out);
+    }
+
+    jerry_value_free(js_value);
+    return ok;
+}
+
+static bool _arc_track_option_colors(jerry_value_t options,
+                                     const char *name,
+                                     uint32_t *colors,
+                                     uint8_t capacity,
+                                     uint8_t *count)
+{
+    jerry_value_t list = jerry_object_get_sz(options, name);
+    bool ok = true;
+    *count = 0U;
+
+    if (jerry_value_is_exception(list))
+    {
+        ok = false;
+    }
+    else if (jerry_value_is_undefined(list))
+    {
+        /* Omitted arrays keep their current empty/default configuration. */
+    }
+    else if (!jerry_value_is_array(list) || jerry_array_length(list) > capacity)
+    {
+        ok = false;
+    }
+    else
+    {
+        jerry_length_t length = jerry_array_length(list);
+        for (jerry_length_t i = 0U; i < length; i++)
+        {
+            jerry_value_t item = jerry_object_get_index(list, i);
+            double value;
+            if (!_number(item, &value) || trunc(value) != value || value < 0.0 || value > 16777215.0)
+            {
+                ok = false;
+                jerry_value_free(item);
+                break;
+            }
+            colors[i] = (uint32_t)value;
+            (*count)++;
+            jerry_value_free(item);
+        }
+    }
+
+    jerry_value_free(list);
+    return ok;
+}
+
+static bool _arc_track_parse_position(jerry_value_t options, lv_coord_t *x, lv_coord_t *y, bool *present)
+{
+    double value;
+    bool x_present;
+    bool y_present;
+
+    if (!_arc_track_option_integer(options, "x", (double)LV_COORD_MIN, (double)LV_COORD_MAX, &value, &x_present))
+        return false;
+    if (x_present)
+        *x = (lv_coord_t)value;
+    if (!_arc_track_option_integer(options, "y", (double)LV_COORD_MIN, (double)LV_COORD_MAX, &value, &y_present))
+        return false;
+    if (y_present)
+        *y = (lv_coord_t)value;
+
+    /* Preserve _apply_position's existing behavior for partial positions. */
+    *present = x_present && y_present;
+    return true;
+}
+
+static bool _parse_arc_track(jerry_value_t options, eos_ww_arc_track_config_t *config)
+{
+    double value;
+    bool present;
+    bool flag;
+
+#define ARC_TRACK_READ_COORD(property, field, minimum, maximum)                                                    \
+    do                                                                                                             \
+    {                                                                                                              \
+        if (!_arc_track_option_integer(options, property, (double)(minimum), (double)(maximum), &value, &present)) \
+            return false;                                                                                          \
+        if (present)                                                                                               \
+            config->field = (lv_coord_t)value;                                                                     \
+    } while (0)
+
+#define ARC_TRACK_READ_INT32(property, field, minimum)                                                             \
+    do                                                                                                             \
+    {                                                                                                              \
+        if (!_arc_track_option_integer(options, property, (double)(minimum), (double)INT32_MAX, &value, &present)) \
+            return false;                                                                                          \
+        if (present)                                                                                               \
+            config->field = (int32_t)value;                                                                        \
+    } while (0)
+
+    ARC_TRACK_READ_COORD("width", width, 1, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("height", height, 1, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("centerX", center_x, LV_COORD_MIN, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("centerY", center_y, LV_COORD_MIN, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("radius", radius, 1, UINT16_MAX);
+    ARC_TRACK_READ_COORD("lineWidth", line_width, 1, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("knobSize", knob_size, 0, LV_COORD_MAX);
+    ARC_TRACK_READ_COORD("knobBorderWidth", knob_border_width, 0, LV_COORD_MAX);
+    ARC_TRACK_READ_INT32("startAngle", start_angle, INT32_MIN);
+    ARC_TRACK_READ_INT32("endAngle", end_angle, INT32_MIN);
+    ARC_TRACK_READ_INT32("segmentGapAngle", segment_gap_angle, 0);
+
+    if (!_arc_track_option_integer(options, "color", 0.0, 16777215.0, &value, &present))
+        return false;
+    if (present)
+        config->color = (uint32_t)value;
+    if (!_arc_track_option_integer(options, "knobBorderColor", 0.0, 16777215.0, &value, &present))
+        return false;
+    if (present)
+        config->knob_border_color = (uint32_t)value;
+    if (!_arc_track_option_bool(options, "rounded", &flag, &present))
+        return false;
+    if (present)
+        config->rounded = flag;
+    if (!_arc_track_option_colors(options,
+                                  "colors",
+                                  config->segment_colors,
+                                  EOS_WW_ARC_TRACK_MAX_SEGMENTS,
+                                  &config->segment_count))
+        return false;
+
+    if (!_arc_track_option_integer(options, "markerCount", 0.0, (double)EOS_WW_ARC_TRACK_MAX_MARKERS, &value, &present))
+        return false;
+    if (present)
+        config->marker_count = (uint8_t)value;
+    ARC_TRACK_READ_COORD("markerSize", marker_size, 0, LV_COORD_MAX);
+    ARC_TRACK_READ_INT32("markerStartAngle", marker_start_angle, INT32_MIN);
+    ARC_TRACK_READ_INT32("markerEndAngle", marker_end_angle, INT32_MIN);
+    if (!_arc_track_option_colors(options,
+                                  "markerColors",
+                                  config->marker_colors,
+                                  EOS_WW_ARC_TRACK_MAX_MARKERS,
+                                  &config->marker_color_count))
+        return false;
+
+#undef ARC_TRACK_READ_COORD
+#undef ARC_TRACK_READ_INT32
+    return true;
+}
+
+jerry_value_t sni_api_eos_ww_arc_track(const jerry_call_info_t *call_info_p,
+                                       const jerry_value_t args_p[],
+                                       const jerry_length_t args_count)
+{
+    eos_ww_arc_track_config_t config = {
+        .width = 390,
+        .height = 450,
+        .center_x = 195,
+        .center_y = 230,
+        .radius = 180,
+        .line_width = 6,
+        .start_angle = 225,
+        .end_angle = 255,
+        .color = _DEFAULT_COLOR,
+        .knob_border_width = 2,
+        .knob_border_color = 0x000000U,
+        .rounded = true,
+    };
+    lv_obj_t *parent;
+    lv_coord_t x = 0;
+    lv_coord_t y = 0;
+    bool has_position;
+    lv_obj_t *object;
+    (void)call_info_p;
+    if (args_count != 2U || !jerry_value_is_object(args_p[1]) || !_get_parent(args_p, &parent))
+        return sni_api_throw_error("Usage: ww.arcTrack(parent, options)");
+    if (!_parse_arc_track(args_p[1], &config) || !_arc_track_parse_position(args_p[1], &x, &y, &has_position))
+        return sni_api_throw_error("Invalid ArcTrack options");
+    object = eos_ww_arc_track_create(parent, &config);
+    if (object && has_position)
+        lv_obj_set_pos(object, x, y);
+    return _return_widget(object);
+}
+
+jerry_value_t sni_api_eos_ww_arc_track_set_range(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    lv_obj_t *arc_track;
+    double min;
+    double value;
+    double max;
+    bool valid = true;
+    (void)call_info_p;
+
+    if ((args_count != 4U && args_count != 5U) || !sni_tb_js2c(args_p[0], SNI_H_LV_OBJ, &arc_track)
+        || !_number(args_p[1], &min) || !_number(args_p[2], &value) || !_number(args_p[3], &max)
+        || (args_count == 5U && !_bool(args_p[4], &valid)))
+        return sni_api_throw_error("Usage: ww.arcTrackSetRange(track, min, value, max, valid?)");
+    if (!eos_ww_arc_track_set_range(arc_track, min, value, max, valid))
+        return sni_api_throw_error("ArcTrack range requires an arcTrack created with knobSize > 0");
+    return jerry_undefined();
 }
 
 jerry_value_t sni_api_eos_ww_metric_rings_set_value(const jerry_call_info_t *call_info_p,
@@ -1084,6 +1425,8 @@ jerry_value_t sni_api_eos_ww_calendar_grid_set_selected_date(const jerry_call_in
 
 const sni_method_desc_t eos_ww_static_methods[] = {
     {.name = "analogDial", .handler = sni_api_eos_ww_analog_dial},
+    {.name = "arcTrack", .handler = sni_api_eos_ww_arc_track},
+    {.name = "arcTrackSetRange", .handler = sni_api_eos_ww_arc_track_set_range},
     {.name = "compassDial", .handler = sni_api_eos_ww_compass_dial},
     {.name = "radialGauge", .handler = sni_api_eos_ww_radial_gauge},
     {.name = "radialGaugeSetValue", .handler = sni_api_eos_ww_radial_gauge_set_value},

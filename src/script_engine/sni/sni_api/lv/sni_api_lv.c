@@ -22296,6 +22296,1669 @@ jerry_value_t sni_api_prop_set_arc_value(const jerry_call_info_t *call_info_p,
 }
 
 /**
+ * @brief Create an arc label object pointer to the created arc label
+ *
+ * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
+ *
+ * @return (object) pointer to the created arc label
+ */
+jerry_value_t sni_api_ctor_arclabel(const jerry_call_info_t *call_info_p,
+                                    const jerry_value_t args_p[],
+                                    const jerry_length_t args_count)
+{
+    if (jerry_value_is_undefined(call_info_p->new_target))
+    {
+        return sni_api_throw_error("Constructor must be called with new");
+    }
+
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    lv_obj_t *arg_parent;
+    if (!sni_tb_js2c_parent(args_p[0], (void **)&arg_parent))
+    {
+        return sni_api_throw_error("Parent argument is required");
+    }
+
+    lv_obj_t *native_obj = lv_arclabel_create(arg_parent);
+    if (!sni_tb_c2js_set_object(&native_obj, SNI_H_LV_OBJ, call_info_p->this_value))
+    {
+        return sni_api_throw_error("Failed to bind native object");
+    }
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the text of the arc label.
+ *
+ * @details
+ * This function sets the text displayed by an arc label object.
+ *
+ * @param text (string) Pointer to a null-terminated string containing the new text for the label. May be NULL . When NULL the label is refreshed with its current text.
+ */
+jerry_value_t sni_api_lv_arclabel_set_text(const jerry_call_info_t *call_info_p,
+                                           const jerry_value_t args_p[],
+                                           const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *arg_text;
+    arg_text = sni_tb_js2c_string(args_p[0]);
+    if (!arg_text)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_arclabel_set_text(self_obj, arg_text);
+    eos_free((void *)arg_text);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the start angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param start (number) the start angle. (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_lv_arclabel_set_angle_start(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_value_precise_t arg_start;
+    if (!sni_tb_js2c(args_p[0], SNI_T_FLOAT, &arg_start))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_set_angle_start(self_obj, arg_start);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the end angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param size (number) the angle size (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_lv_arclabel_set_angle_size(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_value_precise_t arg_size;
+    if (!sni_tb_js2c(args_p[0], SNI_T_FLOAT, &arg_size))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_set_angle_size(self_obj, arg_size);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the rotation for the whole arc
+ *
+ * @param offset (number) rotation angle
+ */
+jerry_value_t sni_api_lv_arclabel_set_offset(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t arg_offset;
+    arg_offset = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_offset(self_obj, arg_offset);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the type of arc.
+ *
+ * @param dir (number) arc label's direction
+ */
+jerry_value_t sni_api_lv_arclabel_set_dir(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_dir_t arg_dir;
+    arg_dir = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_dir(self_obj, arg_dir);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
+ */
+jerry_value_t sni_api_lv_arclabel_set_recolor(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_en;
+    arg_en = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_arclabel_set_recolor(self_obj, arg_en);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the radius for an arc label object.
+ *
+ * @param radius (number) The radius value to set for the label's curvature, in pixels.
+ */
+jerry_value_t sni_api_lv_arclabel_set_radius(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_radius;
+    arg_radius = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_radius(self_obj, arg_radius);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the center offset x for an arc label object.
+ *
+ * @param x (number) the x offset
+ */
+jerry_value_t sni_api_lv_arclabel_set_center_offset_x(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_x;
+    arg_x = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_center_offset_x(self_obj, arg_x);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the center offset y for an arc label object.
+ *
+ * @param y (number) the y offset
+ */
+jerry_value_t sni_api_lv_arclabel_set_center_offset_y(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t arg_y;
+    arg_y = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_center_offset_y(self_obj, arg_y);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the text vertical alignment for an arc label object.
+ *
+ * @param align (number) the vertical alignment
+ */
+jerry_value_t sni_api_lv_arclabel_set_text_vertical_align(const jerry_call_info_t *call_info_p,
+                                                          const jerry_value_t args_p[],
+                                                          const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_text_align_t arg_align;
+    arg_align = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_text_vertical_align(self_obj, arg_align);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the text horizontal alignment for an arc label object.
+ *
+ * @param align (number) the horizontal alignment
+ */
+jerry_value_t sni_api_lv_arclabel_set_text_horizontal_align(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_text_align_t arg_align;
+    arg_align = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_text_horizontal_align(self_obj, arg_align);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the overflow behavior for an arc label object.
+ *
+ * @param overflow (number) the overflow mode (visible, ellipsis, clip)
+ */
+jerry_value_t sni_api_lv_arclabel_set_overflow(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_overflow_t arg_overflow;
+    arg_overflow = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_overflow(self_obj, arg_overflow);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the end overlap behavior for an arc label object. This controls how text is handled when it would overlap at the end of a 360-degree arc.
+ *
+ * @param overlap (boolean) set the arc label's end overlap behavior
+ */
+jerry_value_t sni_api_lv_arclabel_set_end_overlap(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool arg_overlap;
+    arg_overlap = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_arclabel_set_end_overlap(self_obj, arg_overlap);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the start angle of an arc label. the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_lv_arclabel_get_angle_start(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_angle_start(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Get the angle size of an arc label. the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_lv_arclabel_get_angle_size(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_angle_size(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Get whether the arc label is type or not. arc label's direction
+ *
+ * @return (number) arc label's direction
+ */
+jerry_value_t sni_api_lv_arclabel_get_dir(const jerry_call_info_t *call_info_p,
+                                          const jerry_value_t args_p[],
+                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_dir_t result = lv_arclabel_get_dir(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @details
+ * :ref:`lv_arclabel_set_recolor` true: enable recoloring, false: disable
+ *
+ * @return (boolean) true: enable recoloring, false: disable
+ */
+jerry_value_t sni_api_lv_arclabel_get_recolor(const jerry_call_info_t *call_info_p,
+                                              const jerry_value_t args_p[],
+                                              const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_arclabel_get_recolor(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the text of the arc label. the radius of the arc label
+ *
+ * @return (number) the radius of the arc label
+ */
+jerry_value_t sni_api_lv_arclabel_get_radius(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_radius(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the center offset x for an arc label object. the x offset
+ *
+ * @return (number) the x offset
+ */
+jerry_value_t sni_api_lv_arclabel_get_center_offset_x(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_center_offset_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the center offset y for an arc label object. the y offset
+ *
+ * @return (number) the y offset
+ */
+jerry_value_t sni_api_lv_arclabel_get_center_offset_y(const jerry_call_info_t *call_info_p,
+                                                      const jerry_value_t args_p[],
+                                                      const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_center_offset_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Get the text vertical alignment for an arc label object. the vertical alignment
+ *
+ * @return (number) the vertical alignment
+ */
+jerry_value_t sni_api_lv_arclabel_get_text_vertical_align(const jerry_call_info_t *call_info_p,
+                                                          const jerry_value_t args_p[],
+                                                          const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_text_align_t result = lv_arclabel_get_text_vertical_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the text horizontal alignment for an arc label object. the horizontal alignment
+ *
+ * @return (number) the horizontal alignment
+ */
+jerry_value_t sni_api_lv_arclabel_get_text_horizontal_align(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_text_align_t result = lv_arclabel_get_text_horizontal_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the overflow behavior for an arc label object. the overflow mode
+ *
+ * @return (number) the overflow mode
+ */
+jerry_value_t sni_api_lv_arclabel_get_overflow(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_overflow_t result = lv_arclabel_get_overflow(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Get the end overlap behavior for an arc label object. the end overlap mode
+ *
+ * @return (boolean) the end overlap mode
+ */
+jerry_value_t sni_api_lv_arclabel_get_end_overlap(const jerry_call_info_t *call_info_p,
+                                                  const jerry_value_t args_p[],
+                                                  const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_arclabel_get_end_overlap(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Get the text angle for an arc label object. The text angle is calculated at runtime. You can get the updated value after the arclabel's size has been updated. Returns the real rendered text angle in degrees except in LV_ARCLABEL_OVERFLOW_VISIBLE mode.  the text angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the text angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_lv_arclabel_get_text_angle(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_text_angle(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Get the angle size of an arc label. the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the end angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_prop_get_arclabel_angle_size(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_angle_size(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Set the end angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param size (number) the angle size (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_prop_set_arclabel_angle_size(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_value_precise_t prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_T_FLOAT, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_set_angle_size(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the start angle of an arc label. the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the start angle [0..360] (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_prop_get_arclabel_angle_start(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_angle_start(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Set the start angle of an arc. 0 deg: right, 90 bottom, etc.
+ *
+ * @param start (number) the start angle. (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_prop_set_arclabel_angle_start(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_value_precise_t prop_value;
+    if (!sni_tb_js2c(args_p[0], SNI_T_FLOAT, &prop_value))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_set_angle_start(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the center offset x for an arc label object. the x offset
+ *
+ * @return (number) the x offset
+ */
+jerry_value_t sni_api_prop_get_arclabel_center_offset_x(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_center_offset_x(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the center offset x for an arc label object.
+ *
+ * @param x (number) the x offset
+ */
+jerry_value_t sni_api_prop_set_arclabel_center_offset_x(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_center_offset_x(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the center offset y for an arc label object. the y offset
+ *
+ * @return (number) the y offset
+ */
+jerry_value_t sni_api_prop_get_arclabel_center_offset_y(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_center_offset_y(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the center offset y for an arc label object.
+ *
+ * @param y (number) the y offset
+ */
+jerry_value_t sni_api_prop_set_arclabel_center_offset_y(const jerry_call_info_t *call_info_p,
+                                                        const jerry_value_t args_p[],
+                                                        const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_center_offset_y(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get whether the arc label is type or not. arc label's direction
+ *
+ * @return (number) arc label's direction
+ */
+jerry_value_t sni_api_prop_get_arclabel_dir(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_dir_t result = lv_arclabel_get_dir(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the type of arc.
+ *
+ * @param dir (number) arc label's direction
+ */
+jerry_value_t sni_api_prop_set_arclabel_dir(const jerry_call_info_t *call_info_p,
+                                            const jerry_value_t args_p[],
+                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_dir_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_dir(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the end overlap behavior for an arc label object. the end overlap mode
+ *
+ * @return (boolean) the end overlap mode
+ */
+jerry_value_t sni_api_prop_get_arclabel_end_overlap(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_arclabel_get_end_overlap(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Set the end overlap behavior for an arc label object. This controls how text is handled when it would overlap at the end of a 360-degree arc.
+ *
+ * @param overlap (boolean) set the arc label's end overlap behavior
+ */
+jerry_value_t sni_api_prop_set_arclabel_end_overlap(const jerry_call_info_t *call_info_p,
+                                                    const jerry_value_t args_p[],
+                                                    const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_arclabel_set_end_overlap(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the rotation for the whole arc
+ *
+ * @param offset (number) rotation angle
+ */
+jerry_value_t sni_api_prop_set_arclabel_offset(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    int32_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_offset(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the overflow behavior for an arc label object. the overflow mode
+ *
+ * @return (number) the overflow mode
+ */
+jerry_value_t sni_api_prop_get_arclabel_overflow(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_overflow_t result = lv_arclabel_get_overflow(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the overflow behavior for an arc label object.
+ *
+ * @param overflow (number) the overflow mode (visible, ellipsis, clip)
+ */
+jerry_value_t sni_api_prop_set_arclabel_overflow(const jerry_call_info_t *call_info_p,
+                                                 const jerry_value_t args_p[],
+                                                 const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_overflow_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_overflow(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the text of the arc label. the radius of the arc label
+ *
+ * @return (number) the radius of the arc label
+ */
+jerry_value_t sni_api_prop_get_arclabel_radius(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    uint32_t result = lv_arclabel_get_radius(self_obj);
+    return sni_tb_c2js(&result, SNI_T_UINT32);
+}
+
+/**
+ * @brief Set the radius for an arc label object.
+ *
+ * @param radius (number) The radius value to set for the label's curvature, in pixels.
+ */
+jerry_value_t sni_api_prop_set_arclabel_radius(const jerry_call_info_t *call_info_p,
+                                               const jerry_value_t args_p[],
+                                               const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    uint32_t prop_value;
+    prop_value = sni_tb_js2c_uint32(args_p[0]);
+
+    lv_arclabel_set_radius(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @details
+ * :ref:`lv_arclabel_set_recolor` true: enable recoloring, false: disable
+ *
+ * @return (boolean) true: enable recoloring, false: disable
+ */
+jerry_value_t sni_api_prop_get_arclabel_recolor(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    bool result = lv_arclabel_get_recolor(self_obj);
+    return sni_tb_c2js_boolean(result);
+}
+
+/**
+ * @brief Enable the recoloring by in-line commands
+ *
+ * @param en (boolean) true: enable recoloring, false: disable Example: "This is a #ff0000 red# word"
+ */
+jerry_value_t sni_api_prop_set_arclabel_recolor(const jerry_call_info_t *call_info_p,
+                                                const jerry_value_t args_p[],
+                                                const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_boolean(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    bool prop_value;
+    prop_value = sni_tb_js2c_boolean(args_p[0]);
+
+    lv_arclabel_set_recolor(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Set the text of the arc label.
+ *
+ * @details
+ * This function sets the text displayed by an arc label object.
+ *
+ * @param text (string) Pointer to a null-terminated string containing the new text for the label. May be NULL . When NULL the label is refreshed with its current text.
+ */
+jerry_value_t sni_api_prop_set_arclabel_text(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_string(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    const char *prop_value;
+    prop_value = sni_tb_js2c_string(args_p[0]);
+    if (!prop_value)
+    {
+        return sni_api_throw_error("Out of memory");
+    }
+
+    lv_arclabel_set_text(self_obj, prop_value);
+    eos_free((void *)prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the text angle for an arc label object. The text angle is calculated at runtime. You can get the updated value after the arclabel's size has been updated. Returns the real rendered text angle in degrees except in LV_ARCLABEL_OVERFLOW_VISIBLE mode.  the text angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ *
+ * @return (number) the text angle (if LV_USE_FLOAT is enabled it can be fractional too.)
+ */
+jerry_value_t sni_api_prop_get_arclabel_text_angle(const jerry_call_info_t *call_info_p,
+                                                   const jerry_value_t args_p[],
+                                                   const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_value_precise_t result = lv_arclabel_get_text_angle(self_obj);
+    return sni_tb_c2js(&result, SNI_T_FLOAT);
+}
+
+/**
+ * @brief Get the text horizontal alignment for an arc label object. the horizontal alignment
+ *
+ * @return (number) the horizontal alignment
+ */
+jerry_value_t sni_api_prop_get_arclabel_text_horizontal_align(const jerry_call_info_t *call_info_p,
+                                                              const jerry_value_t args_p[],
+                                                              const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_text_align_t result = lv_arclabel_get_text_horizontal_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the text horizontal alignment for an arc label object.
+ *
+ * @param align (number) the horizontal alignment
+ */
+jerry_value_t sni_api_prop_set_arclabel_text_horizontal_align(const jerry_call_info_t *call_info_p,
+                                                              const jerry_value_t args_p[],
+                                                              const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_text_align_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_text_horizontal_align(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
+ * @brief Get the text vertical alignment for an arc label object. the vertical alignment
+ *
+ * @return (number) the vertical alignment
+ */
+jerry_value_t sni_api_prop_get_arclabel_text_vertical_align(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    (void)args_p;
+    if (args_count != 0)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    lv_arclabel_text_align_t result = lv_arclabel_get_text_vertical_align(self_obj);
+    return sni_tb_c2js(&result, SNI_T_INT32);
+}
+
+/**
+ * @brief Set the text vertical alignment for an arc label object.
+ *
+ * @param align (number) the vertical alignment
+ */
+jerry_value_t sni_api_prop_set_arclabel_text_vertical_align(const jerry_call_info_t *call_info_p,
+                                                            const jerry_value_t args_p[],
+                                                            const jerry_length_t args_count)
+{
+    if (args_count != 1)
+    {
+        return sni_api_throw_error("Invalid argument count");
+    }
+
+    if (!jerry_value_is_object(call_info_p->this_value))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_obj_t *self_obj;
+    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
+    {
+        return sni_api_throw_error("Failed to convert argument");
+    }
+
+    if (!jerry_value_is_number(args_p[0]))
+    {
+        return sni_api_throw_error("Invalid argument type");
+    }
+    lv_arclabel_text_align_t prop_value;
+    prop_value = sni_tb_js2c_int32(args_p[0]);
+
+    lv_arclabel_set_text_vertical_align(self_obj, prop_value);
+    return jerry_undefined();
+}
+
+/**
  * @brief Create a bar object pointer to the created bar
  *
  * @param parent (object) pointer to a parent widget May be NULL .. When NULL, the widget is created as a screen on the default display.
@@ -36894,6 +38557,7 @@ const sni_method_desc_t lv_class_methods_obj[] = {
     {.name = "moveForeground", .handler = sni_api_lv_obj_move_foreground},
     {.name = "moveBackground", .handler = sni_api_lv_obj_move_background},
     {.name = "setFontSize", .handler = sni_api_eos_label_set_font_size},
+    {.name = "clearFontSize", .handler = sni_api_lv_obj_clear_font_size},
     {.name = NULL, .handler = NULL},
 };
 
@@ -37077,6 +38741,75 @@ const sni_property_desc_t lv_class_properties_arc[] = {
 };
 
 const sni_constant_desc_t lv_class_constants_arc[] = {
+    {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
+};
+
+const sni_method_desc_t lv_class_methods_arclabel[] = {
+    {.name = "setText", .handler = sni_api_lv_arclabel_set_text},
+    {.name = "setAngleStart", .handler = sni_api_lv_arclabel_set_angle_start},
+    {.name = "setAngleSize", .handler = sni_api_lv_arclabel_set_angle_size},
+    {.name = "setOffset", .handler = sni_api_lv_arclabel_set_offset},
+    {.name = "setDir", .handler = sni_api_lv_arclabel_set_dir},
+    {.name = "setRecolor", .handler = sni_api_lv_arclabel_set_recolor},
+    {.name = "setRadius", .handler = sni_api_lv_arclabel_set_radius},
+    {.name = "setCenterOffsetX", .handler = sni_api_lv_arclabel_set_center_offset_x},
+    {.name = "setCenterOffsetY", .handler = sni_api_lv_arclabel_set_center_offset_y},
+    {.name = "setTextVerticalAlign", .handler = sni_api_lv_arclabel_set_text_vertical_align},
+    {.name = "setTextHorizontalAlign", .handler = sni_api_lv_arclabel_set_text_horizontal_align},
+    {.name = "setOverflow", .handler = sni_api_lv_arclabel_set_overflow},
+    {.name = "setEndOverlap", .handler = sni_api_lv_arclabel_set_end_overlap},
+    {.name = "getAngleStart", .handler = sni_api_lv_arclabel_get_angle_start},
+    {.name = "getAngleSize", .handler = sni_api_lv_arclabel_get_angle_size},
+    {.name = "getDir", .handler = sni_api_lv_arclabel_get_dir},
+    {.name = "getRecolor", .handler = sni_api_lv_arclabel_get_recolor},
+    {.name = "getRadius", .handler = sni_api_lv_arclabel_get_radius},
+    {.name = "getCenterOffsetX", .handler = sni_api_lv_arclabel_get_center_offset_x},
+    {.name = "getCenterOffsetY", .handler = sni_api_lv_arclabel_get_center_offset_y},
+    {.name = "getTextVerticalAlign", .handler = sni_api_lv_arclabel_get_text_vertical_align},
+    {.name = "getTextHorizontalAlign", .handler = sni_api_lv_arclabel_get_text_horizontal_align},
+    {.name = "getOverflow", .handler = sni_api_lv_arclabel_get_overflow},
+    {.name = "getEndOverlap", .handler = sni_api_lv_arclabel_get_end_overlap},
+    {.name = "getTextAngle", .handler = sni_api_lv_arclabel_get_text_angle},
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_method_desc_t lv_class_static_methods_arclabel[] = {
+    {.name = NULL, .handler = NULL},
+};
+
+const sni_property_desc_t lv_class_properties_arclabel[] = {
+    {.name = "angleSize",
+     .getter = sni_api_prop_get_arclabel_angle_size,
+     .setter = sni_api_prop_set_arclabel_angle_size},
+    {.name = "angleStart",
+     .getter = sni_api_prop_get_arclabel_angle_start,
+     .setter = sni_api_prop_set_arclabel_angle_start},
+    {.name = "centerOffsetX",
+     .getter = sni_api_prop_get_arclabel_center_offset_x,
+     .setter = sni_api_prop_set_arclabel_center_offset_x},
+    {.name = "centerOffsetY",
+     .getter = sni_api_prop_get_arclabel_center_offset_y,
+     .setter = sni_api_prop_set_arclabel_center_offset_y},
+    {.name = "dir", .getter = sni_api_prop_get_arclabel_dir, .setter = sni_api_prop_set_arclabel_dir},
+    {.name = "endOverlap",
+     .getter = sni_api_prop_get_arclabel_end_overlap,
+     .setter = sni_api_prop_set_arclabel_end_overlap},
+    {.name = "offset", .getter = NULL, .setter = sni_api_prop_set_arclabel_offset},
+    {.name = "overflow", .getter = sni_api_prop_get_arclabel_overflow, .setter = sni_api_prop_set_arclabel_overflow},
+    {.name = "radius", .getter = sni_api_prop_get_arclabel_radius, .setter = sni_api_prop_set_arclabel_radius},
+    {.name = "recolor", .getter = sni_api_prop_get_arclabel_recolor, .setter = sni_api_prop_set_arclabel_recolor},
+    {.name = "text", .getter = NULL, .setter = sni_api_prop_set_arclabel_text},
+    {.name = "textAngle", .getter = sni_api_prop_get_arclabel_text_angle, .setter = NULL},
+    {.name = "textHorizontalAlign",
+     .getter = sni_api_prop_get_arclabel_text_horizontal_align,
+     .setter = sni_api_prop_set_arclabel_text_horizontal_align},
+    {.name = "textVerticalAlign",
+     .getter = sni_api_prop_get_arclabel_text_vertical_align,
+     .setter = sni_api_prop_set_arclabel_text_vertical_align},
+    {.name = NULL, .getter = NULL, .setter = NULL},
+};
+
+const sni_constant_desc_t lv_class_constants_arclabel[] = {
     {.name = NULL, .type = SNI_CONST_INT, .value.i = 0},
 };
 
@@ -37948,6 +39681,15 @@ const sni_constant_desc_t lv_root_constants[] = {
 #else
     {.name = "ANIM_TIMELINE_PROGRESS_MAX", .type = SNI_CONST_UNDEFINED, .value.i = 0},
 #endif
+    {.name = "ARCLABEL_DIR_CLOCKWISE", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_DIR_CLOCKWISE},
+    {.name = "ARCLABEL_DIR_COUNTER_CLOCKWISE", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_DIR_COUNTER_CLOCKWISE},
+    {.name = "ARCLABEL_OVERFLOW_CLIP", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_OVERFLOW_CLIP},
+    {.name = "ARCLABEL_OVERFLOW_ELLIPSIS", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_OVERFLOW_ELLIPSIS},
+    {.name = "ARCLABEL_OVERFLOW_VISIBLE", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_OVERFLOW_VISIBLE},
+    {.name = "ARCLABEL_TEXT_ALIGN_CENTER", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_TEXT_ALIGN_CENTER},
+    {.name = "ARCLABEL_TEXT_ALIGN_DEFAULT", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_TEXT_ALIGN_DEFAULT},
+    {.name = "ARCLABEL_TEXT_ALIGN_LEADING", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_TEXT_ALIGN_LEADING},
+    {.name = "ARCLABEL_TEXT_ALIGN_TRAILING", .type = SNI_CONST_INT, .value.i = LV_ARCLABEL_TEXT_ALIGN_TRAILING},
     {.name = "ARC_MODE_NORMAL", .type = SNI_CONST_INT, .value.i = LV_ARC_MODE_NORMAL},
     {.name = "ARC_MODE_REVERSE", .type = SNI_CONST_INT, .value.i = LV_ARC_MODE_REVERSE},
     {.name = "ARC_MODE_SYMMETRICAL", .type = SNI_CONST_INT, .value.i = LV_ARC_MODE_SYMMETRICAL},
@@ -40896,6 +42638,16 @@ const sni_class_desc_t lv_class_desc_arc = {
     .constants = lv_class_constants_arc,
 };
 
+const sni_class_desc_t lv_class_desc_arclabel = {
+    .name = "arclabel",
+    .constructor = sni_api_ctor_arclabel,
+    .base_class = &lv_class_desc_obj,
+    .methods = lv_class_methods_arclabel,
+    .properties = lv_class_properties_arclabel,
+    .static_methods = lv_class_static_methods_arclabel,
+    .constants = lv_class_constants_arclabel,
+};
+
 const sni_class_desc_t lv_class_desc_bar = {
     .name = "bar",
     .constructor = sni_api_ctor_bar,
@@ -41127,13 +42879,35 @@ const sni_class_desc_t lv_class_desc_qrcode = {
 };
 
 const sni_class_desc_t *const lv_api_classes[] = {
-    &lv_class_desc_obj,      &lv_class_desc_button,   &lv_class_desc_label,        &lv_class_desc_arc,
-    &lv_class_desc_bar,      &lv_class_desc_slider,   &lv_class_desc_color,        &lv_class_desc_layout,
-    &lv_class_desc_timer,    &lv_class_desc_anim,     &lv_class_desc_buttonmatrix, &lv_class_desc_calendar,
-    &lv_class_desc_chart,    &lv_class_desc_canvas,   &lv_class_desc_checkbox,     &lv_class_desc_switch,
-    &lv_class_desc_textarea, &lv_class_desc_dropdown, &lv_class_desc_image,        &lv_class_desc_imagebutton,
-    &lv_class_desc_list,     &lv_class_desc_tabview,  &lv_class_desc_tileview,     &lv_class_desc_roller,
-    &lv_class_desc_spinbox,  &lv_class_desc_msgbox,   &lv_class_desc_qrcode,       NULL,
+    &lv_class_desc_obj,
+    &lv_class_desc_button,
+    &lv_class_desc_label,
+    &lv_class_desc_arc,
+    &lv_class_desc_arclabel,
+    &lv_class_desc_bar,
+    &lv_class_desc_slider,
+    &lv_class_desc_color,
+    &lv_class_desc_layout,
+    &lv_class_desc_timer,
+    &lv_class_desc_anim,
+    &lv_class_desc_buttonmatrix,
+    &lv_class_desc_calendar,
+    &lv_class_desc_chart,
+    &lv_class_desc_canvas,
+    &lv_class_desc_checkbox,
+    &lv_class_desc_switch,
+    &lv_class_desc_textarea,
+    &lv_class_desc_dropdown,
+    &lv_class_desc_image,
+    &lv_class_desc_imagebutton,
+    &lv_class_desc_list,
+    &lv_class_desc_tabview,
+    &lv_class_desc_tileview,
+    &lv_class_desc_roller,
+    &lv_class_desc_spinbox,
+    &lv_class_desc_msgbox,
+    &lv_class_desc_qrcode,
+    NULL,
 };
 
 void sni_api_lv_init(void)
@@ -41200,6 +42974,32 @@ lv_arc_set_mode
 lv_arc_set_rotation
 lv_arc_set_start_angle
 lv_arc_set_value
+lv_arclabel_create
+lv_arclabel_get_angle_size
+lv_arclabel_get_angle_start
+lv_arclabel_get_center_offset_x
+lv_arclabel_get_center_offset_y
+lv_arclabel_get_dir
+lv_arclabel_get_end_overlap
+lv_arclabel_get_overflow
+lv_arclabel_get_radius
+lv_arclabel_get_recolor
+lv_arclabel_get_text_angle
+lv_arclabel_get_text_horizontal_align
+lv_arclabel_get_text_vertical_align
+lv_arclabel_set_angle_size
+lv_arclabel_set_angle_start
+lv_arclabel_set_center_offset_x
+lv_arclabel_set_center_offset_y
+lv_arclabel_set_dir
+lv_arclabel_set_end_overlap
+lv_arclabel_set_offset
+lv_arclabel_set_overflow
+lv_arclabel_set_radius
+lv_arclabel_set_recolor
+lv_arclabel_set_text
+lv_arclabel_set_text_horizontal_align
+lv_arclabel_set_text_vertical_align
 lv_bar_create
 lv_bar_get_max_value
 lv_bar_get_min_value

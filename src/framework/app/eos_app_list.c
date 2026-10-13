@@ -2228,7 +2228,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
             EOS_LOG_E("CLOSE ANIM: app_snapshot FAILED from %p", from);
             return;
         }
-        EOS_LOG_E("CLOSE ANIM: app_snapshot CREATED from %p", from);
+        EOS_LOG_D("CLOSE ANIM: app_snapshot CREATED from %p", from);
         lv_obj_move_foreground(app_snapshot);
 
         /* eos_activity_take_snapshot() temporarily restores the header's
@@ -2321,7 +2321,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
                 }
                 return;
             }
-            EOS_LOG_E("OPEN ANIM: app_snapshot CREATED to %p", to);
+            EOS_LOG_D("OPEN ANIM: app_snapshot CREATED to %p", to);
         }
     }
 
@@ -2367,7 +2367,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
         focus_translate_x = view_center_x - _app_list_last_icon_center_x;
         focus_translate_y = view_center_y - _app_list_last_icon_center_y;
     }
-    EOS_LOG_E("FOCUS: valid=%d last_x=%d last_y=%d view_center=(%d,%d) translate=(%d,%d)",
+    EOS_LOG_D("FOCUS: valid=%d last_x=%d last_y=%d view_center=(%d,%d) translate=(%d,%d)",
               _app_list_last_icon_center_valid,
               _app_list_last_icon_center_x,
               _app_list_last_icon_center_y,
@@ -2439,7 +2439,7 @@ static void _app_list_play_transition_anim(eos_anim_group_t *group,
     /* Cleanup: when app_snapshot is deleted, also delete icon_clone */
     lv_obj_add_event_cb(app_snapshot, _app_list_cleanup_extra_cb, LV_EVENT_DELETE, icon_clone);
 
-    EOS_LOG_E("Transition ANIMS: group[%p] expected=%d opening=%d", group, group->expected, opening);
+    EOS_LOG_D("Transition ANIMS: group[%p] expected=%d opening=%d", group, group->expected, opening);
 }
 
 static void _app_list_on_resueme(eos_activity_t *a)

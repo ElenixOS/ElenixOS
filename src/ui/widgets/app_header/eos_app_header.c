@@ -881,6 +881,9 @@ void eos_app_header_init(void)
     app_header->container = lv_obj_create(eos_overlay_layer_get(EOS_TOP_LAYER_APP_HEADER));
     app_header->original_parent = lv_obj_get_parent(app_header->container); // Save original parent object
     lv_obj_remove_style_all(app_header->container);
+    eos_result_t font_result = eos_font_set_size(app_header->container, EOS_FONT_DEFAULT_SIZE_PX);
+    if (font_result != EOS_OK)
+        EOS_LOG_E("Failed to set app header default font: %ld", (long)font_result);
     lv_obj_set_size(app_header->container, EOS_DISPLAY_WIDTH, _HEADER_HEIGHT);
     lv_obj_align(app_header->container, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_set_style_bg_image_src(app_header->container, app_header->grad_bg_img, 0);

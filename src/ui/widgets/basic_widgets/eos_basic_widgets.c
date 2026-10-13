@@ -223,6 +223,16 @@ lv_obj_t *eos_back_btn_create(lv_obj_t *parent, bool show_text)
     else
     {
         lv_label_set_text(btn_label, RI_ARROW_LEFT_S_LINE_LARGE);
+        lv_font_t *icon_font = NULL;
+        eos_result_t font_result = eos_font_get_icon_font(EOS_FONT_SIZE_LARGE, &icon_font);
+        if (font_result == EOS_OK && icon_font)
+        {
+            lv_obj_set_style_text_font(btn_label, icon_font, LV_PART_MAIN);
+        }
+        else
+        {
+            EOS_LOG_E("Failed to set back button icon font: %ld", (long)font_result);
+        }
     }
     lv_obj_set_style_text_color(btn_label, EOS_COLOR_WHITE, 0);
     lv_obj_align(btn_label, LV_ALIGN_CENTER, -2, 2);
@@ -969,7 +979,7 @@ lv_obj_t *eos_round_icon_create(lv_obj_t *parent, lv_color_t bg_color, const voi
     lv_obj_set_style_radius(round, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(round, bg_color, 0);
     // Draw icon as a centered image (glyph rendered to A8, centered in the circle)
-    lv_obj_t *icon = eos_icon_glyph_image_create(round, icon_src, 50);
+    lv_obj_t *icon = eos_icon_glyph_image_create_sized(round, icon_src, 50, EOS_FONT_SIZE_LARGE);
     if (icon)
     {
         lv_obj_center(icon);

@@ -131,10 +131,6 @@
 
 /* Font -------------------------------------------------------*/
 
-#ifndef EOS_FONT_TYPE
-#define EOS_FONT_TYPE EOS_FONT_TTF
-#endif
-
 #ifndef EOS_FONT_CFG_LARGE_SIZE
 #define EOS_FONT_CFG_LARGE_SIZE 30
 #endif
@@ -147,24 +143,6 @@
 #define EOS_FONT_CFG_SMALL_SIZE (EOS_FONT_CFG_MEDIUM_SIZE - 4)
 #endif
 
-#if EOS_FONT_TYPE == EOS_FONT_C_MULTI
-
-#ifndef EOS_ENABLE_CHINESE_FONT
-#define EOS_ENABLE_CHINESE_FONT 1
-#endif
-
-#if EOS_ENABLE_CHINESE_FONT
-#define EOS_FONT_LARGE_NAME source_han_sans_30
-#define EOS_FONT_MEDIUM_NAME source_han_sans_26
-#define EOS_FONT_SMALL_NAME source_han_sans_22
-#else
-#define EOS_FONT_LARGE_NAME lv_font_montserrat_30
-#define EOS_FONT_MEDIUM_NAME lv_font_montserrat_30
-#define EOS_FONT_SMALL_NAME lv_font_montserrat_30
-#endif
-
-#elif EOS_FONT_TYPE == EOS_FONT_TTF
-
 #ifndef EOS_FONT_TTF_TYPE
 #define EOS_FONT_TTF_TYPE EOS_FONT_TTF_FILE
 #endif
@@ -174,8 +152,12 @@
 #define EOS_FONT_TTF_DATA_SIZE SourceHanSansSC_12M_size
 #elif EOS_FONT_TTF_TYPE == EOS_FONT_TTF_FILE
 #if !defined(EOS_FONT_TTF_FILE_PATH)
-#define EOS_FONT_TTF_FILE_PATH EOS_SYS_RES_FONT_DIR "font.ttf"
+#define EOS_FONT_TTF_FILE_PATH "font.ttf"
 #endif
+#endif
+
+#ifndef EOS_FONT_ICON_TTF_FILE_PATH
+#define EOS_FONT_ICON_TTF_FILE_PATH "remixicon.ttf"
 #endif
 
 #ifndef EOS_FONT_TTF_ENABLE_EXTENDED
@@ -274,8 +256,6 @@
 #define EOS_FONT_TTF_CACHE_SIZE 256
 #endif
 #endif
-
-#endif /* EOS_FONT_TYPE */
 
 /* Display ----------------------------------------------------*/
 

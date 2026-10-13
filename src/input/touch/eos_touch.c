@@ -337,6 +337,7 @@ void eos_touch_init(void)
         _eos_touch_control_label = lv_label_create(_eos_touch_control_banner);
         lv_label_set_text(_eos_touch_control_label, "AUTO CONTROL  -  TOUCH TO TAKE OVER");
         lv_obj_set_style_text_color(_eos_touch_control_label, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_text_font(_eos_touch_control_label, &lv_font_montserrat_14, LV_PART_MAIN);
         lv_obj_set_style_text_opa(_eos_touch_control_label, LV_OPA_90, 0);
         lv_obj_center(_eos_touch_control_label);
         lv_obj_remove_flag(_eos_touch_control_label, LV_OBJ_FLAG_CLICKABLE);

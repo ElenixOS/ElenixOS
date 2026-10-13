@@ -170,38 +170,8 @@ endmenu
 menu "Font"
 
 choice
-    prompt "Font source type"
-    default EOSCFG_FONT_TTF
-
-config EOSCFG_FONT_C_MULTI
-    bool "C bitmap fonts (multi-size)"
-
-config EOSCFG_FONT_TTF
-    bool "TrueType font (file system)"
-endchoice
-
-config EOS_FONT_TYPE
-    int
-    default 0 if EOSCFG_FONT_C_MULTI
-    default 1 if EOSCFG_FONT_TTF
-    default 1
-
-config EOS_FONT_CFG_LARGE_SIZE
-    int "Large font size (px)"
-    default 30
-
-config EOS_FONT_CFG_MEDIUM_SIZE
-    int "Medium font size (px)"
-    default 26
-
-config EOS_FONT_CFG_SMALL_SIZE
-    int "Small font size (px)"
-    default 22
-
-choice
     prompt "TTF data source"
     default EOSCFG_FONT_TTF_FILE
-    depends on EOSCFG_FONT_TTF
 
 config EOSCFG_FONT_TTF_DATA
     bool "Compiled into firmware"
@@ -239,10 +209,18 @@ config EOS_FONT_TTF_FILE_PATH
 	  via compiler flag (-D) — the Kconfig value is ignored when the
 	  variable is already defined by the build system.
 
+config EOS_FONT_ICON_TTF_FILE_PATH
+	string "RemixIcon TTF file path"
+	default "remixicon.ttf"
+	depends on EOSCFG_FONT_TTF_FILE
+	help
+	  Path to the RemixIcon TrueType font, relative to the system font
+	  directory (EOS_SYS_RES_FONT_DIR). Keep this file separate from the
+	  regular text font so RemixIcon can be upgraded independently.
+
 choice
     prompt "Fallback font source when TTF load fails"
     default EOSCFG_FONT_TTF_FALLBACK_LVGL
-    depends on EOSCFG_FONT_TTF
 
 config EOSCFG_FONT_TTF_FALLBACK_LVGL
     bool "LVGL built-in font"
@@ -431,7 +409,6 @@ config EOS_FONT_TTF_FALLBACK_SYMBOL
 config EOS_FONT_TTF_ENABLE_EXTENDED
 	bool "Enable extended TTF features"
 	default n
-	depends on EOSCFG_FONT_TTF
 	help
 	  Enables kerning adjustment and custom glyph cache size for
 	  TrueType font rendering.

@@ -15,6 +15,7 @@
 #include "lvgl_private.h"
 #include "eos_font.h"
 #include "eos_crown.h"
+#include "eos_overlay_layer.h"
 /* Macros and Definitions -------------------------------------*/
 #define _DEBOUNCE_PERIOD 200
 /* Text -------------------------------------------------------*/
@@ -46,7 +47,6 @@ static lv_style_t style_slider_indicator;
 static lv_style_t style_slider_knob;
 static lv_style_t style_slider_pressed_color;
 
-static lv_font_t *global_font = NULL;
 /* Function Implementations -----------------------------------*/
 
 /* Debounce ---------------------------------------------------*/
@@ -149,7 +149,6 @@ void _init_style_label(void)
 {
     lv_style_init(&style_label);
     lv_style_set_text_color(&style_label, TEXT_COLOR);
-    lv_style_set_text_font(&style_label, global_font);
 }
 
 void _init_style_switch(void)
@@ -317,8 +316,6 @@ lv_style_t *eos_theme_get_label_style(void)
 
 void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font_t *font)
 {
-    global_font = font;
-
     _init_style_button();
     _init_style_view();
     _init_style_label();
@@ -336,4 +333,5 @@ void eos_theme_set(lv_color_t primary_color, lv_color_t secondary_color, lv_font
     lv_theme_set_apply_cb(&th_new, _theme_apply_cb);
 
     lv_display_set_theme(lv_display_get_default(), &th_new);
+    eos_overlay_layer_set_default_font(font);
 }

@@ -85,6 +85,28 @@ void eos_overlay_layer_init(void)
     EOS_LOG_I("Fixed top-layer slot graph initialized (%zu slots)", sizeof(_slot_order) / sizeof(_slot_order[0]));
 }
 
+void eos_overlay_layer_set_default_font(const lv_font_t *font)
+{
+    if (!font)
+    {
+        EOS_LOG_E("Cannot set a null top-layer text font");
+        return;
+    }
+
+    if (!_initialized || !_top_root || !lv_obj_is_valid(_top_root))
+    {
+        EOS_LOG_E("Cannot set the top-layer text font before layer initialization");
+        return;
+    }
+
+    lv_obj_set_style_text_font(_top_root, font, LV_PART_MAIN);
+
+    lv_style_value_t actual;
+    if (lv_obj_get_local_style_prop(_top_root, LV_STYLE_TEXT_FONT, &actual, LV_PART_MAIN) != LV_STYLE_RES_FOUND
+        || actual.ptr != font)
+        EOS_LOG_E("Failed to apply text font to the top-layer root");
+}
+
 lv_obj_t *eos_overlay_layer_get(eos_top_layer_slot_t slot)
 {
     for (size_t i = 0; i < sizeof(_slot_order) / sizeof(_slot_order[0]); i++)

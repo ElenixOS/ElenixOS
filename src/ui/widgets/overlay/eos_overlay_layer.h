@@ -84,6 +84,12 @@ typedef enum
 void eos_overlay_layer_init(void);
 
 /**
+ * @brief Set the inherited text font for all system top-layer slots
+ * @param font Default font borrowed from the font system
+ */
+void eos_overlay_layer_set_default_font(const lv_font_t *font);
+
+/**
  * @brief Get the permanent container for a semantic top-layer slot
  * @param slot Semantic layer slot
  * @return Slot container, or NULL when the slot is invalid or uninitialized

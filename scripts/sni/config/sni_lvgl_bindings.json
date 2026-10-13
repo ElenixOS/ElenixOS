@@ -885,6 +885,10 @@
           {
             "name": "setFontSize",
             "binding": "sni_api_eos_label_set_font_size"
+          },
+          {
+            "name": "clearFontSize",
+            "binding": "sni_api_lv_obj_clear_font_size"
           }
         ],
         "timer": [

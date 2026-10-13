@@ -100,6 +100,9 @@ jerry_value_t sni_api_prop_set_obj_parent(const jerry_call_info_t *call_info_p,
 jerry_value_t sni_api_eos_label_set_font_size(const jerry_call_info_t *call_info_p,
                                               const jerry_value_t args_p[],
                                               const jerry_length_t args_count);
+jerry_value_t sni_api_lv_obj_clear_font_size(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count);
 
 /* timer ------------------------------------------------------*/
 jerry_value_t sni_api_ctor_timer(const jerry_call_info_t *call_info_p,

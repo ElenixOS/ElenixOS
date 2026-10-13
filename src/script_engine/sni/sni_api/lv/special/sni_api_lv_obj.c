@@ -6,6 +6,7 @@
 #include "sni_api_lv_special.h"
 
 /* Includes ---------------------------------------------------*/
+#include <stdint.h>
 #include "lvgl.h"
 #include "sni_api_export.h"
 #include "sni_callback_runtime.h"
@@ -604,17 +605,40 @@ jerry_value_t sni_api_eos_label_set_font_size(const jerry_call_info_t *call_info
                                               const jerry_length_t args_count)
 {
     if (args_count != 1 || !jerry_value_is_number(args_p[0]))
-    {
-        return sni_api_throw_error("setFontSize: requires a numeric size argument");
-    }
+        return sni_api_throw_error("setFontSize: expected one numeric pixel size");
+
+    double requested_size = jerry_value_as_number(args_p[0]);
+    if (!(requested_size >= EOS_FONT_MIN_SIZE_PX && requested_size <= EOS_FONT_MAX_SIZE_PX))
+        return sni_api_throw_error("setFontSize: size is outside the supported range");
+    int32_t size_px = (int32_t)requested_size;
+    if ((double)size_px != requested_size)
+        return sni_api_throw_error("setFontSize: size must be an integer");
 
     lv_obj_t *self_obj;
-    if (!sni_tb_js2c(call_info_p->this_value, SNI_H_LV_OBJ, &self_obj))
-    {
+    if (!sni_lv_obj_from_this(call_info_p, &self_obj))
         return sni_api_throw_error("setFontSize: invalid object");
-    }
 
-    eos_font_size_t size = (eos_font_size_t)(uint32_t)jerry_value_as_number(args_p[0]);
-    eos_label_set_font_size(self_obj, size);
+    eos_result_t result = eos_font_set_size(self_obj, size_px);
+    if (result == EOS_ERR_FILE_ERROR)
+        return sni_api_throw_error("setFontSize: system TinyTTF font is unavailable");
+    if (result != EOS_OK)
+        return sni_api_throw_error("setFontSize: failed to apply font size");
+    return jerry_undefined();
+}
+
+jerry_value_t sni_api_lv_obj_clear_font_size(const jerry_call_info_t *call_info_p,
+                                             const jerry_value_t args_p[],
+                                             const jerry_length_t args_count)
+{
+    LV_UNUSED(args_p);
+    if (args_count != 0)
+        return sni_api_throw_error("clearFontSize: expected no arguments");
+
+    lv_obj_t *self_obj;
+    if (!sni_lv_obj_from_this(call_info_p, &self_obj))
+        return sni_api_throw_error("clearFontSize: invalid object");
+
+    if (eos_font_clear_size(self_obj) != EOS_OK)
+        return sni_api_throw_error("clearFontSize: failed to clear local font");
     return jerry_undefined();
 }
